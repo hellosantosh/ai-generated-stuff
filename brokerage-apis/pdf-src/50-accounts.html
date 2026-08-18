@@ -1,0 +1,366 @@
+<!-- ===================== 4. ACCOUNTS APIs ======================== -->
+<h1 id="accounts"><span class="num">4</span>Accounts APIs</h1>
+
+<p class="lede">
+  Five read-only views of a customer's brokerage accounts: which accounts you can reach, what
+  they are worth, what they hold, what is working, and what has already happened.
+</p>
+
+<h2 id="account-list"><span class="num">4.1</span>Account list</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts</div>
+  <div class="scopes">Requires <span class="pill">accounts:read</span></div>
+</div>
+
+<p>
+  Returns every account the presented access token is authorized to see. This is the entry
+  point for everything else — the <code>accountId</code> returned here is the opaque, permanent
+  handle used in every other path.
+</p>
+
+<pre class="long"><code>GET /v1/accounts HTTP/1.1
+Authorization: Bearer eyJhbGciOiJSUzI1NiIs…
+
+<span class="c-com">→ 200 OK</span>
+{
+  <span class="c-key">"items"</span>: [
+    {
+      <span class="c-key">"accountId"</span>:      <span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>,
+      <span class="c-key">"accountNumber"</span>:  <span class="c-str">"••••4471"</span>,
+      <span class="c-key">"nickname"</span>:       <span class="c-str">"Main brokerage"</span>,
+      <span class="c-key">"type"</span>:           <span class="c-str">"MARGIN"</span>,
+      <span class="c-key">"registration"</span>:   <span class="c-str">"INDIVIDUAL"</span>,
+      <span class="c-key">"status"</span>:         <span class="c-str">"ACTIVE"</span>,
+      <span class="c-key">"baseCurrency"</span>:   <span class="c-str">"USD"</span>,
+      <span class="c-key">"optionsLevel"</span>:   <span class="c-str">"LEVEL_3"</span>,
+      <span class="c-key">"dayTrader"</span>:      true,
+      <span class="c-key">"openedAt"</span>:       <span class="c-str">"2021-03-14T00:00:00Z"</span>,
+      <span class="c-key">"_links"</span>: {
+        <span class="c-key">"self"</span>:         { <span class="c-key">"href"</span>: <span class="c-str">"…/v1/accounts/acct_01HQ8Z4M2X9K3P7R"</span> },
+        <span class="c-key">"balances"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…/balances"</span> },
+        <span class="c-key">"positions"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…/positions"</span> },
+        <span class="c-key">"orders"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span> },
+        <span class="c-key">"transactions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions"</span> },
+        <span class="c-key">"place-order"</span>:  { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span>, <span class="c-key">"method"</span>: <span class="c-str">"POST"</span> }
+      }
+    }
+  ],
+  <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/v1/accounts"</span> } }
+}</code></pre>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Field</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>accountId</code></td><td>Opaque and permanent. Use this as your foreign key.</td></tr>
+    <tr><td><code>accountNumber</code></td><td>Customer-facing, <b>masked to the last four digits</b> unless the grant carries <code>accounts:read:full</code>. Display it; do not key on it.</td></tr>
+    <tr><td><code>type</code></td><td><code>CASH</code> settles trade-by-trade and cannot borrow. <code>MARGIN</code> can, which changes buying power, short-sale eligibility, and available option strategies.</td></tr>
+    <tr><td><code>status</code></td><td><code>ACTIVE</code>, <code>RESTRICTED</code>, <code>CLOSED</code>, <code>PENDING</code>. A <code>RESTRICTED</code> account can be read but not traded — it carries no <code>place-order</code> link.</td></tr>
+    <tr><td><code>optionsLevel</code></td><td>Approved strategies, cumulative. See §5.4.</td></tr>
+    <tr><td><code>dayTrader</code></td><td>Pattern-day-trader flag. When true, the 25,000 USD minimum equity rule applies and day trades are counted.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The list is deliberately unpaginated — a customer rarely has more than a handful of
+  accounts, and forcing pagination onto a bounded collection buys nothing.
+</p>
+
+<h2 id="balances"><span class="num">4.2</span>Account balances</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/balances</div>
+  <div class="scopes">Requires <span class="pill">accounts:read</span></div>
+</div>
+
+<p>
+  A balance <b>snapshot</b>, stamped with <code>asOf</code>. Intraday it reflects real-time
+  marks on open positions and unsettled trade activity; after the close it settles to
+  end-of-day values.
+</p>
+
+<pre class="long"><code><span class="c-com">→ 200 OK</span>
+{
+  <span class="c-key">"accountId"</span>:            <span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>,
+  <span class="c-key">"currency"</span>:             <span class="c-str">"USD"</span>,
+  <span class="c-key">"asOf"</span>:                 <span class="c-str">"2026-08-17T18:42:11Z"</span>,
+  <span class="c-key">"netLiquidation"</span>:       <span class="c-str">"184320.55"</span>,
+  <span class="c-key">"equity"</span>:              <span class="c-str">"184320.55"</span>,
+  <span class="c-key">"positionsMarketValue"</span>: <span class="c-str">"142140.45"</span>,
+  <span class="c-key">"cash"</span>: {
+    <span class="c-key">"total"</span>:        <span class="c-str">"42180.10"</span>,
+    <span class="c-key">"settled"</span>:      <span class="c-str">"39900.00"</span>,
+    <span class="c-key">"unsettled"</span>:    <span class="c-str">"2280.10"</span>,
+    <span class="c-key">"withdrawable"</span>: <span class="c-str">"39900.00"</span>
+  },
+  <span class="c-key">"buyingPower"</span>: {
+    <span class="c-key">"stock"</span>:      <span class="c-str">"84360.20"</span>,
+    <span class="c-key">"option"</span>:     <span class="c-str">"39900.00"</span>,
+    <span class="c-key">"dayTrading"</span>: <span class="c-str">"168720.40"</span>
+  },
+  <span class="c-key">"margin"</span>: {
+    <span class="c-key">"maintenanceRequirement"</span>: <span class="c-str">"38504.00"</span>,
+    <span class="c-key">"initialRequirement"</span>:     <span class="c-str">"71140.22"</span>,
+    <span class="c-key">"marginBalance"</span>:          <span class="c-str">"0.00"</span>,
+    <span class="c-key">"excessLiquidity"</span>:        <span class="c-str">"145816.55"</span>,
+    <span class="c-key">"marginCall"</span>:             null
+  },
+  <span class="c-key">"dayTradesUsed"</span>:      <span class="c-num">1</span>,
+  <span class="c-key">"dayTradesRemaining"</span>: <span class="c-num">3</span>,
+  <span class="c-key">"patternDayTrader"</span>:   true,
+  <span class="c-key">"_links"</span>: { … }
+}</code></pre>
+
+<div class="warn">
+  <span class="lbl">Buying power is three different numbers</span>
+  <p>
+    They are broken out because they genuinely differ. In a margin account,
+    <code>stock</code> is typically twice <code>option</code> — options cannot be bought on
+    margin — and <code>dayTrading</code> is a larger figure that resets each session.
+    <b>Sizing an option order against <code>buyingPower.stock</code> will get it rejected</b>,
+    and the rejection will look mysterious if you were reading the wrong field.
+  </p>
+</div>
+
+<table>
+  <thead><tr><th style="width:28%">Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>netLiquidation</code></td><td>Total account value if every position were liquidated at current marks. The headline number.</td></tr>
+    <tr><td><code>cash.settled</code></td><td>Cash that has completed settlement. In a <b>cash account</b>, spending unsettled proceeds causes a good-faith violation — this is the figure that matters there.</td></tr>
+    <tr><td><code>cash.withdrawable</code></td><td>What can actually leave the account today, after settlement and any holds.</td></tr>
+    <tr><td><code>margin.excessLiquidity</code></td><td>Cushion above the maintenance requirement. When this approaches zero, a margin call is imminent.</td></tr>
+    <tr><td><code>margin.marginCall</code></td><td>Non-null only when a call is outstanding, carrying <code>type</code>, <code>amount</code>, and <code>dueDate</code>. <b>The one field worth alerting on.</b></td></tr>
+    <tr><td><code>dayTradesRemaining</code></td><td>Day trades left in the rolling five-business-day window before the PDT rule restricts the account.</td></tr>
+  </tbody>
+</table>
+
+<p class="small">
+  Responses carry <code>Cache-Control: no-store</code> during market hours. Do not cache
+  balances across a trade.
+</p>
+
+<h2 id="positions"><span class="num">4.3</span>Account positions</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/positions</div>
+  <div class="scopes">Requires <span class="pill">positions:read</span></div>
+</div>
+
+<p>
+  Open positions, one row per instrument and side. Filter with <code>instrumentType</code>
+  (<code>EQUITY</code>, <code>ETF</code>, <code>OPTION</code>) or <code>symbol</code> — the
+  latter matches option positions on that underlying too. Paginated (§3.4).
+</p>
+
+<pre class="long"><code><span class="c-com">→ 200 OK — a long stock position and a short call written against it</span>
+{ <span class="c-key">"items"</span>: [
+  {
+    <span class="c-key">"positionId"</span>: <span class="c-str">"pos_01HQ9A1F4C8M2Q6T"</span>,
+    <span class="c-key">"instrument"</span>: { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_AAPL"</span>, <span class="c-key">"type"</span>: <span class="c-str">"EQUITY"</span>,
+                     <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+    <span class="c-key">"side"</span>: <span class="c-str">"LONG"</span>,
+    <span class="c-key">"quantity"</span>:             <span class="c-str">"500"</span>,
+    <span class="c-key">"contractMultiplier"</span>:   <span class="c-num">1</span>,
+    <span class="c-key">"averageCost"</span>:          <span class="c-str">"178.4200"</span>,
+    <span class="c-key">"costBasis"</span>:            <span class="c-str">"89210.00"</span>,
+    <span class="c-key">"lastPrice"</span>:            <span class="c-str">"231.1500"</span>,
+    <span class="c-key">"marketValue"</span>:          <span class="c-str">"115575.00"</span>,
+    <span class="c-key">"unrealizedPnl"</span>:        <span class="c-str">"26365.00"</span>,
+    <span class="c-key">"unrealizedPnlPercent"</span>: <span class="c-str">"29.5539"</span>,
+    <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: {…}, <span class="c-key">"instrument"</span>: {…},
+                <span class="c-key">"close-position"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span>, <span class="c-key">"method"</span>: <span class="c-str">"POST"</span> } }
+  },
+  {
+    <span class="c-key">"positionId"</span>: <span class="c-str">"pos_01HQ9A3H7D1N4S8V"</span>,
+    <span class="c-key">"instrument"</span>: {
+      <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>,
+      <span class="c-key">"type"</span>: <span class="c-str">"OPTION"</span>, <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL  261218C00250000"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+      <span class="c-key">"option"</span>: { <span class="c-key">"underlyingSymbol"</span>: <span class="c-str">"AAPL"</span>, <span class="c-key">"expiration"</span>: <span class="c-str">"2026-12-18"</span>,
+                   <span class="c-key">"strike"</span>: <span class="c-str">"250.00"</span>, <span class="c-key">"optionType"</span>: <span class="c-str">"CALL"</span>,
+                   <span class="c-key">"exerciseStyle"</span>: <span class="c-str">"AMERICAN"</span>, <span class="c-key">"contractMultiplier"</span>: <span class="c-num">100</span> }
+    },
+    <span class="c-key">"side"</span>: <span class="c-str">"SHORT"</span>,
+    <span class="c-key">"quantity"</span>:           <span class="c-str">"-5"</span>,        <span class="c-com">// contracts, not shares</span>
+    <span class="c-key">"contractMultiplier"</span>: <span class="c-num">100</span>,
+    <span class="c-key">"averageCost"</span>:        <span class="c-str">"12.4000"</span>,
+    <span class="c-key">"marketValue"</span>:        <span class="c-str">"-4925.00"</span>,
+    <span class="c-key">"unrealizedPnl"</span>:      <span class="c-str">"1275.00"</span>
+  }
+] }</code></pre>
+
+<div class="warn">
+  <span class="lbl">Options are counted in contracts</span>
+  <p>
+    A <code>quantity</code> of <code>-5</code> on an option position is five short contracts,
+    which is exposure to <b>500 shares</b>. Multiply by
+    <code>contractMultiplier</code> (normally 100; adjusted contracts differ) to get
+    share-equivalent exposure. Treating the two as the same unit understates option risk by
+    two orders of magnitude.
+  </p>
+</div>
+
+<p>
+  <code>quantity</code> is signed — negative for short positions — so a naive sum across a
+  portfolio nets long against short correctly. Long and short exposure in the same underlying
+  are returned as separate positions. Closed positions do not appear here; use the transaction
+  history for realized activity.
+</p>
+
+<h2 id="order-status"><span class="num">4.4</span>Account order status</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders</div>
+  <div class="scopes">Requires <span class="pill">orders:read</span></div>
+</div>
+
+<p>
+  Orders on the account, newest first. <b>With no filter, this returns working orders
+  only</b> — <code>PENDING_NEW</code>, <code>NEW</code>, <code>PARTIALLY_FILLED</code>,
+  <code>PENDING_REPLACE</code>, <code>PENDING_CANCEL</code> — which is the set a trading screen
+  needs on load. Pass <code>status</code> explicitly, or the literal <code>status=ALL</code>,
+  to widen it.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>status</code></td><td>Repeatable. One or more <code>OrderStatus</code> values, or <code>ALL</code> to disable the working-orders default.</td></tr>
+    <tr><td><code>symbol</code></td><td>One underlying, including its option orders.</td></tr>
+    <tr><td><code>from</code>, <code>to</code></td><td>Bounds on <code>createdAt</code>. Defaults to the last 7 days.</td></tr>
+    <tr><td><code>cursor</code>, <code>limit</code></td><td>Pagination (§3.4).</td></tr>
+  </tbody>
+</table>
+
+<pre class="long"><code>GET /v1/accounts/acct_…/orders?status=ALL&amp;symbol=MSFT&amp;limit=25
+
+<span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"items"</span>: [ {
+    <span class="c-key">"orderId"</span>:           <span class="c-str">"ord_01HQ9D4N7Q1S5U8X"</span>,
+    <span class="c-key">"clientOrderId"</span>:     <span class="c-str">"ui-2026-08-17-0007"</span>,
+    <span class="c-key">"status"</span>:            <span class="c-str">"PARTIALLY_FILLED"</span>,
+    <span class="c-key">"assetClass"</span>:        <span class="c-str">"EQUITY"</span>,
+    <span class="c-key">"side"</span>:              <span class="c-str">"BUY"</span>,
+    <span class="c-key">"instrument"</span>:        { <span class="c-key">"symbol"</span>: <span class="c-str">"MSFT"</span>, … },
+    <span class="c-key">"quantity"</span>:          <span class="c-str">"300"</span>,
+    <span class="c-key">"filledQuantity"</span>:    <span class="c-str">"100"</span>,
+    <span class="c-key">"remainingQuantity"</span>: <span class="c-str">"200"</span>,
+    <span class="c-key">"orderType"</span>:         <span class="c-str">"LIMIT"</span>,
+    <span class="c-key">"limitPrice"</span>:        <span class="c-str">"412.50"</span>,
+    <span class="c-key">"averageFillPrice"</span>:  <span class="c-str">"412.48"</span>,
+    <span class="c-key">"timeInForce"</span>:       <span class="c-str">"DAY"</span>,
+    <span class="c-key">"createdAt"</span>:         <span class="c-str">"2026-08-17T14:31:02Z"</span>,
+    <span class="c-key">"updatedAt"</span>:         <span class="c-str">"2026-08-17T14:33:19Z"</span>,
+    <span class="c-key">"_links"</span>: {
+      <span class="c-key">"self"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_01HQ9D4N7Q1S5U8X"</span> },
+      <span class="c-key">"cancel"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"DELETE"</span> },
+      <span class="c-key">"replace"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"PATCH"</span> },
+      <span class="c-key">"executions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/executions"</span> }
+    }
+} ] }</code></pre>
+
+<h4>Single order, and its fills</h4>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/{orderId}/executions</div>
+  <div class="scopes">Requires <span class="pill">orders:read</span> &nbsp;·&nbsp; single-order reads return a strong <code>ETag</code></div>
+</div>
+
+<p>
+  A single order can fill in many prints across several venues. <code>executions</code> is the
+  audit trail behind <code>filledQuantity</code> and <code>averageFillPrice</code>:
+</p>
+
+<pre><code>{ <span class="c-key">"items"</span>: [
+  { <span class="c-key">"executionId"</span>: <span class="c-str">"exec_01HQ9E1A2B3C4D5E"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"100"</span>, <span class="c-key">"price"</span>: <span class="c-str">"412.48"</span>,
+    <span class="c-key">"venue"</span>: <span class="c-str">"XNAS"</span>, <span class="c-key">"liquidity"</span>: <span class="c-str">"REMOVED"</span>, <span class="c-key">"executedAt"</span>: <span class="c-str">"2026-08-17T14:33:19.418Z"</span>,
+    <span class="c-key">"settlementDate"</span>: <span class="c-str">"2026-08-19"</span>, <span class="c-key">"commission"</span>: <span class="c-str">"0.00"</span> },
+  { <span class="c-key">"executionId"</span>: <span class="c-str">"exec_01HQ9E4F5G6H7J8K"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"200"</span>, <span class="c-key">"price"</span>: <span class="c-str">"412.50"</span>,
+    <span class="c-key">"venue"</span>: <span class="c-str">"ARCX"</span>, <span class="c-key">"liquidity"</span>: <span class="c-str">"ADDED"</span>,   <span class="c-key">"executedAt"</span>: <span class="c-str">"2026-08-17T14:35:02.771Z"</span> }
+] }</code></pre>
+
+<div class="tip">
+  <span class="lbl">Poll cheaply, or do not poll at all</span>
+  <p>
+    Single-order reads are limited to one request per second. Send the previous
+    <code>ETag</code> as <code>If-None-Match</code> and an unchanged order costs you a
+    <span class="status-pill s-4xx">304</span> with no body. Better still, use the event
+    stream in §5.7 and stop polling entirely.
+  </p>
+</div>
+
+<h2 id="transactions"><span class="num">4.5</span>Account transaction history</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/transactions</div>
+  <div class="scopes">Requires <span class="pill">transactions:read</span></div>
+</div>
+
+<p>
+  Cash and position activity: trades, dividends, interest, fees, transfers, assignments,
+  exercises, expirations, and corporate actions. Ordered by <code>tradeDate</code> descending,
+  then <code>transactionId</code> descending as a stable tiebreaker.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>from</code>, <code>to</code></td><td>Inclusive bounds on trade date. Defaults to the last 90 days; accepts any range up to 7 years.</td></tr>
+    <tr><td><code>type</code></td><td>Repeatable. Restrict to one or more transaction types.</td></tr>
+    <tr><td><code>symbol</code></td><td>Activity in one symbol or its options.</td></tr>
+  </tbody>
+</table>
+
+<pre class="long"><code>GET /v1/accounts/acct_…/transactions?from=2026-08-01&amp;type=TRADE&amp;type=DIVIDEND
+
+<span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"items"</span>: [
+  { <span class="c-key">"transactionId"</span>:  <span class="c-str">"txn_01HQ9C2K5M8P1R4W"</span>,
+    <span class="c-key">"type"</span>:           <span class="c-str">"TRADE"</span>,
+    <span class="c-key">"subType"</span>:        <span class="c-str">"BUY"</span>,
+    <span class="c-key">"description"</span>:    <span class="c-str">"Bought 100 AAPL @ 231.05"</span>,
+    <span class="c-key">"tradeDate"</span>:      <span class="c-str">"2026-08-15"</span>,
+    <span class="c-key">"settlementDate"</span>: <span class="c-str">"2026-08-18"</span>,
+    <span class="c-key">"instrument"</span>:     { <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>, … },
+    <span class="c-key">"quantity"</span>:       <span class="c-str">"100"</span>,
+    <span class="c-key">"price"</span>:          <span class="c-str">"231.0500"</span>,
+    <span class="c-key">"grossAmount"</span>:    <span class="c-str">"-23105.00"</span>,       <span class="c-com">// signed: negative reduces cash</span>
+    <span class="c-key">"fees"</span>: [ { <span class="c-key">"type"</span>: <span class="c-str">"REGULATORY"</span>, <span class="c-key">"description"</span>: <span class="c-str">"SEC Section 31 fee"</span>,
+                <span class="c-key">"amount"</span>: <span class="c-str">"0.00"</span> } ],
+    <span class="c-key">"netAmount"</span>:      <span class="c-str">"-23105.00"</span>,       <span class="c-com">// gross net of fees — the actual cash movement</span>
+    <span class="c-key">"currency"</span>:       <span class="c-str">"USD"</span>,
+    <span class="c-key">"relatedOrderId"</span>: <span class="c-str">"ord_01HQ9C1J3L7N0Q3V"</span>,
+    <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: {…}, <span class="c-key">"order"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_01HQ9C1J3L7N0Q3V"</span> } } },
+
+  { <span class="c-key">"transactionId"</span>: <span class="c-str">"txn_01HQ9B8G4J2L6N9S"</span>,
+    <span class="c-key">"type"</span>: <span class="c-str">"DIVIDEND"</span>, <span class="c-key">"subType"</span>: <span class="c-str">"CASH_DIVIDEND"</span>,
+    <span class="c-key">"description"</span>: <span class="c-str">"AAPL cash dividend 0.26/share on 500 shares"</span>,
+    <span class="c-key">"tradeDate"</span>: <span class="c-str">"2026-08-14"</span>, <span class="c-key">"grossAmount"</span>: <span class="c-str">"130.00"</span>,
+    <span class="c-key">"fees"</span>: [], <span class="c-key">"netAmount"</span>: <span class="c-str">"130.00"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> }
+] }</code></pre>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Type</th><th>Covers</th></tr></thead>
+  <tbody>
+    <tr><td><code>TRADE</code></td><td>Buys and sells. <code>subType</code> narrows to <code>BUY</code>, <code>SELL</code>, <code>SELL_SHORT</code>, <code>BUY_TO_COVER</code>.</td></tr>
+    <tr><td><code>DIVIDEND</code>, <code>INTEREST</code></td><td>Cash and stock dividends, credit interest.</td></tr>
+    <tr><td><code>FEE</code>, <code>TAX</code></td><td>Commissions, regulatory fees, margin interest, withholding.</td></tr>
+    <tr><td><code>DEPOSIT</code>, <code>WITHDRAWAL</code>, <code>TRANSFER</code>, <code>JOURNAL</code></td><td>Cash and position movement in and out of the account.</td></tr>
+    <tr><td><code>ASSIGNMENT</code>, <code>EXERCISE</code>, <code>EXPIRATION</code></td><td>Option lifecycle events. <b>These arrive without an order</b> — nobody placed one — so a reconciliation keyed on <code>relatedOrderId</code> will miss them.</td></tr>
+    <tr><td><code>CORPORATE_ACTION</code></td><td>Splits, mergers, spin-offs, symbol changes.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">Reconcile on <code>transactionId</code>, not on position in the list</span>
+  <p>
+    Settlement can back-date an entry, which means a transaction may appear in a page you have
+    already read. <code>transactionId</code> is permanent and unique; deduplicate on it. Every
+    example client in Section 6 does this rather than summing pages blindly.
+  </p>
+  <p>
+    Ranges wider than one year are served from cold storage and may take several seconds.
+    Pull history incrementally and cache it locally rather than re-fetching seven years on
+    every run.
+  </p>
+</div>

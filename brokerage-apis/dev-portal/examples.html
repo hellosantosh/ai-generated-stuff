@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Code examples — Brokerage API</title>
+<meta name="description" content="Runnable Java, Node.js, and Python examples for OAuth 2.1 with PKCE, accounts, and trading. No SDK required.">
+<link rel="stylesheet" href="assets/portal.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231f4f8f'/><text x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>B</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menu-toggle" type="button" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="index.html"><span class="mark">B</span> Brokerage API <span class="ver">v1</span></a>
+  <nav class="topnav">
+    <a href="index.html">Overview</a>
+    <a href="authentication.html">Authentication</a>
+    <a href="accounts.html">Accounts</a>
+    <a href="trading.html">Trading</a>
+    <a href="examples.html" class="active">Examples</a>
+    <a href="reference.html">Reference</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h4>Get started</h4>
+    <ul><li><a href="index.html">Overview</a></li></ul>
+    <h4>Guides</h4>
+    <ul>
+      <li><a href="authentication.html">Authentication</a></li>
+      <li><a href="accounts.html">Accounts</a></li>
+      <li><a href="trading.html">Trading</a></li>
+      <li><a href="examples.html" class="active">Code examples</a></li>
+    </ul>
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference.html">Endpoint reference</a></li>
+      <li><a href="errors.html">Errors &amp; status codes</a></li>
+      <li><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0 (YAML)</a></li>
+      <li><a href="openapi/brokerage-api.json">OpenAPI 3.2.0 (JSON)</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <h1>Code examples</h1>
+    <p class="page-lede">
+      We publish no SDK, so these build directly on each language's standard HTTP client.
+      That is deliberate: it keeps the wire protocol visible and means nothing here goes stale
+      when a vendor library does. Pick a language once — the tabs stay in sync down the page.
+    </p>
+
+    <h2 id="files">Runnable sources</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:34%">Path</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td colspan="2"><strong>examples/python/</strong> — standard library only, Python 3.9+</td></tr>
+        <tr><td><code>pkce_auth.py</code></td><td>PKCE flow, token store, refresh with rotation, revocation.</td></tr>
+        <tr><td><code>brokerage_client.py</code></td><td>Auth, retry, idempotency, link following, pagination.</td></tr>
+        <tr><td><code>accounts_examples.py</code></td><td>All five accounts endpoints.</td></tr>
+        <tr><td><code>trading_examples.py</code></td><td>Stock and option orders, preview, amend, cancel.</td></tr>
+
+        <tr><td colspan="2" style="padding-top:18px"><strong>examples/node/</strong> — built-ins only, Node 18+</td></tr>
+        <tr><td><code>pkce-auth.mjs</code></td><td>As above, using <code>node:crypto</code> and <code>node:http</code>.</td></tr>
+        <tr><td><code>brokerage-client.mjs</code></td><td>As above, plus an SSE consumer and exact decimal arithmetic over <code>BigInt</code>.</td></tr>
+        <tr><td><code>accounts-examples.mjs</code>, <code>trading-examples.mjs</code></td><td>As above.</td></tr>
+
+        <tr><td colspan="2" style="padding-top:18px"><strong>examples/java/</strong> — Java 17+, Jackson the only dependency</td></tr>
+        <tr><td><code>PkceAuth.java</code></td><td>As above, using <code>java.net.http.HttpClient</code>.</td></tr>
+        <tr><td><code>BrokerageClient.java</code></td><td>As above, with <code>BigDecimal</code> throughout.</td></tr>
+        <tr><td><code>AccountsExamples.java</code>, <code>TradingExamples.java</code></td><td>As above.</td></tr>
+        <tr><td><code>pom.xml</code></td><td><code>mvn compile exec:java -Dexec.mainClass=…</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="tip">
+      <span class="lbl">Safe defaults</span>
+      <p>
+        All three clients default to the <strong>sandbox</strong> base URL, and the trading
+        examples default to <code>dryRun = true</code> — they preview without routing. Reaching
+        production, and actually placing an order, each require a deliberate edit.
+      </p>
+    </div>
+
+    <h2 id="setup">Running them</h2>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-key">export</span> BROKERAGE_CLIENT_ID=<span class="c-str">"your-client-id"</span>
+<span class="c-key">export</span> BROKERAGE_REDIRECT_URI=<span class="c-str">"http://127.0.0.1:8723/callback"</span>
+
+<span class="c-key">cd</span> examples/python
+python3 pkce_auth.py          <span class="c-com"># one-time interactive authorization</span>
+python3 accounts_examples.py
+python3 trading_examples.py   <span class="c-com"># dry run by default</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">export</span> BROKERAGE_CLIENT_ID=<span class="c-str">"your-client-id"</span>
+<span class="c-key">export</span> BROKERAGE_REDIRECT_URI=<span class="c-str">"http://127.0.0.1:8723/callback"</span>
+
+<span class="c-key">cd</span> examples/node
+node pkce-auth.mjs            <span class="c-com"># one-time interactive authorization</span>
+node accounts-examples.mjs
+node trading-examples.mjs     <span class="c-com"># dry run by default</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code><span class="c-key">export</span> BROKERAGE_CLIENT_ID=<span class="c-str">"your-client-id"</span>
+<span class="c-key">export</span> BROKERAGE_REDIRECT_URI=<span class="c-str">"http://127.0.0.1:8723/callback"</span>
+
+<span class="c-key">cd</span> examples/java
+mvn -q compile
+
+mvn -q exec:java -Dexec.mainClass=com.example.brokerage.PkceAuth
+mvn -q exec:java -Dexec.mainClass=com.example.brokerage.AccountsExamples
+mvn -q exec:java -Dexec.mainClass=com.example.brokerage.TradingExamples</code></pre>
+      </div>
+    </div>
+
+    <h2 id="pkce">Authorization with PKCE</h2>
+
+    <p>The same four steps everywhere: generate the pair, build the URL, verify <code>state</code>, exchange the code.</p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-key">import</span> base64, hashlib, secrets
+
+<span class="c-key">def</span> generate_pkce_pair():
+    <span class="c-str">"""32 random bytes → a 43-character verifier, the RFC 7636 minimum."""</span>
+    verifier  = base64.urlsafe_b64encode(secrets.token_bytes(<span class="c-num">32</span>)).decode().rstrip(<span class="c-str">"="</span>)
+    digest    = hashlib.sha256(verifier.encode(<span class="c-str">"ascii"</span>)).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode().rstrip(<span class="c-str">"="</span>)
+    <span class="c-key">return</span> verifier, challenge
+
+<span class="c-com"># `secrets`, never `random` — the verifier is the only thing stopping</span>
+<span class="c-com"># someone who intercepts the code from redeeming it.</span>
+
+<span class="c-com"># Verify state in constant time before touching the code.</span>
+<span class="c-key">if not</span> secrets.compare_digest(returned_state, expected_state):
+    <span class="c-key">raise</span> OAuthError(<span class="c-str">"state_mismatch"</span>, <span class="c-str">"Possible CSRF; discarding the code."</span>)
+
+tokens = exchange_code(code, verifier)     <span class="c-com"># POST /oauth2/token, no client_secret</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">import</span> { createHash, randomBytes, timingSafeEqual } <span class="c-key">from</span> <span class="c-str">'node:crypto'</span>;
+
+<span class="c-key">export function</span> generatePkcePair() {
+  <span class="c-key">const</span> codeVerifier  = randomBytes(<span class="c-num">32</span>).toString(<span class="c-str">'base64url'</span>);
+  <span class="c-key">const</span> codeChallenge = createHash(<span class="c-str">'sha256'</span>).update(codeVerifier).digest(<span class="c-str">'base64url'</span>);
+  <span class="c-key">return</span> { codeVerifier, codeChallenge };
+}
+
+<span class="c-com">// Constant-time compare on `state`.</span>
+<span class="c-key">function</span> safeEqual(a = <span class="c-str">''</span>, b = <span class="c-str">''</span>) {
+  <span class="c-key">const</span> x = Buffer.from(a), y = Buffer.from(b);
+  <span class="c-key">return</span> x.length === y.length &amp;&amp; timingSafeEqual(x, y);
+}
+
+<span class="c-key">const</span> tokens = <span class="c-key">await</span> exchangeCode(code, codeVerifier);</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code><span class="c-key">public static</span> PkcePair generatePkcePair() {
+    <span class="c-key">byte</span>[] entropy = <span class="c-key">new byte</span>[<span class="c-num">32</span>];
+    RANDOM.nextBytes(entropy);                     <span class="c-com">// SecureRandom</span>
+    String verifier = b64url(entropy);
+
+    <span class="c-key">byte</span>[] digest = MessageDigest.getInstance(<span class="c-str">"SHA-256"</span>)
+            .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+    <span class="c-key">return new</span> PkcePair(verifier, b64url(digest));
+}
+
+<span class="c-key">private static</span> String b64url(<span class="c-key">byte</span>[] raw) {
+    <span class="c-key">return</span> Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+}
+
+<span class="c-com">// Constant-time compare on `state`.</span>
+<span class="c-key">if</span> (!MessageDigest.isEqual(returned.getBytes(UTF_8), expected.getBytes(UTF_8))) {
+    <span class="c-key">throw new</span> OAuthException(<span class="c-str">"state_mismatch"</span>, <span class="c-str">"Possible CSRF."</span>);
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="danger">
+      <span class="lbl">Refresh with rotation — the shape all three share</span>
+      <p>
+        Persist the new refresh token <strong>before</strong> using the new access token, and
+        write it atomically. On <code>invalid_grant</code>, stop retrying and re-authorize —
+        the token is revoked, expired, or already spent. Serialize concurrent refreshes behind
+        a lock, or two threads will trip reuse detection and revoke the family.
+      </p>
+    </div>
+
+    <h2 id="accounts">Reading balances and positions</h2>
+
+    <p>
+      Note that all three follow the <code>balances</code> link rather than building the URL,
+      and all three parse money into an exact decimal type.
+    </p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-key">from</span> decimal <span class="c-key">import</span> Decimal
+<span class="c-key">from</span> brokerage_client <span class="c-key">import</span> BrokerageClient
+
+client   = BrokerageClient()
+account  = client.get(<span class="c-str">"/accounts"</span>)[<span class="c-str">"items"</span>][<span class="c-num">0</span>]
+
+<span class="c-com"># HATEOAS: follow the link, never concatenate the URL.</span>
+balances = client.follow(account, <span class="c-str">"balances"</span>)
+
+<span class="c-key">print</span>(<span class="c-str">f"Net liquidation: {Decimal(balances['netLiquidation']):,.2f}"</span>)
+<span class="c-key">print</span>(<span class="c-str">f"Stock BP:        {Decimal(balances['buyingPower']['stock']):,.2f}"</span>)
+<span class="c-key">print</span>(<span class="c-str">f"Option BP:       {Decimal(balances['buyingPower']['option']):,.2f}"</span>)
+
+<span class="c-com"># A margin call is the one balance field worth alerting on.</span>
+<span class="c-key">if</span> (call := (balances.get(<span class="c-str">"margin"</span>) <span class="c-key">or</span> {}).get(<span class="c-str">"marginCall"</span>)):
+    alert(<span class="c-str">f"{call['type']}: {call['amount']} due {call['dueDate']}"</span>)
+
+<span class="c-com"># paginate() follows `next` links; it never constructs a cursor.</span>
+total = sum(Decimal(p[<span class="c-str">"unrealizedPnl"</span>])
+            <span class="c-key">for</span> p <span class="c-key">in</span> client.paginate(client.link(account, <span class="c-str">"positions"</span>)))
+<span class="c-key">print</span>(<span class="c-str">f"Unrealized: {total:,.2f}"</span>)</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">import</span> { BrokerageClient, Dec } <span class="c-key">from</span> <span class="c-str">'./brokerage-client.mjs'</span>;
+
+<span class="c-key">const</span> client = <span class="c-key">new</span> BrokerageClient();
+<span class="c-key">const</span> { items } = <span class="c-key">await</span> client.get(<span class="c-str">'/accounts'</span>);
+<span class="c-key">const</span> account = items[<span class="c-num">0</span>];
+
+<span class="c-key">const</span> balances = <span class="c-key">await</span> client.follow(account, <span class="c-str">'balances'</span>);
+
+console.log(<span class="c-str">`Net liquidation: ${Dec.format(balances.netLiquidation)}`</span>);
+console.log(<span class="c-str">`Stock BP:        ${Dec.format(balances.buyingPower.stock)}`</span>);
+
+<span class="c-com">// Dec keeps values as strings and does exact arithmetic over BigInt.</span>
+<span class="c-com">// Number('412.50') parses fine; Number arithmetic is what drifts.</span>
+<span class="c-key">let</span> total = <span class="c-str">'0'</span>;
+<span class="c-key">for await</span> (<span class="c-key">const</span> p <span class="c-key">of</span> client.paginate(client.link(account, <span class="c-str">'positions'</span>))) {
+  total = Dec.add(total, p.unrealizedPnl);
+}
+console.log(<span class="c-str">`Unrealized: ${Dec.format(total)}`</span>);</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code>BrokerageClient client = <span class="c-key">new</span> BrokerageClient();
+JsonNode account  = client.get(<span class="c-str">"/accounts"</span>).path(<span class="c-str">"items"</span>).get(<span class="c-num">0</span>);
+
+JsonNode balances = client.follow(account, <span class="c-str">"balances"</span>);
+
+System.out.printf(<span class="c-str">"Net liquidation: %,14.2f%n"</span>, decimal(balances, <span class="c-str">"netLiquidation"</span>));
+System.out.printf(<span class="c-str">"Stock BP:        %,14.2f%n"</span>, decimal(balances, <span class="c-str">"buyingPower"</span>, <span class="c-str">"stock"</span>));
+
+BigDecimal total = client
+        .paginate(client.linkOrThrow(account, <span class="c-str">"positions"</span>), Options.none())
+        .map(p -&gt; decimal(p, <span class="c-str">"unrealizedPnl"</span>))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+System.out.printf(<span class="c-str">"Unrealized: %,.2f%n"</span>, total);</code></pre>
+      </div>
+    </div>
+
+    <h2 id="stock">Placing a stock order</h2>
+
+    <p>
+      Generate the key once, preview, submit with the key, then confirm terminal state
+      separately.
+    </p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code>order = {
+    <span class="c-str">"assetClass"</span>:   <span class="c-str">"EQUITY"</span>,
+    <span class="c-str">"side"</span>:         <span class="c-str">"BUY"</span>,
+    <span class="c-str">"instrumentId"</span>: resolve_equity(client, <span class="c-str">"MSFT"</span>)[<span class="c-str">"instrumentId"</span>],
+    <span class="c-str">"quantity"</span>:     <span class="c-str">"300"</span>,           <span class="c-com"># strings, never floats</span>
+    <span class="c-str">"orderType"</span>:    <span class="c-str">"LIMIT"</span>,
+    <span class="c-str">"limitPrice"</span>:   <span class="c-str">"412.50"</span>,
+    <span class="c-str">"timeInForce"</span>:  <span class="c-str">"DAY"</span>,
+}
+
+result = client.post(<span class="c-str">f"{account_url}/orders/preview"</span>, order)
+<span class="c-key">if not</span> result[<span class="c-str">"valid"</span>]:
+    <span class="c-key">for</span> w <span class="c-key">in</span> result[<span class="c-str">"warnings"</span>]:
+        <span class="c-key">print</span>(<span class="c-str">f"[{w['severity']}] {w['message']}"</span>)
+    <span class="c-key">return</span>
+
+<span class="c-com"># Generated ONCE, outside the client's retry loop. Regenerating it inside</span>
+<span class="c-com"># the loop is the exact bug idempotency exists to prevent.</span>
+key    = client.new_idempotency_key()
+placed = client.post(<span class="c-str">f"{account_url}/orders"</span>, order, idempotency_key=key)
+
+<span class="c-key">print</span>(placed[<span class="c-str">"orderId"</span>], placed[<span class="c-str">"status"</span>])   <span class="c-com"># NEW — routed, not filled</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">const</span> order = {
+  assetClass: <span class="c-str">'EQUITY'</span>,
+  side: <span class="c-str">'BUY'</span>,
+  instrumentId: (<span class="c-key">await</span> resolveEquity(client, <span class="c-str">'MSFT'</span>)).instrumentId,
+  quantity: <span class="c-str">'300'</span>,
+  orderType: <span class="c-str">'LIMIT'</span>,
+  limitPrice: <span class="c-str">'412.50'</span>,
+  timeInForce: <span class="c-str">'DAY'</span>,
+};
+
+<span class="c-key">const</span> preview = <span class="c-key">await</span> client.post(<span class="c-str">`${accountUrl}/orders/preview`</span>, order);
+<span class="c-key">if</span> (!preview.valid) {
+  preview.warnings.forEach(w =&gt; console.log(<span class="c-str">`[${w.severity}] ${w.message}`</span>));
+  <span class="c-key">return</span>;
+}
+
+<span class="c-key">const</span> idempotencyKey = client.newIdempotencyKey();
+<span class="c-key">const</span> placed = <span class="c-key">await</span> client.post(<span class="c-str">`${accountUrl}/orders`</span>, order, { idempotencyKey });
+
+console.log(placed.orderId, placed.status);   <span class="c-com">// NEW — routed, not filled</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code>ObjectNode order = MAPPER.createObjectNode();
+order.put(<span class="c-str">"assetClass"</span>,   <span class="c-str">"EQUITY"</span>);
+order.put(<span class="c-str">"side"</span>,         <span class="c-str">"BUY"</span>);
+order.put(<span class="c-str">"instrumentId"</span>, resolveEquity(client, <span class="c-str">"MSFT"</span>).path(<span class="c-str">"instrumentId"</span>).asText());
+order.put(<span class="c-str">"quantity"</span>,     <span class="c-str">"300"</span>);
+order.put(<span class="c-str">"orderType"</span>,    <span class="c-str">"LIMIT"</span>);
+order.put(<span class="c-str">"limitPrice"</span>,   <span class="c-str">"412.50"</span>);
+order.put(<span class="c-str">"timeInForce"</span>,  <span class="c-str">"DAY"</span>);
+
+JsonNode preview = client.post(accountUrl + <span class="c-str">"/orders/preview"</span>, order, Options.none());
+<span class="c-key">if</span> (!preview.path(<span class="c-str">"valid"</span>).asBoolean()) {
+    preview.path(<span class="c-str">"warnings"</span>).forEach(w -&gt; System.out.println(w.path(<span class="c-str">"message"</span>).asText()));
+    <span class="c-key">return</span>;
+}
+
+String key = BrokerageClient.newIdempotencyKey();
+JsonNode placed = client.post(accountUrl + <span class="c-str">"/orders"</span>, order,
+                              Options.none().idempotencyKey(key));
+
+System.out.println(placed.path(<span class="c-str">"orderId"</span>).asText() + <span class="c-str">" "</span> + placed.path(<span class="c-str">"status"</span>).asText());</code></pre>
+      </div>
+    </div>
+
+    <h2 id="options">Placing a multi-leg option order</h2>
+
+    <p>A ten-lot vertical debit spread — twenty contracts — priced as one unit.</p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code>long_leg  = resolve_option(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"250.00"</span>, <span class="c-str">"CALL"</span>)
+short_leg = resolve_option(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"260.00"</span>, <span class="c-str">"CALL"</span>)
+
+order = {
+    <span class="c-str">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+    <span class="c-str">"strategy"</span>:   <span class="c-str">"VERTICAL"</span>,   <span class="c-com"># this is what gets spread margin applied</span>
+    <span class="c-str">"legs"</span>: [
+        {<span class="c-str">"instrumentId"</span>: long_leg[<span class="c-str">"instrumentId"</span>],  <span class="c-str">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-str">"ratio"</span>: <span class="c-num">1</span>},
+        {<span class="c-str">"instrumentId"</span>: short_leg[<span class="c-str">"instrumentId"</span>], <span class="c-str">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-str">"ratio"</span>: <span class="c-num">1</span>},
+    ],
+    <span class="c-str">"quantity"</span>:    <span class="c-str">"10"</span>,          <span class="c-com"># 10 SPREADS = 20 contracts</span>
+    <span class="c-str">"orderType"</span>:   <span class="c-str">"NET_DEBIT"</span>,
+    <span class="c-str">"netPrice"</span>:    <span class="c-str">"3.15"</span>,        <span class="c-com"># always positive</span>
+    <span class="c-str">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,       <span class="c-com"># direction lives here, not in the sign</span>
+    <span class="c-str">"timeInForce"</span>: <span class="c-str">"DAY"</span>,
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">const</span> [longLeg, shortLeg] = <span class="c-key">await</span> Promise.all([
+  resolveOption(client, <span class="c-str">'AAPL'</span>, <span class="c-str">'2026-12-18'</span>, <span class="c-str">'250.00'</span>, <span class="c-str">'CALL'</span>),
+  resolveOption(client, <span class="c-str">'AAPL'</span>, <span class="c-str">'2026-12-18'</span>, <span class="c-str">'260.00'</span>, <span class="c-str">'CALL'</span>),
+]);
+
+<span class="c-key">const</span> order = {
+  assetClass: <span class="c-str">'OPTION'</span>,
+  strategy: <span class="c-str">'VERTICAL'</span>,          <span class="c-com">// this is what gets spread margin applied</span>
+  legs: [
+    { instrumentId: longLeg.instrumentId,  side: <span class="c-str">'BUY_TO_OPEN'</span>,  ratio: <span class="c-num">1</span> },
+    { instrumentId: shortLeg.instrumentId, side: <span class="c-str">'SELL_TO_OPEN'</span>, ratio: <span class="c-num">1</span> },
+  ],
+  quantity: <span class="c-str">'10'</span>,               <span class="c-com">// 10 SPREADS = 20 contracts</span>
+  orderType: <span class="c-str">'NET_DEBIT'</span>,
+  netPrice: <span class="c-str">'3.15'</span>,             <span class="c-com">// always positive</span>
+  priceEffect: <span class="c-str">'DEBIT'</span>,          <span class="c-com">// direction lives here, not in the sign</span>
+  timeInForce: <span class="c-str">'DAY'</span>,
+};</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code>JsonNode longLeg  = resolveOption(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"250.00"</span>, <span class="c-str">"CALL"</span>);
+JsonNode shortLeg = resolveOption(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"260.00"</span>, <span class="c-str">"CALL"</span>);
+
+ObjectNode order = MAPPER.createObjectNode();
+order.put(<span class="c-str">"assetClass"</span>, <span class="c-str">"OPTION"</span>);
+order.put(<span class="c-str">"strategy"</span>,   <span class="c-str">"VERTICAL"</span>);   <span class="c-com">// gets spread margin applied</span>
+
+ArrayNode legs = order.putArray(<span class="c-str">"legs"</span>);
+legs.add(leg(longLeg.path(<span class="c-str">"instrumentId"</span>).asText(),  <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-num">1</span>));
+legs.add(leg(shortLeg.path(<span class="c-str">"instrumentId"</span>).asText(), <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-num">1</span>));
+
+order.put(<span class="c-str">"quantity"</span>,    <span class="c-str">"10"</span>);          <span class="c-com">// 10 SPREADS = 20 contracts</span>
+order.put(<span class="c-str">"orderType"</span>,   <span class="c-str">"NET_DEBIT"</span>);
+order.put(<span class="c-str">"netPrice"</span>,    <span class="c-str">"3.15"</span>);        <span class="c-com">// always positive</span>
+order.put(<span class="c-str">"priceEffect"</span>, <span class="c-str">"DEBIT"</span>);
+order.put(<span class="c-str">"timeInForce"</span>, <span class="c-str">"DAY"</span>);</code></pre>
+      </div>
+    </div>
+
+    <h2 id="amend">Amend and cancel with optimistic concurrency</h2>
+
+    <p>
+      Read, check the affordance, mutate with <code>If-Match</code>, and handle
+      <span class="status-pill s-4xx">412</span> by re-reading rather than blind-retrying.
+    </p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-key">def</span> amend_order(client, order, new_price):
+    self_url       = client.link(order, <span class="c-str">"self"</span>)
+    fresh, headers = client.get_with_headers(self_url)
+
+    <span class="c-com"># Branch on the link, not on the status string.</span>
+    <span class="c-key">if not</span> client.can(fresh, <span class="c-str">"replace"</span>):
+        <span class="c-key">return</span> fresh
+
+    <span class="c-key">try</span>:
+        <span class="c-key">return</span> client.patch(self_url, {<span class="c-str">"limitPrice"</span>: new_price},
+                            if_match=headers.get(<span class="c-str">"ETag"</span>))
+    <span class="c-key">except</span> ApiError <span class="c-key">as</span> exc:
+        <span class="c-key">if</span> exc.status != <span class="c-num">412</span>:
+            <span class="c-key">raise</span>
+        <span class="c-com"># Changed while we were deciding. Re-read and decide again —</span>
+        <span class="c-com"># never retry with the newer ETag unexamined.</span>
+        <span class="c-key">return</span> client.get(self_url)</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">export async function</span> amendOrder(client, order, newPrice) {
+  <span class="c-key">const</span> selfUrl = client.link(order, <span class="c-str">'self'</span>);
+  <span class="c-key">const</span> { body: fresh, headers } = <span class="c-key">await</span> client.getWithHeaders(selfUrl);
+
+  <span class="c-com">// Branch on the link, not on the status string.</span>
+  <span class="c-key">if</span> (!client.can(fresh, <span class="c-str">'replace'</span>)) <span class="c-key">return</span> fresh;
+
+  <span class="c-key">try</span> {
+    <span class="c-key">return await</span> client.patch(selfUrl, { limitPrice: newPrice },
+                                   { ifMatch: headers.get(<span class="c-str">'ETag'</span>) });
+  } <span class="c-key">catch</span> (err) {
+    <span class="c-key">if</span> (!(err <span class="c-key">instanceof</span> ApiError) || err.status !== <span class="c-num">412</span>) <span class="c-key">throw</span> err;
+    <span class="c-key">return</span> client.get(selfUrl);   <span class="c-com">// re-read, then decide again</span>
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code>Response current = client.getWithHeaders(selfUrl, Options.none());
+JsonNode fresh   = current.body();
+
+<span class="c-com">// Branch on the link, not on the status string.</span>
+<span class="c-key">if</span> (!can(fresh, <span class="c-str">"replace"</span>)) <span class="c-key">return</span> fresh;
+
+<span class="c-key">try</span> {
+    ObjectNode patch = MAPPER.createObjectNode();
+    patch.put(<span class="c-str">"limitPrice"</span>, newPrice);
+    <span class="c-key">return</span> client.patch(selfUrl, patch,
+                        Options.none().ifMatch(current.headers().etag()));
+} <span class="c-key">catch</span> (ApiException e) {
+    <span class="c-key">if</span> (e.status() != <span class="c-num">412</span>) <span class="c-key">throw</span> e;
+    <span class="c-key">return</span> client.get(selfUrl);      <span class="c-com">// re-read, then decide again</span>
+}</code></pre>
+      </div>
+    </div>
+
+    <h2 id="streaming">Consuming the order event stream</h2>
+
+    <p>
+      The Node client ships a complete SSE consumer. It reconnects automatically, resumes from
+      <code>Last-Event-ID</code>, skips heartbeat comments, and reassembles multi-line
+      <code>data:</code> fields.
+    </p>
+
+<pre><code><span class="c-key">const</span> controller = <span class="c-key">new</span> AbortController();
+setTimeout(() =&gt; controller.abort(), <span class="c-num">30_000</span>);
+
+<span class="c-key">const</span> seen = <span class="c-key">new</span> Set();
+<span class="c-key">for await</span> (<span class="c-key">const</span> event <span class="c-key">of</span> client.streamOrderEvents(account, { signal: controller.signal })) {
+  <span class="c-com">// Delivery is at-least-once; dedupe on eventId.</span>
+  <span class="c-key">if</span> (seen.has(event.eventId)) <span class="c-key">continue</span>;
+  seen.add(event.eventId);
+
+  <span class="c-key">if</span> (event.eventType === <span class="c-str">'execution'</span>) {
+    <span class="c-key">const</span> fill = event.execution;
+    console.log(<span class="c-str">`fill ${event.orderId}: ${fill.quantity} @ ${fill.price} → ${event.status}`</span>);
+  } <span class="c-key">else</span> {
+    console.log(<span class="c-str">`${event.eventType} ${event.orderId} → ${event.status}`</span>);
+  }
+}</code></pre>
+
+    <div class="next-prev">
+      <a href="trading.html"><span class="dir">Previous</span><span class="ttl">← Trading</span></a>
+      <a class="nxt" href="reference.html"><span class="dir">Next</span><span class="ttl">Endpoint reference →</span></a>
+    </div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"></nav>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>Brokerage API</strong> · v1.0.0 · Developer Portal</div>
+    <div><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0</a> · <a href="errors.html">Errors</a> · <a href="reference.html">Reference</a></div>
+  </div>
+</footer>
+
+<script src="assets/portal.js"></script>
+</body>
+</html>

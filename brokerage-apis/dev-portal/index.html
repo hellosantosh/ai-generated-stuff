@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brokerage API — Developer Portal</title>
+<meta name="description" content="REST API for brokerage accounts, positions, order status, transaction history, and stock and options trading. OAuth 2.1 with PKCE.">
+<link rel="stylesheet" href="assets/portal.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231f4f8f'/><text x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>B</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menu-toggle" type="button" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="index.html">
+    <span class="mark">B</span> Brokerage API <span class="ver">v1</span>
+  </a>
+  <nav class="topnav">
+    <a href="index.html" class="active">Overview</a>
+    <a href="authentication.html">Authentication</a>
+    <a href="accounts.html">Accounts</a>
+    <a href="trading.html">Trading</a>
+    <a href="examples.html">Examples</a>
+    <a href="reference.html">Reference</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h4>Get started</h4>
+    <ul>
+      <li><a href="index.html" class="active">Overview</a></li>
+      <li><a href="#quickstart">Quickstart</a></li>
+      <li><a href="#environments">Environments</a></li>
+      <li><a href="#conventions">Conventions</a></li>
+      <li><a href="#scope">What's covered</a></li>
+    </ul>
+    <h4>Guides</h4>
+    <ul>
+      <li><a href="authentication.html">Authentication</a></li>
+      <li><a href="accounts.html">Accounts</a></li>
+      <li><a href="trading.html">Trading</a></li>
+      <li><a href="examples.html">Code examples</a></li>
+    </ul>
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference.html">Endpoint reference</a></li>
+      <li><a href="errors.html">Errors &amp; status codes</a></li>
+      <li><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0 (YAML)</a></li>
+      <li><a href="openapi/brokerage-api.json">OpenAPI 3.2.0 (JSON)</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section class="hero">
+      <h1>Build on the Brokerage API</h1>
+      <p>
+        Read accounts, positions, and settled activity. Place and manage stock and
+        options orders. Authorize with OAuth&nbsp;2.1 and PKCE — never with a customer's
+        password.
+      </p>
+      <div class="cta">
+        <a class="primary" href="authentication.html">Start with authorization →</a>
+        <a href="reference.html">Endpoint reference</a>
+        <a href="openapi/brokerage-api.yaml">OpenAPI spec</a>
+      </div>
+    </section>
+
+    <div class="card-grid">
+      <a class="card" href="authentication.html">
+        <span class="ico">🔐</span>
+        <h3>Authentication</h3>
+        <p>OAuth 2.1 authorization code flow with PKCE, refresh token rotation, scopes, and DPoP.</p>
+      </a>
+      <a class="card" href="accounts.html">
+        <span class="ico">📊</span>
+        <h3>Accounts</h3>
+        <p>Account list, balances and buying power, positions, order status, and transaction history.</p>
+      </a>
+      <a class="card" href="trading.html">
+        <span class="ico">📈</span>
+        <h3>Trading</h3>
+        <p>Stock and multi-leg options orders, preview, amend, cancel, and the order event stream.</p>
+      </a>
+      <a class="card" href="examples.html">
+        <span class="ico">⌨️</span>
+        <h3>Code examples</h3>
+        <p>Runnable Java, Node.js, and Python. No SDK required — these use each language's standard client.</p>
+      </a>
+    </div>
+
+    <h2 id="quickstart">Quickstart</h2>
+
+    <p>
+      Five minutes from nothing to a list of accounts. Everything below runs against the
+      sandbox, which is funded with paper money and behaves like production.
+    </p>
+
+    <h3 id="qs-1">1 · Authorize</h3>
+
+    <p>
+      Send the customer to the authorization server with a PKCE challenge. There is no
+      client secret — PKCE does that work, and a secret shipped in a client binary is not
+      a secret.
+    </p>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-com"># pkce_auth.py — full source in examples/python/</span>
+<span class="c-key">import</span> base64, hashlib, secrets, urllib.parse
+
+verifier  = base64.urlsafe_b64encode(secrets.token_bytes(<span class="c-num">32</span>)).decode().rstrip(<span class="c-str">"="</span>)
+challenge = base64.urlsafe_b64encode(
+    hashlib.sha256(verifier.encode(<span class="c-str">"ascii"</span>)).digest()).decode().rstrip(<span class="c-str">"="</span>)
+
+params = {
+    <span class="c-str">"response_type"</span>:         <span class="c-str">"code"</span>,
+    <span class="c-str">"client_id"</span>:             CLIENT_ID,
+    <span class="c-str">"redirect_uri"</span>:          <span class="c-str">"http://127.0.0.1:8723/callback"</span>,
+    <span class="c-str">"scope"</span>:                 <span class="c-str">"accounts:read positions:read orders:read offline_access"</span>,
+    <span class="c-str">"state"</span>:                 secrets.token_urlsafe(<span class="c-num">16</span>),
+    <span class="c-str">"code_challenge"</span>:        challenge,
+    <span class="c-str">"code_challenge_method"</span>: <span class="c-str">"S256"</span>,
+}
+<span class="c-key">print</span>(<span class="c-str">"https://auth.brokerage.example.com/oauth2/authorize?"</span>
+      + urllib.parse.urlencode(params))</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-com">// pkce-auth.mjs — full source in examples/node/</span>
+<span class="c-key">import</span> { createHash, randomBytes } <span class="c-key">from</span> <span class="c-str">'node:crypto'</span>;
+
+<span class="c-key">const</span> codeVerifier  = randomBytes(<span class="c-num">32</span>).toString(<span class="c-str">'base64url'</span>);
+<span class="c-key">const</span> codeChallenge = createHash(<span class="c-str">'sha256'</span>).update(codeVerifier).digest(<span class="c-str">'base64url'</span>);
+
+<span class="c-key">const</span> params = <span class="c-key">new</span> URLSearchParams({
+  response_type: <span class="c-str">'code'</span>,
+  client_id: CLIENT_ID,
+  redirect_uri: <span class="c-str">'http://127.0.0.1:8723/callback'</span>,
+  scope: <span class="c-str">'accounts:read positions:read orders:read offline_access'</span>,
+  state: randomBytes(<span class="c-num">16</span>).toString(<span class="c-str">'base64url'</span>),
+  code_challenge: codeChallenge,
+  code_challenge_method: <span class="c-str">'S256'</span>,
+});
+
+console.log(<span class="c-str">`https://auth.brokerage.example.com/oauth2/authorize?${params}`</span>);</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code><span class="c-com">// PkceAuth.java — full source in examples/java/</span>
+<span class="c-key">byte</span>[] entropy = <span class="c-key">new byte</span>[<span class="c-num">32</span>];
+<span class="c-key">new</span> SecureRandom().nextBytes(entropy);
+String verifier = Base64.getUrlEncoder().withoutPadding().encodeToString(entropy);
+
+<span class="c-key">byte</span>[] digest = MessageDigest.getInstance(<span class="c-str">"SHA-256"</span>)
+        .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+String challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+
+String url = <span class="c-str">"https://auth.brokerage.example.com/oauth2/authorize"</span>
+        + <span class="c-str">"?response_type=code&amp;client_id="</span> + CLIENT_ID
+        + <span class="c-str">"&amp;redirect_uri="</span> + enc(REDIRECT_URI)
+        + <span class="c-str">"&amp;scope="</span> + enc(<span class="c-str">"accounts:read positions:read orders:read offline_access"</span>)
+        + <span class="c-str">"&amp;state="</span> + state
+        + <span class="c-str">"&amp;code_challenge="</span> + challenge
+        + <span class="c-str">"&amp;code_challenge_method=S256"</span>;</code></pre>
+      </div>
+    </div>
+
+    <h3 id="qs-2">2 · Exchange the code</h3>
+
+<pre><code>POST https://auth.brokerage.example.com/oauth2/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;code=SplxlOBeZQQYbYS6WxSbIA
+&amp;redirect_uri=http%3A%2F%2F127.0.0.1%3A8723%2Fcallback
+&amp;client_id=your-client-id
+&amp;code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk
+
+<span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"access_token"</span>:  <span class="c-str">"eyJhbGciOiJSUzI1NiIs…"</span>,
+  <span class="c-key">"token_type"</span>:    <span class="c-str">"Bearer"</span>,
+  <span class="c-key">"expires_in"</span>:    <span class="c-num">900</span>,
+  <span class="c-key">"refresh_token"</span>: <span class="c-str">"v1.MTo3ZjNhOWIyYy0…"</span>,
+  <span class="c-key">"scope"</span>:         <span class="c-str">"accounts:read positions:read orders:read offline_access"</span> }</code></pre>
+
+    <div class="note">
+      <span class="lbl">Read the granted scope</span>
+      <p>
+        The returned <code>scope</code> may be <strong>narrower</strong> than what you asked
+        for — the customer can decline individual permissions. Drive your UI from what was
+        granted, not from what you requested.
+      </p>
+    </div>
+
+    <h3 id="qs-3">3 · Call the API</h3>
+
+    <div class="tabs" data-sync="lang">
+      <div class="tab-strip" role="tablist" aria-label="Language">
+        <button data-lang="python" role="tab" aria-selected="true">Python</button>
+        <button data-lang="node"   role="tab" aria-selected="false">Node.js</button>
+        <button data-lang="java"   role="tab" aria-selected="false">Java</button>
+        <button data-lang="curl"   role="tab" aria-selected="false">curl</button>
+      </div>
+
+      <div class="tab-panel" data-lang="python" role="tabpanel">
+<pre><code><span class="c-key">from</span> brokerage_client <span class="c-key">import</span> BrokerageClient
+<span class="c-key">from</span> decimal <span class="c-key">import</span> Decimal
+
+client   = BrokerageClient()                <span class="c-com"># defaults to sandbox</span>
+accounts = client.get(<span class="c-str">"/accounts"</span>)[<span class="c-str">"items"</span>]
+account  = accounts[<span class="c-num">0</span>]
+
+<span class="c-com"># Follow the link. Never build the URL by hand.</span>
+balances = client.follow(account, <span class="c-str">"balances"</span>)
+
+<span class="c-key">print</span>(account[<span class="c-str">"accountId"</span>], account[<span class="c-str">"type"</span>])
+<span class="c-key">print</span>(<span class="c-str">f"Net liquidation: {Decimal(balances['netLiquidation']):,.2f}"</span>)</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="node" role="tabpanel" hidden>
+<pre><code><span class="c-key">import</span> { BrokerageClient, Dec } <span class="c-key">from</span> <span class="c-str">'./brokerage-client.mjs'</span>;
+
+<span class="c-key">const</span> client = <span class="c-key">new</span> BrokerageClient();     <span class="c-com">// defaults to sandbox</span>
+<span class="c-key">const</span> { items: accounts } = <span class="c-key">await</span> client.get(<span class="c-str">'/accounts'</span>);
+<span class="c-key">const</span> account = accounts[<span class="c-num">0</span>];
+
+<span class="c-key">const</span> balances = <span class="c-key">await</span> client.follow(account, <span class="c-str">'balances'</span>);
+
+console.log(account.accountId, account.type);
+console.log(<span class="c-str">`Net liquidation: ${Dec.format(balances.netLiquidation)}`</span>);</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="java" role="tabpanel" hidden>
+<pre><code>BrokerageClient client = <span class="c-key">new</span> BrokerageClient();   <span class="c-com">// defaults to sandbox</span>
+JsonNode account = client.get(<span class="c-str">"/accounts"</span>).path(<span class="c-str">"items"</span>).get(<span class="c-num">0</span>);
+
+JsonNode balances = client.follow(account, <span class="c-str">"balances"</span>);
+
+System.out.println(account.path(<span class="c-str">"accountId"</span>).asText());
+System.out.printf(<span class="c-str">"Net liquidation: %,.2f%n"</span>,
+        BrokerageClient.decimal(balances, <span class="c-str">"netLiquidation"</span>));</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="curl" role="tabpanel" hidden>
+<pre><code>curl -s https://api.sandbox.brokerage.example.com/v1/accounts \
+     -H <span class="c-str">"Authorization: Bearer $ACCESS_TOKEN"</span> \
+     -H <span class="c-str">"Accept: application/json"</span>
+
+<span class="c-com"># Then follow the balances link from the response — do not hand-build it.</span>
+curl -s <span class="c-str">"$(…jq -r '.items[0]._links.balances.href')"</span> \
+     -H <span class="c-str">"Authorization: Bearer $ACCESS_TOKEN"</span></code></pre>
+      </div>
+    </div>
+
+    <h2 id="environments">Environments</h2>
+
+    <div class="kv-grid">
+      <div>
+        <dt>Sandbox</dt>
+        <dd>https://api.sandbox.brokerage.example.com/v1</dd>
+      </div>
+      <div>
+        <dt>Production</dt>
+        <dd>https://api.brokerage.example.com/v1</dd>
+      </div>
+      <div>
+        <dt>Authorization server</dt>
+        <dd>https://auth.brokerage.example.com</dd>
+      </div>
+    </div>
+
+    <p>
+      Sandbox uses paper money and simulates fills against a delayed book. The surface is
+      functionally identical, so anything you build and test there works in production
+      unchanged.
+    </p>
+
+    <div class="tip">
+      <span class="lbl">Make sandbox the default</span>
+      <p>
+        Configure the base URL so that <strong>sandbox is what you get when nothing is
+        set</strong>. Reaching production should require a deliberate act, not a missing
+        environment variable. Every example client here is written that way.
+      </p>
+    </div>
+
+    <h2 id="conventions">Conventions worth knowing before you start</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:22%">Convention</th><th>What it means for your code</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Hypermedia</strong></td>
+          <td>Every response carries <code>_links</code>. Follow relations rather than
+              constructing URLs, and branch on whether a link is <em>present</em> rather
+              than on a status string — a <code>FILLED</code> order simply has no
+              <code>cancel</code> link.</td>
+        </tr>
+        <tr>
+          <td><strong>Money is a string</strong></td>
+          <td>Prices and quantities arrive as decimal strings, so parse them into
+              <code>BigDecimal</code> / <code>Decimal</code> / <code>decimal.js</code>.
+              A float rounding error in a share count is a defect with a dollar value.</td>
+        </tr>
+        <tr>
+          <td><strong>Idempotency</strong></td>
+          <td>Order placement requires an <code>Idempotency-Key</code>. Generate one UUID per
+              order intent and reuse it on every retry — a timed-out order may well have
+              been accepted.</td>
+        </tr>
+        <tr>
+          <td><strong>ETags</strong></td>
+          <td>Amending or cancelling requires <code>If-Match</code>. It closes the race where
+              an order fills while you are deciding to reprice it.</td>
+        </tr>
+        <tr>
+          <td><strong>Errors</strong></td>
+          <td>RFC 9457 problem details. Branch on the <code>type</code> URI; treat
+              <code>title</code> and <code>detail</code> as display text. Log
+              <code>traceId</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Additive changes</strong></td>
+          <td>New fields, enum members, and link relations ship without a version bump.
+              Ignore unknown properties and tolerate unknown enum values.</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2 id="scope">What this API covers</h2>
+
+    <p>
+      Stock and listed equity options, for a single authenticated customer's accounts.
+      Three things are deliberately <strong>out of scope</strong> and have no endpoints here:
+    </p>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:30%">Not covered</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Institutional application process</td><td>Account opening and suitability review are a compliance workflow on human timescales, not a trading API.</td></tr>
+        <tr><td>Futures trading</td><td>Different margin model (SPAN, not Reg T), different contract identifiers, different exchange plumbing.</td></tr>
+        <tr><td>Crypto trading</td><td>Different custody model, 24/7 sessions, no settlement cycle, separate regulatory regime.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="next-prev">
+      <span></span>
+      <a class="nxt" href="authentication.html">
+        <span class="dir">Next</span>
+        <span class="ttl">Authentication →</span>
+      </a>
+    </div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"></nav>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>Brokerage API</strong> · v1.0.0 · Developer Portal</div>
+    <div>
+      <a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0</a> ·
+      <a href="errors.html">Errors</a> ·
+      <a href="reference.html">Reference</a>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/portal.js"></script>
+</body>
+</html>

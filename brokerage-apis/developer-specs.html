@@ -1,0 +1,3357 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>Brokerage REST API — Developer Specification</title>
+<style>
+/* ===================================================================
+   Print stylesheet. Targets US Letter via headless Chrome.
+   Regenerate with tools/build-pdf.sh
+   =================================================================== */
+
+/* Chrome's --print-to-pdf does not honor `@page :first`, so there is no
+   full-bleed cover available. The cover is instead sized to exactly fill the
+   content box: 279.4mm Letter height less the 22mm/20mm vertical margins. */
+@page {
+  size: letter;
+  margin: 22mm 20mm 20mm 20mm;
+}
+
+:root {
+  --ink:        #16181d;
+  --ink-soft:   #4a5058;
+  --ink-faint:  #767d87;
+  --rule:       #d9dde3;
+  --rule-soft:  #eaedf1;
+  --accent:     #1f4f8f;
+  --accent-bg:  #eef3fa;
+  --green:      #1d6b45;
+  --green-bg:   #e9f5ee;
+  --amber:      #8a5a00;
+  --amber-bg:   #fdf3e0;
+  --red:        #a32a2a;
+  --red-bg:     #fbeeee;
+  --purple:     #5b3a8e;
+  --code-bg:    #f6f7f9;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  font-family: var(--serif);
+  font-size: 10.2pt;
+  line-height: 1.52;
+  color: var(--ink);
+  margin: 0;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* --- cover ------------------------------------------------------- */
+
+.cover {
+  height: 236mm;              /* 279.4 − 22 − 20, minus a hair for rounding */
+  padding: 26mm 18mm 16mm;
+  background: linear-gradient(160deg, #12233d 0%, #1f4f8f 58%, #2d6fb8 100%);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  border-radius: 5px;
+  color: #fff;
+  page-break-after: always;
+  break-after: page;
+  display: flex;
+  flex-direction: column;
+  hyphens: none;
+  overflow: hidden;
+}
+.cover .eyebrow {
+  font-family: var(--sans);
+  font-size: 9pt;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  opacity: .72;
+  margin-bottom: 10mm;
+}
+.cover h1 {
+  font-family: var(--sans);
+  font-size: 34pt;
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 0 0 6mm;
+  border: 0;
+  color: #fff;
+}
+.cover .sub {
+  font-size: 13pt;
+  line-height: 1.5;
+  opacity: .9;
+  max-width: 118mm;
+  margin: 0 0 14mm;
+}
+.cover .rule { height: 2px; width: 44mm; background: rgba(255,255,255,.5); margin-bottom: 12mm; }
+.cover .scope {
+  font-family: var(--sans);
+  font-size: 9.5pt;
+  line-height: 1.85;
+  opacity: .88;
+}
+.cover .scope b { font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 8pt; opacity: .7; display: block; margin-bottom: 2mm; }
+.cover .meta {
+  margin-top: auto;
+  font-family: var(--sans);
+  font-size: 9pt;
+  opacity: .78;
+  line-height: 1.7;
+  border-top: 1px solid rgba(255,255,255,.25);
+  padding-top: 6mm;
+}
+.cover .meta strong { font-weight: 600; opacity: 1; }
+
+/* --- headings ---------------------------------------------------- */
+
+h1, h2, h3, h4 {
+  font-family: var(--sans);
+  color: var(--ink);
+  letter-spacing: -0.012em;
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+h1 {
+  font-size: 21pt;
+  font-weight: 650;
+  margin: 0 0 7mm;
+  padding-bottom: 3mm;
+  border-bottom: 2.5px solid var(--accent);
+  page-break-before: always;
+}
+h1 .num { color: var(--accent); margin-right: 4mm; font-variant-numeric: tabular-nums; }
+
+h2 {
+  font-size: 14pt;
+  font-weight: 620;
+  margin: 9mm 0 3.5mm;
+  padding-bottom: 1.5mm;
+  border-bottom: 1px solid var(--rule);
+}
+h2 .num { color: var(--accent); margin-right: 3mm; font-weight: 550; font-variant-numeric: tabular-nums; }
+
+h3 {
+  font-size: 11.4pt;
+  font-weight: 620;
+  margin: 6mm 0 2.5mm;
+  color: #23293180;
+  color: var(--ink);
+}
+
+h4 {
+  font-size: 10pt;
+  font-weight: 650;
+  margin: 5mm 0 2mm;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: 8.6pt;
+}
+
+p { margin: 0 0 3.2mm; orphans: 3; widows: 3; }
+
+a { color: var(--accent); text-decoration: none; }
+
+strong { font-weight: 650; }
+
+/* --- lists ------------------------------------------------------- */
+
+ul, ol { margin: 0 0 3.5mm; padding-left: 6mm; }
+li { margin-bottom: 1.4mm; orphans: 2; widows: 2; }
+li > ul, li > ol { margin-top: 1.4mm; }
+
+dl { margin: 0 0 4mm; }
+dt { font-family: var(--mono); font-size: 8.8pt; font-weight: 600; color: var(--accent); margin-top: 2.5mm; }
+dd { margin: 0.6mm 0 0 6mm; }
+
+/* --- code -------------------------------------------------------- */
+
+code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: var(--code-bg);
+  padding: 0.5mm 1.1mm;
+  border-radius: 2px;
+  border: 0.5px solid var(--rule-soft);
+  white-space: nowrap;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 7.6pt;
+  line-height: 1.45;
+  background: var(--code-bg);
+  border: 0.75px solid var(--rule);
+  border-left: 2.5px solid var(--accent);
+  border-radius: 3px;
+  padding: 3mm 3.5mm;
+  margin: 0 0 4mm;
+  overflow: visible;
+  white-space: pre-wrap;
+  word-break: break-word;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; white-space: inherit; }
+
+pre.long { page-break-inside: auto; break-inside: auto; }
+
+.lang {
+  font-family: var(--sans);
+  font-size: 7.2pt;
+  font-weight: 650;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 1.2mm;
+}
+
+/* syntax tints, applied by the build script */
+.c-key  { color: var(--purple); }
+.c-str  { color: var(--green); }
+.c-num  { color: var(--red); }
+.c-com  { color: var(--ink-faint); font-style: italic; }
+
+/* --- tables ------------------------------------------------------ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 8.4pt;
+  margin: 0 0 4.5mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+table.long { page-break-inside: auto; break-inside: auto; }
+
+th {
+  text-align: left;
+  font-weight: 650;
+  font-size: 7.6pt;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+  border-bottom: 1.5px solid var(--ink-soft);
+  padding: 1.8mm 2.2mm 1.4mm 0;
+  vertical-align: bottom;
+}
+td {
+  border-bottom: 0.5px solid var(--rule-soft);
+  padding: 1.6mm 2.2mm 1.6mm 0;
+  vertical-align: top;
+}
+td:last-child, th:last-child { padding-right: 0; }
+tbody tr:last-child td { border-bottom: 0.75px solid var(--rule); }
+td code { font-size: 8pt; white-space: normal; }
+
+/* --- endpoint blocks --------------------------------------------- */
+
+.endpoint {
+  border: 0.75px solid var(--rule);
+  border-radius: 4px;
+  padding: 3mm 3.5mm;
+  margin: 0 0 4.5mm;
+  background: #fcfcfd;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.endpoint.tall { page-break-inside: auto; break-inside: auto; }
+
+.ep-line {
+  font-family: var(--mono);
+  font-size: 9pt;
+  font-weight: 600;
+  margin-bottom: 2mm;
+  padding-bottom: 2mm;
+  border-bottom: 0.5px solid var(--rule-soft);
+  word-break: break-all;
+}
+.verb {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 7.4pt;
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: #fff;
+  padding: 0.9mm 1.8mm;
+  border-radius: 2.5px;
+  margin-right: 2.2mm;
+  vertical-align: 1.5px;
+}
+.verb.get    { background: var(--accent); }
+.verb.post   { background: var(--green); }
+.verb.patch  { background: var(--amber); }
+.verb.delete { background: var(--red); }
+.verb.query  { background: var(--purple); }
+
+.scopes {
+  font-family: var(--sans);
+  font-size: 7.8pt;
+  color: var(--ink-soft);
+  margin-bottom: 2mm;
+}
+.scopes .pill {
+  display: inline-block;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 7.2pt;
+  padding: 0.5mm 1.4mm;
+  border-radius: 2px;
+  margin-right: 1.2mm;
+}
+
+/* --- callouts ---------------------------------------------------- */
+
+.note, .warn, .danger, .tip {
+  border-left: 2.5px solid;
+  border-radius: 0 3px 3px 0;
+  padding: 2.6mm 3.2mm;
+  margin: 0 0 4mm;
+  font-size: 9.4pt;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+.note   { border-color: var(--accent); background: var(--accent-bg); }
+.tip    { border-color: var(--green);  background: var(--green-bg); }
+.warn   { border-color: var(--amber);  background: var(--amber-bg); }
+.danger { border-color: var(--red);    background: var(--red-bg); }
+
+.note   .lbl { color: var(--accent); }
+.tip    .lbl { color: var(--green); }
+.warn   .lbl { color: var(--amber); }
+.danger .lbl { color: var(--red); }
+
+.lbl {
+  font-family: var(--sans);
+  font-size: 7.4pt;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 1.2mm;
+}
+.note p:last-child, .warn p:last-child, .danger p:last-child, .tip p:last-child { margin-bottom: 0; }
+
+/* --- figures ----------------------------------------------------- */
+
+figure {
+  margin: 0 0 5mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  text-align: center;
+}
+figure svg { max-width: 100%; height: auto; }
+figcaption {
+  font-family: var(--sans);
+  font-size: 8pt;
+  color: var(--ink-faint);
+  margin-top: 1.8mm;
+  text-align: left;
+}
+figcaption b { color: var(--ink-soft); font-weight: 650; }
+
+/* --- table of contents ------------------------------------------- */
+
+.toc { page-break-after: always; padding-top: 4mm; }
+.toc h1 { page-break-before: avoid; }
+.toc ol { list-style: none; padding: 0; margin: 0; font-family: var(--sans); }
+.toc > ol > li {
+  font-size: 10.4pt;
+  font-weight: 620;
+  margin: 3.5mm 0 1mm;
+  padding-bottom: 1mm;
+  border-bottom: 0.5px solid var(--rule-soft);
+}
+.toc > ol > li > ol { font-weight: 400; font-size: 9pt; margin: 1.5mm 0 0 6mm; }
+.toc > ol > li > ol > li { margin-bottom: 0.8mm; color: var(--ink-soft); }
+.toc .tnum { color: var(--accent); font-variant-numeric: tabular-nums; display: inline-block; min-width: 9mm; }
+.toc > ol > li > ol .tnum { min-width: 11mm; }
+
+/* --- misc -------------------------------------------------------- */
+
+.lede {
+  font-size: 11.4pt;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 0.5px solid var(--rule-soft);
+}
+
+.two-col { column-count: 2; column-gap: 8mm; }
+.two-col > * { break-inside: avoid; }
+
+.kv { font-family: var(--sans); font-size: 8.6pt; }
+
+.small { font-size: 8.6pt; color: var(--ink-soft); }
+
+.avoid-break { page-break-inside: avoid; break-inside: avoid; }
+
+hr { border: 0; border-top: 0.5px solid var(--rule); margin: 6mm 0; }
+
+.status-pill {
+  font-family: var(--mono);
+  font-size: 7.4pt;
+  font-weight: 600;
+  padding: 0.5mm 1.4mm;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.s-2xx { background: var(--green-bg); color: var(--green); }
+.s-4xx { background: var(--amber-bg); color: var(--amber); }
+.s-5xx { background: var(--red-bg);   color: var(--red); }
+</style>
+</head>
+<body>
+<!-- ============================ COVER ============================ -->
+<section class="cover">
+  <div class="eyebrow">Developer Specification &middot; Version 1.0.0</div>
+  <h1>Brokerage<br>REST API</h1>
+  <div class="sub">
+    Accounts, positions, order status, transaction history, and stock&nbsp;and options trading —
+    over an OAuth&nbsp;2.1 protected, hypermedia-driven REST surface.
+  </div>
+  <div class="rule"></div>
+  <div class="scope">
+    <b>In this document</b>
+    Authentication and authorization &middot; OAuth 2.1 + PKCE<br>
+    Accounts APIs &middot; list, balances, positions, order status, transactions<br>
+    Trading APIs &middot; stock and options<br>
+    Worked examples in Java, Node.js, and Python<br>
+    OpenAPI 3.2.0 specification
+  </div>
+  <div class="meta">
+    <strong>Audience</strong> &nbsp;Internal development team<br>
+    <strong>Status</strong> &nbsp;Draft for review<br>
+    <strong>Companion portal</strong> &nbsp;<code style="color:#fff;background:rgba(255,255,255,.14);border-color:transparent">brokerage-apis/dev-portal/</code><br>
+    <strong>Machine-readable spec</strong> &nbsp;<code style="color:#fff;background:rgba(255,255,255,.14);border-color:transparent">brokerage-apis/openapi/brokerage-api.yaml</code>
+  </div>
+</section>
+
+<!-- ============================ TOC ============================== -->
+<section class="toc">
+  <h1><span class="num">&nbsp;</span>Contents</h1>
+  <ol>
+    <li><span class="tnum">1</span>Overview
+      <ol>
+        <li><span class="tnum">1.1</span>What this API is for, and what it deliberately excludes</li>
+        <li><span class="tnum">1.2</span>Environments and base URLs</li>
+        <li><span class="tnum">1.3</span>The design contract at a glance</li>
+        <li><span class="tnum">1.4</span>Reference implementations we borrowed from</li>
+      </ol>
+    </li>
+    <li><span class="tnum">2</span>Authentication and Authorization
+      <ol>
+        <li><span class="tnum">2.1</span>Why OAuth 2.1 with PKCE</li>
+        <li><span class="tnum">2.2</span>Client registration and client types</li>
+        <li><span class="tnum">2.3</span>The authorization code flow, end to end</li>
+        <li><span class="tnum">2.4</span>PKCE mechanics: verifier, challenge, and what it defends</li>
+        <li><span class="tnum">2.5</span>Exchanging the code for a bearer token</li>
+        <li><span class="tnum">2.6</span>Access tokens: structure, lifetime, and validation</li>
+        <li><span class="tnum">2.7</span>Refresh tokens, rotation, and reuse detection</li>
+        <li><span class="tnum">2.8</span>Scopes and least privilege</li>
+        <li><span class="tnum">2.9</span>Sender-constrained tokens with DPoP</li>
+        <li><span class="tnum">2.10</span>Revocation, logout, and token hygiene</li>
+        <li><span class="tnum">2.11</span>Device authorization for input-constrained clients</li>
+      </ol>
+    </li>
+    <li><span class="tnum">3</span>API Conventions
+      <ol>
+        <li><span class="tnum">3.1</span>Hypermedia and HATEOAS</li>
+        <li><span class="tnum">3.2</span>Errors: RFC 9457 problem details</li>
+        <li><span class="tnum">3.3</span>Decimals, money, and why nothing is a float</li>
+        <li><span class="tnum">3.4</span>Pagination</li>
+        <li><span class="tnum">3.5</span>Idempotency</li>
+        <li><span class="tnum">3.6</span>Optimistic concurrency with ETags</li>
+        <li><span class="tnum">3.7</span>Rate limits and backoff</li>
+        <li><span class="tnum">3.8</span>Versioning and compatibility</li>
+      </ol>
+    </li>
+    <li><span class="tnum">4</span>Accounts APIs
+      <ol>
+        <li><span class="tnum">4.1</span>Account list</li>
+        <li><span class="tnum">4.2</span>Account balances</li>
+        <li><span class="tnum">4.3</span>Account positions</li>
+        <li><span class="tnum">4.4</span>Account order status</li>
+        <li><span class="tnum">4.5</span>Account transaction history</li>
+      </ol>
+    </li>
+    <li><span class="tnum">5</span>Trading APIs
+      <ol>
+        <li><span class="tnum">5.1</span>The order lifecycle</li>
+        <li><span class="tnum">5.2</span>Placing an order safely</li>
+        <li><span class="tnum">5.3</span>Stock trading</li>
+        <li><span class="tnum">5.4</span>Options trading</li>
+        <li><span class="tnum">5.5</span>Previewing an order</li>
+        <li><span class="tnum">5.6</span>Amending and cancelling</li>
+        <li><span class="tnum">5.7</span>Streaming order events and webhooks</li>
+      </ol>
+    </li>
+    <li><span class="tnum">6</span>Code Examples
+      <ol>
+        <li><span class="tnum">6.1</span>How the examples are organized</li>
+        <li><span class="tnum">6.2</span>Authorization: PKCE in three languages</li>
+        <li><span class="tnum">6.3</span>Accounts: reading balances and positions</li>
+        <li><span class="tnum">6.4</span>Trading: placing a stock order</li>
+        <li><span class="tnum">6.5</span>Trading: placing a multi-leg option order</li>
+        <li><span class="tnum">6.6</span>Amend and cancel with optimistic concurrency</li>
+      </ol>
+    </li>
+    <li><span class="tnum">7</span>OpenAPI 3.2.0 Specification
+      <ol>
+        <li><span class="tnum">7.1</span>Where the specification lives</li>
+        <li><span class="tnum">7.2</span>What 3.2.0 gives us that 3.1 did not</li>
+        <li><span class="tnum">7.3</span>Document structure</li>
+        <li><span class="tnum">7.4</span>Validating and generating from the specification</li>
+      </ol>
+    </li>
+    <li><span class="tnum">A</span>Appendix: Error catalogue</li>
+    <li><span class="tnum">B</span>Appendix: Enumerations</li>
+    <li><span class="tnum">C</span>Appendix: Glossary</li>
+  </ol>
+</section>
+<!-- ========================= 1. OVERVIEW ========================= -->
+<h1 id="overview"><span class="num">1</span>Overview</h1>
+
+<p class="lede">
+  This document specifies a REST API for the brokerage domain: reading accounts and
+  positions, tracking orders and settled activity, and trading stocks and listed equity
+  options. It is written for the engineers who will build against it, and it states not
+  only what each endpoint does but why it was shaped that way.
+</p>
+
+<h2 id="what-for"><span class="num">1.1</span>What this API is for, and what it deliberately excludes</h2>
+
+<p>
+  The surface covers the operations a trading application actually needs on a customer's
+  behalf: enumerate their accounts, read balances and holdings, place and manage stock and
+  option orders, and reconcile what happened afterwards. Everything is scoped to a single
+  authenticated customer's grant.
+</p>
+
+<p>Three areas are intentionally out of scope, and no endpoint here touches them:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:32%">Excluded</th><th>Why, and where it belongs instead</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Institutional application process</b></td>
+      <td>Account opening, entity onboarding, and suitability review are a compliance
+          workflow, not a trading API. They are governed by different regulation, run on
+          human timescales, and carry PII this surface never handles.</td>
+    </tr>
+    <tr>
+      <td><b>Futures trading</b></td>
+      <td>Futures carry a different margin model (SPAN rather than Reg&nbsp;T), different
+          contract identifiers, and different exchange plumbing. Folding them into the same
+          order resource would compromise both.</td>
+    </tr>
+    <tr>
+      <td><b>Crypto trading</b></td>
+      <td>Different custody model, 24/7 sessions, no settlement cycle, and a separate
+          regulatory regime. It shares almost nothing with an equity order except the word
+          "buy".</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  A small <b>instruments</b> surface is included even though it was not requested, for a
+  practical reason: an option order references a contract by <code>instrumentId</code>, and
+  without a way to resolve <code>AAPL Dec-18-2026 250 Call</code> into that identifier the
+  trading endpoints cannot be used at all. It is kept minimal and marked as supporting.
+</p>
+
+<h2 id="environments"><span class="num">1.2</span>Environments and base URLs</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Environment</th><th style="width:42%">Base URL</th><th>Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Sandbox</b></td>
+      <td><code>https://api.sandbox.brokerage.example.com/v1</code></td>
+      <td>Paper money, simulated fills against a delayed book. Functionally identical
+          surface. Use it for development, conformance, and CI.</td>
+    </tr>
+    <tr>
+      <td><b>Production</b></td>
+      <td><code>https://api.brokerage.example.com/v1</code></td>
+      <td>Live orders against real money and a real customer's account.</td>
+    </tr>
+    <tr>
+      <td><b>Authorization</b></td>
+      <td><code>https://auth.brokerage.example.com</code></td>
+      <td>OAuth 2.1 authorization server. Separate host from the resource API by design.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">Recommendation</span>
+  <p>
+    Make the base URL a deployment configuration value with <b>sandbox as the default</b>, so
+    that reaching production is an explicit act rather than something a missing environment
+    variable can cause. The example clients in Section 6 are written this way.
+  </p>
+</div>
+
+<h2 id="contract"><span class="num">1.3</span>The design contract at a glance</h2>
+
+<table class="long">
+  <thead>
+    <tr><th style="width:26%">Concern</th><th>Decision</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Style</td><td>Resource-oriented REST over HTTPS with JSON representations. Nouns as paths, HTTP methods as verbs, status codes as outcomes.</td></tr>
+    <tr><td>Hypermedia</td><td>Every representation carries a <code>_links</code> map. Clients bookmark the API root and discover everything else (§3.1).</td></tr>
+    <tr><td>Authorization</td><td>OAuth 2.1 authorization code grant with mandatory PKCE (S256), optionally DPoP-bound (§2).</td></tr>
+    <tr><td>Errors</td><td>RFC 9457 <code>application/problem+json</code>, with a stable, dereferenceable <code>type</code> URI to branch on (§3.2).</td></tr>
+    <tr><td>Money and quantities</td><td>Decimal <b>strings</b> plus an ISO 4217 currency. Never IEEE-754 floats (§3.3).</td></tr>
+    <tr><td>Time</td><td>RFC 3339 timestamps, always UTC, always with an explicit offset.</td></tr>
+    <tr><td>Pagination</td><td>Opaque forward cursors, surfaced as a <code>next</code> link rather than a page number (§3.4).</td></tr>
+    <tr><td>Safe retries</td><td><code>Idempotency-Key</code> required on every unsafe, non-idempotent operation (§3.5).</td></tr>
+    <tr><td>Concurrency</td><td>Strong <code>ETag</code> plus mandatory <code>If-Match</code> on order mutation (§3.6).</td></tr>
+    <tr><td>Rate limits</td><td>RFC 9913 <code>RateLimit</code> headers; <code>Retry-After</code> on 429 (§3.7).</td></tr>
+    <tr><td>Versioning</td><td>Major version in the path (<code>/v1</code>). Additive changes ship without a bump, so clients must tolerate unknown fields and enum values (§3.8).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="references"><span class="num">1.4</span>Reference implementations we borrowed from</h2>
+
+<p>
+  Two production brokerage APIs informed this design. Where their choices are good, we
+  followed them; where they reflect history rather than intent, we did not.
+</p>
+
+<table>
+  <thead>
+    <tr><th style="width:22%">Source</th><th style="width:39%">What we adopted</th><th>What we changed</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Webull</b><br><span class="small">developer.webull.com</span></td>
+      <td>Clear separation of trading, market data, and account concerns. Explicit
+          open/close semantics on option orders. A dedicated preview step before
+          submission.</td>
+      <td>Webull authenticates with an app key and HMAC request signing. We use OAuth 2.1
+          instead, so the customer grants scoped access without the application ever
+          holding a long-lived shared secret.</td>
+    </tr>
+    <tr>
+      <td><b>Interactive Brokers</b><br><span class="small">interactivebrokers.com/docs/web-api</span></td>
+      <td>Rich order types, multi-leg combination orders priced as a unit, and a portfolio
+          model that separates ledger, positions, and summary.</td>
+      <td>IBKR relies on a stateful session that must be kept alive by periodic
+          <code>/tickle</code> calls, and on OAuth 1.0a for third parties. We use stateless
+          bearer tokens: no session to keep warm, no request signing ceremony.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">On the OAuth choice</span>
+  <p>
+    Neither reference API uses OAuth 2.1 with PKCE today. Adopting it here is a deliberate
+    departure, and Section 2.1 makes the argument for it. The short version: request signing
+    forces every integrator to hold a credential that can do everything forever, while a
+    scoped, expiring, revocable token lets a customer grant read-only access to one
+    application and full trading access to another — and take either back without changing a
+    secret.
+  </p>
+</div>
+<!-- =================== 2. AUTHENTICATION ========================= -->
+<h1 id="auth"><span class="num">2</span>Authentication and Authorization</h1>
+
+<p class="lede">
+  Every request to this API carries an OAuth 2.1 access token obtained through the
+  authorization code flow with PKCE. This section explains how to get one, how to keep it
+  fresh, and what each moving part is actually defending against.
+</p>
+
+<h2 id="why-oauth"><span class="num">2.1</span>Why OAuth 2.1 with PKCE</h2>
+
+<p>
+  Neither reference brokerage uses this scheme. Webull signs requests with an app key and
+  secret; Interactive Brokers maintains a stateful session and offers OAuth 1.0a to third
+  parties. Both work. Both also put the integrator in possession of a credential that is
+  long-lived, unscoped, and awkward to revoke without breaking every deployment at once.
+</p>
+
+<p>OAuth 2.1 changes three things that matter in a brokerage context:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:26%">Property</th><th style="width:32%">Shared-secret signing</th><th>OAuth 2.1 bearer token</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Blast radius</b></td>
+      <td>One secret, full capability, indefinite lifetime. Leak it and the attacker can
+          trade until someone notices.</td>
+      <td>15-minute access token, limited to granted scopes. Leaked read scope cannot place
+          an order.</td>
+    </tr>
+    <tr>
+      <td><b>Consent</b></td>
+      <td>Implicit. Whoever holds the secret has whatever the account has.</td>
+      <td>Explicit and per-application. The customer sees exactly which permissions they are
+          granting, and to whom.</td>
+    </tr>
+    <tr>
+      <td><b>Revocation</b></td>
+      <td>Rotate the secret, redeploy everything that used it.</td>
+      <td>Revoke one grant from a settings screen. Nothing else is affected.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  OAuth 2.1 is a consolidation of OAuth 2.0 plus a decade of security best current practice.
+  For our purposes the load-bearing changes are:
+</p>
+
+<ul>
+  <li><b>PKCE is mandatory for all clients</b>, not just public ones. Previously PKCE was a
+      mobile-app mitigation; 2.1 makes it universal because authorization codes leak through
+      more channels than anyone originally modeled — referrer headers, browser history,
+      OS-level URL handlers, and logging middleware.</li>
+  <li><b>The implicit grant is removed.</b> It returned an access token directly in a URL
+      fragment, where it landed in history and logs. There is no supported way to obtain a
+      token without a back-channel exchange.</li>
+  <li><b>The resource owner password credentials grant is removed.</b> It required the
+      application to handle the customer's actual brokerage password. We will never ask for
+      one, and neither should you.</li>
+  <li><b>Redirect URIs must match exactly</b>, by string comparison. No wildcards, no prefix
+      matching — those were reliably exploitable for code interception.</li>
+  <li><b>Bearer tokens must not travel in query strings.</b> Always the
+      <code>Authorization</code> header.</li>
+</ul>
+
+<div class="danger">
+  <span class="lbl">Never do this</span>
+  <p>
+    Do not build a screen that collects a customer's brokerage username and password and
+    replays them. That pattern — credential sharing — is what OAuth exists to eliminate. It
+    defeats multi-factor authentication, makes revocation impossible, and puts your
+    application in scope for a class of liability it does not want.
+  </p>
+</div>
+
+<h2 id="registration"><span class="num">2.2</span>Client registration and client types</h2>
+
+<p>
+  Registration yields a <code>client_id</code> and a set of exactly-matched redirect URIs.
+  Whether you also receive a credential depends on what you are building.
+</p>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Client type</th><th style="width:26%">Examples</th><th>Authentication at the token endpoint</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Public</b></td>
+      <td>Single-page apps, mobile apps, desktop apps, CLI tools</td>
+      <td><b>None.</b> PKCE alone. A secret shipped inside a binary or a JavaScript bundle is
+          not a secret — it only creates the illusion of one.</td>
+    </tr>
+    <tr>
+      <td><b>Confidential</b></td>
+      <td>Server-side web applications, backend services</td>
+      <td><code>private_key_jwt</code> — you sign a short-lived assertion with a private key
+          whose public half we hold. Preferred over a shared secret because the credential
+          never crosses the wire.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Confidential clients still use PKCE. The two protect different links in the chain: client
+  authentication proves <i>which application</i> is redeeming the code, while PKCE proves it
+  is the <i>same instance</i> that started the flow.
+</p>
+
+<h2 id="flow"><span class="num">2.3</span>The authorization code flow, end to end</h2>
+
+<p>
+  The diagram below is the whole protocol. Nothing else in this section introduces a step
+  that is not on it.
+</p>
+
+<figure>
+<svg viewBox="0 0 660 472" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Sequence diagram of the OAuth 2.1 authorization code flow with PKCE across four participants: user and browser, your application, authorization server, and brokerage API.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4f8f"/>
+    </marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d6b45"/>
+    </marker>
+  </defs>
+
+  <style>
+    .ln   { stroke:#c3c9d2; stroke-width:1.1; stroke-dasharray:3 3; }
+    .hdr  { fill:#1f4f8f; }
+    .hdr2 { fill:#12233d; }
+    .htx  { fill:#ffffff; font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .msg  { stroke:#1f4f8f; stroke-width:1.5; fill:none; }
+    .msgd { stroke:#1d6b45; stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
+    .mtx  { fill:#16181d; font:10.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .mono { fill:#16181d; font:9.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .note { fill:#eef3fa; stroke:#9fb8d8; stroke-width:1; }
+    .noteg{ fill:#e9f5ee; stroke:#8dc0a5; stroke-width:1; }
+    .ntx  { fill:#16181d; font:10px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .step { fill:#1f4f8f; font:700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  </style>
+
+  <!-- participant headers -->
+  <rect class="hdr2" x="12"  y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="72"  y="27">User + Browser</text>
+  <rect class="hdr"  x="180" y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="240" y="27">Your App</text>
+  <rect class="hdr2" x="355" y="8" width="140" height="30" rx="4"/>
+  <text class="htx"  x="425" y="27">Authorization Server</text>
+  <rect class="hdr"  x="532" y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="592" y="27">Brokerage API</text>
+
+  <!-- lifelines -->
+  <line class="ln" x1="72"  y1="42" x2="72"  y2="452"/>
+  <line class="ln" x1="240" y1="42" x2="240" y2="452"/>
+  <line class="ln" x1="425" y1="42" x2="425" y2="452"/>
+  <line class="ln" x1="592" y1="42" x2="592" y2="452"/>
+
+  <!-- 1. generate PKCE pair -->
+  <rect class="note" x="122" y="52" width="236" height="32" rx="4"/>
+  <text class="step" x="130" y="65">1</text>
+  <text class="ntx"  x="245" y="66">Generate random <tspan style="font-family:'SF Mono',monospace">code_verifier</tspan></text>
+  <text class="ntx"  x="245" y="78"><tspan style="font-family:'SF Mono',monospace">challenge = B64URL(SHA-256(verifier))</tspan></text>
+
+  <!-- 2. app -> browser -->
+  <line class="msg" x1="238" y1="112" x2="76" y2="112" marker-end="url(#ah)"/>
+  <text class="step" x="244" y="106">2</text>
+  <text class="mtx"  x="157" y="106">Open the authorization URL</text>
+
+  <!-- 3. browser -> AS -->
+  <line class="msg" x1="74" y1="146" x2="421" y2="146" marker-end="url(#ah)"/>
+  <text class="step" x="80"  y="128">3</text>
+  <text class="mono" x="250" y="128">GET /oauth2/authorize?client_id=…&amp;state=…</text>
+  <text class="mono" x="250" y="140">&amp;code_challenge=…&amp;code_challenge_method=S256</text>
+
+  <!-- 4. user consents -->
+  <rect class="note" x="312" y="162" width="226" height="32" rx="4"/>
+  <text class="step" x="320" y="175">4</text>
+  <text class="ntx"  x="428" y="176">Customer signs in, reviews the</text>
+  <text class="ntx"  x="428" y="188">requested scopes, and consents</text>
+
+  <!-- 5. AS -> browser -->
+  <line class="msg" x1="421" y1="222" x2="76" y2="222" marker-end="url(#ah)"/>
+  <text class="step" x="428" y="204">5</text>
+  <text class="mtx"  x="250" y="204">302 redirect — the code is single-use</text>
+  <text class="mono" x="250" y="216">Location: {redirect_uri}?code=…&amp;state=…</text>
+
+  <!-- 6. browser -> app -->
+  <line class="msg" x1="74" y1="250" x2="236" y2="250" marker-end="url(#ah)"/>
+  <text class="step" x="80"  y="244">6</text>
+  <text class="mtx"  x="158" y="244">Deliver code + state</text>
+
+  <!-- 7. verify state -->
+  <rect class="note" x="128" y="264" width="224" height="20" rx="4"/>
+  <text class="step" x="136" y="278">7</text>
+  <text class="ntx"  x="244" y="278">Verify <tspan style="font-family:'SF Mono',monospace">state</tspan> matches — CSRF check</text>
+
+  <!-- 8. app -> AS token -->
+  <line class="msg" x1="242" y1="316" x2="421" y2="316" marker-end="url(#ah)"/>
+  <text class="step" x="248" y="298">8</text>
+  <text class="mono" x="336" y="298">POST /oauth2/token</text>
+  <text class="mono" x="336" y="310">code + code_verifier</text>
+
+  <!-- 9. AS verifies PKCE -->
+  <rect class="noteg" x="308" y="330" width="234" height="32" rx="4"/>
+  <text class="step" x="316" y="343" style="fill:#1d6b45">9</text>
+  <text class="ntx"  x="428" y="344">Recompute SHA-256(verifier) and</text>
+  <text class="ntx"  x="428" y="356">compare against the stored challenge</text>
+
+  <!-- 10. AS -> app tokens -->
+  <line class="msgd" x1="421" y1="392" x2="244" y2="392" marker-end="url(#ahg)"/>
+  <text class="step" x="428" y="386" style="fill:#1d6b45">10</text>
+  <text class="mtx"  x="330" y="374">access_token — 15 min</text>
+  <text class="mtx"  x="330" y="386">+ refresh_token (rotating)</text>
+
+  <!-- 11. app -> API -->
+  <line class="msg" x1="242" y1="420" x2="588" y2="420" marker-end="url(#ah)"/>
+  <text class="step" x="250" y="414">11</text>
+  <text class="mono" x="416" y="414">GET /v1/accounts &nbsp; Authorization: Bearer …</text>
+
+  <!-- 12. API -> app -->
+  <line class="msgd" x1="588" y1="448" x2="244" y2="448" marker-end="url(#ahg)"/>
+  <text class="step" x="596" y="442" style="fill:#1d6b45">12</text>
+  <text class="mtx"  x="416" y="442">200 OK — resource representation with <tspan style="font-family:'SF Mono',monospace">_links</tspan></text>
+</svg>
+<figcaption>
+  <b>Figure 2.1 — Authorization code flow with PKCE.</b>
+  Steps 1, 7, and 9 are what PKCE adds to a plain authorization code exchange. The
+  authorization code in step 5 travels through the browser and is therefore assumed to be
+  observable; it is useless without the <code>code_verifier</code>, which never leaves your
+  application until step 8's back-channel POST.
+</figcaption>
+</figure>
+
+<h2 id="pkce"><span class="num">2.4</span>PKCE mechanics: verifier, challenge, and what it defends</h2>
+
+<p>
+  PKCE (RFC 7636, pronounced "pixy") binds an authorization code to the specific client
+  instance that requested it.
+</p>
+
+<h4>Generating the pair</h4>
+
+<pre><code><span class="c-com"># code_verifier — 43 to 128 characters from [A-Z a-z 0-9 - . _ ~]</span>
+<span class="c-com"># 32 random bytes, base64url-encoded without padding, yields exactly 43.</span>
+code_verifier  = BASE64URL_NOPAD(random_bytes(32))
+code_challenge = BASE64URL_NOPAD(SHA256(ASCII(code_verifier)))
+code_challenge_method = <span class="c-str">"S256"</span></code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Requirement</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td>Entropy source</td><td>A cryptographically secure RNG. <code>SecureRandom</code>, <code>secrets</code>, <code>crypto.randomBytes</code> — never <code>Math.random()</code> or a seeded PRNG.</td></tr>
+    <tr><td>Challenge method</td><td><code>S256</code> only. The <code>plain</code> method sends the verifier itself as the challenge, which defends against nothing. This server rejects it.</td></tr>
+    <tr><td>Lifetime</td><td>One verifier per authorization attempt. Never reuse one, and discard it once the code is redeemed.</td></tr>
+    <tr><td>Storage</td><td>Held only in the client instance that started the flow — session storage for a web app, memory for a native app. It is never transmitted until step 8.</td></tr>
+  </tbody>
+</table>
+
+<h4>PKCE and <code>state</code> solve different problems</h4>
+
+<p>
+  They are frequently confused, and sending only one leaves a real hole. Send both.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th style="width:38%">Attack it prevents</th><th>How</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>state</code></td>
+      <td><b>CSRF on the redirect.</b> An attacker tricks the victim's browser into
+          completing a flow that binds the attacker's account to the victim's session.</td>
+      <td>An unguessable value generated by the client, echoed back by the server, and
+          compared before the code is used.</td>
+    </tr>
+    <tr>
+      <td><code>code_verifier</code></td>
+      <td><b>Authorization code interception.</b> A malicious app registers the same custom
+          URL scheme, or the code leaks via a referrer, log, or browser history.</td>
+      <td>The code alone cannot be redeemed. The token endpoint requires the pre-image of
+          the challenge, which the interceptor never saw.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">Compare in constant time</span>
+  <p>
+    Verify <code>state</code> with a constant-time comparison
+    (<code>MessageDigest.isEqual</code>, <code>secrets.compare_digest</code>,
+    <code>crypto.timingSafeEqual</code>), not <code>==</code>. The timing leak is small, but
+    the habit is what matters — the same code path tends to get reused for comparisons where
+    it is not small.
+  </p>
+</div>
+
+<h2 id="token-exchange"><span class="num">2.5</span>Exchanging the code for a bearer token</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/token</div>
+  <div class="scopes">Content-Type: <code>application/x-www-form-urlencoded</code> &nbsp;·&nbsp; No authorization header for public clients</div>
+</div>
+
+<pre><code>POST /oauth2/token HTTP/1.1
+Host: auth.brokerage.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;code=SplxlOBeZQQYbYS6WxSbIA
+&amp;redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback
+&amp;client_id=your-client-id
+&amp;code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</code></pre>
+
+<p class="kv"><b>Success —</b> <span class="status-pill s-2xx">200 OK</span></p>
+
+<pre><code>{
+  <span class="c-key">"access_token"</span>:  <span class="c-str">"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMDgifQ…"</span>,
+  <span class="c-key">"token_type"</span>:    <span class="c-str">"Bearer"</span>,
+  <span class="c-key">"expires_in"</span>:    <span class="c-num">900</span>,
+  <span class="c-key">"refresh_token"</span>: <span class="c-str">"v1.MTo3ZjNhOWIyYy0…"</span>,
+  <span class="c-key">"scope"</span>:         <span class="c-str">"accounts:read positions:read orders:read orders:write offline_access"</span>
+}</code></pre>
+
+<div class="note">
+  <span class="lbl">Read the granted scope, do not assume it</span>
+  <p>
+    The <code>scope</code> in the response is authoritative and may be <b>narrower</b> than
+    what you requested — the customer can decline individual permissions on the consent
+    screen. Drive your UI from the granted scope. An application that hides its trade button
+    when <code>orders:write</code> was not granted is far better than one that shows it and
+    surfaces a <span class="status-pill s-4xx">403</span> later.
+  </p>
+</div>
+
+<p class="kv"><b>Failure —</b> <span class="status-pill s-4xx">400 Bad Request</span></p>
+
+<pre><code>{ <span class="c-key">"error"</span>: <span class="c-str">"invalid_grant"</span>,
+  <span class="c-key">"error_description"</span>: <span class="c-str">"Authorization code expired, already used, or PKCE verification failed."</span> }</code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Error</th><th>Usual cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>invalid_grant</code></td><td>Code expired (60 seconds), already redeemed, or the <code>code_verifier</code> does not hash to the challenge. Codes are strictly single-use.</td></tr>
+    <tr><td><code>invalid_client</code></td><td>Unknown <code>client_id</code>, or a confidential client failed authentication.</td></tr>
+    <tr><td><code>invalid_request</code></td><td>Missing <code>code_verifier</code>, or a <code>redirect_uri</code> that does not exactly match the one used in the authorize request.</td></tr>
+    <tr><td><code>unauthorized_client</code></td><td>The client is not permitted to use this grant type.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="access-tokens"><span class="num">2.6</span>Access tokens: structure, lifetime, and validation</h2>
+
+<p>
+  Access tokens are RS256-signed JWTs valid for <b>15 minutes</b>. Present one on every API
+  request:
+</p>
+
+<pre><code>GET /v1/accounts HTTP/1.1
+Host: api.brokerage.example.com
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMDgifQ…
+Accept: application/json</code></pre>
+
+<h4>Claims</h4>
+
+<pre><code>{
+  <span class="c-key">"iss"</span>: <span class="c-str">"https://auth.brokerage.example.com"</span>,   <span class="c-com">// issuer</span>
+  <span class="c-key">"sub"</span>: <span class="c-str">"user_01HQ8Z1A2B3C4D5E"</span>,                <span class="c-com">// the customer</span>
+  <span class="c-key">"aud"</span>: <span class="c-str">"https://api.brokerage.example.com"</span>,    <span class="c-com">// intended resource server</span>
+  <span class="c-key">"exp"</span>: <span class="c-num">1755443402</span>,                              <span class="c-com">// expiry, epoch seconds</span>
+  <span class="c-key">"iat"</span>: <span class="c-num">1755442502</span>,
+  <span class="c-key">"jti"</span>: <span class="c-str">"01HQ9D4N7Q1S5U8X9Z2A4C6E"</span>,            <span class="c-com">// unique id, for revocation lists</span>
+  <span class="c-key">"scope"</span>: <span class="c-str">"accounts:read orders:read orders:write"</span>,
+  <span class="c-key">"client_id"</span>: <span class="c-str">"your-client-id"</span>,
+  <span class="c-key">"accounts"</span>: [<span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>]              <span class="c-com">// accounts in scope for this grant</span>
+}</code></pre>
+
+<div class="warn">
+  <span class="lbl">If you validate tokens yourself</span>
+  <p>
+    A resource server verifying these directly must check the signature against the JWKS at
+    <code>/.well-known/jwks.json</code> (cached, keyed by <code>kid</code>), and then verify
+    <code>iss</code>, <code>aud</code>, and <code>exp</code>. Skipping the <code>aud</code>
+    check is the classic mistake: it lets a token minted for a different resource server be
+    replayed against yours.
+  </p>
+  <p>
+    A <b>client</b> should not parse the token at all. Treat it as opaque, send it, and
+    handle <span class="status-pill s-4xx">401</span>.
+  </p>
+</div>
+
+<h4>Why 15 minutes</h4>
+
+<p>
+  Short enough that a leaked token has a small window; long enough that a normal session does
+  not spend its time refreshing. The pairing matters more than the number: a short access
+  token plus a rotating refresh token gives you both a small exposure window and a session
+  that survives without re-prompting the customer.
+</p>
+
+<h2 id="refresh"><span class="num">2.7</span>Refresh tokens, rotation, and reuse detection</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/token</div>
+  <div class="scopes">Requires the <span class="pill">offline_access</span> scope to have been granted</div>
+</div>
+
+<pre><code>grant_type=refresh_token
+&amp;refresh_token=v1.MTo3ZjNhOWIyYy0…
+&amp;client_id=your-client-id</code></pre>
+
+<p>
+  Refresh tokens are opaque, valid for <b>90 days of inactivity</b>, and <b>rotate on every
+  use</b>. The response always contains a new <code>refresh_token</code>; the one you sent is
+  dead the instant the response is generated.
+</p>
+
+<figure>
+<svg viewBox="0 0 660 268" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Diagram showing refresh token rotation: RT1 exchanged for RT2, RT2 for RT3, and a stolen RT1 replay triggering revocation of the entire token family.">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4f8f"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a32a2a"/>
+    </marker>
+  </defs>
+  <style>
+    .tok  { fill:#eef3fa; stroke:#1f4f8f; stroke-width:1.4; }
+    .tokd { fill:#f1f2f4; stroke:#b9bfc8; stroke-width:1.2; stroke-dasharray:4 3; }
+    .tokr { fill:#fbeeee; stroke:#a32a2a; stroke-width:1.4; }
+    .tt   { fill:#16181d; font:600 11px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .ttd  { fill:#8a9099; font:600 11px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .cap  { fill:#4a5058; font:9.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .capr { fill:#a32a2a; font:600 9.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .fl   { stroke:#1f4f8f; stroke-width:1.6; fill:none; }
+    .flr  { stroke:#a32a2a; stroke-width:1.6; fill:none; }
+    .lane { fill:#4a5058; font:700 9px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; letter-spacing:.08em; }
+    .revk { fill:#a32a2a; font:700 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+  </style>
+
+  <text class="lane" x="12" y="34">NORMAL ROTATION</text>
+
+  <!-- RT1 -->
+  <rect class="tokd" x="60"  y="46" width="112" height="34" rx="5"/>
+  <text class="ttd"  x="116" y="68">RT₁</text>
+  <text class="cap"  x="116" y="94">issued at login</text>
+  <text class="cap"  x="116" y="106">now invalidated</text>
+
+  <!-- arrow -->
+  <line class="fl" x1="176" y1="63" x2="240" y2="63" marker-end="url(#ah2)"/>
+  <text class="cap" x="208" y="55">refresh</text>
+
+  <!-- RT2 -->
+  <rect class="tokd" x="244" y="46" width="112" height="34" rx="5"/>
+  <text class="ttd"  x="300" y="68">RT₂</text>
+  <text class="cap"  x="300" y="94">also spent</text>
+
+  <line class="fl" x1="360" y1="63" x2="424" y2="63" marker-end="url(#ah2)"/>
+  <text class="cap" x="392" y="55">refresh</text>
+
+  <!-- RT3 -->
+  <rect class="tok" x="428" y="46" width="112" height="34" rx="5"/>
+  <text class="tt"  x="484" y="68">RT₃</text>
+  <text class="cap" x="484" y="94">current — store this</text>
+
+  <!-- new access token -->
+  <line class="fl" x1="484" y1="84" x2="484" y2="112" marker-end="url(#ah2)"/>
+  <rect class="tok" x="410" y="116" width="148" height="26" rx="5"/>
+  <text class="tt"  x="484" y="134" style="font-size:10px">+ access_token (15 min)</text>
+
+  <!-- divider -->
+  <line x1="12" y1="164" x2="648" y2="164" stroke="#d9dde3" stroke-width="1"/>
+
+  <text class="lane" x="12" y="188" style="fill:#a32a2a">REUSE DETECTION</text>
+
+  <!-- stolen RT1 -->
+  <rect class="tokr" x="60"  y="200" width="112" height="34" rx="5"/>
+  <text class="tt"   x="116" y="222" style="fill:#a32a2a">RT₁</text>
+  <text class="capr" x="116" y="250">stolen copy, replayed</text>
+
+  <line class="flr" x1="176" y1="217" x2="300" y2="217" marker-end="url(#ahr)"/>
+  <text class="capr" x="238" y="209">refresh attempt</text>
+
+  <rect class="tokr" x="304" y="196" width="180" height="42" rx="5"/>
+  <text class="revk" x="394" y="212">Server sees a spent token</text>
+  <text class="revk" x="394" y="228" style="font-weight:400;font-size:10px">→ revokes the whole family</text>
+
+  <line class="flr" x1="488" y1="217" x2="546" y2="217" marker-end="url(#ahr)"/>
+
+  <rect class="tokr" x="550" y="200" width="98" height="34" rx="5"/>
+  <text class="revk" x="599" y="215" style="font-size:10px">RT₁ RT₂ RT₃</text>
+  <text class="revk" x="599" y="227" style="font-size:9px;font-weight:400">all dead</text>
+</svg>
+<figcaption>
+  <b>Figure 2.2 — Refresh token rotation and reuse detection.</b>
+  Rotation turns a stolen refresh token from an indefinite foothold into a race the attacker
+  usually loses. Whoever refreshes second presents a token the server has already seen spent,
+  and that presentation is treated as proof of compromise: the entire family is revoked and
+  the customer re-authorizes.
+</figcaption>
+</figure>
+
+<div class="danger">
+  <span class="lbl">Persist the new token before you use the new access token</span>
+  <p>
+    Rotation makes the write ordering safety-critical. If your process crashes after
+    receiving <code>RT₃</code> but before durably storing it, you hold a dead
+    <code>RT₂</code> and the customer must re-authorize. Write the new refresh token to
+    durable storage <b>first</b> — atomically, via write-to-temp-then-rename or a
+    transaction — and only then proceed. The example clients in Section 6 all do this.
+  </p>
+</div>
+
+<h4>Concurrency</h4>
+
+<p>
+  Two threads refreshing the same token simultaneously will trip reuse detection and revoke
+  the family. Serialize refresh behind a mutex, and have the losing caller wait for and reuse
+  the winner's result rather than issuing its own request. This is the single most common
+  production bug in OAuth clients with rotation enabled.
+</p>
+
+<h2 id="scopes"><span class="num">2.8</span>Scopes and least privilege</h2>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Scope</th><th>Grants</th></tr></thead>
+  <tbody>
+    <tr><td><code>accounts:read</code></td><td>The account list and account metadata. Account numbers are masked.</td></tr>
+    <tr><td><code>accounts:read:full</code></td><td>Unmasked account numbers. Subject to additional review — request it only if you have a concrete need, such as ACAT transfer initiation.</td></tr>
+    <tr><td><code>positions:read</code></td><td>Open positions, cost basis, and unrealized P&amp;L.</td></tr>
+    <tr><td><code>orders:read</code></td><td>Order status, order history, executions, and the event stream.</td></tr>
+    <tr><td><code>orders:write</code></td><td>Place, amend, and cancel stock and option orders. <b>The consequential one.</b></td></tr>
+    <tr><td><code>transactions:read</code></td><td>Transaction and settlement history.</td></tr>
+    <tr><td><code>instruments:read</code></td><td>Instrument search and option chains.</td></tr>
+    <tr><td><code>offline_access</code></td><td>Issues a refresh token. Without it, access ends when the access token expires.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">Ask for less</span>
+  <p>
+    Request the narrowest set that makes your application work, and request additional scopes
+    later through a fresh authorization when the customer reaches a feature that needs them.
+    A portfolio dashboard that asks for <code>orders:write</code> on first launch reads as a
+    red flag, and consent rates reflect that.
+  </p>
+</div>
+
+<h2 id="dpop"><span class="num">2.9</span>Sender-constrained tokens with DPoP</h2>
+
+<p>
+  A bearer token is, definitionally, usable by whoever bears it. DPoP (RFC 9449) binds a
+  token to a key pair your client holds, so a stolen token is inert without the private key.
+</p>
+
+<p>
+  Each request carries a <code>DPoP</code> proof JWT, signed with your private key, covering
+  the HTTP method and URI plus a unique nonce and timestamp:
+</p>
+
+<pre><code>GET /v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders HTTP/1.1
+Authorization: DPoP eyJhbGciOiJSUzI1NiIsInR5cCI6ImRwb3Arand0Ii…
+DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7…</code></pre>
+
+<p>
+  DPoP is <b>required</b> for <code>orders:write</code> on accounts above the institutional
+  risk threshold, and recommended for every integration that can manage a key pair. Request
+  it by including a <code>dpop_jkt</code> parameter on the authorization request; the issued
+  token then carries a <code>cnf</code> confirmation claim and will be rejected if presented
+  as a plain bearer token.
+</p>
+
+<h2 id="revocation"><span class="num">2.10</span>Revocation, logout, and token hygiene</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/revoke</div>
+</div>
+
+<pre><code>token=v1.MTo3ZjNhOWIyYy0…&amp;token_type_hint=refresh_token&amp;client_id=your-client-id</code></pre>
+
+<p>
+  Revoking a refresh token invalidates the whole family, including outstanding access tokens.
+  Returns <span class="status-pill s-2xx">200 OK</span> whether or not the token existed —
+  per RFC 7009, so the endpoint cannot be used as a token oracle.
+</p>
+
+<table>
+  <thead><tr><th style="width:30%">Practice</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td>Revoke on logout</td><td>Dropping tokens on the floor leaves a live account credential in whatever logs, crash dumps, or backups happened to capture it.</td></tr>
+    <tr><td>Never log tokens</td><td>Redact <code>Authorization</code> headers and token responses in every logger, APM agent, and error reporter. This is the most common way tokens leak in practice.</td></tr>
+    <tr><td>Encrypt at rest</td><td>Keychain or Keystore on device; a managed secret store on a server. File storage, if unavoidable, must be owner-only (mode <code>0600</code>).</td></tr>
+    <tr><td>Never in URLs</td><td>Query strings land in access logs, referrer headers, and browser history. Header only.</td></tr>
+    <tr><td>One grant per user per app</td><td>Do not share a token across customers or pool credentials. The <code>sub</code> claim is what makes an audit trail meaningful.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="device-flow"><span class="num">2.11</span>Device authorization for input-constrained clients</h2>
+
+<p>
+  Where a redirect-based browser flow is not possible — a TV app, a headless terminal, an
+  embedded device — use the device authorization grant (RFC 8628):
+</p>
+
+<pre><code><span class="c-com">1.</span> POST /oauth2/device_authorization  →  device_code, user_code, verification_uri, interval
+<span class="c-com">2.</span> Display the user_code and verification_uri to the customer
+<span class="c-com">3.</span> Poll POST /oauth2/token with grant_type=urn:ietf:params:oauth:grant-type:device_code
+      <span class="c-com">// authorization_pending → keep polling at `interval`</span>
+      <span class="c-com">// slow_down            → increase the interval by 5s and continue</span>
+      <span class="c-com">// access_denied        → the customer declined; stop</span>
+<span class="c-com">4.</span> On success: access_token + refresh_token, exactly as in §2.5</code></pre>
+
+<div class="warn">
+  <span class="lbl">Scope restriction</span>
+  <p>
+    The device flow does <b>not</b> grant <code>orders:write</code>. Its user code is
+    short and typed by hand, which makes it a weaker binding than a full redirect flow —
+    acceptable for read access, not for placing trades.
+  </p>
+</div>
+<!-- ==================== 3. API CONVENTIONS ======================= -->
+<h1 id="conventions"><span class="num">3</span>API Conventions</h1>
+
+<p class="lede">
+  These rules apply to every endpoint. Reading this section once will save you from
+  rediscovering the same eight things across five sections of reference material.
+</p>
+
+<h2 id="hateoas"><span class="num">3.1</span>Hypermedia and HATEOAS</h2>
+
+<p>
+  Every representation carries a <code>_links</code> object: a map keyed by link relation,
+  each value carrying at least an <code>href</code>.
+</p>
+
+<pre><code>{
+  <span class="c-key">"orderId"</span>: <span class="c-str">"ord_01HQ9D4N7Q1S5U8X"</span>,
+  <span class="c-key">"status"</span>:  <span class="c-str">"PARTIALLY_FILLED"</span>,
+  <span class="c-key">"_links"</span>: {
+    <span class="c-key">"self"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"https://api.brokerage.example.com/v1/accounts/acct_…/orders/ord_…"</span> },
+    <span class="c-key">"cancel"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"DELETE"</span>, <span class="c-key">"title"</span>: <span class="c-str">"Cancel the unfilled 200 shares"</span> },
+    <span class="c-key">"replace"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"PATCH"</span> },
+    <span class="c-key">"executions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…/executions"</span> }
+  }
+}</code></pre>
+
+<p>The contract has three parts, and the third is the one that pays for the other two:</p>
+
+<ol>
+  <li><b>One bookmarked URL.</b> Clients hard-code <code>GET /</code> and discover everything
+      else by following relations.</li>
+  <li><b>No URL construction.</b> Never build a URL by concatenating strings. Follow the
+      <code>href</code> you were given, verbatim — including its query parameters.</li>
+  <li><b>Links are state-dependent.</b> A <code>FILLED</code> order has no
+      <code>cancel</code> link. An account without options approval has no
+      <code>place-option-order</code> link. <b>Branch on the presence of a link, not on a
+      status string.</b></li>
+</ol>
+
+<div class="tip">
+  <span class="lbl">Why point 3 matters more than it looks</span>
+  <p>
+    Status enumerations grow. If your UI enables its Cancel button when
+    <code>status ∈ {NEW, PARTIALLY_FILLED}</code>, then the day a
+    <code>PENDING_ROUTE</code> status ships, your button silently disappears for orders that
+    are in fact cancellable. If instead it enables on <code>"cancel" in _links</code>, it
+    keeps working — the server already knows the answer, and it is telling you.
+  </p>
+</div>
+
+<table>
+  <thead><tr><th style="width:24%">Relation</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>self</code></td><td>Canonical URL of this resource.</td></tr>
+    <tr><td><code>next</code></td><td>The next page. Absent on the last page (§3.4).</td></tr>
+    <tr><td><code>account</code>, <code>order</code>, <code>instrument</code></td><td>Navigate to a related resource.</td></tr>
+    <tr><td><code>balances</code>, <code>positions</code>, <code>orders</code>, <code>transactions</code>, <code>executions</code></td><td>Sub-collections of an account or order.</td></tr>
+    <tr><td><code>place-order</code>, <code>cancel</code>, <code>replace</code>, <code>close-position</code></td><td>State-changing affordances. Each carries an explicit <code>method</code>.</td></tr>
+    <tr><td><code>events</code></td><td>The server-sent event stream for this collection.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="errors"><span class="num">3.2</span>Errors: RFC 9457 problem details</h2>
+
+<p>
+  Every error response uses <code>application/problem+json</code>:
+</p>
+
+<pre><code>HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  <span class="c-key">"type"</span>:     <span class="c-str">"https://developer.brokerage.example.com/problems/insufficient-buying-power"</span>,
+  <span class="c-key">"title"</span>:    <span class="c-str">"Insufficient buying power"</span>,
+  <span class="c-key">"status"</span>:   <span class="c-num">422</span>,
+  <span class="c-key">"detail"</span>:   <span class="c-str">"Order requires 123,750.00 USD of stock buying power; 84,360.20 USD available."</span>,
+  <span class="c-key">"instance"</span>: <span class="c-str">"/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"</span>,
+  <span class="c-key">"required"</span>:  { <span class="c-key">"amount"</span>: <span class="c-str">"123750.00"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"available"</span>: { <span class="c-key">"amount"</span>: <span class="c-str">"84360.20"</span>,  <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"traceId"</span>:  <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span>
+}</code></pre>
+
+<table>
+  <thead><tr><th style="width:20%">Field</th><th>How to treat it</th></tr></thead>
+  <tbody>
+    <tr><td><code>type</code></td><td><b>The only field safe to branch on.</b> A stable, dereferenceable URI identifying the problem class. It will not change without a version bump.</td></tr>
+    <tr><td><code>title</code>, <code>detail</code></td><td>Human-facing prose. Reworded without notice, and localized in future. Display it; never parse it.</td></tr>
+    <tr><td><code>instance</code></td><td>Which request this was about.</td></tr>
+    <tr><td><code>traceId</code></td><td><b>Log this on every failure.</b> It is the first thing support will ask for and the only way to find the request in our logs.</td></tr>
+    <tr><td><code>errors[]</code></td><td>Field-level failures on validation problems, each with an RFC 6901 JSON Pointer.</td></tr>
+    <tr><td>Extensions</td><td>Problem types add their own fields — <code>required</code>/<code>available</code> here, <code>requiredLevel</code> on an options-approval failure. Documented per type in Appendix A.</td></tr>
+  </tbody>
+</table>
+
+<h4>Status code semantics</h4>
+
+<table class="long">
+  <thead><tr><th style="width:16%">Status</th><th>Meaning in this API</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-4xx">400</span></td><td>Malformed syntax or schema validation failure. The request never reached business logic.</td></tr>
+    <tr><td><span class="status-pill s-4xx">401</span></td><td>Token missing, expired, malformed, or revoked. Refresh once and retry; if that fails, re-authorize.</td></tr>
+    <tr><td><span class="status-pill s-4xx">403</span></td><td>Authenticated but not permitted — missing scope, or an options strategy above the account's approval level.</td></tr>
+    <tr><td><span class="status-pill s-4xx">404</span></td><td>No such resource, <b>or</b> it exists outside your grant. Deliberately indistinguishable, so the API cannot be used to enumerate account identifiers.</td></tr>
+    <tr><td><span class="status-pill s-4xx">409</span></td><td>Conflicting state — the account is restricted, or the order already reached a terminal state.</td></tr>
+    <tr><td><span class="status-pill s-4xx">412</span></td><td><code>If-Match</code> did not match. The resource changed after you read it (§3.6).</td></tr>
+    <tr><td><span class="status-pill s-4xx">422</span></td><td>Well-formed but unacceptable — insufficient buying power, price outside collar, market closed, untradable instrument.</td></tr>
+    <tr><td><span class="status-pill s-4xx">428</span></td><td>A required precondition header was not supplied.</td></tr>
+    <tr><td><span class="status-pill s-4xx">429</span></td><td>Rate limited. Honor <code>Retry-After</code> (§3.7).</td></tr>
+    <tr><td><span class="status-pill s-5xx">503</span></td><td>Upstream venue or clearing system unavailable. Retryable with backoff.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">400 versus 422 is not cosmetic</span>
+  <p>
+    A <span class="status-pill s-4xx">400</span> means your code is wrong — fix it and the
+    request will work. A <span class="status-pill s-4xx">422</span> means your code is fine
+    and the <i>world</i> said no: not enough buying power, market closed, instrument halted.
+    The first is a bug to fix; the second is a condition to surface to the customer. Treating
+    them identically produces an application that shows "Invalid request" when the honest
+    answer is "the market is closed".
+  </p>
+</div>
+
+<h2 id="decimals"><span class="num">3.3</span>Decimals, money, and why nothing is a float</h2>
+
+<p>
+  Prices, quantities, and monetary amounts are transmitted as JSON <b>strings</b>:
+</p>
+
+<pre><code>{ <span class="c-key">"limitPrice"</span>: <span class="c-str">"412.50"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"300"</span>, <span class="c-key">"netLiquidation"</span>: <span class="c-str">"184320.55"</span> }</code></pre>
+
+<p>
+  This is not stylistic. JSON numbers are IEEE-754 doubles in most parsers, and a double
+  cannot represent <code>0.1</code> exactly. In a domain where a share count and a limit
+  price multiply into a cash obligation, that error is a defect with a dollar value attached.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Language</th><th style="width:32%">Use</th><th>Never</th></tr></thead>
+  <tbody>
+    <tr><td>Java</td><td><code>new BigDecimal("412.50")</code></td><td><code>double</code>, <code>Double.parseDouble</code>, or <code>BigDecimal.valueOf(double)</code></td></tr>
+    <tr><td>Python</td><td><code>Decimal("412.50")</code></td><td><code>float</code>, or <code>Decimal(0.1)</code> from a float literal</td></tr>
+    <tr><td>JavaScript</td><td><code>decimal.js</code> / <code>big.js</code>, or keep the string</td><td><code>Number()</code>, <code>parseFloat</code>, or arithmetic on either</td></tr>
+    <tr><td>Go</td><td><code>shopspring/decimal</code></td><td><code>float64</code></td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <span class="lbl">The subtle Java trap</span>
+  <p>
+    <code>BigDecimal.valueOf(0.1)</code> and <code>new BigDecimal(0.1)</code> both route
+    through a <code>double</code> and inherit its error before <code>BigDecimal</code> ever
+    sees the value. Only the <b>String</b> constructor is safe. The same applies to Python's
+    <code>Decimal(0.1)</code> versus <code>Decimal("0.1")</code>.
+  </p>
+</div>
+
+<p>
+  Other formats follow the same principle of being unambiguous on the wire:
+</p>
+
+<dl>
+  <dt>Timestamps</dt>
+  <dd>RFC 3339, UTC, explicit offset: <code>2026-08-17T14:31:02Z</code>. Sub-second precision on executions.</dd>
+  <dt>Dates</dt>
+  <dd>ISO 8601 calendar dates for trade and settlement dates: <code>2026-08-19</code>. These are exchange-local dates, not instants.</dd>
+  <dt>Currency</dt>
+  <dd>ISO 4217 alphabetic codes. Every monetary field either carries a <code>currency</code> or sits beside one.</dd>
+  <dt>Identifiers</dt>
+  <dd>Opaque, prefixed, sortable strings (<code>acct_</code>, <code>ord_</code>, <code>pos_</code>, <code>txn_</code>, <code>exec_</code>, <code>inst_</code>). Do not parse them; the prefix is a debugging affordance, not an API.</dd>
+</dl>
+
+<h2 id="pagination"><span class="num">3.4</span>Pagination</h2>
+
+<p>
+  Collections use opaque forward cursors. Request a page size with <code>limit</code>
+  (1–200, default 50); follow the <code>next</code> link for more.
+</p>
+
+<pre><code>GET /v1/accounts/acct_…/transactions?from=2026-08-01&amp;limit=50
+
+{ <span class="c-key">"items"</span>: [ … ],
+  <span class="c-key">"_links"</span>: {
+    <span class="c-key">"self"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions?from=2026-08-01&amp;limit=50"</span> },
+    <span class="c-key">"next"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions?from=2026-08-01&amp;limit=50&amp;cursor=eyJvIjoxMjAwfQ"</span> }
+  } }</code></pre>
+
+<p>
+  No <code>next</code> link means you have reached the end. Cursors are opaque: their encoding
+  is not part of the contract and will change. Do not construct, parse, or persist them.
+</p>
+
+<div class="note">
+  <span class="lbl">Why cursors rather than offsets</span>
+  <p>
+    Offset pagination is unstable against a moving dataset. Between page 1 and page 2 of your
+    transaction history, a settlement can insert a back-dated row — and with
+    <code>OFFSET 50</code> you silently skip a record. Cursors are anchored to a position in
+    a stable ordering, so insertions do not shift the window out from under you.
+  </p>
+  <p>
+    Rows can still legitimately repeat across pages when settlement back-dates an entry.
+    <b>Reconcile on <code>transactionId</code></b>, which is permanent and unique.
+  </p>
+</div>
+
+<h2 id="idempotency"><span class="num">3.5</span>Idempotency</h2>
+
+<p>
+  Every unsafe, non-idempotent operation — in practice, placing and amending orders —
+  requires an <code>Idempotency-Key</code> header carrying a client-generated UUIDv4.
+</p>
+
+<pre><code>POST /v1/accounts/acct_…/orders
+Idempotency-Key: 6f1c2a90-3f5b-4c1e-9c2a-8d7b6e5f4a30</code></pre>
+
+<table>
+  <thead><tr><th style="width:34%">Scenario</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>First request with a key</td><td><span class="status-pill s-2xx">201</span> The order is created.</td></tr>
+    <tr><td>Replay, same key, identical body</td><td><span class="status-pill s-2xx">200</span> The original order is returned with <code>Idempotency-Replayed: true</code>. <b>No second order.</b></td></tr>
+    <tr><td>Replay, same key, different body</td><td><span class="status-pill s-4xx">422</span> <code>idempotency-key-reuse</code>. Nothing is created.</td></tr>
+    <tr><td>Key older than 24 hours</td><td>Treated as new. Keys are retained for 24 hours.</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <span class="lbl">Generate the key once, per intent</span>
+  <p>
+    The key must be created <b>before the first attempt</b> and reused verbatim on every
+    retry of that same order intent. Generating a fresh UUID inside a retry loop defeats the
+    entire mechanism and is the exact bug it exists to prevent.
+  </p>
+  <p>
+    The failure being defended against is specific: a socket timeout on a market order is
+    indistinguishable, from the client's side, from a rejection. The order may have been
+    accepted and routed. Retrying without a key doubles the customer's position; retrying
+    with one is safe.
+  </p>
+</div>
+
+<h2 id="etags"><span class="num">3.6</span>Optimistic concurrency with ETags</h2>
+
+<p>
+  Order reads return a strong <code>ETag</code>. Order mutations —
+  <code>PATCH</code> and <code>DELETE</code> — <b>require</b> <code>If-Match</code>.
+</p>
+
+<pre><code><span class="c-com"># 1. Read, and keep the validator</span>
+GET /v1/accounts/acct_…/orders/ord_…
+→ 200 OK
+  ETag: W/"ord-7-1755441062"
+
+<span class="c-com"># 2. Mutate, asserting you saw that exact version</span>
+PATCH /v1/accounts/acct_…/orders/ord_…
+If-Match: W/"ord-7-1755441062"
+Content-Type: application/merge-patch+json
+
+{ <span class="c-key">"limitPrice"</span>: <span class="c-str">"413.25"</span> }</code></pre>
+
+<table>
+  <thead><tr><th style="width:16%">Outcome</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-2xx">200</span></td><td>The order was unchanged since your read. The amendment was accepted, and a new <code>ETag</code> is returned.</td></tr>
+    <tr><td><span class="status-pill s-4xx">412</span></td><td>The order changed after your read. <b>Re-read it and decide again</b> — do not blindly retry with the newer <code>ETag</code>, or you will amend an order whose state you never evaluated.</td></tr>
+    <tr><td><span class="status-pill s-4xx">428</span></td><td>You omitted <code>If-Match</code>. Rejected rather than defaulted, on purpose.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">The race this closes</span>
+  <p>
+    You read an order showing 100 of 300 shares filled and decide to reprice the remaining
+    200. While you are deciding, it fills completely. Without <code>If-Match</code>, your
+    amendment lands against an order you believe is working, and the outcome depends on
+    timing you cannot observe. With it, you get a <span class="status-pill s-4xx">412</span>
+    and a chance to look again.
+  </p>
+</div>
+
+<p>
+  <code>ETag</code> also works for cheap polling: send it as <code>If-None-Match</code> on a
+  <code>GET</code> and receive <span class="status-pill s-4xx">304 Not Modified</span> with no
+  body when nothing has changed. That is what keeps a one-second poll inside the rate limit.
+</p>
+
+<h2 id="rate-limits"><span class="num">3.7</span>Rate limits and backoff</h2>
+
+<p>Every response carries the current quota state, per RFC 9913:</p>
+
+<pre><code>RateLimit: "default";r=94;t=51          <span class="c-com"># 94 requests remain, window resets in 51s</span>
+RateLimit-Policy: "default";q=120;w=60  <span class="c-com"># 120 requests per 60-second window</span></code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Policy</th><th style="width:20%">Quota</th><th>Applies to</th></tr></thead>
+  <tbody>
+    <tr><td><code>default</code></td><td>120 / minute</td><td>All read endpoints.</td></tr>
+    <tr><td><code>orders-write</code></td><td>60 / minute</td><td>Place, amend, cancel.</td></tr>
+    <tr><td><code>order-poll</code></td><td>1 / second per order</td><td><code>GET</code> on a single order. Use the event stream instead.</td></tr>
+    <tr><td><code>streams</code></td><td>5 concurrent</td><td>Open SSE connections per grant.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  On <span class="status-pill s-4xx">429</span>, wait <code>Retry-After</code> seconds and
+  retry with <b>full jitter</b> — a random delay between zero and your computed cap, rather
+  than a fixed backoff:
+</p>
+
+<pre><code>delay = random_between(0, min(2^attempt × base, cap))</code></pre>
+
+<div class="note">
+  <span class="lbl">Why jitter, specifically</span>
+  <p>
+    When a venue hiccups, every client fails at once and every client retries at once. Fixed
+    backoff preserves that synchronization and reproduces the thundering herd on each round,
+    turning a two-second blip into a sustained outage. Randomizing the delay spreads the
+    retries out. Ignoring <code>Retry-After</code> repeatedly escalates to a temporary
+    suspension of the client.
+  </p>
+</div>
+
+<h2 id="versioning"><span class="num">3.8</span>Versioning and compatibility</h2>
+
+<p>
+  The major version is pinned in the server path (<code>/v1</code>). Within a major version,
+  the following are considered <b>backward-compatible</b> and ship without notice:
+</p>
+
+<ul>
+  <li>New endpoints, and new optional request fields.</li>
+  <li>New fields in a response object.</li>
+  <li>New members in an enumeration — including new <code>OrderStatus</code> values.</li>
+  <li>New link relations in <code>_links</code>.</li>
+  <li>New problem <code>type</code> URIs.</li>
+</ul>
+
+<p>Which places two obligations on your client:</p>
+
+<ol>
+  <li><b>Ignore unknown properties.</b> Configure your deserializer to tolerate them —
+      Jackson's <code>FAIL_ON_UNKNOWN_PROPERTIES=false</code>, or an equivalent. A strict
+      parser will break on a purely additive change.</li>
+  <li><b>Tolerate unknown enum values.</b> Do not map to a closed enum that throws. Treat an
+      unrecognized <code>OrderStatus</code> as working, and rely on <code>_links</code> to
+      know what you may do with it.</li>
+</ol>
+
+<p>
+  Breaking changes — removing a field, changing a type, tightening validation — require a new
+  major version. The previous version is supported for at least 12 months after the successor
+  ships.
+</p>
+<!-- ===================== 4. ACCOUNTS APIs ======================== -->
+<h1 id="accounts"><span class="num">4</span>Accounts APIs</h1>
+
+<p class="lede">
+  Five read-only views of a customer's brokerage accounts: which accounts you can reach, what
+  they are worth, what they hold, what is working, and what has already happened.
+</p>
+
+<h2 id="account-list"><span class="num">4.1</span>Account list</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts</div>
+  <div class="scopes">Requires <span class="pill">accounts:read</span></div>
+</div>
+
+<p>
+  Returns every account the presented access token is authorized to see. This is the entry
+  point for everything else — the <code>accountId</code> returned here is the opaque, permanent
+  handle used in every other path.
+</p>
+
+<pre class="long"><code>GET /v1/accounts HTTP/1.1
+Authorization: Bearer eyJhbGciOiJSUzI1NiIs…
+
+<span class="c-com">→ 200 OK</span>
+{
+  <span class="c-key">"items"</span>: [
+    {
+      <span class="c-key">"accountId"</span>:      <span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>,
+      <span class="c-key">"accountNumber"</span>:  <span class="c-str">"••••4471"</span>,
+      <span class="c-key">"nickname"</span>:       <span class="c-str">"Main brokerage"</span>,
+      <span class="c-key">"type"</span>:           <span class="c-str">"MARGIN"</span>,
+      <span class="c-key">"registration"</span>:   <span class="c-str">"INDIVIDUAL"</span>,
+      <span class="c-key">"status"</span>:         <span class="c-str">"ACTIVE"</span>,
+      <span class="c-key">"baseCurrency"</span>:   <span class="c-str">"USD"</span>,
+      <span class="c-key">"optionsLevel"</span>:   <span class="c-str">"LEVEL_3"</span>,
+      <span class="c-key">"dayTrader"</span>:      true,
+      <span class="c-key">"openedAt"</span>:       <span class="c-str">"2021-03-14T00:00:00Z"</span>,
+      <span class="c-key">"_links"</span>: {
+        <span class="c-key">"self"</span>:         { <span class="c-key">"href"</span>: <span class="c-str">"…/v1/accounts/acct_01HQ8Z4M2X9K3P7R"</span> },
+        <span class="c-key">"balances"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…/balances"</span> },
+        <span class="c-key">"positions"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…/positions"</span> },
+        <span class="c-key">"orders"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span> },
+        <span class="c-key">"transactions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions"</span> },
+        <span class="c-key">"place-order"</span>:  { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span>, <span class="c-key">"method"</span>: <span class="c-str">"POST"</span> }
+      }
+    }
+  ],
+  <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/v1/accounts"</span> } }
+}</code></pre>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Field</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>accountId</code></td><td>Opaque and permanent. Use this as your foreign key.</td></tr>
+    <tr><td><code>accountNumber</code></td><td>Customer-facing, <b>masked to the last four digits</b> unless the grant carries <code>accounts:read:full</code>. Display it; do not key on it.</td></tr>
+    <tr><td><code>type</code></td><td><code>CASH</code> settles trade-by-trade and cannot borrow. <code>MARGIN</code> can, which changes buying power, short-sale eligibility, and available option strategies.</td></tr>
+    <tr><td><code>status</code></td><td><code>ACTIVE</code>, <code>RESTRICTED</code>, <code>CLOSED</code>, <code>PENDING</code>. A <code>RESTRICTED</code> account can be read but not traded — it carries no <code>place-order</code> link.</td></tr>
+    <tr><td><code>optionsLevel</code></td><td>Approved strategies, cumulative. See §5.4.</td></tr>
+    <tr><td><code>dayTrader</code></td><td>Pattern-day-trader flag. When true, the 25,000 USD minimum equity rule applies and day trades are counted.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The list is deliberately unpaginated — a customer rarely has more than a handful of
+  accounts, and forcing pagination onto a bounded collection buys nothing.
+</p>
+
+<h2 id="balances"><span class="num">4.2</span>Account balances</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/balances</div>
+  <div class="scopes">Requires <span class="pill">accounts:read</span></div>
+</div>
+
+<p>
+  A balance <b>snapshot</b>, stamped with <code>asOf</code>. Intraday it reflects real-time
+  marks on open positions and unsettled trade activity; after the close it settles to
+  end-of-day values.
+</p>
+
+<pre class="long"><code><span class="c-com">→ 200 OK</span>
+{
+  <span class="c-key">"accountId"</span>:            <span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>,
+  <span class="c-key">"currency"</span>:             <span class="c-str">"USD"</span>,
+  <span class="c-key">"asOf"</span>:                 <span class="c-str">"2026-08-17T18:42:11Z"</span>,
+  <span class="c-key">"netLiquidation"</span>:       <span class="c-str">"184320.55"</span>,
+  <span class="c-key">"equity"</span>:              <span class="c-str">"184320.55"</span>,
+  <span class="c-key">"positionsMarketValue"</span>: <span class="c-str">"142140.45"</span>,
+  <span class="c-key">"cash"</span>: {
+    <span class="c-key">"total"</span>:        <span class="c-str">"42180.10"</span>,
+    <span class="c-key">"settled"</span>:      <span class="c-str">"39900.00"</span>,
+    <span class="c-key">"unsettled"</span>:    <span class="c-str">"2280.10"</span>,
+    <span class="c-key">"withdrawable"</span>: <span class="c-str">"39900.00"</span>
+  },
+  <span class="c-key">"buyingPower"</span>: {
+    <span class="c-key">"stock"</span>:      <span class="c-str">"84360.20"</span>,
+    <span class="c-key">"option"</span>:     <span class="c-str">"39900.00"</span>,
+    <span class="c-key">"dayTrading"</span>: <span class="c-str">"168720.40"</span>
+  },
+  <span class="c-key">"margin"</span>: {
+    <span class="c-key">"maintenanceRequirement"</span>: <span class="c-str">"38504.00"</span>,
+    <span class="c-key">"initialRequirement"</span>:     <span class="c-str">"71140.22"</span>,
+    <span class="c-key">"marginBalance"</span>:          <span class="c-str">"0.00"</span>,
+    <span class="c-key">"excessLiquidity"</span>:        <span class="c-str">"145816.55"</span>,
+    <span class="c-key">"marginCall"</span>:             null
+  },
+  <span class="c-key">"dayTradesUsed"</span>:      <span class="c-num">1</span>,
+  <span class="c-key">"dayTradesRemaining"</span>: <span class="c-num">3</span>,
+  <span class="c-key">"patternDayTrader"</span>:   true,
+  <span class="c-key">"_links"</span>: { … }
+}</code></pre>
+
+<div class="warn">
+  <span class="lbl">Buying power is three different numbers</span>
+  <p>
+    They are broken out because they genuinely differ. In a margin account,
+    <code>stock</code> is typically twice <code>option</code> — options cannot be bought on
+    margin — and <code>dayTrading</code> is a larger figure that resets each session.
+    <b>Sizing an option order against <code>buyingPower.stock</code> will get it rejected</b>,
+    and the rejection will look mysterious if you were reading the wrong field.
+  </p>
+</div>
+
+<table>
+  <thead><tr><th style="width:28%">Field</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>netLiquidation</code></td><td>Total account value if every position were liquidated at current marks. The headline number.</td></tr>
+    <tr><td><code>cash.settled</code></td><td>Cash that has completed settlement. In a <b>cash account</b>, spending unsettled proceeds causes a good-faith violation — this is the figure that matters there.</td></tr>
+    <tr><td><code>cash.withdrawable</code></td><td>What can actually leave the account today, after settlement and any holds.</td></tr>
+    <tr><td><code>margin.excessLiquidity</code></td><td>Cushion above the maintenance requirement. When this approaches zero, a margin call is imminent.</td></tr>
+    <tr><td><code>margin.marginCall</code></td><td>Non-null only when a call is outstanding, carrying <code>type</code>, <code>amount</code>, and <code>dueDate</code>. <b>The one field worth alerting on.</b></td></tr>
+    <tr><td><code>dayTradesRemaining</code></td><td>Day trades left in the rolling five-business-day window before the PDT rule restricts the account.</td></tr>
+  </tbody>
+</table>
+
+<p class="small">
+  Responses carry <code>Cache-Control: no-store</code> during market hours. Do not cache
+  balances across a trade.
+</p>
+
+<h2 id="positions"><span class="num">4.3</span>Account positions</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/positions</div>
+  <div class="scopes">Requires <span class="pill">positions:read</span></div>
+</div>
+
+<p>
+  Open positions, one row per instrument and side. Filter with <code>instrumentType</code>
+  (<code>EQUITY</code>, <code>ETF</code>, <code>OPTION</code>) or <code>symbol</code> — the
+  latter matches option positions on that underlying too. Paginated (§3.4).
+</p>
+
+<pre class="long"><code><span class="c-com">→ 200 OK — a long stock position and a short call written against it</span>
+{ <span class="c-key">"items"</span>: [
+  {
+    <span class="c-key">"positionId"</span>: <span class="c-str">"pos_01HQ9A1F4C8M2Q6T"</span>,
+    <span class="c-key">"instrument"</span>: { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_AAPL"</span>, <span class="c-key">"type"</span>: <span class="c-str">"EQUITY"</span>,
+                     <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+    <span class="c-key">"side"</span>: <span class="c-str">"LONG"</span>,
+    <span class="c-key">"quantity"</span>:             <span class="c-str">"500"</span>,
+    <span class="c-key">"contractMultiplier"</span>:   <span class="c-num">1</span>,
+    <span class="c-key">"averageCost"</span>:          <span class="c-str">"178.4200"</span>,
+    <span class="c-key">"costBasis"</span>:            <span class="c-str">"89210.00"</span>,
+    <span class="c-key">"lastPrice"</span>:            <span class="c-str">"231.1500"</span>,
+    <span class="c-key">"marketValue"</span>:          <span class="c-str">"115575.00"</span>,
+    <span class="c-key">"unrealizedPnl"</span>:        <span class="c-str">"26365.00"</span>,
+    <span class="c-key">"unrealizedPnlPercent"</span>: <span class="c-str">"29.5539"</span>,
+    <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: {…}, <span class="c-key">"instrument"</span>: {…},
+                <span class="c-key">"close-position"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders"</span>, <span class="c-key">"method"</span>: <span class="c-str">"POST"</span> } }
+  },
+  {
+    <span class="c-key">"positionId"</span>: <span class="c-str">"pos_01HQ9A3H7D1N4S8V"</span>,
+    <span class="c-key">"instrument"</span>: {
+      <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>,
+      <span class="c-key">"type"</span>: <span class="c-str">"OPTION"</span>, <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL  261218C00250000"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+      <span class="c-key">"option"</span>: { <span class="c-key">"underlyingSymbol"</span>: <span class="c-str">"AAPL"</span>, <span class="c-key">"expiration"</span>: <span class="c-str">"2026-12-18"</span>,
+                   <span class="c-key">"strike"</span>: <span class="c-str">"250.00"</span>, <span class="c-key">"optionType"</span>: <span class="c-str">"CALL"</span>,
+                   <span class="c-key">"exerciseStyle"</span>: <span class="c-str">"AMERICAN"</span>, <span class="c-key">"contractMultiplier"</span>: <span class="c-num">100</span> }
+    },
+    <span class="c-key">"side"</span>: <span class="c-str">"SHORT"</span>,
+    <span class="c-key">"quantity"</span>:           <span class="c-str">"-5"</span>,        <span class="c-com">// contracts, not shares</span>
+    <span class="c-key">"contractMultiplier"</span>: <span class="c-num">100</span>,
+    <span class="c-key">"averageCost"</span>:        <span class="c-str">"12.4000"</span>,
+    <span class="c-key">"marketValue"</span>:        <span class="c-str">"-4925.00"</span>,
+    <span class="c-key">"unrealizedPnl"</span>:      <span class="c-str">"1275.00"</span>
+  }
+] }</code></pre>
+
+<div class="warn">
+  <span class="lbl">Options are counted in contracts</span>
+  <p>
+    A <code>quantity</code> of <code>-5</code> on an option position is five short contracts,
+    which is exposure to <b>500 shares</b>. Multiply by
+    <code>contractMultiplier</code> (normally 100; adjusted contracts differ) to get
+    share-equivalent exposure. Treating the two as the same unit understates option risk by
+    two orders of magnitude.
+  </p>
+</div>
+
+<p>
+  <code>quantity</code> is signed — negative for short positions — so a naive sum across a
+  portfolio nets long against short correctly. Long and short exposure in the same underlying
+  are returned as separate positions. Closed positions do not appear here; use the transaction
+  history for realized activity.
+</p>
+
+<h2 id="order-status"><span class="num">4.4</span>Account order status</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders</div>
+  <div class="scopes">Requires <span class="pill">orders:read</span></div>
+</div>
+
+<p>
+  Orders on the account, newest first. <b>With no filter, this returns working orders
+  only</b> — <code>PENDING_NEW</code>, <code>NEW</code>, <code>PARTIALLY_FILLED</code>,
+  <code>PENDING_REPLACE</code>, <code>PENDING_CANCEL</code> — which is the set a trading screen
+  needs on load. Pass <code>status</code> explicitly, or the literal <code>status=ALL</code>,
+  to widen it.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>status</code></td><td>Repeatable. One or more <code>OrderStatus</code> values, or <code>ALL</code> to disable the working-orders default.</td></tr>
+    <tr><td><code>symbol</code></td><td>One underlying, including its option orders.</td></tr>
+    <tr><td><code>from</code>, <code>to</code></td><td>Bounds on <code>createdAt</code>. Defaults to the last 7 days.</td></tr>
+    <tr><td><code>cursor</code>, <code>limit</code></td><td>Pagination (§3.4).</td></tr>
+  </tbody>
+</table>
+
+<pre class="long"><code>GET /v1/accounts/acct_…/orders?status=ALL&amp;symbol=MSFT&amp;limit=25
+
+<span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"items"</span>: [ {
+    <span class="c-key">"orderId"</span>:           <span class="c-str">"ord_01HQ9D4N7Q1S5U8X"</span>,
+    <span class="c-key">"clientOrderId"</span>:     <span class="c-str">"ui-2026-08-17-0007"</span>,
+    <span class="c-key">"status"</span>:            <span class="c-str">"PARTIALLY_FILLED"</span>,
+    <span class="c-key">"assetClass"</span>:        <span class="c-str">"EQUITY"</span>,
+    <span class="c-key">"side"</span>:              <span class="c-str">"BUY"</span>,
+    <span class="c-key">"instrument"</span>:        { <span class="c-key">"symbol"</span>: <span class="c-str">"MSFT"</span>, … },
+    <span class="c-key">"quantity"</span>:          <span class="c-str">"300"</span>,
+    <span class="c-key">"filledQuantity"</span>:    <span class="c-str">"100"</span>,
+    <span class="c-key">"remainingQuantity"</span>: <span class="c-str">"200"</span>,
+    <span class="c-key">"orderType"</span>:         <span class="c-str">"LIMIT"</span>,
+    <span class="c-key">"limitPrice"</span>:        <span class="c-str">"412.50"</span>,
+    <span class="c-key">"averageFillPrice"</span>:  <span class="c-str">"412.48"</span>,
+    <span class="c-key">"timeInForce"</span>:       <span class="c-str">"DAY"</span>,
+    <span class="c-key">"createdAt"</span>:         <span class="c-str">"2026-08-17T14:31:02Z"</span>,
+    <span class="c-key">"updatedAt"</span>:         <span class="c-str">"2026-08-17T14:33:19Z"</span>,
+    <span class="c-key">"_links"</span>: {
+      <span class="c-key">"self"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_01HQ9D4N7Q1S5U8X"</span> },
+      <span class="c-key">"cancel"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"DELETE"</span> },
+      <span class="c-key">"replace"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"PATCH"</span> },
+      <span class="c-key">"executions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/executions"</span> }
+    }
+} ] }</code></pre>
+
+<h4>Single order, and its fills</h4>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/{orderId}/executions</div>
+  <div class="scopes">Requires <span class="pill">orders:read</span> &nbsp;·&nbsp; single-order reads return a strong <code>ETag</code></div>
+</div>
+
+<p>
+  A single order can fill in many prints across several venues. <code>executions</code> is the
+  audit trail behind <code>filledQuantity</code> and <code>averageFillPrice</code>:
+</p>
+
+<pre><code>{ <span class="c-key">"items"</span>: [
+  { <span class="c-key">"executionId"</span>: <span class="c-str">"exec_01HQ9E1A2B3C4D5E"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"100"</span>, <span class="c-key">"price"</span>: <span class="c-str">"412.48"</span>,
+    <span class="c-key">"venue"</span>: <span class="c-str">"XNAS"</span>, <span class="c-key">"liquidity"</span>: <span class="c-str">"REMOVED"</span>, <span class="c-key">"executedAt"</span>: <span class="c-str">"2026-08-17T14:33:19.418Z"</span>,
+    <span class="c-key">"settlementDate"</span>: <span class="c-str">"2026-08-19"</span>, <span class="c-key">"commission"</span>: <span class="c-str">"0.00"</span> },
+  { <span class="c-key">"executionId"</span>: <span class="c-str">"exec_01HQ9E4F5G6H7J8K"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"200"</span>, <span class="c-key">"price"</span>: <span class="c-str">"412.50"</span>,
+    <span class="c-key">"venue"</span>: <span class="c-str">"ARCX"</span>, <span class="c-key">"liquidity"</span>: <span class="c-str">"ADDED"</span>,   <span class="c-key">"executedAt"</span>: <span class="c-str">"2026-08-17T14:35:02.771Z"</span> }
+] }</code></pre>
+
+<div class="tip">
+  <span class="lbl">Poll cheaply, or do not poll at all</span>
+  <p>
+    Single-order reads are limited to one request per second. Send the previous
+    <code>ETag</code> as <code>If-None-Match</code> and an unchanged order costs you a
+    <span class="status-pill s-4xx">304</span> with no body. Better still, use the event
+    stream in §5.7 and stop polling entirely.
+  </p>
+</div>
+
+<h2 id="transactions"><span class="num">4.5</span>Account transaction history</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/transactions</div>
+  <div class="scopes">Requires <span class="pill">transactions:read</span></div>
+</div>
+
+<p>
+  Cash and position activity: trades, dividends, interest, fees, transfers, assignments,
+  exercises, expirations, and corporate actions. Ordered by <code>tradeDate</code> descending,
+  then <code>transactionId</code> descending as a stable tiebreaker.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>from</code>, <code>to</code></td><td>Inclusive bounds on trade date. Defaults to the last 90 days; accepts any range up to 7 years.</td></tr>
+    <tr><td><code>type</code></td><td>Repeatable. Restrict to one or more transaction types.</td></tr>
+    <tr><td><code>symbol</code></td><td>Activity in one symbol or its options.</td></tr>
+  </tbody>
+</table>
+
+<pre class="long"><code>GET /v1/accounts/acct_…/transactions?from=2026-08-01&amp;type=TRADE&amp;type=DIVIDEND
+
+<span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"items"</span>: [
+  { <span class="c-key">"transactionId"</span>:  <span class="c-str">"txn_01HQ9C2K5M8P1R4W"</span>,
+    <span class="c-key">"type"</span>:           <span class="c-str">"TRADE"</span>,
+    <span class="c-key">"subType"</span>:        <span class="c-str">"BUY"</span>,
+    <span class="c-key">"description"</span>:    <span class="c-str">"Bought 100 AAPL @ 231.05"</span>,
+    <span class="c-key">"tradeDate"</span>:      <span class="c-str">"2026-08-15"</span>,
+    <span class="c-key">"settlementDate"</span>: <span class="c-str">"2026-08-18"</span>,
+    <span class="c-key">"instrument"</span>:     { <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>, … },
+    <span class="c-key">"quantity"</span>:       <span class="c-str">"100"</span>,
+    <span class="c-key">"price"</span>:          <span class="c-str">"231.0500"</span>,
+    <span class="c-key">"grossAmount"</span>:    <span class="c-str">"-23105.00"</span>,       <span class="c-com">// signed: negative reduces cash</span>
+    <span class="c-key">"fees"</span>: [ { <span class="c-key">"type"</span>: <span class="c-str">"REGULATORY"</span>, <span class="c-key">"description"</span>: <span class="c-str">"SEC Section 31 fee"</span>,
+                <span class="c-key">"amount"</span>: <span class="c-str">"0.00"</span> } ],
+    <span class="c-key">"netAmount"</span>:      <span class="c-str">"-23105.00"</span>,       <span class="c-com">// gross net of fees — the actual cash movement</span>
+    <span class="c-key">"currency"</span>:       <span class="c-str">"USD"</span>,
+    <span class="c-key">"relatedOrderId"</span>: <span class="c-str">"ord_01HQ9C1J3L7N0Q3V"</span>,
+    <span class="c-key">"_links"</span>: { <span class="c-key">"self"</span>: {…}, <span class="c-key">"order"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_01HQ9C1J3L7N0Q3V"</span> } } },
+
+  { <span class="c-key">"transactionId"</span>: <span class="c-str">"txn_01HQ9B8G4J2L6N9S"</span>,
+    <span class="c-key">"type"</span>: <span class="c-str">"DIVIDEND"</span>, <span class="c-key">"subType"</span>: <span class="c-str">"CASH_DIVIDEND"</span>,
+    <span class="c-key">"description"</span>: <span class="c-str">"AAPL cash dividend 0.26/share on 500 shares"</span>,
+    <span class="c-key">"tradeDate"</span>: <span class="c-str">"2026-08-14"</span>, <span class="c-key">"grossAmount"</span>: <span class="c-str">"130.00"</span>,
+    <span class="c-key">"fees"</span>: [], <span class="c-key">"netAmount"</span>: <span class="c-str">"130.00"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> }
+] }</code></pre>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Type</th><th>Covers</th></tr></thead>
+  <tbody>
+    <tr><td><code>TRADE</code></td><td>Buys and sells. <code>subType</code> narrows to <code>BUY</code>, <code>SELL</code>, <code>SELL_SHORT</code>, <code>BUY_TO_COVER</code>.</td></tr>
+    <tr><td><code>DIVIDEND</code>, <code>INTEREST</code></td><td>Cash and stock dividends, credit interest.</td></tr>
+    <tr><td><code>FEE</code>, <code>TAX</code></td><td>Commissions, regulatory fees, margin interest, withholding.</td></tr>
+    <tr><td><code>DEPOSIT</code>, <code>WITHDRAWAL</code>, <code>TRANSFER</code>, <code>JOURNAL</code></td><td>Cash and position movement in and out of the account.</td></tr>
+    <tr><td><code>ASSIGNMENT</code>, <code>EXERCISE</code>, <code>EXPIRATION</code></td><td>Option lifecycle events. <b>These arrive without an order</b> — nobody placed one — so a reconciliation keyed on <code>relatedOrderId</code> will miss them.</td></tr>
+    <tr><td><code>CORPORATE_ACTION</code></td><td>Splits, mergers, spin-offs, symbol changes.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">Reconcile on <code>transactionId</code>, not on position in the list</span>
+  <p>
+    Settlement can back-date an entry, which means a transaction may appear in a page you have
+    already read. <code>transactionId</code> is permanent and unique; deduplicate on it. Every
+    example client in Section 6 does this rather than summing pages blindly.
+  </p>
+  <p>
+    Ranges wider than one year are served from cold storage and may take several seconds.
+    Pull history incrementally and cache it locally rather than re-fetching seven years on
+    every run.
+  </p>
+</div>
+<!-- ====================== 5. TRADING APIs ======================== -->
+<h1 id="trading"><span class="num">5</span>Trading APIs</h1>
+
+<p class="lede">
+  Placing, amending, and cancelling stock and option orders. Everything in this section
+  requires the <code>orders:write</code> scope and an <code>ACTIVE</code> account, and
+  everything in this section moves real money in production.
+</p>
+
+<h2 id="lifecycle"><span class="num">5.1</span>The order lifecycle</h2>
+
+<p>
+  An order is a resource with a state machine. Understanding it is the difference between an
+  integration that reconciles cleanly and one that quietly loses track of fills.
+</p>
+
+<figure>
+<svg viewBox="0 0 660 252" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="State machine of the order lifecycle, showing working states PENDING_NEW, NEW and PARTIALLY_FILLED, transitional states PENDING_REPLACE and PENDING_CANCEL, and terminal states FILLED, REJECTED, REPLACED, CANCELLED and EXPIRED.">
+  <defs>
+    <marker id="s-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4f8f"/></marker>
+    <marker id="s-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a5a00"/></marker>
+    <marker id="s-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d6b45"/></marker>
+    <marker id="s-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a32a2a"/></marker>
+    <marker id="s-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#767d87"/></marker>
+  </defs>
+  <style>
+    .sb  { fill:#eef3fa; stroke:#1f4f8f; stroke-width:1.4; }
+    .sa  { fill:#fdf3e0; stroke:#8a5a00; stroke-width:1.4; }
+    .sg  { fill:#e9f5ee; stroke:#1d6b45; stroke-width:1.8; }
+    .sr  { fill:#fbeeee; stroke:#a32a2a; stroke-width:1.4; }
+    .sk  { fill:#f1f2f4; stroke:#767d87; stroke-width:1.3; }
+    .tb  { fill:#1f4f8f; font:600 10.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .ta  { fill:#8a5a00; font:600 10.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .tg  { fill:#1d6b45; font:700 10.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .tr  { fill:#a32a2a; font:600 10.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .tk  { fill:#4a5058; font:600 10.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .ed  { fill:#4a5058; font:9px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .lb  { stroke:#1f4f8f; stroke-width:1.4; fill:none; }
+    .la  { stroke:#8a5a00; stroke-width:1.4; fill:none; }
+    .lg  { stroke:#1d6b45; stroke-width:1.6; fill:none; }
+    .lr  { stroke:#a32a2a; stroke-width:1.4; fill:none; }
+    .lk  { stroke:#767d87; stroke-width:1.3; fill:none; }
+    .tier{ fill:#8f96a1; font:700 8px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; letter-spacing:.1em; }
+  </style>
+
+  <!-- fills-in-one-print bypass -->
+  <path class="lg" d="M 222 36 L 222 14 L 552 14 L 552 36" marker-end="url(#s-g)"/>
+  <text class="ed" x="387" y="10" style="fill:#1d6b45">fills completely in one print</text>
+
+  <!-- ROW A — working -->
+  <text class="tier" x="600" y="30">WORKING</text>
+  <rect class="sb" x="24"  y="36" width="106" height="32" rx="5"/>
+  <text class="tb" x="77"  y="56">PENDING_NEW</text>
+  <rect class="sb" x="186" y="36" width="72"  height="32" rx="5"/>
+  <text class="tb" x="222" y="56">NEW</text>
+  <rect class="sb" x="314" y="36" width="128" height="32" rx="5"/>
+  <text class="tb" x="378" y="56">PARTIALLY_FILLED</text>
+  <rect class="sg" x="512" y="36" width="80"  height="32" rx="5"/>
+  <text class="tg" x="552" y="56">FILLED</text>
+
+  <line class="lb" x1="132" y1="52" x2="182" y2="52" marker-end="url(#s-b)"/>
+  <text class="ed" x="157" y="46">accepted</text>
+  <line class="lb" x1="260" y1="52" x2="310" y2="52" marker-end="url(#s-b)"/>
+  <text class="ed" x="285" y="46">partial fill</text>
+  <line class="lg" x1="444" y1="52" x2="508" y2="52" marker-end="url(#s-g)"/>
+  <text class="ed" x="476" y="46" style="fill:#1d6b45">remainder fills</text>
+
+  <!-- ROW B — pending transitions -->
+  <text class="tier" x="600" y="112">IN FLIGHT</text>
+  <rect class="sa" x="160" y="118" width="124" height="30" rx="5"/>
+  <text class="ta" x="222" y="137">PENDING_REPLACE</text>
+  <rect class="sa" x="316" y="118" width="120" height="30" rx="5"/>
+  <text class="ta" x="376" y="137">PENDING_CANCEL</text>
+
+  <line class="la" x1="222" y1="70" x2="222" y2="114" marker-end="url(#s-a)"/>
+  <text class="ed" x="196" y="94" style="text-anchor:end">PATCH</text>
+  <line class="la" x1="372" y1="70" x2="376" y2="114" marker-end="url(#s-a)"/>
+  <text class="ed" x="404" y="94" style="text-anchor:start">DELETE</text>
+
+  <!-- ROW C — terminal -->
+  <text class="tier" x="600" y="190">TERMINAL</text>
+  <rect class="sr" x="24"  y="196" width="92"  height="30" rx="5"/>
+  <text class="tr" x="70"  y="215">REJECTED</text>
+  <rect class="sk" x="160" y="196" width="90"  height="30" rx="5"/>
+  <text class="tk" x="205" y="215">REPLACED</text>
+  <rect class="sk" x="316" y="196" width="98"  height="30" rx="5"/>
+  <text class="tk" x="365" y="215">CANCELLED</text>
+  <rect class="sk" x="468" y="196" width="88"  height="30" rx="5"/>
+  <text class="tk" x="512" y="215">EXPIRED</text>
+
+  <line class="lr" x1="70" y1="70" x2="70" y2="192" marker-end="url(#s-r)"/>
+  <text class="ed" x="78" y="118" style="text-anchor:start;fill:#a32a2a">risk check</text>
+  <text class="ed" x="78" y="130" style="text-anchor:start;fill:#a32a2a">or venue</text>
+  <text class="ed" x="78" y="142" style="text-anchor:start;fill:#a32a2a">rejects</text>
+
+  <line class="lk" x1="215" y1="150" x2="205" y2="192" marker-end="url(#s-k)"/>
+  <line class="lk" x1="372" y1="150" x2="365" y2="192" marker-end="url(#s-k)"/>
+  <path class="lk" d="M 444 60 L 512 60 L 512 192" marker-end="url(#s-k)"/>
+  <text class="ed" x="520" y="120" style="text-anchor:start">time in force</text>
+  <text class="ed" x="520" y="132" style="text-anchor:start">elapses</text>
+</svg>
+<figcaption>
+  <b>Figure 5.1 — Order lifecycle.</b>
+  For legibility the diagram shows <code>PATCH</code> from <code>NEW</code> and
+  <code>DELETE</code> from <code>PARTIALLY_FILLED</code>; both transitions are available from
+  either working state. A <code>REPLACED</code> order is terminal and its replacement is a
+  <b>new resource with a new <code>orderId</code></b> — reconciliation must follow that link
+  rather than assume the identifier is stable.
+</figcaption>
+</figure>
+
+<table class="long">
+  <thead><tr><th style="width:24%">State</th><th style="width:14%">Terminal?</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>PENDING_NEW</code></td><td>No</td><td>Accepted by us, not yet acknowledged by the venue.</td></tr>
+    <tr><td><code>NEW</code></td><td>No</td><td>Live on the book. Working, unfilled.</td></tr>
+    <tr><td><code>PARTIALLY_FILLED</code></td><td>No</td><td>Some quantity filled; the remainder is still working.</td></tr>
+    <tr><td><code>PENDING_REPLACE</code> / <code>PENDING_CANCEL</code></td><td>No</td><td>An amendment or cancellation is in flight at the venue.</td></tr>
+    <tr><td><code>FILLED</code></td><td><b>Yes</b></td><td>Fully executed.</td></tr>
+    <tr><td><code>CANCELLED</code></td><td><b>Yes</b></td><td>Cancelled. May carry a non-zero <code>filledQuantity</code> if it partially filled first.</td></tr>
+    <tr><td><code>REJECTED</code></td><td><b>Yes</b></td><td>Refused. <code>rejectReason</code> carries a machine-readable <code>code</code>.</td></tr>
+    <tr><td><code>EXPIRED</code></td><td><b>Yes</b></td><td>Time in force elapsed — a <code>DAY</code> order at the close, or a <code>GTD</code> order past its date.</td></tr>
+    <tr><td><code>REPLACED</code></td><td><b>Yes</b></td><td>Superseded by an amendment. Follow the link to the replacement.</td></tr>
+    <tr><td><code>SUSPENDED</code></td><td>No</td><td>Held — a trading halt in the instrument, or a compliance hold on the account.</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <span class="lbl">Three things that regularly surprise people</span>
+  <p>
+    <b>A 201 is not a fill.</b> It means the order was accepted and routed. Terminal state
+    arrives later, via the event stream, a webhook, or a poll.
+  </p>
+  <p>
+    <b>Cancellation is a request, not a guarantee.</b> The order moves to
+    <code>PENDING_CANCEL</code> and only reaches <code>CANCELLED</code> once the venue
+    acknowledges. A fill already in flight can still land — a "cancelled" order can end up
+    <code>FILLED</code>.
+  </p>
+  <p>
+    <b>An order can be rejected after acceptance.</b> We accept and route it; the venue
+    refuses it a moment later. That surfaces as a later <code>REJECTED</code> state, not as an
+    error on the original call.
+  </p>
+</div>
+
+<h2 id="placing"><span class="num">5.2</span>Placing an order safely</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>/v1/accounts/{accountId}/orders</div>
+  <div class="scopes">Requires <span class="pill">orders:write</span> &nbsp;·&nbsp; <code>Idempotency-Key</code> header <b>required</b></div>
+</div>
+
+<p>
+  The request body is a discriminated union on <code>assetClass</code>: <code>EQUITY</code>
+  for single-leg stock and ETF orders, <code>OPTION</code> for single- and multi-leg listed
+  option orders.
+</p>
+
+<h4>Validation order</h4>
+
+<p>
+  The service validates in this sequence and <b>stops at the first failure</b>, so a rejection
+  tells you the first thing wrong, not everything wrong:
+</p>
+
+<pre><code>schema  →  instrument tradability  →  market / session eligibility
+        →  options approval level  →  buying power and margin
+        →  risk limits             →  route to venue</code></pre>
+
+<h4>The safe submission pattern</h4>
+
+<pre><code><span class="c-com">// 1. Generate the idempotency key ONCE, before the first attempt.</span>
+key = uuid4()
+
+<span class="c-com">// 2. Preview, so the customer confirms real numbers rather than an estimate.</span>
+preview = POST /orders/preview  {order}
+<span class="c-key">if</span> (!preview.valid) { show preview.warnings; stop }
+
+<span class="c-com">// 3. Submit. Retry ONLY with the same key — never regenerate it in the loop.</span>
+<span class="c-key">retry</span> (max 4, full jitter) {
+  response = POST /orders  {order}  Idempotency-Key: key
+}
+
+<span class="c-com">// 4. A 201 means routed, not filled. Confirm terminal state separately.</span>
+watch(response.orderId)  <span class="c-com">// SSE stream, webhook, or ETag-conditional poll</span></code></pre>
+
+<h2 id="stock"><span class="num">5.3</span>Stock trading</h2>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Field</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>side</code></td><td><code>BUY</code>, <code>SELL</code>, <code>SELL_SHORT</code>, <code>BUY_TO_COVER</code>. Short sales require a margin account and a locate.</td></tr>
+    <tr><td><code>instrumentId</code></td><td>From instrument search. Not a ticker — tickers are ambiguous across venues and change on corporate actions.</td></tr>
+    <tr><td><code>quantity</code></td><td>Positive decimal string. Fractional quantities only where <code>fractionable</code> is true, and only for <code>MARKET</code>/<code>DAY</code>.</td></tr>
+    <tr><td><code>orderType</code></td><td><code>MARKET</code>, <code>LIMIT</code>, <code>STOP</code>, <code>STOP_LIMIT</code>, <code>TRAILING_STOP</code>, <code>TRAILING_STOP_LIMIT</code>.</td></tr>
+    <tr><td><code>timeInForce</code></td><td><code>DAY</code>, <code>GTC</code>, <code>GTD</code>, <code>IOC</code>, <code>FOK</code>, <code>OPG</code>, <code>CLS</code>. See Appendix B.</td></tr>
+    <tr><td><code>extendedHours</code></td><td>Pre- and post-market routing. Must be <code>LIMIT</code> and <code>DAY</code>; spreads are wider and liquidity thinner.</td></tr>
+    <tr><td><code>bracket</code></td><td>Attached profit target and stop, released on entry fill, mutually one-cancels-the-other.</td></tr>
+  </tbody>
+</table>
+
+<h4>Limit buy</h4>
+<pre><code>POST /v1/accounts/acct_…/orders
+Idempotency-Key: 6f1c2a90-3f5b-4c1e-9c2a-8d7b6e5f4a30
+
+{ <span class="c-key">"assetClass"</span>:    <span class="c-str">"EQUITY"</span>,
+  <span class="c-key">"clientOrderId"</span>: <span class="c-str">"ui-2026-08-17-0007"</span>,
+  <span class="c-key">"side"</span>:          <span class="c-str">"BUY"</span>,
+  <span class="c-key">"instrumentId"</span>:  <span class="c-str">"inst_eq_MSFT"</span>,
+  <span class="c-key">"quantity"</span>:      <span class="c-str">"300"</span>,
+  <span class="c-key">"orderType"</span>:     <span class="c-str">"LIMIT"</span>,
+  <span class="c-key">"limitPrice"</span>:    <span class="c-str">"412.50"</span>,
+  <span class="c-key">"timeInForce"</span>:   <span class="c-str">"DAY"</span>,
+  <span class="c-key">"extendedHours"</span>: false }
+
+<span class="c-com">→ 201 Created</span>
+<span class="c-com">   Location: /v1/accounts/acct_…/orders/ord_01HQ9D4N7Q1S5U8X</span>
+<span class="c-com">   ETag: W/"ord-1-1755441062"</span></code></pre>
+
+<h4>Bracket order</h4>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"EQUITY"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY"</span>, <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_MSFT"</span>,
+  <span class="c-key">"quantity"</span>: <span class="c-str">"100"</span>, <span class="c-key">"orderType"</span>: <span class="c-str">"LIMIT"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"410.00"</span>,
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span>,
+  <span class="c-key">"bracket"</span>: {
+    <span class="c-key">"takeProfit"</span>: { <span class="c-key">"orderType"</span>: <span class="c-str">"LIMIT"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"430.00"</span> },
+    <span class="c-key">"stopLoss"</span>:   { <span class="c-key">"orderType"</span>: <span class="c-str">"STOP"</span>,  <span class="c-key">"stopPrice"</span>:  <span class="c-str">"398.00"</span> }
+  } }</code></pre>
+
+<h4>Trailing stop</h4>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"EQUITY"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL"</span>, <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_NVDA"</span>,
+  <span class="c-key">"quantity"</span>: <span class="c-str">"50"</span>, <span class="c-key">"orderType"</span>: <span class="c-str">"TRAILING_STOP"</span>,
+  <span class="c-key">"trailingPercent"</span>: <span class="c-str">"5.0"</span>,   <span class="c-com">// or trailingAmount — mutually exclusive</span>
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"GTC"</span> }</code></pre>
+
+<div class="warn">
+  <span class="lbl">Market orders and gaps</span>
+  <p>
+    A <code>MARKET</code> order guarantees execution, not price. On an illiquid name, at the
+    open, or during a halt resumption, the fill can be far from the last quote. Prefer
+    marketable limits for anything the customer would be upset to see filled 8% away, and
+    surface the preview's estimated cost before submitting.
+  </p>
+</div>
+
+<h2 id="options"><span class="num">5.4</span>Options trading</h2>
+
+<p>
+  Option orders carry a <code>legs</code> array — one entry for a single-leg order, up to four
+  for a combination. Multi-leg orders are priced and routed <b>as one unit</b>; legs never
+  fill independently.
+</p>
+
+<h4>Approval levels</h4>
+
+<table>
+  <thead><tr><th style="width:16%">Level</th><th>Permits (cumulative)</th></tr></thead>
+  <tbody>
+    <tr><td><code>LEVEL_1</code></td><td>Covered calls, cash-secured puts.</td></tr>
+    <tr><td><code>LEVEL_2</code></td><td>Long calls and puts.</td></tr>
+    <tr><td><code>LEVEL_3</code></td><td>Spreads and other defined-risk multi-leg strategies.</td></tr>
+    <tr><td><code>LEVEL_4</code></td><td>Uncovered (naked) short options.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  An order above the account's level is rejected with
+  <span class="status-pill s-4xx">403</span> <code>options-level-insufficient</code>, which
+  carries <code>requiredLevel</code> and <code>currentLevel</code> so you can tell the
+  customer exactly what to request.
+</p>
+
+<h4>Open and close are explicit</h4>
+
+<p>
+  <code>side</code> on an option leg is one of <code>BUY_TO_OPEN</code>,
+  <code>BUY_TO_CLOSE</code>, <code>SELL_TO_OPEN</code>, <code>SELL_TO_CLOSE</code>. The
+  distinction drives margin treatment and position netting and <b>cannot be inferred</b> from
+  buy/sell alone — selling a call you hold closes a position; selling one you do not is a
+  naked short requiring <code>LEVEL_4</code>.
+</p>
+
+<h4>Single leg</h4>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+  <span class="c-key">"strategy"</span>:   <span class="c-str">"SINGLE"</span>,
+  <span class="c-key">"legs"</span>: [ { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>,
+              <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> } ],
+  <span class="c-key">"quantity"</span>:    <span class="c-str">"5"</span>,          <span class="c-com">// 5 contracts</span>
+  <span class="c-key">"orderType"</span>:   <span class="c-str">"LIMIT"</span>,
+  <span class="c-key">"limitPrice"</span>:  <span class="c-str">"12.40"</span>,      <span class="c-com">// per contract → 12.40 × 5 × 100 = 6,200 outlay</span>
+  <span class="c-key">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+
+<h4>Vertical spread — priced as a unit</h4>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+  <span class="c-key">"strategy"</span>:   <span class="c-str">"VERTICAL"</span>,
+  <span class="c-key">"legs"</span>: [
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00260000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> }
+  ],
+  <span class="c-key">"quantity"</span>:    <span class="c-str">"10"</span>,          <span class="c-com">// 10 SPREADS = 20 contracts</span>
+  <span class="c-key">"orderType"</span>:   <span class="c-str">"NET_DEBIT"</span>,
+  <span class="c-key">"netPrice"</span>:    <span class="c-str">"3.15"</span>,         <span class="c-com">// always positive</span>
+  <span class="c-key">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,        <span class="c-com">// direction lives here, not in the sign</span>
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+
+<div class="danger">
+  <span class="lbl">Two ways to get option sizing badly wrong</span>
+  <p>
+    <b><code>quantity</code> is strategy units, not contracts.</b> A <code>quantity</code> of
+    10 on a two-leg vertical is ten <i>spreads</i> — twenty contracts — with each leg scaled
+    by its <code>ratio</code>. Reading it as contracts halves your intended position, or
+    doubles it, depending on which way you err.
+  </p>
+  <p>
+    <b>Declaring <code>strategy</code> is not cosmetic.</b> It is what causes the risk engine
+    to apply spread margin instead of margining each leg independently. The identical legs
+    submitted as <code>CUSTOM</code> get the short call margined as if naked, which typically
+    demands an order of magnitude more buying power — often the difference between an order
+    being accepted and rejected.
+  </p>
+</div>
+
+<h4>Four-leg iron condor</h4>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>, <span class="c-key">"strategy"</span>: <span class="c-str">"IRON_CONDOR"</span>,
+  <span class="c-key">"legs"</span>: [
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120P00520000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120P00540000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120C00600000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120C00620000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> }
+  ],
+  <span class="c-key">"quantity"</span>: <span class="c-str">"2"</span>, <span class="c-key">"orderType"</span>: <span class="c-str">"NET_CREDIT"</span>,
+  <span class="c-key">"netPrice"</span>: <span class="c-str">"1.85"</span>, <span class="c-key">"priceEffect"</span>: <span class="c-str">"CREDIT"</span>, <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+
+<h4>Resolving contracts</h4>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/instruments/{underlyingSymbol}/option-chain</div>
+  <div class="scopes">Requires <span class="pill">instruments:read</span> &nbsp;·&nbsp; always narrow with <code>expiration</code></div>
+</div>
+
+<p>
+  Option contracts carry a 21-character OSI symbol —
+  <code>AAPL&nbsp;&nbsp;261218C00250000</code>: six characters of root (space-padded), six
+  digits of <code>YYMMDD</code>, <code>C</code> or <code>P</code>, then eight digits of strike
+  × 1000. It is a useful checksum on your own logic, but the <code>instrumentId</code> is what
+  you place orders against.
+</p>
+
+<h2 id="preview"><span class="num">5.5</span>Previewing an order</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>/v1/accounts/{accountId}/orders/preview</div>
+  <div class="scopes">Requires <span class="pill">orders:write</span> &nbsp;·&nbsp; creates nothing, takes no idempotency key</div>
+</div>
+
+<p>
+  Runs the full validation and pricing pipeline without routing. Same request body as
+  <code>placeOrder</code>. Use it to power a confirmation screen.
+</p>
+
+<pre><code><span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"valid"</span>:             false,
+  <span class="c-key">"estimatedCost"</span>:     <span class="c-str">"123750.00"</span>,
+  <span class="c-key">"commission"</span>:        <span class="c-str">"0.00"</span>,
+  <span class="c-key">"fees"</span>:              [ { <span class="c-key">"type"</span>: <span class="c-str">"REGULATORY"</span>, <span class="c-key">"amount"</span>: <span class="c-str">"0.00"</span> } ],
+  <span class="c-key">"totalEstimated"</span>:    <span class="c-str">"123750.00"</span>,
+  <span class="c-key">"buyingPowerBefore"</span>: <span class="c-str">"84360.20"</span>,
+  <span class="c-key">"buyingPowerAfter"</span>:  <span class="c-str">"-39389.80"</span>,
+  <span class="c-key">"marginRequirement"</span>: <span class="c-str">"61875.00"</span>,
+  <span class="c-key">"maxLoss"</span>:           <span class="c-str">"3150.00"</span>,     <span class="c-com">// defined-risk strategies; null if unbounded</span>
+  <span class="c-key">"warnings"</span>: [
+    { <span class="c-key">"code"</span>: <span class="c-str">"EXCEEDS_BUYING_POWER"</span>, <span class="c-key">"severity"</span>: <span class="c-str">"ERROR"</span>,
+      <span class="c-key">"message"</span>: <span class="c-str">"This order exceeds available stock buying power by 39,389.80 USD."</span> },
+    { <span class="c-key">"code"</span>: <span class="c-str">"CONCENTRATION"</span>, <span class="c-key">"severity"</span>: <span class="c-str">"WARNING"</span>,
+      <span class="c-key">"message"</span>: <span class="c-str">"After this order, MSFT would be 67% of account equity."</span> }
+  ] }</code></pre>
+
+<p>
+  <code>valid</code> is false when any warning has <code>severity: ERROR</code>. Submitting
+  anyway will be rejected — show the warnings instead.
+</p>
+
+<h2 id="amend-cancel"><span class="num">5.6</span>Amending and cancelling</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb patch">PATCH</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+  <div class="ep-line"><span class="verb delete">DELETE</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+  <div class="scopes">Requires <span class="pill">orders:write</span> &nbsp;·&nbsp; <code>If-Match</code> <b>required</b> on both</div>
+</div>
+
+<p>
+  Amendment uses JSON Merge Patch (RFC 7386). Only <code>quantity</code>,
+  <code>limitPrice</code>, <code>stopPrice</code>, <code>trailingAmount</code>,
+  <code>trailingPercent</code>, <code>netPrice</code>, <code>timeInForce</code>, and
+  <code>goodTilDate</code> are amendable. Changing the instrument, the side, or the leg
+  structure is a different order: cancel and place a new one.
+</p>
+
+<pre><code>PATCH /v1/accounts/acct_…/orders/ord_…
+If-Match: W/"ord-7-1755441062"
+Content-Type: application/merge-patch+json
+
+{ <span class="c-key">"quantity"</span>: <span class="c-str">"200"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"413.25"</span> }</code></pre>
+
+<p>
+  New <code>quantity</code> must be at least what has already filled. Amendment is
+  best-effort against a live venue: a <span class="status-pill s-2xx">200</span> means the
+  amendment was accepted for routing, and the order may still fill at the old price if that
+  fill was already in flight.
+</p>
+
+<p>
+  Cancellation is idempotent — cancelling an already-cancelled order returns
+  <span class="status-pill s-2xx">200</span> with the cancelled order rather than an error.
+</p>
+
+<h2 id="streaming"><span class="num">5.7</span>Streaming order events and webhooks</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/events</div>
+  <div class="scopes">Requires <span class="pill">orders:read</span> &nbsp;·&nbsp; <code>text/event-stream</code></div>
+</div>
+
+<p>
+  A Server-Sent Events stream of order transitions and executions. Prefer this over polling.
+</p>
+
+<pre><code>id: evt_01HQ9E1A2B3C4D5E
+event: execution
+data: {"eventId":"evt_01HQ9E1A2B3C4D5E","eventType":"execution",
+data: "orderId":"ord_01HQ9D4N7Q1S5U8X","status":"PARTIALLY_FILLED",
+data: "execution":{"quantity":"100","price":"412.48","venue":"XNAS"}}</code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Behavior</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Resume</td><td>Send <code>Last-Event-ID</code> on reconnect to replay from just after that event. Retention is 5 minutes.</td></tr>
+    <tr><td>Heartbeat</td><td>A comment frame every 15 seconds. Treat 45 seconds of silence as a dead connection and reconnect.</td></tr>
+    <tr><td>Delivery</td><td><b>At-least-once.</b> Deduplicate on <code>eventId</code>.</td></tr>
+    <tr><td>Limit</td><td>5 concurrent streams per grant.</td></tr>
+  </tbody>
+</table>
+
+<h4>Webhooks</h4>
+
+<p>
+  For server-side integrations that would rather be called than hold a connection open,
+  register a webhook and receive the same <code>OrderEvent</code> payload by
+  <code>POST</code>.
+</p>
+
+<ul>
+  <li>Signed with <code>Webhook-Signature</code>: HMAC-SHA256 over the <b>raw</b> request
+      body, keyed by your webhook secret. Verify before parsing, and compare in constant
+      time.</li>
+  <li>Return <code>2xx</code> within 5 seconds. Non-2xx and timeouts are retried with
+      exponential backoff for 24 hours.</li>
+  <li>Delivery is at-least-once, so handlers must be idempotent on <code>eventId</code>.</li>
+</ul>
+
+<div class="warn">
+  <span class="lbl">Verify the signature over raw bytes</span>
+  <p>
+    Compute the HMAC over the body exactly as received, before any JSON parse and
+    re-serialize. Round-tripping through a parser reorders keys and normalizes whitespace,
+    which changes the bytes and breaks the signature — and the usual "fix" for that is to skip
+    verification, which is how forged fill events get accepted.
+  </p>
+</div>
+<!-- ===================== 6. CODE EXAMPLES ======================== -->
+<h1 id="examples"><span class="num">6</span>Code Examples</h1>
+
+<p class="lede">
+  The brokerage publishes no SDK, so these examples build directly on each language's standard
+  HTTP client. That is deliberate: it keeps the wire protocol visible, and it means nothing
+  here goes stale when a vendor library does.
+</p>
+
+<h2 id="examples-layout"><span class="num">6.1</span>How the examples are organized</h2>
+
+<p>
+  Complete, runnable sources live alongside this document. The listings below are excerpts;
+  the files are the reference.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:30%">File</th><th>Contents</th></tr></thead>
+  <tbody>
+    <tr><td colspan="2" style="padding-top:3mm"><b>examples/python/</b> &nbsp;<span class="small">— standard library only, Python 3.9+</span></td></tr>
+    <tr><td><code>pkce_auth.py</code></td><td>PKCE flow, token store, refresh with rotation, revocation.</td></tr>
+    <tr><td><code>brokerage_client.py</code></td><td>HTTP client: auth, retry, idempotency, link following, pagination.</td></tr>
+    <tr><td><code>accounts_examples.py</code></td><td>All five accounts endpoints.</td></tr>
+    <tr><td><code>trading_examples.py</code></td><td>Stock and option orders, preview, amend, cancel.</td></tr>
+
+    <tr><td colspan="2" style="padding-top:3mm"><b>examples/node/</b> &nbsp;<span class="small">— built-ins only, Node 18+</span></td></tr>
+    <tr><td><code>pkce-auth.mjs</code></td><td>As above, using <code>node:crypto</code> and <code>node:http</code>.</td></tr>
+    <tr><td><code>brokerage-client.mjs</code></td><td>As above, plus an SSE consumer and exact decimal arithmetic over <code>BigInt</code>.</td></tr>
+    <tr><td><code>accounts-examples.mjs</code>, <code>trading-examples.mjs</code></td><td>As above.</td></tr>
+
+    <tr><td colspan="2" style="padding-top:3mm"><b>examples/java/</b> &nbsp;<span class="small">— Java 17+, Jackson the only dependency</span></td></tr>
+    <tr><td><code>PkceAuth.java</code></td><td>As above, using <code>java.net.http.HttpClient</code>.</td></tr>
+    <tr><td><code>BrokerageClient.java</code></td><td>As above, with <code>BigDecimal</code> throughout.</td></tr>
+    <tr><td><code>AccountsExamples.java</code>, <code>TradingExamples.java</code></td><td>As above.</td></tr>
+    <tr><td><code>pom.xml</code></td><td>Maven build. <code>mvn compile exec:java -Dexec.mainClass=…</code></td></tr>
+  </tbody>
+</table>
+
+<p>
+  All three clients default to the <b>sandbox</b> base URL, and the trading examples default
+  to <code>dryRun = true</code> — they preview without routing. Both are deliberate: reaching
+  production, and actually placing an order, should each require an explicit edit.
+</p>
+
+<h2 id="ex-auth"><span class="num">6.2</span>Authorization: PKCE in three languages</h2>
+
+<p>
+  The same four steps everywhere: generate the pair, build the authorization URL, verify
+  <code>state</code>, exchange the code.
+</p>
+
+<p class="lang">Python</p>
+<pre><code><span class="c-key">import</span> base64, hashlib, secrets
+
+<span class="c-key">def</span> generate_pkce_pair():
+    <span class="c-str">"""32 random bytes → a 43-character verifier, the RFC 7636 minimum."""</span>
+    verifier  = base64.urlsafe_b64encode(secrets.token_bytes(<span class="c-num">32</span>)).decode().rstrip(<span class="c-str">"="</span>)
+    digest    = hashlib.sha256(verifier.encode(<span class="c-str">"ascii"</span>)).digest()
+    challenge = base64.urlsafe_b64encode(digest).decode().rstrip(<span class="c-str">"="</span>)
+    <span class="c-key">return</span> verifier, challenge
+
+<span class="c-com"># `secrets`, never `random` — the verifier is the only thing stopping</span>
+<span class="c-com"># someone who intercepts the authorization code from redeeming it.</span>
+
+tokens = exchange_code(code, verifier)   <span class="c-com"># POST /oauth2/token, no client_secret</span></code></pre>
+
+<p class="lang">Node.js</p>
+<pre><code><span class="c-key">import</span> { createHash, randomBytes, timingSafeEqual } <span class="c-key">from</span> <span class="c-str">'node:crypto'</span>;
+
+<span class="c-key">export function</span> generatePkcePair() {
+  <span class="c-key">const</span> codeVerifier  = randomBytes(<span class="c-num">32</span>).toString(<span class="c-str">'base64url'</span>);
+  <span class="c-key">const</span> codeChallenge = createHash(<span class="c-str">'sha256'</span>).update(codeVerifier).digest(<span class="c-str">'base64url'</span>);
+  <span class="c-key">return</span> { codeVerifier, codeChallenge };
+}
+
+<span class="c-com">// Constant-time compare on `state` — habits matter more than this one leak.</span>
+<span class="c-key">function</span> safeEqual(a, b) {
+  <span class="c-key">const</span> x = Buffer.from(a), y = Buffer.from(b);
+  <span class="c-key">return</span> x.length === y.length &amp;&amp; timingSafeEqual(x, y);
+}</code></pre>
+
+<p class="lang">Java</p>
+<pre><code><span class="c-key">public static</span> PkcePair generatePkcePair() {
+    <span class="c-key">byte</span>[] entropy = <span class="c-key">new byte</span>[<span class="c-num">32</span>];
+    RANDOM.nextBytes(entropy);                     <span class="c-com">// SecureRandom</span>
+    String verifier = b64url(entropy);
+
+    <span class="c-key">byte</span>[] digest = MessageDigest.getInstance(<span class="c-str">"SHA-256"</span>)
+            .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+    <span class="c-key">return new</span> PkcePair(verifier, b64url(digest));
+}
+
+<span class="c-key">private static</span> String b64url(<span class="c-key">byte</span>[] raw) {
+    <span class="c-key">return</span> Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+}</code></pre>
+
+<div class="tip">
+  <span class="lbl">Refresh with rotation — all three clients share this shape</span>
+  <p>
+    Persist the new refresh token <b>before</b> using the new access token, atomically
+    (write-temp-then-rename). On <code>invalid_grant</code>, stop retrying and re-authorize:
+    the token is revoked, expired, or already spent, and there is no other recovery.
+    Serialize concurrent refreshes behind a lock, or two threads will trip reuse detection and
+    revoke the family.
+  </p>
+</div>
+
+<h2 id="ex-accounts"><span class="num">6.3</span>Accounts: reading balances and positions</h2>
+
+<p>
+  Note that all three follow the <code>balances</code> link rather than building the URL, and
+  all three parse money into an exact decimal type.
+</p>
+
+<p class="lang">Python</p>
+<pre><code><span class="c-key">from</span> decimal <span class="c-key">import</span> Decimal
+
+accounts = client.get(<span class="c-str">"/accounts"</span>)[<span class="c-str">"items"</span>]
+account  = accounts[<span class="c-num">0</span>]
+
+balances = client.follow(account, <span class="c-str">"balances"</span>)      <span class="c-com"># HATEOAS, not string concat</span>
+
+<span class="c-key">print</span>(<span class="c-str">f"Net liquidation: {Decimal(balances['netLiquidation']):,.2f}"</span>)
+<span class="c-key">print</span>(<span class="c-str">f"Stock BP:        {Decimal(balances['buyingPower']['stock']):,.2f}"</span>)
+<span class="c-key">print</span>(<span class="c-str">f"Option BP:       {Decimal(balances['buyingPower']['option']):,.2f}"</span>)
+
+<span class="c-com"># A margin call is the one balance field worth alerting on.</span>
+<span class="c-key">if</span> (call := (balances.get(<span class="c-str">"margin"</span>) <span class="c-key">or</span> {}).get(<span class="c-str">"marginCall"</span>)):
+    alert(<span class="c-str">f"{call['type']}: {call['amount']} due {call['dueDate']}"</span>)
+
+<span class="c-com"># paginate() follows `next` links; it never constructs a cursor.</span>
+total = sum(Decimal(p[<span class="c-str">"unrealizedPnl"</span>])
+            <span class="c-key">for</span> p <span class="c-key">in</span> client.paginate(client.link(account, <span class="c-str">"positions"</span>)))</code></pre>
+
+<p class="lang">Node.js</p>
+<pre><code><span class="c-key">const</span> { items: accounts } = <span class="c-key">await</span> client.get(<span class="c-str">'/accounts'</span>);
+<span class="c-key">const</span> account  = accounts[<span class="c-num">0</span>];
+<span class="c-key">const</span> balances = <span class="c-key">await</span> client.follow(account, <span class="c-str">'balances'</span>);
+
+<span class="c-com">// Dec keeps values as strings and does exact arithmetic over BigInt.</span>
+<span class="c-com">// Number('412.50') would be fine; Number arithmetic would not be.</span>
+<span class="c-key">let</span> totalUnrealized = <span class="c-str">'0'</span>;
+<span class="c-key">for await</span> (<span class="c-key">const</span> p <span class="c-key">of</span> client.paginate(client.link(account, <span class="c-str">'positions'</span>))) {
+  totalUnrealized = Dec.add(totalUnrealized, p.unrealizedPnl);
+}
+console.log(<span class="c-str">`Unrealized: ${Dec.format(totalUnrealized)}`</span>);</code></pre>
+
+<p class="lang">Java</p>
+<pre><code>JsonNode account  = client.get(<span class="c-str">"/accounts"</span>).path(<span class="c-str">"items"</span>).get(<span class="c-num">0</span>);
+JsonNode balances = client.follow(account, <span class="c-str">"balances"</span>);
+
+System.out.printf(<span class="c-str">"Net liquidation: %,14.2f%n"</span>, decimal(balances, <span class="c-str">"netLiquidation"</span>));
+System.out.printf(<span class="c-str">"Stock BP:        %,14.2f%n"</span>, decimal(balances, <span class="c-str">"buyingPower"</span>, <span class="c-str">"stock"</span>));
+
+BigDecimal total = client.paginate(client.linkOrThrow(account, <span class="c-str">"positions"</span>), Options.none())
+        .map(p -&gt; decimal(p, <span class="c-str">"unrealizedPnl"</span>))
+        .reduce(BigDecimal.ZERO, BigDecimal::add);</code></pre>
+
+<h2 id="ex-stock"><span class="num">6.4</span>Trading: placing a stock order</h2>
+
+<p>
+  The pattern is identical across languages: generate the key once, preview, submit with the
+  key, then confirm terminal state separately.
+</p>
+
+<p class="lang">Python</p>
+<pre><code>order = {
+    <span class="c-str">"assetClass"</span>:  <span class="c-str">"EQUITY"</span>,
+    <span class="c-str">"side"</span>:        <span class="c-str">"BUY"</span>,
+    <span class="c-str">"instrumentId"</span>: resolve_equity(client, <span class="c-str">"MSFT"</span>)[<span class="c-str">"instrumentId"</span>],
+    <span class="c-str">"quantity"</span>:    <span class="c-str">"300"</span>,           <span class="c-com"># strings, never floats</span>
+    <span class="c-str">"orderType"</span>:   <span class="c-str">"LIMIT"</span>,
+    <span class="c-str">"limitPrice"</span>:  <span class="c-str">"412.50"</span>,
+    <span class="c-str">"timeInForce"</span>: <span class="c-str">"DAY"</span>,
+}
+
+result = client.post(<span class="c-str">f"{account_url}/orders/preview"</span>, order)
+<span class="c-key">if not</span> result[<span class="c-str">"valid"</span>]:
+    <span class="c-key">for</span> w <span class="c-key">in</span> result[<span class="c-str">"warnings"</span>]:
+        <span class="c-key">print</span>(<span class="c-str">f"[{w['severity']}] {w['message']}"</span>)
+    <span class="c-key">return</span>
+
+<span class="c-com"># Generated ONCE, outside the client's retry loop. Regenerating it in the</span>
+<span class="c-com"># loop is the exact bug idempotency exists to prevent.</span>
+key   = client.new_idempotency_key()
+order = client.post(<span class="c-str">f"{account_url}/orders"</span>, order, idempotency_key=key)
+
+<span class="c-key">print</span>(order[<span class="c-str">"orderId"</span>], order[<span class="c-str">"status"</span>])   <span class="c-com"># NEW — routed, not filled</span></code></pre>
+
+<p class="lang">Node.js</p>
+<pre><code><span class="c-key">const</span> order = {
+  assetClass: <span class="c-str">'EQUITY'</span>, side: <span class="c-str">'BUY'</span>,
+  instrumentId: (<span class="c-key">await</span> resolveEquity(client, <span class="c-str">'MSFT'</span>)).instrumentId,
+  quantity: <span class="c-str">'300'</span>, orderType: <span class="c-str">'LIMIT'</span>, limitPrice: <span class="c-str">'412.50'</span>, timeInForce: <span class="c-str">'DAY'</span>,
+};
+
+<span class="c-key">const</span> preview = <span class="c-key">await</span> client.post(<span class="c-str">`${accountUrl}/orders/preview`</span>, order);
+<span class="c-key">if</span> (!preview.valid) <span class="c-key">return</span> preview.warnings.forEach(w =&gt; console.log(w.message));
+
+<span class="c-key">const</span> idempotencyKey = client.newIdempotencyKey();
+<span class="c-key">const</span> placed = <span class="c-key">await</span> client.post(<span class="c-str">`${accountUrl}/orders`</span>, order, { idempotencyKey });</code></pre>
+
+<p class="lang">Java</p>
+<pre><code>ObjectNode order = MAPPER.createObjectNode();
+order.put(<span class="c-str">"assetClass"</span>,   <span class="c-str">"EQUITY"</span>);
+order.put(<span class="c-str">"side"</span>,         <span class="c-str">"BUY"</span>);
+order.put(<span class="c-str">"instrumentId"</span>, resolveEquity(client, <span class="c-str">"MSFT"</span>).path(<span class="c-str">"instrumentId"</span>).asText());
+order.put(<span class="c-str">"quantity"</span>,     <span class="c-str">"300"</span>);
+order.put(<span class="c-str">"orderType"</span>,    <span class="c-str">"LIMIT"</span>);
+order.put(<span class="c-str">"limitPrice"</span>,   <span class="c-str">"412.50"</span>);
+order.put(<span class="c-str">"timeInForce"</span>,  <span class="c-str">"DAY"</span>);
+
+JsonNode preview = client.post(accountUrl + <span class="c-str">"/orders/preview"</span>, order, Options.none());
+<span class="c-key">if</span> (!preview.path(<span class="c-str">"valid"</span>).asBoolean()) { <span class="c-com">/* surface warnings */</span> <span class="c-key">return</span>; }
+
+String key = BrokerageClient.newIdempotencyKey();
+JsonNode placed = client.post(accountUrl + <span class="c-str">"/orders"</span>, order,
+                              Options.none().idempotencyKey(key));</code></pre>
+
+<h2 id="ex-options"><span class="num">6.5</span>Trading: placing a multi-leg option order</h2>
+
+<p>
+  A ten-lot vertical debit spread — twenty contracts — priced as one unit.
+</p>
+
+<p class="lang">Python</p>
+<pre><code>long_leg  = resolve_option(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"250.00"</span>, <span class="c-str">"CALL"</span>)
+short_leg = resolve_option(client, <span class="c-str">"AAPL"</span>, <span class="c-str">"2026-12-18"</span>, <span class="c-str">"260.00"</span>, <span class="c-str">"CALL"</span>)
+
+order = {
+    <span class="c-str">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+    <span class="c-str">"strategy"</span>:   <span class="c-str">"VERTICAL"</span>,   <span class="c-com"># this is what gets spread margin applied</span>
+    <span class="c-str">"legs"</span>: [
+        {<span class="c-str">"instrumentId"</span>: long_leg[<span class="c-str">"instrumentId"</span>],  <span class="c-str">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-str">"ratio"</span>: <span class="c-num">1</span>},
+        {<span class="c-str">"instrumentId"</span>: short_leg[<span class="c-str">"instrumentId"</span>], <span class="c-str">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-str">"ratio"</span>: <span class="c-num">1</span>},
+    ],
+    <span class="c-str">"quantity"</span>:    <span class="c-str">"10"</span>,          <span class="c-com"># 10 SPREADS = 20 contracts</span>
+    <span class="c-str">"orderType"</span>:   <span class="c-str">"NET_DEBIT"</span>,
+    <span class="c-str">"netPrice"</span>:    <span class="c-str">"3.15"</span>,        <span class="c-com"># always positive</span>
+    <span class="c-str">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,       <span class="c-com"># direction lives here, not in the sign</span>
+    <span class="c-str">"timeInForce"</span>: <span class="c-str">"DAY"</span>,
+}</code></pre>
+
+<p class="lang">Node.js</p>
+<pre><code><span class="c-key">const</span> [longLeg, shortLeg] = <span class="c-key">await</span> Promise.all([
+  resolveOption(client, <span class="c-str">'AAPL'</span>, <span class="c-str">'2026-12-18'</span>, <span class="c-str">'250.00'</span>, <span class="c-str">'CALL'</span>),
+  resolveOption(client, <span class="c-str">'AAPL'</span>, <span class="c-str">'2026-12-18'</span>, <span class="c-str">'260.00'</span>, <span class="c-str">'CALL'</span>),
+]);
+
+<span class="c-key">const</span> order = {
+  assetClass: <span class="c-str">'OPTION'</span>, strategy: <span class="c-str">'VERTICAL'</span>,
+  legs: [
+    { instrumentId: longLeg.instrumentId,  side: <span class="c-str">'BUY_TO_OPEN'</span>,  ratio: <span class="c-num">1</span> },
+    { instrumentId: shortLeg.instrumentId, side: <span class="c-str">'SELL_TO_OPEN'</span>, ratio: <span class="c-num">1</span> },
+  ],
+  quantity: <span class="c-str">'10'</span>, orderType: <span class="c-str">'NET_DEBIT'</span>,
+  netPrice: <span class="c-str">'3.15'</span>, priceEffect: <span class="c-str">'DEBIT'</span>, timeInForce: <span class="c-str">'DAY'</span>,
+};</code></pre>
+
+<p class="lang">Java</p>
+<pre><code>ObjectNode order = MAPPER.createObjectNode();
+order.put(<span class="c-str">"assetClass"</span>, <span class="c-str">"OPTION"</span>);
+order.put(<span class="c-str">"strategy"</span>,   <span class="c-str">"VERTICAL"</span>);
+
+ArrayNode legs = order.putArray(<span class="c-str">"legs"</span>);
+legs.add(leg(longLeg.path(<span class="c-str">"instrumentId"</span>).asText(),  <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-num">1</span>));
+legs.add(leg(shortLeg.path(<span class="c-str">"instrumentId"</span>).asText(), <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-num">1</span>));
+
+order.put(<span class="c-str">"quantity"</span>,    <span class="c-str">"10"</span>);
+order.put(<span class="c-str">"orderType"</span>,   <span class="c-str">"NET_DEBIT"</span>);
+order.put(<span class="c-str">"netPrice"</span>,    <span class="c-str">"3.15"</span>);
+order.put(<span class="c-str">"priceEffect"</span>, <span class="c-str">"DEBIT"</span>);
+order.put(<span class="c-str">"timeInForce"</span>, <span class="c-str">"DAY"</span>);</code></pre>
+
+<h2 id="ex-amend"><span class="num">6.6</span>Amend and cancel with optimistic concurrency</h2>
+
+<p>
+  Read, check the affordance, mutate with <code>If-Match</code>, and handle
+  <span class="status-pill s-4xx">412</span> by re-reading rather than blind-retrying.
+</p>
+
+<p class="lang">Python</p>
+<pre><code><span class="c-key">def</span> amend_order(client, order, new_price):
+    self_url      = client.link(order, <span class="c-str">"self"</span>)
+    fresh, headers = client.get_with_headers(self_url)
+
+    <span class="c-com"># Branch on the link, not on the status string.</span>
+    <span class="c-key">if not</span> client.can(fresh, <span class="c-str">"replace"</span>):
+        <span class="c-key">return</span> fresh
+
+    <span class="c-key">try</span>:
+        <span class="c-key">return</span> client.patch(self_url, {<span class="c-str">"limitPrice"</span>: new_price},
+                            if_match=headers.get(<span class="c-str">"ETag"</span>))
+    <span class="c-key">except</span> ApiError <span class="c-key">as</span> exc:
+        <span class="c-key">if</span> exc.status != <span class="c-num">412</span>:
+            <span class="c-key">raise</span>
+        <span class="c-com"># The order changed while we were deciding. Re-read and decide</span>
+        <span class="c-com"># again — never retry with the newer ETag unexamined.</span>
+        <span class="c-key">return</span> client.get(self_url)</code></pre>
+
+<p class="lang">Node.js</p>
+<pre><code><span class="c-key">const</span> { body: fresh, headers } = <span class="c-key">await</span> client.getWithHeaders(selfUrl);
+<span class="c-key">if</span> (!client.can(fresh, <span class="c-str">'cancel'</span>)) <span class="c-key">return</span> fresh;   <span class="c-com">// already terminal</span>
+
+<span class="c-key">const</span> cancelled = <span class="c-key">await</span> client.delete(selfUrl, { ifMatch: headers.get(<span class="c-str">'ETag'</span>) });
+<span class="c-com">// PENDING_CANCEL, not CANCELLED — the venue has not acknowledged yet.</span>
+console.log(cancelled.status);</code></pre>
+
+<p class="lang">Java</p>
+<pre><code>Response current = client.getWithHeaders(selfUrl, Options.none());
+JsonNode fresh   = current.body();
+
+<span class="c-key">if</span> (!can(fresh, <span class="c-str">"replace"</span>)) <span class="c-key">return</span> fresh;
+
+<span class="c-key">try</span> {
+    ObjectNode patch = MAPPER.createObjectNode();
+    patch.put(<span class="c-str">"limitPrice"</span>, newPrice);
+    <span class="c-key">return</span> client.patch(selfUrl, patch, Options.none().ifMatch(current.headers().etag()));
+} <span class="c-key">catch</span> (ApiException e) {
+    <span class="c-key">if</span> (e.status() != <span class="c-num">412</span>) <span class="c-key">throw</span> e;
+    <span class="c-key">return</span> client.get(selfUrl);      <span class="c-com">// re-read, then decide again</span>
+}</code></pre>
+
+<div class="note">
+  <span class="lbl">Streaming, in the Node client</span>
+  <p>
+    <code>brokerage-client.mjs</code> includes a complete SSE consumer:
+    <code>streamOrderEvents()</code> is an async generator that reconnects automatically,
+    resumes from <code>Last-Event-ID</code>, skips heartbeat comment frames, and reassembles
+    multi-line <code>data:</code> fields. Deduplicate on <code>eventId</code> in your handler —
+    delivery is at-least-once.
+  </p>
+</div>
+<!-- ================== 7. OPENAPI SPECIFICATION =================== -->
+<h1 id="openapi"><span class="num">7</span>OpenAPI 3.2.0 Specification</h1>
+
+<p class="lede">
+  Every endpoint in this document is described by a machine-readable OpenAPI 3.2.0 document.
+  It is the normative artifact: where this prose and the specification disagree, the
+  specification wins.
+</p>
+
+<h2 id="spec-location"><span class="num">7.1</span>Where the specification lives</h2>
+
+<table>
+  <thead><tr><th style="width:38%">File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>openapi/brokerage-api.yaml</code></td><td>The source of truth. Hand-maintained, commented.</td></tr>
+    <tr><td><code>openapi/brokerage-api.json</code></td><td>Generated JSON rendering, for tooling that will not read YAML.</td></tr>
+    <tr><td><code>dev-portal/openapi/</code></td><td>The copy the developer portal serves and renders.</td></tr>
+  </tbody>
+</table>
+
+<p class="kv">
+  <b>17</b> paths &nbsp;·&nbsp; <b>21</b> operations &nbsp;·&nbsp; <b>48</b> schemas
+  &nbsp;·&nbsp; <b>1</b> webhook &nbsp;·&nbsp; validates clean against the official
+  OpenAPI 3.2 meta-schema.
+</p>
+
+<h2 id="what-320"><span class="num">7.2</span>What 3.2.0 gives us that 3.1 did not</h2>
+
+<p>
+  Five 3.2.0 additions earn their place in this document. Each is used because it lets the
+  description state something that previously needed a vendor extension or a prose footnote.
+</p>
+
+<h4><code>$self</code> — document identity</h4>
+
+<pre><code><span class="c-key">openapi</span>: <span class="c-num">3.2.0</span>
+<span class="c-key">$self</span>: https://api.brokerage.example.com/openapi/brokerage-api.yaml</code></pre>
+
+<p>
+  Gives the document a stable, self-assigned URI that also acts as the base for reference
+  resolution — so <code>$ref</code> targets resolve identically whether the file is read from
+  disk, a CDN, or a build pipeline. Previously the base URI was wherever the file happened to
+  be fetched from, which made references environment-dependent.
+</p>
+
+<h4>Hierarchical tags: <code>summary</code>, <code>parent</code>, <code>kind</code></h4>
+
+<pre><code><span class="c-key">tags</span>:
+  - <span class="c-key">name</span>: accounts
+    <span class="c-key">summary</span>: Accounts
+    <span class="c-key">kind</span>: nav
+  - <span class="c-key">name</span>: balances
+    <span class="c-key">summary</span>: Balances
+    <span class="c-key">parent</span>: accounts        <span class="c-com"># nests under Accounts in navigation</span>
+    <span class="c-key">kind</span>: nav
+  - <span class="c-key">name</span>: trade-enabled
+    <span class="c-key">summary</span>: Trade-enabled
+    <span class="c-key">kind</span>: audience         <span class="c-com"># an audience facet, not a nav node</span></code></pre>
+
+<p>
+  The API description now expresses its own navigation hierarchy instead of delegating that to
+  renderer-specific extensions like <code>x-tagGroups</code>. <code>kind</code> separates
+  structural navigation from cross-cutting facets — here, which operations need a write grant.
+</p>
+
+<h4>The <code>query</code> method</h4>
+
+<pre><code><span class="c-key">/instruments</span>:
+  <span class="c-key">get</span>:   <span class="c-com"># simple lookups by query string</span>
+  <span class="c-key">query</span>: <span class="c-com"># structured screens with a request body — safe, idempotent, cacheable</span></code></pre>
+
+<p>
+  HTTP QUERY is a safe, idempotent method that carries a request body. A structured instrument
+  screen — exchanges, sectors, market-cap bounds, sort order — is too large and too nested for
+  a query string, but it is still unambiguously a <i>read</i>. Before 3.2.0 the only way to
+  describe it was as a <code>POST</code>, which misrepresents the semantics and defeats
+  caching. A <code>POST /instrument-screener</code> alias remains for clients that cannot
+  issue QUERY, notably browser <code>fetch()</code>.
+</p>
+
+<h4><code>itemSchema</code> for streaming</h4>
+
+<pre><code><span class="c-key">content</span>:
+  <span class="c-key">text/event-stream</span>:
+    <span class="c-key">itemSchema</span>:            <span class="c-com"># describes ONE event, not the whole stream</span>
+      <span class="c-key">type</span>: object
+      <span class="c-key">properties</span>:
+        <span class="c-key">id</span>:    { <span class="c-key">type</span>: string }
+        <span class="c-key">event</span>: { <span class="c-key">type</span>: string, <span class="c-key">enum</span>: [order.accepted, execution, …] }
+        <span class="c-key">data</span>:
+          <span class="c-key">type</span>: string
+          <span class="c-key">contentMediaType</span>: application/json
+          <span class="c-key">contentSchema</span>: { <span class="c-key">$ref</span>: <span class="c-str">'#/components/schemas/OrderEvent'</span> }</code></pre>
+
+<p>
+  Unlike <code>schema</code>, which would describe the entire stream as an array,
+  <code>itemSchema</code> applies to each item independently — which is what a streaming
+  consumer actually processes as bytes arrive. It makes the order event stream properly
+  describable for the first time.
+</p>
+
+<h4><code>oauth2MetadataUrl</code> and the device flow</h4>
+
+<pre><code><span class="c-key">securitySchemes</span>:
+  <span class="c-key">oauth2</span>:
+    <span class="c-key">type</span>: oauth2
+    <span class="c-key">oauth2MetadataUrl</span>: https://auth.brokerage.example.com/.well-known/oauth-authorization-server
+    <span class="c-key">flows</span>:
+      <span class="c-key">authorizationCode</span>: { … }
+      <span class="c-key">deviceAuthorization</span>:      <span class="c-com"># declarable for the first time in 3.2.0</span>
+        <span class="c-key">deviceAuthorizationUrl</span>: …</code></pre>
+
+<p>
+  <code>oauth2MetadataUrl</code> points tooling at the RFC 8414 authorization server metadata
+  document, so endpoints, supported PKCE methods, and grant types are <i>discovered</i> rather
+  than hard-coded into the description and left to drift.
+</p>
+
+<h2 id="spec-structure"><span class="num">7.3</span>Document structure</h2>
+
+<pre class="long"><code>brokerage-api.yaml
+├─ openapi: 3.2.0
+├─ $self                      document identity and reference base
+├─ info                       title, summary, description, license (SPDX identifier)
+├─ servers                    production and sandbox
+├─ tags                       hierarchical navigation (parent / kind)
+├─ security                   default: oauth2 with accounts:read
+├─ paths
+│  ├─ /                                              API root — the one bookmarkable URL
+│  ├─ /accounts                                      account list
+│  ├─ /accounts/{id}                                 single account
+│  ├─ /accounts/{id}/balances                        balances
+│  ├─ /accounts/{id}/positions[/{positionId}]        positions
+│  ├─ /accounts/{id}/transactions[/{txnId}]          transaction history
+│  ├─ /accounts/{id}/orders                          GET status · POST place
+│  ├─ /accounts/{id}/orders/preview                  validate without routing
+│  ├─ /accounts/{id}/orders/events                   SSE stream (itemSchema)
+│  ├─ /accounts/{id}/orders/{orderId}                GET · PATCH · DELETE
+│  ├─ /accounts/{id}/orders/{orderId}/executions     fills
+│  ├─ /instruments                                   GET search · QUERY screen
+│  ├─ /instrument-screener                           POST alias for QUERY
+│  ├─ /instruments/{id}                              instrument detail
+│  └─ /instruments/{symbol}/option-chain             option contracts
+├─ webhooks
+│  └─ orderUpdated                                   push alternative to SSE
+└─ components
+   ├─ securitySchemes   oauth2 (authorizationCode + deviceAuthorization), dpop
+   ├─ parameters        AccountId, OrderId, Cursor, Limit, IdempotencyKey, IfMatch
+   ├─ headers           ETag, RateLimit, RateLimit-Policy, Retry-After, …
+   ├─ responses         Problem, BadRequest, Unauthorized, Forbidden, NotFound,
+   │                    PreconditionFailed, PreconditionRequired, TooManyRequests
+   └─ schemas           48 total — Order, OrderRequest (discriminated union),
+                        Balances, Position, Transaction, Instrument, Problem, …</code></pre>
+
+<div class="note">
+  <span class="lbl">A 3.1/3.2 detail that silently breaks clients</span>
+  <p>
+    OpenAPI 3.1 replaced its bespoke schema dialect with JSON Schema 2020-12, and
+    <code>nullable: true</code> is <b>not</b> a JSON Schema keyword — it was a 3.0-ism. Left in
+    a 3.1 or 3.2 document it is silently ignored, so a field you believe is nullable validates
+    as non-nullable and your generated client throws on a legitimate <code>null</code>.
+  </p>
+  <p>
+    The correct spelling is a type union: <code>type: [string, "null"]</code>, or
+    <code>oneOf: [{$ref: …}, {type: "null"}]</code> when the base type comes from a
+    <code>$ref</code>. This specification uses the correct form throughout; it is worth
+    grepping any 3.1+ document you inherit for <code>nullable</code>.
+  </p>
+</div>
+
+<h2 id="spec-tooling"><span class="num">7.4</span>Validating and generating from the specification</h2>
+
+<h4>Validate</h4>
+
+<pre><code><span class="c-com"># Against the official 3.2 meta-schema — the authoritative check.</span>
+curl -sL -o oas32.json https://spec.openapis.org/oas/3.2/schema/2025-09-17
+python3 - &lt;&lt;'PY'
+import json, yaml
+from jsonschema import Draft202012Validator
+meta = json.load(open('oas32.json'))
+doc  = yaml.safe_load(open('openapi/brokerage-api.yaml'))
+errors = list(Draft202012Validator(meta).iter_errors(doc))
+print('VALID' if not errors else f'{len(errors)} error(s)')
+for e in errors[:10]:
+    print(' /' + '/'.join(map(str, e.absolute_path)), '::', e.message[:200])
+PY
+
+<span class="c-com"># Linting and style. Note: 3.2.0 support varies by tool and version —</span>
+<span class="c-com"># check before trusting a "valid" from anything but the meta-schema.</span>
+npx @redocly/cli lint openapi/brokerage-api.yaml</code></pre>
+
+<div class="tip">
+  <span class="lbl">Validate the examples too</span>
+  <p>
+    A specification can be structurally valid and still carry examples that contradict their
+    own schemas — which is worse than no examples, because integrators copy them. Walk every
+    <code>examples</code> block, resolve its sibling <code>schema</code>, and validate the two
+    against each other in CI. Doing exactly that on this document is what surfaced the
+    <code>nullable</code> problem described above.
+  </p>
+</div>
+
+<h4>Generate clients</h4>
+
+<pre><code><span class="c-com"># Most generators do not yet target 3.2.0. Downgrade for generation only —</span>
+<span class="c-com"># the 3.2-specific fields ($self, query, itemSchema, tag parent/kind) are</span>
+<span class="c-com"># additive, so dropping them yields a valid 3.1 document.</span>
+npx @redocly/cli bundle openapi/brokerage-api.yaml -o build-3.1.yaml
+
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g java    -o clients/java
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g python  -o clients/python
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g typescript-fetch -o clients/typescript</code></pre>
+
+<div class="warn">
+  <span class="lbl">Audit generated code for decimal handling</span>
+  <p>
+    Generators map <code>type: string</code> to a native string, which is correct here — but
+    some apply a "helpful" numeric coercion when they see a numeric-looking
+    <code>pattern</code> or <code>format</code>. Check that every price and quantity lands in
+    <code>BigDecimal</code>, <code>Decimal</code>, or a string, and never in
+    <code>double</code>. See §3.3.
+  </p>
+</div>
+
+<h4>Mock and test</h4>
+
+<pre><code><span class="c-com"># Prism serves a mock from the spec, including the response examples.</span>
+npx @stoplight/prism-cli mock openapi/brokerage-api.yaml --port 4010
+
+<span class="c-com"># Contract-test a running service against the description.</span>
+npx @stoplight/prism-cli proxy openapi/brokerage-api.yaml \
+    https://api.sandbox.brokerage.example.com/v1 --errors</code></pre>
+<!-- ==================== APPENDIX A — ERRORS ====================== -->
+<h1 id="appendix-errors"><span class="num">A</span>Appendix: Error catalogue</h1>
+
+<p class="lede">
+  Every problem <code>type</code> this API returns. The URI is the stable contract — branch on
+  it, and treat <code>title</code> and <code>detail</code> as display text only.
+</p>
+
+<p class="small">
+  All types are relative to
+  <code>https://developer.brokerage.example.com/problems/</code>.
+</p>
+
+<table class="long">
+  <thead>
+    <tr><th style="width:26%">type</th><th style="width:9%">Status</th><th style="width:30%">Meaning</th><th>Extension fields · what to do</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>validation-failed</code></td>
+      <td><span class="status-pill s-4xx">400</span></td>
+      <td>Schema validation failed.</td>
+      <td><code>errors[]</code> with JSON Pointers. A bug in your code — fix and resubmit.</td>
+    </tr>
+    <tr>
+      <td><code>invalid-token</code></td>
+      <td><span class="status-pill s-4xx">401</span></td>
+      <td>Token missing, expired, malformed, or revoked.</td>
+      <td>Refresh once and retry. If the refresh also fails, re-authorize.</td>
+    </tr>
+    <tr>
+      <td><code>insufficient-scope</code></td>
+      <td><span class="status-pill s-4xx">403</span></td>
+      <td>The grant lacks a required scope.</td>
+      <td><code>requiredScope</code>, <code>grantedScopes[]</code>. Re-authorize with the wider scope; do not retry.</td>
+    </tr>
+    <tr>
+      <td><code>options-level-insufficient</code></td>
+      <td><span class="status-pill s-4xx">403</span></td>
+      <td>Strategy above the account's approval level.</td>
+      <td><code>requiredLevel</code>, <code>currentLevel</code>. Tell the customer which level to apply for.</td>
+    </tr>
+    <tr>
+      <td><code>account-not-found</code></td>
+      <td><span class="status-pill s-4xx">404</span></td>
+      <td>No such account, or it is outside this grant.</td>
+      <td>Deliberately ambiguous, so the API cannot be used to enumerate accounts.</td>
+    </tr>
+    <tr>
+      <td><code>order-not-found</code></td>
+      <td><span class="status-pill s-4xx">404</span></td>
+      <td>No such order on this account.</td>
+      <td>Check the <code>accountId</code> in the path matches the order.</td>
+    </tr>
+    <tr>
+      <td><code>account-restricted</code></td>
+      <td><span class="status-pill s-4xx">409</span></td>
+      <td>Compliance hold or unmet margin call.</td>
+      <td>Reads still work; trading does not. Not retryable.</td>
+    </tr>
+    <tr>
+      <td><code>order-not-amendable</code></td>
+      <td><span class="status-pill s-4xx">409</span></td>
+      <td>Order is terminal, or an amendment is already in flight.</td>
+      <td><code>currentStatus</code>. Re-read the order and re-decide.</td>
+    </tr>
+    <tr>
+      <td><code>precondition-failed</code></td>
+      <td><span class="status-pill s-4xx">412</span></td>
+      <td><code>If-Match</code> did not match the current <code>ETag</code>.</td>
+      <td><code>currentETag</code>. Re-read and decide again — <b>never</b> blind-retry with the new validator.</td>
+    </tr>
+    <tr>
+      <td><code>insufficient-buying-power</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Not enough buying power for this order.</td>
+      <td><code>required</code>, <code>available</code> (each an amount + currency). Check you read the right buying-power field (§4.2).</td>
+    </tr>
+    <tr>
+      <td><code>market-closed</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>The requested session is not open.</td>
+      <td><code>nextOpen</code>. Resubmit with <code>extendedHours</code> or <code>GTC</code>, or queue until <code>nextOpen</code>.</td>
+    </tr>
+    <tr>
+      <td><code>instrument-not-tradable</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Halted, delisted, or not supported.</td>
+      <td><code>reason</code>. Not retryable without a different instrument.</td>
+    </tr>
+    <tr>
+      <td><code>price-outside-collar</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Limit price too far from the current market.</td>
+      <td><code>collarLow</code>, <code>collarHigh</code>. A guard against fat-finger entry.</td>
+    </tr>
+    <tr>
+      <td><code>idempotency-key-reuse</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Key reused with a different body.</td>
+      <td><code>originalOrderId</code>. Nothing was created. A bug: one key per intent.</td>
+    </tr>
+    <tr>
+      <td><code>day-trade-limit</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Order would breach the pattern-day-trader rule.</td>
+      <td><code>dayTradesUsed</code>, <code>dayTradesRemaining</code>.</td>
+    </tr>
+    <tr>
+      <td><code>rate-limit-exceeded</code></td>
+      <td><span class="status-pill s-4xx">429</span></td>
+      <td>Quota exhausted.</td>
+      <td><code>retryAfterSeconds</code>. Back off with full jitter (§3.7).</td>
+    </tr>
+    <tr>
+      <td><code>venue-unavailable</code></td>
+      <td><span class="status-pill s-5xx">503</span></td>
+      <td>Upstream venue or clearing system down.</td>
+      <td>Retryable with backoff. Order state is unknown — reconcile before resubmitting.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ================== APPENDIX B — ENUMERATIONS ================== -->
+<h1 id="appendix-enums"><span class="num">B</span>Appendix: Enumerations</h1>
+
+<div class="note">
+  <span class="lbl">These lists grow</span>
+  <p>
+    New enum members are shipped as backward-compatible changes, without a version bump. Your
+    deserializer must not throw on an unrecognized value — treat an unknown
+    <code>OrderStatus</code> as working and rely on <code>_links</code> to know what actions
+    are available (§3.8).
+  </p>
+</div>
+
+<h2><span class="num">B.1</span>Time in force</h2>
+
+<table class="long">
+  <thead><tr><th style="width:14%">Value</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>DAY</code></td><td>Expires at the close of the regular session.</td></tr>
+    <tr><td><code>GTC</code></td><td>Good till cancelled. Persists across sessions, typically capped at 90 days.</td></tr>
+    <tr><td><code>GTD</code></td><td>Good till a date. Requires <code>goodTilDate</code>.</td></tr>
+    <tr><td><code>IOC</code></td><td>Immediate or cancel. Fills whatever it can at once; cancels the remainder.</td></tr>
+    <tr><td><code>FOK</code></td><td>Fill or kill. Fills entirely and immediately, or cancels entirely. No partials.</td></tr>
+    <tr><td><code>OPG</code></td><td>At the open. Participates in the opening auction only.</td></tr>
+    <tr><td><code>CLS</code></td><td>At the close. Participates in the closing auction only.</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.2</span>Order types</h2>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Value</th><th style="width:26%">Requires</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>MARKET</code></td><td>—</td><td>Execution guaranteed, price is not.</td></tr>
+    <tr><td><code>LIMIT</code></td><td><code>limitPrice</code></td><td>Price guaranteed, execution is not.</td></tr>
+    <tr><td><code>STOP</code></td><td><code>stopPrice</code></td><td>Becomes a market order when the stop trips.</td></tr>
+    <tr><td><code>STOP_LIMIT</code></td><td><code>stopPrice</code>, <code>limitPrice</code></td><td>Becomes a limit order when the stop trips. Can go unfilled in a fast market.</td></tr>
+    <tr><td><code>TRAILING_STOP</code></td><td><code>trailingAmount</code> <b>or</b> <code>trailingPercent</code></td><td>Stop follows the high-water mark. The two trail fields are mutually exclusive.</td></tr>
+    <tr><td><code>TRAILING_STOP_LIMIT</code></td><td>trail + <code>limitPrice</code></td><td>As above, triggering a limit order.</td></tr>
+    <tr><td><code>NET_DEBIT</code></td><td><code>netPrice</code>, <code>priceEffect</code></td><td>Multi-leg option combination, priced as a unit. Cash paid.</td></tr>
+    <tr><td><code>NET_CREDIT</code></td><td><code>netPrice</code>, <code>priceEffect</code></td><td>Multi-leg combination. Cash received.</td></tr>
+    <tr><td><code>NET_EVEN</code></td><td><code>priceEffect</code></td><td>Multi-leg combination at zero net cost.</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.3</span>Sides</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Asset class</th><th>Values</th></tr></thead>
+  <tbody>
+    <tr><td>Equity</td><td><code>BUY</code>, <code>SELL</code>, <code>SELL_SHORT</code>, <code>BUY_TO_COVER</code></td></tr>
+    <tr><td>Option</td><td><code>BUY_TO_OPEN</code>, <code>BUY_TO_CLOSE</code>, <code>SELL_TO_OPEN</code>, <code>SELL_TO_CLOSE</code></td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.4</span>Option strategies</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Value</th><th style="width:14%">Legs</th><th>Minimum approval level</th></tr></thead>
+  <tbody>
+    <tr><td><code>SINGLE</code></td><td>1</td><td><code>LEVEL_2</code> to open long; <code>LEVEL_4</code> to open naked short</td></tr>
+    <tr><td><code>COVERED_CALL</code></td><td>1</td><td><code>LEVEL_1</code> — requires 100 shares held per contract</td></tr>
+    <tr><td><code>VERTICAL</code>, <code>CALENDAR</code>, <code>DIAGONAL</code></td><td>2</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>STRADDLE</code>, <code>STRANGLE</code>, <code>COLLAR</code></td><td>2–3</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>BUTTERFLY</code></td><td>3–4</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>IRON_CONDOR</code></td><td>4</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>CUSTOM</code></td><td>1–4</td><td>Margined leg by leg — usually requires far more buying power</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.5</span>Transaction types</h2>
+
+<p class="kv">
+  <code>TRADE</code> &nbsp;<code>DIVIDEND</code> &nbsp;<code>INTEREST</code> &nbsp;<code>FEE</code>
+  &nbsp;<code>DEPOSIT</code> &nbsp;<code>WITHDRAWAL</code> &nbsp;<code>TRANSFER</code>
+  &nbsp;<code>ASSIGNMENT</code> &nbsp;<code>EXERCISE</code> &nbsp;<code>EXPIRATION</code>
+  &nbsp;<code>CORPORATE_ACTION</code> &nbsp;<code>TAX</code> &nbsp;<code>JOURNAL</code>
+</p>
+
+<!-- ==================== APPENDIX C — GLOSSARY =================== -->
+<h1 id="appendix-glossary"><span class="num">C</span>Appendix: Glossary</h1>
+
+<dl>
+  <dt>Buying power</dt>
+  <dd>What the account can spend. Differs by product — stock, option, and day-trading buying
+      power are three separate numbers in a margin account (§4.2).</dd>
+
+  <dt>Contract multiplier</dt>
+  <dd>Shares of the underlying per option contract. Normally 100; adjusted contracts, following
+      a split or merger, differ. Multiply option quantity by this for share-equivalent
+      exposure.</dd>
+
+  <dt>DPoP</dt>
+  <dd>Demonstrating Proof of Possession (RFC 9449). Binds an access token to a key pair so a
+      stolen token is inert without the private key (§2.9).</dd>
+
+  <dt>Good-faith violation</dt>
+  <dd>In a cash account, buying with unsettled proceeds and selling before they settle.
+      Repeated violations restrict the account to settled cash.</dd>
+
+  <dt>HATEOAS</dt>
+  <dd>Hypermedia as the Engine of Application State. Clients discover available actions from
+      links in the representation rather than from hard-coded URLs (§3.1).</dd>
+
+  <dt>Idempotency key</dt>
+  <dd>A client-generated UUID identifying one order <i>intent</i>, making retries safe. One key
+      per intent, reused across every retry of that intent (§3.5).</dd>
+
+  <dt>Liquidity (added / removed)</dt>
+  <dd>Whether a fill posted to the book and waited (added) or crossed the spread (removed).
+      Drives exchange rebates and fees.</dd>
+
+  <dt>Maintenance requirement</dt>
+  <dd>Minimum equity that must be held against margin positions. Falling below it triggers a
+      margin call.</dd>
+
+  <dt>Net liquidation value</dt>
+  <dd>Total account value if every position were liquidated at current marks.</dd>
+
+  <dt>OSI symbol</dt>
+  <dd>The 21-character options contract identifier:
+      <code>AAPL&nbsp;&nbsp;261218C00250000</code> — six characters of root (space-padded),
+      <code>YYMMDD</code>, <code>C</code>/<code>P</code>, then strike × 1000 in eight digits.</dd>
+
+  <dt>Pattern day trader (PDT)</dt>
+  <dd>An account making four or more day trades in five business days. Subject to a 25,000 USD
+      minimum equity requirement.</dd>
+
+  <dt>PKCE</dt>
+  <dd>Proof Key for Code Exchange (RFC 7636). Binds an authorization code to the client
+      instance that requested it. Mandatory under OAuth 2.1 (§2.4).</dd>
+
+  <dt>Price effect</dt>
+  <dd>Whether a multi-leg option order's net price is paid (<code>DEBIT</code>) or received
+      (<code>CREDIT</code>). Carries the direction, so <code>netPrice</code> is always
+      positive.</dd>
+
+  <dt>Problem details</dt>
+  <dd>RFC 9457. The machine-readable error format used throughout this API (§3.2).</dd>
+
+  <dt>Refresh token rotation</dt>
+  <dd>Issuing a new refresh token on every use and invalidating the old one. Replaying a spent
+      token is treated as theft and revokes the whole family (§2.7).</dd>
+
+  <dt>Settlement date</dt>
+  <dd>When cash and securities actually change hands. T+1 for US equities as of May 2024.</dd>
+
+  <dt>Strategy unit</dt>
+  <dd>One instance of a multi-leg option combination. A <code>quantity</code> of 10 on a
+      two-leg vertical means ten spreads — twenty contracts (§5.4).</dd>
+
+  <dt>Time in force</dt>
+  <dd>How long an order remains working before it expires. See Appendix B.1.</dd>
+</dl>
+
+<hr>
+
+<p class="small" style="text-align:center;margin-top:8mm">
+  <b>Brokerage REST API — Developer Specification v1.0.0</b><br>
+  Companion developer portal: <code>brokerage-apis/dev-portal/index.html</code><br>
+  Machine-readable specification: <code>brokerage-apis/openapi/brokerage-api.yaml</code><br>
+  Runnable examples: <code>brokerage-apis/examples/{java,node,python}/</code>
+</p>
+</body>
+</html>

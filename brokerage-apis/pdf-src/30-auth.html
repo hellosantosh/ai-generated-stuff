@@ -1,0 +1,625 @@
+<!-- =================== 2. AUTHENTICATION ========================= -->
+<h1 id="auth"><span class="num">2</span>Authentication and Authorization</h1>
+
+<p class="lede">
+  Every request to this API carries an OAuth 2.1 access token obtained through the
+  authorization code flow with PKCE. This section explains how to get one, how to keep it
+  fresh, and what each moving part is actually defending against.
+</p>
+
+<h2 id="why-oauth"><span class="num">2.1</span>Why OAuth 2.1 with PKCE</h2>
+
+<p>
+  Neither reference brokerage uses this scheme. Webull signs requests with an app key and
+  secret; Interactive Brokers maintains a stateful session and offers OAuth 1.0a to third
+  parties. Both work. Both also put the integrator in possession of a credential that is
+  long-lived, unscoped, and awkward to revoke without breaking every deployment at once.
+</p>
+
+<p>OAuth 2.1 changes three things that matter in a brokerage context:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:26%">Property</th><th style="width:32%">Shared-secret signing</th><th>OAuth 2.1 bearer token</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Blast radius</b></td>
+      <td>One secret, full capability, indefinite lifetime. Leak it and the attacker can
+          trade until someone notices.</td>
+      <td>15-minute access token, limited to granted scopes. Leaked read scope cannot place
+          an order.</td>
+    </tr>
+    <tr>
+      <td><b>Consent</b></td>
+      <td>Implicit. Whoever holds the secret has whatever the account has.</td>
+      <td>Explicit and per-application. The customer sees exactly which permissions they are
+          granting, and to whom.</td>
+    </tr>
+    <tr>
+      <td><b>Revocation</b></td>
+      <td>Rotate the secret, redeploy everything that used it.</td>
+      <td>Revoke one grant from a settings screen. Nothing else is affected.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  OAuth 2.1 is a consolidation of OAuth 2.0 plus a decade of security best current practice.
+  For our purposes the load-bearing changes are:
+</p>
+
+<ul>
+  <li><b>PKCE is mandatory for all clients</b>, not just public ones. Previously PKCE was a
+      mobile-app mitigation; 2.1 makes it universal because authorization codes leak through
+      more channels than anyone originally modeled — referrer headers, browser history,
+      OS-level URL handlers, and logging middleware.</li>
+  <li><b>The implicit grant is removed.</b> It returned an access token directly in a URL
+      fragment, where it landed in history and logs. There is no supported way to obtain a
+      token without a back-channel exchange.</li>
+  <li><b>The resource owner password credentials grant is removed.</b> It required the
+      application to handle the customer's actual brokerage password. We will never ask for
+      one, and neither should you.</li>
+  <li><b>Redirect URIs must match exactly</b>, by string comparison. No wildcards, no prefix
+      matching — those were reliably exploitable for code interception.</li>
+  <li><b>Bearer tokens must not travel in query strings.</b> Always the
+      <code>Authorization</code> header.</li>
+</ul>
+
+<div class="danger">
+  <span class="lbl">Never do this</span>
+  <p>
+    Do not build a screen that collects a customer's brokerage username and password and
+    replays them. That pattern — credential sharing — is what OAuth exists to eliminate. It
+    defeats multi-factor authentication, makes revocation impossible, and puts your
+    application in scope for a class of liability it does not want.
+  </p>
+</div>
+
+<h2 id="registration"><span class="num">2.2</span>Client registration and client types</h2>
+
+<p>
+  Registration yields a <code>client_id</code> and a set of exactly-matched redirect URIs.
+  Whether you also receive a credential depends on what you are building.
+</p>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Client type</th><th style="width:26%">Examples</th><th>Authentication at the token endpoint</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Public</b></td>
+      <td>Single-page apps, mobile apps, desktop apps, CLI tools</td>
+      <td><b>None.</b> PKCE alone. A secret shipped inside a binary or a JavaScript bundle is
+          not a secret — it only creates the illusion of one.</td>
+    </tr>
+    <tr>
+      <td><b>Confidential</b></td>
+      <td>Server-side web applications, backend services</td>
+      <td><code>private_key_jwt</code> — you sign a short-lived assertion with a private key
+          whose public half we hold. Preferred over a shared secret because the credential
+          never crosses the wire.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Confidential clients still use PKCE. The two protect different links in the chain: client
+  authentication proves <i>which application</i> is redeeming the code, while PKCE proves it
+  is the <i>same instance</i> that started the flow.
+</p>
+
+<h2 id="flow"><span class="num">2.3</span>The authorization code flow, end to end</h2>
+
+<p>
+  The diagram below is the whole protocol. Nothing else in this section introduces a step
+  that is not on it.
+</p>
+
+<figure>
+<svg viewBox="0 0 660 472" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Sequence diagram of the OAuth 2.1 authorization code flow with PKCE across four participants: user and browser, your application, authorization server, and brokerage API.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4f8f"/>
+    </marker>
+    <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d6b45"/>
+    </marker>
+  </defs>
+
+  <style>
+    .ln   { stroke:#c3c9d2; stroke-width:1.1; stroke-dasharray:3 3; }
+    .hdr  { fill:#1f4f8f; }
+    .hdr2 { fill:#12233d; }
+    .htx  { fill:#ffffff; font:600 12px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .msg  { stroke:#1f4f8f; stroke-width:1.5; fill:none; }
+    .msgd { stroke:#1d6b45; stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
+    .mtx  { fill:#16181d; font:10.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .mono { fill:#16181d; font:9.5px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .note { fill:#eef3fa; stroke:#9fb8d8; stroke-width:1; }
+    .noteg{ fill:#e9f5ee; stroke:#8dc0a5; stroke-width:1; }
+    .ntx  { fill:#16181d; font:10px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .step { fill:#1f4f8f; font:700 10px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  </style>
+
+  <!-- participant headers -->
+  <rect class="hdr2" x="12"  y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="72"  y="27">User + Browser</text>
+  <rect class="hdr"  x="180" y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="240" y="27">Your App</text>
+  <rect class="hdr2" x="355" y="8" width="140" height="30" rx="4"/>
+  <text class="htx"  x="425" y="27">Authorization Server</text>
+  <rect class="hdr"  x="532" y="8" width="120" height="30" rx="4"/>
+  <text class="htx"  x="592" y="27">Brokerage API</text>
+
+  <!-- lifelines -->
+  <line class="ln" x1="72"  y1="42" x2="72"  y2="452"/>
+  <line class="ln" x1="240" y1="42" x2="240" y2="452"/>
+  <line class="ln" x1="425" y1="42" x2="425" y2="452"/>
+  <line class="ln" x1="592" y1="42" x2="592" y2="452"/>
+
+  <!-- 1. generate PKCE pair -->
+  <rect class="note" x="122" y="52" width="236" height="32" rx="4"/>
+  <text class="step" x="130" y="65">1</text>
+  <text class="ntx"  x="245" y="66">Generate random <tspan style="font-family:'SF Mono',monospace">code_verifier</tspan></text>
+  <text class="ntx"  x="245" y="78"><tspan style="font-family:'SF Mono',monospace">challenge = B64URL(SHA-256(verifier))</tspan></text>
+
+  <!-- 2. app -> browser -->
+  <line class="msg" x1="238" y1="112" x2="76" y2="112" marker-end="url(#ah)"/>
+  <text class="step" x="244" y="106">2</text>
+  <text class="mtx"  x="157" y="106">Open the authorization URL</text>
+
+  <!-- 3. browser -> AS -->
+  <line class="msg" x1="74" y1="146" x2="421" y2="146" marker-end="url(#ah)"/>
+  <text class="step" x="80"  y="128">3</text>
+  <text class="mono" x="250" y="128">GET /oauth2/authorize?client_id=…&amp;state=…</text>
+  <text class="mono" x="250" y="140">&amp;code_challenge=…&amp;code_challenge_method=S256</text>
+
+  <!-- 4. user consents -->
+  <rect class="note" x="312" y="162" width="226" height="32" rx="4"/>
+  <text class="step" x="320" y="175">4</text>
+  <text class="ntx"  x="428" y="176">Customer signs in, reviews the</text>
+  <text class="ntx"  x="428" y="188">requested scopes, and consents</text>
+
+  <!-- 5. AS -> browser -->
+  <line class="msg" x1="421" y1="222" x2="76" y2="222" marker-end="url(#ah)"/>
+  <text class="step" x="428" y="204">5</text>
+  <text class="mtx"  x="250" y="204">302 redirect — the code is single-use</text>
+  <text class="mono" x="250" y="216">Location: {redirect_uri}?code=…&amp;state=…</text>
+
+  <!-- 6. browser -> app -->
+  <line class="msg" x1="74" y1="250" x2="236" y2="250" marker-end="url(#ah)"/>
+  <text class="step" x="80"  y="244">6</text>
+  <text class="mtx"  x="158" y="244">Deliver code + state</text>
+
+  <!-- 7. verify state -->
+  <rect class="note" x="128" y="264" width="224" height="20" rx="4"/>
+  <text class="step" x="136" y="278">7</text>
+  <text class="ntx"  x="244" y="278">Verify <tspan style="font-family:'SF Mono',monospace">state</tspan> matches — CSRF check</text>
+
+  <!-- 8. app -> AS token -->
+  <line class="msg" x1="242" y1="316" x2="421" y2="316" marker-end="url(#ah)"/>
+  <text class="step" x="248" y="298">8</text>
+  <text class="mono" x="336" y="298">POST /oauth2/token</text>
+  <text class="mono" x="336" y="310">code + code_verifier</text>
+
+  <!-- 9. AS verifies PKCE -->
+  <rect class="noteg" x="308" y="330" width="234" height="32" rx="4"/>
+  <text class="step" x="316" y="343" style="fill:#1d6b45">9</text>
+  <text class="ntx"  x="428" y="344">Recompute SHA-256(verifier) and</text>
+  <text class="ntx"  x="428" y="356">compare against the stored challenge</text>
+
+  <!-- 10. AS -> app tokens -->
+  <line class="msgd" x1="421" y1="392" x2="244" y2="392" marker-end="url(#ahg)"/>
+  <text class="step" x="428" y="386" style="fill:#1d6b45">10</text>
+  <text class="mtx"  x="330" y="374">access_token — 15 min</text>
+  <text class="mtx"  x="330" y="386">+ refresh_token (rotating)</text>
+
+  <!-- 11. app -> API -->
+  <line class="msg" x1="242" y1="420" x2="588" y2="420" marker-end="url(#ah)"/>
+  <text class="step" x="250" y="414">11</text>
+  <text class="mono" x="416" y="414">GET /v1/accounts &nbsp; Authorization: Bearer …</text>
+
+  <!-- 12. API -> app -->
+  <line class="msgd" x1="588" y1="448" x2="244" y2="448" marker-end="url(#ahg)"/>
+  <text class="step" x="596" y="442" style="fill:#1d6b45">12</text>
+  <text class="mtx"  x="416" y="442">200 OK — resource representation with <tspan style="font-family:'SF Mono',monospace">_links</tspan></text>
+</svg>
+<figcaption>
+  <b>Figure 2.1 — Authorization code flow with PKCE.</b>
+  Steps 1, 7, and 9 are what PKCE adds to a plain authorization code exchange. The
+  authorization code in step 5 travels through the browser and is therefore assumed to be
+  observable; it is useless without the <code>code_verifier</code>, which never leaves your
+  application until step 8's back-channel POST.
+</figcaption>
+</figure>
+
+<h2 id="pkce"><span class="num">2.4</span>PKCE mechanics: verifier, challenge, and what it defends</h2>
+
+<p>
+  PKCE (RFC 7636, pronounced "pixy") binds an authorization code to the specific client
+  instance that requested it.
+</p>
+
+<h4>Generating the pair</h4>
+
+<pre><code><span class="c-com"># code_verifier — 43 to 128 characters from [A-Z a-z 0-9 - . _ ~]</span>
+<span class="c-com"># 32 random bytes, base64url-encoded without padding, yields exactly 43.</span>
+code_verifier  = BASE64URL_NOPAD(random_bytes(32))
+code_challenge = BASE64URL_NOPAD(SHA256(ASCII(code_verifier)))
+code_challenge_method = <span class="c-str">"S256"</span></code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Requirement</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td>Entropy source</td><td>A cryptographically secure RNG. <code>SecureRandom</code>, <code>secrets</code>, <code>crypto.randomBytes</code> — never <code>Math.random()</code> or a seeded PRNG.</td></tr>
+    <tr><td>Challenge method</td><td><code>S256</code> only. The <code>plain</code> method sends the verifier itself as the challenge, which defends against nothing. This server rejects it.</td></tr>
+    <tr><td>Lifetime</td><td>One verifier per authorization attempt. Never reuse one, and discard it once the code is redeemed.</td></tr>
+    <tr><td>Storage</td><td>Held only in the client instance that started the flow — session storage for a web app, memory for a native app. It is never transmitted until step 8.</td></tr>
+  </tbody>
+</table>
+
+<h4>PKCE and <code>state</code> solve different problems</h4>
+
+<p>
+  They are frequently confused, and sending only one leaves a real hole. Send both.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Parameter</th><th style="width:38%">Attack it prevents</th><th>How</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>state</code></td>
+      <td><b>CSRF on the redirect.</b> An attacker tricks the victim's browser into
+          completing a flow that binds the attacker's account to the victim's session.</td>
+      <td>An unguessable value generated by the client, echoed back by the server, and
+          compared before the code is used.</td>
+    </tr>
+    <tr>
+      <td><code>code_verifier</code></td>
+      <td><b>Authorization code interception.</b> A malicious app registers the same custom
+          URL scheme, or the code leaks via a referrer, log, or browser history.</td>
+      <td>The code alone cannot be redeemed. The token endpoint requires the pre-image of
+          the challenge, which the interceptor never saw.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">Compare in constant time</span>
+  <p>
+    Verify <code>state</code> with a constant-time comparison
+    (<code>MessageDigest.isEqual</code>, <code>secrets.compare_digest</code>,
+    <code>crypto.timingSafeEqual</code>), not <code>==</code>. The timing leak is small, but
+    the habit is what matters — the same code path tends to get reused for comparisons where
+    it is not small.
+  </p>
+</div>
+
+<h2 id="token-exchange"><span class="num">2.5</span>Exchanging the code for a bearer token</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/token</div>
+  <div class="scopes">Content-Type: <code>application/x-www-form-urlencoded</code> &nbsp;·&nbsp; No authorization header for public clients</div>
+</div>
+
+<pre><code>POST /oauth2/token HTTP/1.1
+Host: auth.brokerage.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;code=SplxlOBeZQQYbYS6WxSbIA
+&amp;redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback
+&amp;client_id=your-client-id
+&amp;code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk</code></pre>
+
+<p class="kv"><b>Success —</b> <span class="status-pill s-2xx">200 OK</span></p>
+
+<pre><code>{
+  <span class="c-key">"access_token"</span>:  <span class="c-str">"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMDgifQ…"</span>,
+  <span class="c-key">"token_type"</span>:    <span class="c-str">"Bearer"</span>,
+  <span class="c-key">"expires_in"</span>:    <span class="c-num">900</span>,
+  <span class="c-key">"refresh_token"</span>: <span class="c-str">"v1.MTo3ZjNhOWIyYy0…"</span>,
+  <span class="c-key">"scope"</span>:         <span class="c-str">"accounts:read positions:read orders:read orders:write offline_access"</span>
+}</code></pre>
+
+<div class="note">
+  <span class="lbl">Read the granted scope, do not assume it</span>
+  <p>
+    The <code>scope</code> in the response is authoritative and may be <b>narrower</b> than
+    what you requested — the customer can decline individual permissions on the consent
+    screen. Drive your UI from the granted scope. An application that hides its trade button
+    when <code>orders:write</code> was not granted is far better than one that shows it and
+    surfaces a <span class="status-pill s-4xx">403</span> later.
+  </p>
+</div>
+
+<p class="kv"><b>Failure —</b> <span class="status-pill s-4xx">400 Bad Request</span></p>
+
+<pre><code>{ <span class="c-key">"error"</span>: <span class="c-str">"invalid_grant"</span>,
+  <span class="c-key">"error_description"</span>: <span class="c-str">"Authorization code expired, already used, or PKCE verification failed."</span> }</code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Error</th><th>Usual cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>invalid_grant</code></td><td>Code expired (60 seconds), already redeemed, or the <code>code_verifier</code> does not hash to the challenge. Codes are strictly single-use.</td></tr>
+    <tr><td><code>invalid_client</code></td><td>Unknown <code>client_id</code>, or a confidential client failed authentication.</td></tr>
+    <tr><td><code>invalid_request</code></td><td>Missing <code>code_verifier</code>, or a <code>redirect_uri</code> that does not exactly match the one used in the authorize request.</td></tr>
+    <tr><td><code>unauthorized_client</code></td><td>The client is not permitted to use this grant type.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="access-tokens"><span class="num">2.6</span>Access tokens: structure, lifetime, and validation</h2>
+
+<p>
+  Access tokens are RS256-signed JWTs valid for <b>15 minutes</b>. Present one on every API
+  request:
+</p>
+
+<pre><code>GET /v1/accounts HTTP/1.1
+Host: api.brokerage.example.com
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMDgifQ…
+Accept: application/json</code></pre>
+
+<h4>Claims</h4>
+
+<pre><code>{
+  <span class="c-key">"iss"</span>: <span class="c-str">"https://auth.brokerage.example.com"</span>,   <span class="c-com">// issuer</span>
+  <span class="c-key">"sub"</span>: <span class="c-str">"user_01HQ8Z1A2B3C4D5E"</span>,                <span class="c-com">// the customer</span>
+  <span class="c-key">"aud"</span>: <span class="c-str">"https://api.brokerage.example.com"</span>,    <span class="c-com">// intended resource server</span>
+  <span class="c-key">"exp"</span>: <span class="c-num">1755443402</span>,                              <span class="c-com">// expiry, epoch seconds</span>
+  <span class="c-key">"iat"</span>: <span class="c-num">1755442502</span>,
+  <span class="c-key">"jti"</span>: <span class="c-str">"01HQ9D4N7Q1S5U8X9Z2A4C6E"</span>,            <span class="c-com">// unique id, for revocation lists</span>
+  <span class="c-key">"scope"</span>: <span class="c-str">"accounts:read orders:read orders:write"</span>,
+  <span class="c-key">"client_id"</span>: <span class="c-str">"your-client-id"</span>,
+  <span class="c-key">"accounts"</span>: [<span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>]              <span class="c-com">// accounts in scope for this grant</span>
+}</code></pre>
+
+<div class="warn">
+  <span class="lbl">If you validate tokens yourself</span>
+  <p>
+    A resource server verifying these directly must check the signature against the JWKS at
+    <code>/.well-known/jwks.json</code> (cached, keyed by <code>kid</code>), and then verify
+    <code>iss</code>, <code>aud</code>, and <code>exp</code>. Skipping the <code>aud</code>
+    check is the classic mistake: it lets a token minted for a different resource server be
+    replayed against yours.
+  </p>
+  <p>
+    A <b>client</b> should not parse the token at all. Treat it as opaque, send it, and
+    handle <span class="status-pill s-4xx">401</span>.
+  </p>
+</div>
+
+<h4>Why 15 minutes</h4>
+
+<p>
+  Short enough that a leaked token has a small window; long enough that a normal session does
+  not spend its time refreshing. The pairing matters more than the number: a short access
+  token plus a rotating refresh token gives you both a small exposure window and a session
+  that survives without re-prompting the customer.
+</p>
+
+<h2 id="refresh"><span class="num">2.7</span>Refresh tokens, rotation, and reuse detection</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/token</div>
+  <div class="scopes">Requires the <span class="pill">offline_access</span> scope to have been granted</div>
+</div>
+
+<pre><code>grant_type=refresh_token
+&amp;refresh_token=v1.MTo3ZjNhOWIyYy0…
+&amp;client_id=your-client-id</code></pre>
+
+<p>
+  Refresh tokens are opaque, valid for <b>90 days of inactivity</b>, and <b>rotate on every
+  use</b>. The response always contains a new <code>refresh_token</code>; the one you sent is
+  dead the instant the response is generated.
+</p>
+
+<figure>
+<svg viewBox="0 0 660 268" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Diagram showing refresh token rotation: RT1 exchanged for RT2, RT2 for RT3, and a stolen RT1 replay triggering revocation of the entire token family.">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1f4f8f"/>
+    </marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a32a2a"/>
+    </marker>
+  </defs>
+  <style>
+    .tok  { fill:#eef3fa; stroke:#1f4f8f; stroke-width:1.4; }
+    .tokd { fill:#f1f2f4; stroke:#b9bfc8; stroke-width:1.2; stroke-dasharray:4 3; }
+    .tokr { fill:#fbeeee; stroke:#a32a2a; stroke-width:1.4; }
+    .tt   { fill:#16181d; font:600 11px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .ttd  { fill:#8a9099; font:600 11px "SF Mono",ui-monospace,Menlo,Consolas,monospace; text-anchor:middle; }
+    .cap  { fill:#4a5058; font:9.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .capr { fill:#a32a2a; font:600 9.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+    .fl   { stroke:#1f4f8f; stroke-width:1.6; fill:none; }
+    .flr  { stroke:#a32a2a; stroke-width:1.6; fill:none; }
+    .lane { fill:#4a5058; font:700 9px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; letter-spacing:.08em; }
+    .revk { fill:#a32a2a; font:700 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; text-anchor:middle; }
+  </style>
+
+  <text class="lane" x="12" y="34">NORMAL ROTATION</text>
+
+  <!-- RT1 -->
+  <rect class="tokd" x="60"  y="46" width="112" height="34" rx="5"/>
+  <text class="ttd"  x="116" y="68">RT₁</text>
+  <text class="cap"  x="116" y="94">issued at login</text>
+  <text class="cap"  x="116" y="106">now invalidated</text>
+
+  <!-- arrow -->
+  <line class="fl" x1="176" y1="63" x2="240" y2="63" marker-end="url(#ah2)"/>
+  <text class="cap" x="208" y="55">refresh</text>
+
+  <!-- RT2 -->
+  <rect class="tokd" x="244" y="46" width="112" height="34" rx="5"/>
+  <text class="ttd"  x="300" y="68">RT₂</text>
+  <text class="cap"  x="300" y="94">also spent</text>
+
+  <line class="fl" x1="360" y1="63" x2="424" y2="63" marker-end="url(#ah2)"/>
+  <text class="cap" x="392" y="55">refresh</text>
+
+  <!-- RT3 -->
+  <rect class="tok" x="428" y="46" width="112" height="34" rx="5"/>
+  <text class="tt"  x="484" y="68">RT₃</text>
+  <text class="cap" x="484" y="94">current — store this</text>
+
+  <!-- new access token -->
+  <line class="fl" x1="484" y1="84" x2="484" y2="112" marker-end="url(#ah2)"/>
+  <rect class="tok" x="410" y="116" width="148" height="26" rx="5"/>
+  <text class="tt"  x="484" y="134" style="font-size:10px">+ access_token (15 min)</text>
+
+  <!-- divider -->
+  <line x1="12" y1="164" x2="648" y2="164" stroke="#d9dde3" stroke-width="1"/>
+
+  <text class="lane" x="12" y="188" style="fill:#a32a2a">REUSE DETECTION</text>
+
+  <!-- stolen RT1 -->
+  <rect class="tokr" x="60"  y="200" width="112" height="34" rx="5"/>
+  <text class="tt"   x="116" y="222" style="fill:#a32a2a">RT₁</text>
+  <text class="capr" x="116" y="250">stolen copy, replayed</text>
+
+  <line class="flr" x1="176" y1="217" x2="300" y2="217" marker-end="url(#ahr)"/>
+  <text class="capr" x="238" y="209">refresh attempt</text>
+
+  <rect class="tokr" x="304" y="196" width="180" height="42" rx="5"/>
+  <text class="revk" x="394" y="212">Server sees a spent token</text>
+  <text class="revk" x="394" y="228" style="font-weight:400;font-size:10px">→ revokes the whole family</text>
+
+  <line class="flr" x1="488" y1="217" x2="546" y2="217" marker-end="url(#ahr)"/>
+
+  <rect class="tokr" x="550" y="200" width="98" height="34" rx="5"/>
+  <text class="revk" x="599" y="215" style="font-size:10px">RT₁ RT₂ RT₃</text>
+  <text class="revk" x="599" y="227" style="font-size:9px;font-weight:400">all dead</text>
+</svg>
+<figcaption>
+  <b>Figure 2.2 — Refresh token rotation and reuse detection.</b>
+  Rotation turns a stolen refresh token from an indefinite foothold into a race the attacker
+  usually loses. Whoever refreshes second presents a token the server has already seen spent,
+  and that presentation is treated as proof of compromise: the entire family is revoked and
+  the customer re-authorizes.
+</figcaption>
+</figure>
+
+<div class="danger">
+  <span class="lbl">Persist the new token before you use the new access token</span>
+  <p>
+    Rotation makes the write ordering safety-critical. If your process crashes after
+    receiving <code>RT₃</code> but before durably storing it, you hold a dead
+    <code>RT₂</code> and the customer must re-authorize. Write the new refresh token to
+    durable storage <b>first</b> — atomically, via write-to-temp-then-rename or a
+    transaction — and only then proceed. The example clients in Section 6 all do this.
+  </p>
+</div>
+
+<h4>Concurrency</h4>
+
+<p>
+  Two threads refreshing the same token simultaneously will trip reuse detection and revoke
+  the family. Serialize refresh behind a mutex, and have the losing caller wait for and reuse
+  the winner's result rather than issuing its own request. This is the single most common
+  production bug in OAuth clients with rotation enabled.
+</p>
+
+<h2 id="scopes"><span class="num">2.8</span>Scopes and least privilege</h2>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Scope</th><th>Grants</th></tr></thead>
+  <tbody>
+    <tr><td><code>accounts:read</code></td><td>The account list and account metadata. Account numbers are masked.</td></tr>
+    <tr><td><code>accounts:read:full</code></td><td>Unmasked account numbers. Subject to additional review — request it only if you have a concrete need, such as ACAT transfer initiation.</td></tr>
+    <tr><td><code>positions:read</code></td><td>Open positions, cost basis, and unrealized P&amp;L.</td></tr>
+    <tr><td><code>orders:read</code></td><td>Order status, order history, executions, and the event stream.</td></tr>
+    <tr><td><code>orders:write</code></td><td>Place, amend, and cancel stock and option orders. <b>The consequential one.</b></td></tr>
+    <tr><td><code>transactions:read</code></td><td>Transaction and settlement history.</td></tr>
+    <tr><td><code>instruments:read</code></td><td>Instrument search and option chains.</td></tr>
+    <tr><td><code>offline_access</code></td><td>Issues a refresh token. Without it, access ends when the access token expires.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">Ask for less</span>
+  <p>
+    Request the narrowest set that makes your application work, and request additional scopes
+    later through a fresh authorization when the customer reaches a feature that needs them.
+    A portfolio dashboard that asks for <code>orders:write</code> on first launch reads as a
+    red flag, and consent rates reflect that.
+  </p>
+</div>
+
+<h2 id="dpop"><span class="num">2.9</span>Sender-constrained tokens with DPoP</h2>
+
+<p>
+  A bearer token is, definitionally, usable by whoever bears it. DPoP (RFC 9449) binds a
+  token to a key pair your client holds, so a stolen token is inert without the private key.
+</p>
+
+<p>
+  Each request carries a <code>DPoP</code> proof JWT, signed with your private key, covering
+  the HTTP method and URI plus a unique nonce and timestamp:
+</p>
+
+<pre><code>GET /v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders HTTP/1.1
+Authorization: DPoP eyJhbGciOiJSUzI1NiIsInR5cCI6ImRwb3Arand0Ii…
+DPoP: eyJ0eXAiOiJkcG9wK2p3dCIsImFsZyI6IkVTMjU2IiwiandrIjp7…</code></pre>
+
+<p>
+  DPoP is <b>required</b> for <code>orders:write</code> on accounts above the institutional
+  risk threshold, and recommended for every integration that can manage a key pair. Request
+  it by including a <code>dpop_jkt</code> parameter on the authorization request; the issued
+  token then carries a <code>cnf</code> confirmation claim and will be rejected if presented
+  as a plain bearer token.
+</p>
+
+<h2 id="revocation"><span class="num">2.10</span>Revocation, logout, and token hygiene</h2>
+
+<div class="endpoint">
+  <div class="ep-line"><span class="verb post">POST</span>https://auth.brokerage.example.com/oauth2/revoke</div>
+</div>
+
+<pre><code>token=v1.MTo3ZjNhOWIyYy0…&amp;token_type_hint=refresh_token&amp;client_id=your-client-id</code></pre>
+
+<p>
+  Revoking a refresh token invalidates the whole family, including outstanding access tokens.
+  Returns <span class="status-pill s-2xx">200 OK</span> whether or not the token existed —
+  per RFC 7009, so the endpoint cannot be used as a token oracle.
+</p>
+
+<table>
+  <thead><tr><th style="width:30%">Practice</th><th>Reason</th></tr></thead>
+  <tbody>
+    <tr><td>Revoke on logout</td><td>Dropping tokens on the floor leaves a live account credential in whatever logs, crash dumps, or backups happened to capture it.</td></tr>
+    <tr><td>Never log tokens</td><td>Redact <code>Authorization</code> headers and token responses in every logger, APM agent, and error reporter. This is the most common way tokens leak in practice.</td></tr>
+    <tr><td>Encrypt at rest</td><td>Keychain or Keystore on device; a managed secret store on a server. File storage, if unavoidable, must be owner-only (mode <code>0600</code>).</td></tr>
+    <tr><td>Never in URLs</td><td>Query strings land in access logs, referrer headers, and browser history. Header only.</td></tr>
+    <tr><td>One grant per user per app</td><td>Do not share a token across customers or pool credentials. The <code>sub</code> claim is what makes an audit trail meaningful.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="device-flow"><span class="num">2.11</span>Device authorization for input-constrained clients</h2>
+
+<p>
+  Where a redirect-based browser flow is not possible — a TV app, a headless terminal, an
+  embedded device — use the device authorization grant (RFC 8628):
+</p>
+
+<pre><code><span class="c-com">1.</span> POST /oauth2/device_authorization  →  device_code, user_code, verification_uri, interval
+<span class="c-com">2.</span> Display the user_code and verification_uri to the customer
+<span class="c-com">3.</span> Poll POST /oauth2/token with grant_type=urn:ietf:params:oauth:grant-type:device_code
+      <span class="c-com">// authorization_pending → keep polling at `interval`</span>
+      <span class="c-com">// slow_down            → increase the interval by 5s and continue</span>
+      <span class="c-com">// access_denied        → the customer declined; stop</span>
+<span class="c-com">4.</span> On success: access_token + refresh_token, exactly as in §2.5</code></pre>
+
+<div class="warn">
+  <span class="lbl">Scope restriction</span>
+  <p>
+    The device flow does <b>not</b> grant <code>orders:write</code>. Its user code is
+    short and typed by hand, which makes it a weaker binding than a full redirect flow —
+    acceptable for read access, not for placing trades.
+  </p>
+</div>

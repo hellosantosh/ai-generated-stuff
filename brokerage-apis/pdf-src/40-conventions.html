@@ -1,0 +1,354 @@
+<!-- ==================== 3. API CONVENTIONS ======================= -->
+<h1 id="conventions"><span class="num">3</span>API Conventions</h1>
+
+<p class="lede">
+  These rules apply to every endpoint. Reading this section once will save you from
+  rediscovering the same eight things across five sections of reference material.
+</p>
+
+<h2 id="hateoas"><span class="num">3.1</span>Hypermedia and HATEOAS</h2>
+
+<p>
+  Every representation carries a <code>_links</code> object: a map keyed by link relation,
+  each value carrying at least an <code>href</code>.
+</p>
+
+<pre><code>{
+  <span class="c-key">"orderId"</span>: <span class="c-str">"ord_01HQ9D4N7Q1S5U8X"</span>,
+  <span class="c-key">"status"</span>:  <span class="c-str">"PARTIALLY_FILLED"</span>,
+  <span class="c-key">"_links"</span>: {
+    <span class="c-key">"self"</span>:       { <span class="c-key">"href"</span>: <span class="c-str">"https://api.brokerage.example.com/v1/accounts/acct_…/orders/ord_…"</span> },
+    <span class="c-key">"cancel"</span>:     { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"DELETE"</span>, <span class="c-key">"title"</span>: <span class="c-str">"Cancel the unfilled 200 shares"</span> },
+    <span class="c-key">"replace"</span>:    { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…"</span>, <span class="c-key">"method"</span>: <span class="c-str">"PATCH"</span> },
+    <span class="c-key">"executions"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/orders/ord_…/executions"</span> }
+  }
+}</code></pre>
+
+<p>The contract has three parts, and the third is the one that pays for the other two:</p>
+
+<ol>
+  <li><b>One bookmarked URL.</b> Clients hard-code <code>GET /</code> and discover everything
+      else by following relations.</li>
+  <li><b>No URL construction.</b> Never build a URL by concatenating strings. Follow the
+      <code>href</code> you were given, verbatim — including its query parameters.</li>
+  <li><b>Links are state-dependent.</b> A <code>FILLED</code> order has no
+      <code>cancel</code> link. An account without options approval has no
+      <code>place-option-order</code> link. <b>Branch on the presence of a link, not on a
+      status string.</b></li>
+</ol>
+
+<div class="tip">
+  <span class="lbl">Why point 3 matters more than it looks</span>
+  <p>
+    Status enumerations grow. If your UI enables its Cancel button when
+    <code>status ∈ {NEW, PARTIALLY_FILLED}</code>, then the day a
+    <code>PENDING_ROUTE</code> status ships, your button silently disappears for orders that
+    are in fact cancellable. If instead it enables on <code>"cancel" in _links</code>, it
+    keeps working — the server already knows the answer, and it is telling you.
+  </p>
+</div>
+
+<table>
+  <thead><tr><th style="width:24%">Relation</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>self</code></td><td>Canonical URL of this resource.</td></tr>
+    <tr><td><code>next</code></td><td>The next page. Absent on the last page (§3.4).</td></tr>
+    <tr><td><code>account</code>, <code>order</code>, <code>instrument</code></td><td>Navigate to a related resource.</td></tr>
+    <tr><td><code>balances</code>, <code>positions</code>, <code>orders</code>, <code>transactions</code>, <code>executions</code></td><td>Sub-collections of an account or order.</td></tr>
+    <tr><td><code>place-order</code>, <code>cancel</code>, <code>replace</code>, <code>close-position</code></td><td>State-changing affordances. Each carries an explicit <code>method</code>.</td></tr>
+    <tr><td><code>events</code></td><td>The server-sent event stream for this collection.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="errors"><span class="num">3.2</span>Errors: RFC 9457 problem details</h2>
+
+<p>
+  Every error response uses <code>application/problem+json</code>:
+</p>
+
+<pre><code>HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  <span class="c-key">"type"</span>:     <span class="c-str">"https://developer.brokerage.example.com/problems/insufficient-buying-power"</span>,
+  <span class="c-key">"title"</span>:    <span class="c-str">"Insufficient buying power"</span>,
+  <span class="c-key">"status"</span>:   <span class="c-num">422</span>,
+  <span class="c-key">"detail"</span>:   <span class="c-str">"Order requires 123,750.00 USD of stock buying power; 84,360.20 USD available."</span>,
+  <span class="c-key">"instance"</span>: <span class="c-str">"/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"</span>,
+  <span class="c-key">"required"</span>:  { <span class="c-key">"amount"</span>: <span class="c-str">"123750.00"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"available"</span>: { <span class="c-key">"amount"</span>: <span class="c-str">"84360.20"</span>,  <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"traceId"</span>:  <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span>
+}</code></pre>
+
+<table>
+  <thead><tr><th style="width:20%">Field</th><th>How to treat it</th></tr></thead>
+  <tbody>
+    <tr><td><code>type</code></td><td><b>The only field safe to branch on.</b> A stable, dereferenceable URI identifying the problem class. It will not change without a version bump.</td></tr>
+    <tr><td><code>title</code>, <code>detail</code></td><td>Human-facing prose. Reworded without notice, and localized in future. Display it; never parse it.</td></tr>
+    <tr><td><code>instance</code></td><td>Which request this was about.</td></tr>
+    <tr><td><code>traceId</code></td><td><b>Log this on every failure.</b> It is the first thing support will ask for and the only way to find the request in our logs.</td></tr>
+    <tr><td><code>errors[]</code></td><td>Field-level failures on validation problems, each with an RFC 6901 JSON Pointer.</td></tr>
+    <tr><td>Extensions</td><td>Problem types add their own fields — <code>required</code>/<code>available</code> here, <code>requiredLevel</code> on an options-approval failure. Documented per type in Appendix A.</td></tr>
+  </tbody>
+</table>
+
+<h4>Status code semantics</h4>
+
+<table class="long">
+  <thead><tr><th style="width:16%">Status</th><th>Meaning in this API</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-4xx">400</span></td><td>Malformed syntax or schema validation failure. The request never reached business logic.</td></tr>
+    <tr><td><span class="status-pill s-4xx">401</span></td><td>Token missing, expired, malformed, or revoked. Refresh once and retry; if that fails, re-authorize.</td></tr>
+    <tr><td><span class="status-pill s-4xx">403</span></td><td>Authenticated but not permitted — missing scope, or an options strategy above the account's approval level.</td></tr>
+    <tr><td><span class="status-pill s-4xx">404</span></td><td>No such resource, <b>or</b> it exists outside your grant. Deliberately indistinguishable, so the API cannot be used to enumerate account identifiers.</td></tr>
+    <tr><td><span class="status-pill s-4xx">409</span></td><td>Conflicting state — the account is restricted, or the order already reached a terminal state.</td></tr>
+    <tr><td><span class="status-pill s-4xx">412</span></td><td><code>If-Match</code> did not match. The resource changed after you read it (§3.6).</td></tr>
+    <tr><td><span class="status-pill s-4xx">422</span></td><td>Well-formed but unacceptable — insufficient buying power, price outside collar, market closed, untradable instrument.</td></tr>
+    <tr><td><span class="status-pill s-4xx">428</span></td><td>A required precondition header was not supplied.</td></tr>
+    <tr><td><span class="status-pill s-4xx">429</span></td><td>Rate limited. Honor <code>Retry-After</code> (§3.7).</td></tr>
+    <tr><td><span class="status-pill s-5xx">503</span></td><td>Upstream venue or clearing system unavailable. Retryable with backoff.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">400 versus 422 is not cosmetic</span>
+  <p>
+    A <span class="status-pill s-4xx">400</span> means your code is wrong — fix it and the
+    request will work. A <span class="status-pill s-4xx">422</span> means your code is fine
+    and the <i>world</i> said no: not enough buying power, market closed, instrument halted.
+    The first is a bug to fix; the second is a condition to surface to the customer. Treating
+    them identically produces an application that shows "Invalid request" when the honest
+    answer is "the market is closed".
+  </p>
+</div>
+
+<h2 id="decimals"><span class="num">3.3</span>Decimals, money, and why nothing is a float</h2>
+
+<p>
+  Prices, quantities, and monetary amounts are transmitted as JSON <b>strings</b>:
+</p>
+
+<pre><code>{ <span class="c-key">"limitPrice"</span>: <span class="c-str">"412.50"</span>, <span class="c-key">"quantity"</span>: <span class="c-str">"300"</span>, <span class="c-key">"netLiquidation"</span>: <span class="c-str">"184320.55"</span> }</code></pre>
+
+<p>
+  This is not stylistic. JSON numbers are IEEE-754 doubles in most parsers, and a double
+  cannot represent <code>0.1</code> exactly. In a domain where a share count and a limit
+  price multiply into a cash obligation, that error is a defect with a dollar value attached.
+</p>
+
+<table>
+  <thead><tr><th style="width:20%">Language</th><th style="width:32%">Use</th><th>Never</th></tr></thead>
+  <tbody>
+    <tr><td>Java</td><td><code>new BigDecimal("412.50")</code></td><td><code>double</code>, <code>Double.parseDouble</code>, or <code>BigDecimal.valueOf(double)</code></td></tr>
+    <tr><td>Python</td><td><code>Decimal("412.50")</code></td><td><code>float</code>, or <code>Decimal(0.1)</code> from a float literal</td></tr>
+    <tr><td>JavaScript</td><td><code>decimal.js</code> / <code>big.js</code>, or keep the string</td><td><code>Number()</code>, <code>parseFloat</code>, or arithmetic on either</td></tr>
+    <tr><td>Go</td><td><code>shopspring/decimal</code></td><td><code>float64</code></td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <span class="lbl">The subtle Java trap</span>
+  <p>
+    <code>BigDecimal.valueOf(0.1)</code> and <code>new BigDecimal(0.1)</code> both route
+    through a <code>double</code> and inherit its error before <code>BigDecimal</code> ever
+    sees the value. Only the <b>String</b> constructor is safe. The same applies to Python's
+    <code>Decimal(0.1)</code> versus <code>Decimal("0.1")</code>.
+  </p>
+</div>
+
+<p>
+  Other formats follow the same principle of being unambiguous on the wire:
+</p>
+
+<dl>
+  <dt>Timestamps</dt>
+  <dd>RFC 3339, UTC, explicit offset: <code>2026-08-17T14:31:02Z</code>. Sub-second precision on executions.</dd>
+  <dt>Dates</dt>
+  <dd>ISO 8601 calendar dates for trade and settlement dates: <code>2026-08-19</code>. These are exchange-local dates, not instants.</dd>
+  <dt>Currency</dt>
+  <dd>ISO 4217 alphabetic codes. Every monetary field either carries a <code>currency</code> or sits beside one.</dd>
+  <dt>Identifiers</dt>
+  <dd>Opaque, prefixed, sortable strings (<code>acct_</code>, <code>ord_</code>, <code>pos_</code>, <code>txn_</code>, <code>exec_</code>, <code>inst_</code>). Do not parse them; the prefix is a debugging affordance, not an API.</dd>
+</dl>
+
+<h2 id="pagination"><span class="num">3.4</span>Pagination</h2>
+
+<p>
+  Collections use opaque forward cursors. Request a page size with <code>limit</code>
+  (1–200, default 50); follow the <code>next</code> link for more.
+</p>
+
+<pre><code>GET /v1/accounts/acct_…/transactions?from=2026-08-01&amp;limit=50
+
+{ <span class="c-key">"items"</span>: [ … ],
+  <span class="c-key">"_links"</span>: {
+    <span class="c-key">"self"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions?from=2026-08-01&amp;limit=50"</span> },
+    <span class="c-key">"next"</span>: { <span class="c-key">"href"</span>: <span class="c-str">"…/transactions?from=2026-08-01&amp;limit=50&amp;cursor=eyJvIjoxMjAwfQ"</span> }
+  } }</code></pre>
+
+<p>
+  No <code>next</code> link means you have reached the end. Cursors are opaque: their encoding
+  is not part of the contract and will change. Do not construct, parse, or persist them.
+</p>
+
+<div class="note">
+  <span class="lbl">Why cursors rather than offsets</span>
+  <p>
+    Offset pagination is unstable against a moving dataset. Between page 1 and page 2 of your
+    transaction history, a settlement can insert a back-dated row — and with
+    <code>OFFSET 50</code> you silently skip a record. Cursors are anchored to a position in
+    a stable ordering, so insertions do not shift the window out from under you.
+  </p>
+  <p>
+    Rows can still legitimately repeat across pages when settlement back-dates an entry.
+    <b>Reconcile on <code>transactionId</code></b>, which is permanent and unique.
+  </p>
+</div>
+
+<h2 id="idempotency"><span class="num">3.5</span>Idempotency</h2>
+
+<p>
+  Every unsafe, non-idempotent operation — in practice, placing and amending orders —
+  requires an <code>Idempotency-Key</code> header carrying a client-generated UUIDv4.
+</p>
+
+<pre><code>POST /v1/accounts/acct_…/orders
+Idempotency-Key: 6f1c2a90-3f5b-4c1e-9c2a-8d7b6e5f4a30</code></pre>
+
+<table>
+  <thead><tr><th style="width:34%">Scenario</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>First request with a key</td><td><span class="status-pill s-2xx">201</span> The order is created.</td></tr>
+    <tr><td>Replay, same key, identical body</td><td><span class="status-pill s-2xx">200</span> The original order is returned with <code>Idempotency-Replayed: true</code>. <b>No second order.</b></td></tr>
+    <tr><td>Replay, same key, different body</td><td><span class="status-pill s-4xx">422</span> <code>idempotency-key-reuse</code>. Nothing is created.</td></tr>
+    <tr><td>Key older than 24 hours</td><td>Treated as new. Keys are retained for 24 hours.</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <span class="lbl">Generate the key once, per intent</span>
+  <p>
+    The key must be created <b>before the first attempt</b> and reused verbatim on every
+    retry of that same order intent. Generating a fresh UUID inside a retry loop defeats the
+    entire mechanism and is the exact bug it exists to prevent.
+  </p>
+  <p>
+    The failure being defended against is specific: a socket timeout on a market order is
+    indistinguishable, from the client's side, from a rejection. The order may have been
+    accepted and routed. Retrying without a key doubles the customer's position; retrying
+    with one is safe.
+  </p>
+</div>
+
+<h2 id="etags"><span class="num">3.6</span>Optimistic concurrency with ETags</h2>
+
+<p>
+  Order reads return a strong <code>ETag</code>. Order mutations —
+  <code>PATCH</code> and <code>DELETE</code> — <b>require</b> <code>If-Match</code>.
+</p>
+
+<pre><code><span class="c-com"># 1. Read, and keep the validator</span>
+GET /v1/accounts/acct_…/orders/ord_…
+→ 200 OK
+  ETag: W/"ord-7-1755441062"
+
+<span class="c-com"># 2. Mutate, asserting you saw that exact version</span>
+PATCH /v1/accounts/acct_…/orders/ord_…
+If-Match: W/"ord-7-1755441062"
+Content-Type: application/merge-patch+json
+
+{ <span class="c-key">"limitPrice"</span>: <span class="c-str">"413.25"</span> }</code></pre>
+
+<table>
+  <thead><tr><th style="width:16%">Outcome</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><span class="status-pill s-2xx">200</span></td><td>The order was unchanged since your read. The amendment was accepted, and a new <code>ETag</code> is returned.</td></tr>
+    <tr><td><span class="status-pill s-4xx">412</span></td><td>The order changed after your read. <b>Re-read it and decide again</b> — do not blindly retry with the newer <code>ETag</code>, or you will amend an order whose state you never evaluated.</td></tr>
+    <tr><td><span class="status-pill s-4xx">428</span></td><td>You omitted <code>If-Match</code>. Rejected rather than defaulted, on purpose.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">The race this closes</span>
+  <p>
+    You read an order showing 100 of 300 shares filled and decide to reprice the remaining
+    200. While you are deciding, it fills completely. Without <code>If-Match</code>, your
+    amendment lands against an order you believe is working, and the outcome depends on
+    timing you cannot observe. With it, you get a <span class="status-pill s-4xx">412</span>
+    and a chance to look again.
+  </p>
+</div>
+
+<p>
+  <code>ETag</code> also works for cheap polling: send it as <code>If-None-Match</code> on a
+  <code>GET</code> and receive <span class="status-pill s-4xx">304 Not Modified</span> with no
+  body when nothing has changed. That is what keeps a one-second poll inside the rate limit.
+</p>
+
+<h2 id="rate-limits"><span class="num">3.7</span>Rate limits and backoff</h2>
+
+<p>Every response carries the current quota state, per RFC 9913:</p>
+
+<pre><code>RateLimit: "default";r=94;t=51          <span class="c-com"># 94 requests remain, window resets in 51s</span>
+RateLimit-Policy: "default";q=120;w=60  <span class="c-com"># 120 requests per 60-second window</span></code></pre>
+
+<table>
+  <thead><tr><th style="width:26%">Policy</th><th style="width:20%">Quota</th><th>Applies to</th></tr></thead>
+  <tbody>
+    <tr><td><code>default</code></td><td>120 / minute</td><td>All read endpoints.</td></tr>
+    <tr><td><code>orders-write</code></td><td>60 / minute</td><td>Place, amend, cancel.</td></tr>
+    <tr><td><code>order-poll</code></td><td>1 / second per order</td><td><code>GET</code> on a single order. Use the event stream instead.</td></tr>
+    <tr><td><code>streams</code></td><td>5 concurrent</td><td>Open SSE connections per grant.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  On <span class="status-pill s-4xx">429</span>, wait <code>Retry-After</code> seconds and
+  retry with <b>full jitter</b> — a random delay between zero and your computed cap, rather
+  than a fixed backoff:
+</p>
+
+<pre><code>delay = random_between(0, min(2^attempt × base, cap))</code></pre>
+
+<div class="note">
+  <span class="lbl">Why jitter, specifically</span>
+  <p>
+    When a venue hiccups, every client fails at once and every client retries at once. Fixed
+    backoff preserves that synchronization and reproduces the thundering herd on each round,
+    turning a two-second blip into a sustained outage. Randomizing the delay spreads the
+    retries out. Ignoring <code>Retry-After</code> repeatedly escalates to a temporary
+    suspension of the client.
+  </p>
+</div>
+
+<h2 id="versioning"><span class="num">3.8</span>Versioning and compatibility</h2>
+
+<p>
+  The major version is pinned in the server path (<code>/v1</code>). Within a major version,
+  the following are considered <b>backward-compatible</b> and ship without notice:
+</p>
+
+<ul>
+  <li>New endpoints, and new optional request fields.</li>
+  <li>New fields in a response object.</li>
+  <li>New members in an enumeration — including new <code>OrderStatus</code> values.</li>
+  <li>New link relations in <code>_links</code>.</li>
+  <li>New problem <code>type</code> URIs.</li>
+</ul>
+
+<p>Which places two obligations on your client:</p>
+
+<ol>
+  <li><b>Ignore unknown properties.</b> Configure your deserializer to tolerate them —
+      Jackson's <code>FAIL_ON_UNKNOWN_PROPERTIES=false</code>, or an equivalent. A strict
+      parser will break on a purely additive change.</li>
+  <li><b>Tolerate unknown enum values.</b> Do not map to a closed enum that throws. Treat an
+      unrecognized <code>OrderStatus</code> as working, and rely on <code>_links</code> to
+      know what you may do with it.</li>
+</ol>
+
+<p>
+  Breaking changes — removing a field, changing a type, tightening validation — require a new
+  major version. The previous version is supported for at least 12 months after the successor
+  ships.
+</p>

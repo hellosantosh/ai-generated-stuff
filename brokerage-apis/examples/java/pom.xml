@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.example.brokerage</groupId>
+  <artifactId>brokerage-api-examples</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>Brokerage REST API examples</name>
+  <description>
+    Java examples for the Brokerage REST API: OAuth 2.1 + PKCE, accounts, and trading.
+    The brokerage publishes no SDK; these use java.net.http.HttpClient directly.
+    Jackson is the only third-party dependency, for JSON.
+  </description>
+
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jackson.version>2.17.2</jackson.version>
+    <exec.plugin.version>3.5.0</exec.plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec.plugin.version}</version>
+        <configuration>
+          <!-- Override per run:
+               mvn compile exec:java -Dexec.mainClass=com.example.brokerage.TradingExamples -->
+          <mainClass>com.example.brokerage.AccountsExamples</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

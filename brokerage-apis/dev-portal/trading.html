@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trading — Brokerage API</title>
+<meta name="description" content="Place, amend, and cancel stock and multi-leg options orders. Order lifecycle, idempotency, preview, and the event stream.">
+<link rel="stylesheet" href="assets/portal.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231f4f8f'/><text x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>B</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menu-toggle" type="button" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="index.html"><span class="mark">B</span> Brokerage API <span class="ver">v1</span></a>
+  <nav class="topnav">
+    <a href="index.html">Overview</a>
+    <a href="authentication.html">Authentication</a>
+    <a href="accounts.html">Accounts</a>
+    <a href="trading.html" class="active">Trading</a>
+    <a href="examples.html">Examples</a>
+    <a href="reference.html">Reference</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h4>Get started</h4>
+    <ul><li><a href="index.html">Overview</a></li></ul>
+    <h4>Guides</h4>
+    <ul>
+      <li><a href="authentication.html">Authentication</a></li>
+      <li><a href="accounts.html">Accounts</a></li>
+      <li><a href="trading.html" class="active">Trading</a></li>
+      <li><a href="examples.html">Code examples</a></li>
+    </ul>
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference.html">Endpoint reference</a></li>
+      <li><a href="errors.html">Errors &amp; status codes</a></li>
+      <li><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0 (YAML)</a></li>
+      <li><a href="openapi/brokerage-api.json">OpenAPI 3.2.0 (JSON)</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <h1>Trading</h1>
+    <p class="page-lede">
+      Placing, amending, and cancelling stock and options orders. Everything here requires the
+      <code>orders:write</code> scope and an <code>ACTIVE</code> account — and everything here
+      moves real money in production.
+    </p>
+
+    <h2 id="lifecycle">The order lifecycle</h2>
+
+    <p>
+      An order is a resource with a state machine. Understanding it is the difference between
+      an integration that reconciles cleanly and one that quietly loses track of fills.
+    </p>
+
+    <figure>
+    <svg viewBox="0 0 660 252" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="State machine of the order lifecycle: working states PENDING_NEW, NEW and PARTIALLY_FILLED; in-flight states PENDING_REPLACE and PENDING_CANCEL; terminal states FILLED, REJECTED, REPLACED, CANCELLED and EXPIRED.">
+      <defs>
+        <marker id="s-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="color:var(--accent)"/></marker>
+        <marker id="s-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="color:var(--amber)"/></marker>
+        <marker id="s-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="color:var(--green)"/></marker>
+        <marker id="s-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="color:var(--red)"/></marker>
+        <marker id="s-k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" style="color:var(--ink-faint)"/></marker>
+      </defs>
+
+      <path class="dg-lg" d="M 222 36 L 222 14 L 552 14 L 552 36" marker-end="url(#s-g)"/>
+      <text class="dg-ed" x="387" y="10" style="fill:var(--green)">fills completely in one print</text>
+
+      <text class="dg-tier" x="600" y="30">WORKING</text>
+      <rect class="dg-sb" x="24"  y="36" width="106" height="32" rx="5"/>
+      <text class="dg-tb" x="77"  y="56">PENDING_NEW</text>
+      <rect class="dg-sb" x="186" y="36" width="72"  height="32" rx="5"/>
+      <text class="dg-tb" x="222" y="56">NEW</text>
+      <rect class="dg-sb" x="314" y="36" width="128" height="32" rx="5"/>
+      <text class="dg-tb" x="378" y="56">PARTIALLY_FILLED</text>
+      <rect class="dg-sg" x="512" y="36" width="80"  height="32" rx="5"/>
+      <text class="dg-tg" x="552" y="56">FILLED</text>
+
+      <line class="dg-lb" x1="132" y1="52" x2="182" y2="52" marker-end="url(#s-b)"/>
+      <text class="dg-ed" x="157" y="46">accepted</text>
+      <line class="dg-lb" x1="260" y1="52" x2="310" y2="52" marker-end="url(#s-b)"/>
+      <text class="dg-ed" x="285" y="46">partial fill</text>
+      <line class="dg-lg" x1="444" y1="52" x2="508" y2="52" marker-end="url(#s-g)"/>
+      <text class="dg-ed" x="476" y="46" style="fill:var(--green)">remainder fills</text>
+
+      <text class="dg-tier" x="600" y="112">IN FLIGHT</text>
+      <rect class="dg-sa" x="160" y="118" width="124" height="30" rx="5"/>
+      <text class="dg-ta" x="222" y="137">PENDING_REPLACE</text>
+      <rect class="dg-sa" x="316" y="118" width="120" height="30" rx="5"/>
+      <text class="dg-ta" x="376" y="137">PENDING_CANCEL</text>
+
+      <line class="dg-la" x1="222" y1="70" x2="222" y2="114" marker-end="url(#s-a)"/>
+      <text class="dg-ed" x="196" y="94" style="text-anchor:end">PATCH</text>
+      <line class="dg-la" x1="372" y1="70" x2="376" y2="114" marker-end="url(#s-a)"/>
+      <text class="dg-ed" x="404" y="94" style="text-anchor:start">DELETE</text>
+
+      <text class="dg-tier" x="600" y="190">TERMINAL</text>
+      <rect class="dg-sr" x="24"  y="196" width="92"  height="30" rx="5"/>
+      <text class="dg-tr" x="70"  y="215">REJECTED</text>
+      <rect class="dg-sk" x="160" y="196" width="90"  height="30" rx="5"/>
+      <text class="dg-tk" x="205" y="215">REPLACED</text>
+      <rect class="dg-sk" x="316" y="196" width="98"  height="30" rx="5"/>
+      <text class="dg-tk" x="365" y="215">CANCELLED</text>
+      <rect class="dg-sk" x="468" y="196" width="88"  height="30" rx="5"/>
+      <text class="dg-tk" x="512" y="215">EXPIRED</text>
+
+      <line class="dg-lr" x1="70" y1="70" x2="70" y2="192" marker-end="url(#s-r)"/>
+      <text class="dg-ed" x="78" y="118" style="text-anchor:start;fill:var(--red)">risk check</text>
+      <text class="dg-ed" x="78" y="130" style="text-anchor:start;fill:var(--red)">or venue</text>
+      <text class="dg-ed" x="78" y="142" style="text-anchor:start;fill:var(--red)">rejects</text>
+
+      <line class="dg-lk" x1="215" y1="150" x2="205" y2="192" marker-end="url(#s-k)"/>
+      <line class="dg-lk" x1="372" y1="150" x2="365" y2="192" marker-end="url(#s-k)"/>
+      <path class="dg-lk" d="M 444 60 L 512 60 L 512 192" marker-end="url(#s-k)"/>
+      <text class="dg-ed" x="520" y="120" style="text-anchor:start">time in force</text>
+      <text class="dg-ed" x="520" y="132" style="text-anchor:start">elapses</text>
+    </svg>
+    <figcaption>
+      <b>Order lifecycle.</b> For legibility the diagram shows <code>PATCH</code> from
+      <code>NEW</code> and <code>DELETE</code> from <code>PARTIALLY_FILLED</code>; both are
+      available from either working state. A <code>REPLACED</code> order is terminal and its
+      replacement is a <b>new resource with a new <code>orderId</code></b>.
+    </figcaption>
+    </figure>
+
+    <div class="danger">
+      <span class="lbl">Three things that regularly surprise people</span>
+      <p>
+        <strong>A 201 is not a fill.</strong> It means the order was accepted and routed.
+        Terminal state arrives later — via the event stream, a webhook, or a poll.
+      </p>
+      <p>
+        <strong>Cancellation is a request, not a guarantee.</strong> The order moves to
+        <code>PENDING_CANCEL</code> and only reaches <code>CANCELLED</code> once the venue
+        acknowledges. A fill already in flight can still land, so a "cancelled" order can end
+        up <code>FILLED</code>.
+      </p>
+      <p>
+        <strong>An order can be rejected after acceptance.</strong> We accept and route it; the
+        venue refuses a moment later. That surfaces as a later <code>REJECTED</code> state, not
+        as an error on the original call.
+      </p>
+    </div>
+
+    <h2 id="placing">Placing an order safely</h2>
+
+    <div class="endpoint">
+      <div class="ep-line"><span class="verb post">POST</span>/v1/accounts/{accountId}/orders</div>
+      <div class="ep-meta">
+        Requires <span class="pill">orders:write</span> ·
+        <code>Idempotency-Key</code> header <strong>required</strong>
+      </div>
+    </div>
+
+    <p>
+      The body is a discriminated union on <code>assetClass</code>: <code>EQUITY</code> for
+      single-leg stock and ETF orders, <code>OPTION</code> for single- and multi-leg option
+      orders.
+    </p>
+
+    <h3 id="validation-order">Validation order</h3>
+
+    <p>
+      Validation stops at the <strong>first</strong> failure, so a rejection tells you the
+      first thing wrong, not everything wrong:
+    </p>
+
+<pre><code>schema  →  instrument tradability  →  market / session eligibility
+        →  options approval level  →  buying power and margin
+        →  risk limits             →  route to venue</code></pre>
+
+    <h3 id="idempotency">Idempotency</h3>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:34%">Scenario</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>First request with a key</td><td><span class="status-pill s-2xx">201</span> The order is created.</td></tr>
+        <tr><td>Replay, same key, identical body</td><td><span class="status-pill s-2xx">200</span> The original order, with <code>Idempotency-Replayed: true</code>. <strong>No second order.</strong></td></tr>
+        <tr><td>Replay, same key, different body</td><td><span class="status-pill s-4xx">422</span> <code>idempotency-key-reuse</code>. Nothing created.</td></tr>
+        <tr><td>Key older than 24 hours</td><td>Treated as new. Keys are retained 24 hours.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="danger">
+      <span class="lbl">Generate the key once, per intent</span>
+      <p>
+        Create it <strong>before the first attempt</strong> and reuse it verbatim on every
+        retry of that same order intent. Generating a fresh UUID inside a retry loop defeats
+        the mechanism entirely, and is the exact bug it exists to prevent.
+      </p>
+      <p>
+        The failure being defended against is specific: a socket timeout on a market order is
+        indistinguishable, from the client's side, from a rejection. The order may have been
+        accepted and routed. Retrying without a key doubles the customer's position.
+      </p>
+    </div>
+
+    <h2 id="stock">Stock trading</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:22%">Field</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>side</code></td><td><code>BUY</code> · <code>SELL</code> · <code>SELL_SHORT</code> · <code>BUY_TO_COVER</code>. Short sales need a margin account and a locate.</td></tr>
+        <tr><td><code>instrumentId</code></td><td>From instrument search — not a ticker. Tickers are ambiguous across venues and change on corporate actions.</td></tr>
+        <tr><td><code>quantity</code></td><td>Positive decimal string. Fractional only where <code>fractionable</code> is true, and only for <code>MARKET</code>/<code>DAY</code>.</td></tr>
+        <tr><td><code>orderType</code></td><td><code>MARKET</code> · <code>LIMIT</code> · <code>STOP</code> · <code>STOP_LIMIT</code> · <code>TRAILING_STOP</code> · <code>TRAILING_STOP_LIMIT</code></td></tr>
+        <tr><td><code>timeInForce</code></td><td><code>DAY</code> · <code>GTC</code> · <code>GTD</code> · <code>IOC</code> · <code>FOK</code> · <code>OPG</code> · <code>CLS</code></td></tr>
+        <tr><td><code>extendedHours</code></td><td>Pre- and post-market routing. Must be <code>LIMIT</code> and <code>DAY</code>.</td></tr>
+        <tr><td><code>bracket</code></td><td>Attached profit target and stop, released on entry fill, mutually one-cancels-the-other.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 id="stock-examples">Examples</h3>
+
+    <div class="tabs">
+      <div class="tab-strip" role="tablist" aria-label="Order type">
+        <button data-lang="limit"    role="tab" aria-selected="true">Limit buy</button>
+        <button data-lang="bracket"  role="tab" aria-selected="false">Bracket</button>
+        <button data-lang="trailing" role="tab" aria-selected="false">Trailing stop</button>
+      </div>
+
+      <div class="tab-panel" data-lang="limit" role="tabpanel">
+<pre><code>POST /v1/accounts/acct_…/orders
+Idempotency-Key: 6f1c2a90-3f5b-4c1e-9c2a-8d7b6e5f4a30
+
+{ <span class="c-key">"assetClass"</span>:    <span class="c-str">"EQUITY"</span>,
+  <span class="c-key">"clientOrderId"</span>: <span class="c-str">"ui-2026-08-17-0007"</span>,
+  <span class="c-key">"side"</span>:          <span class="c-str">"BUY"</span>,
+  <span class="c-key">"instrumentId"</span>:  <span class="c-str">"inst_eq_MSFT"</span>,
+  <span class="c-key">"quantity"</span>:      <span class="c-str">"300"</span>,
+  <span class="c-key">"orderType"</span>:     <span class="c-str">"LIMIT"</span>,
+  <span class="c-key">"limitPrice"</span>:    <span class="c-str">"412.50"</span>,
+  <span class="c-key">"timeInForce"</span>:   <span class="c-str">"DAY"</span>,
+  <span class="c-key">"extendedHours"</span>: false }
+
+<span class="c-com">→ 201 Created</span>
+<span class="c-com">  Location: /v1/accounts/acct_…/orders/ord_01HQ9D4N7Q1S5U8X</span>
+<span class="c-com">  ETag: W/"ord-1-1755441062"</span></code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="bracket" role="tabpanel" hidden>
+<pre><code><span class="c-com">// Exits are released only when the entry fills, and are OCO:</span>
+<span class="c-com">// whichever triggers first cancels the other.</span>
+{ <span class="c-key">"assetClass"</span>:   <span class="c-str">"EQUITY"</span>,
+  <span class="c-key">"side"</span>:         <span class="c-str">"BUY"</span>,
+  <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_MSFT"</span>,
+  <span class="c-key">"quantity"</span>:     <span class="c-str">"100"</span>,
+  <span class="c-key">"orderType"</span>:    <span class="c-str">"LIMIT"</span>,
+  <span class="c-key">"limitPrice"</span>:   <span class="c-str">"410.00"</span>,
+  <span class="c-key">"timeInForce"</span>:  <span class="c-str">"DAY"</span>,
+  <span class="c-key">"bracket"</span>: {
+    <span class="c-key">"takeProfit"</span>: { <span class="c-key">"orderType"</span>: <span class="c-str">"LIMIT"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"430.00"</span> },
+    <span class="c-key">"stopLoss"</span>:   { <span class="c-key">"orderType"</span>: <span class="c-str">"STOP"</span>,  <span class="c-key">"stopPrice"</span>:  <span class="c-str">"398.00"</span> }
+  } }</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="trailing" role="tabpanel" hidden>
+<pre><code><span class="c-com">// Stop follows the high-water mark. trailingAmount and</span>
+<span class="c-com">// trailingPercent are mutually exclusive.</span>
+{ <span class="c-key">"assetClass"</span>:      <span class="c-str">"EQUITY"</span>,
+  <span class="c-key">"side"</span>:            <span class="c-str">"SELL"</span>,
+  <span class="c-key">"instrumentId"</span>:    <span class="c-str">"inst_eq_NVDA"</span>,
+  <span class="c-key">"quantity"</span>:        <span class="c-str">"50"</span>,
+  <span class="c-key">"orderType"</span>:       <span class="c-str">"TRAILING_STOP"</span>,
+  <span class="c-key">"trailingPercent"</span>: <span class="c-str">"5.0"</span>,
+  <span class="c-key">"timeInForce"</span>:     <span class="c-str">"GTC"</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="warn">
+      <span class="lbl">Market orders and gaps</span>
+      <p>
+        A <code>MARKET</code> order guarantees execution, not price. On an illiquid name, at
+        the open, or on a halt resumption, the fill can land far from the last quote. Prefer
+        marketable limits for anything a customer would be upset to see filled 8% away.
+      </p>
+    </div>
+
+    <h2 id="options">Options trading</h2>
+
+    <p>
+      Option orders carry a <code>legs</code> array — one entry for single-leg, up to four for
+      a combination. Multi-leg orders are priced and routed <strong>as one unit</strong>; legs
+      never fill independently.
+    </p>
+
+    <h3 id="approval">Approval levels</h3>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:16%">Level</th><th>Permits (cumulative)</th></tr></thead>
+      <tbody>
+        <tr><td><code>LEVEL_1</code></td><td>Covered calls, cash-secured puts.</td></tr>
+        <tr><td><code>LEVEL_2</code></td><td>Long calls and puts.</td></tr>
+        <tr><td><code>LEVEL_3</code></td><td>Spreads and other defined-risk multi-leg strategies.</td></tr>
+        <tr><td><code>LEVEL_4</code></td><td>Uncovered (naked) short options.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p>
+      An order above the account's level returns
+      <span class="status-pill s-4xx">403</span> <code>options-level-insufficient</code>,
+      carrying <code>requiredLevel</code> and <code>currentLevel</code> so you can tell the
+      customer exactly what to apply for.
+    </p>
+
+    <h3 id="open-close">Open and close are explicit</h3>
+
+    <p>
+      Leg <code>side</code> is <code>BUY_TO_OPEN</code>, <code>BUY_TO_CLOSE</code>,
+      <code>SELL_TO_OPEN</code>, or <code>SELL_TO_CLOSE</code>. The distinction drives margin
+      treatment and position netting and <strong>cannot be inferred</strong> from buy/sell
+      alone — selling a call you hold closes a position; selling one you do not is a naked
+      short requiring <code>LEVEL_4</code>.
+    </p>
+
+    <h3 id="option-examples">Examples</h3>
+
+    <div class="tabs">
+      <div class="tab-strip" role="tablist" aria-label="Strategy">
+        <button data-lang="single"   role="tab" aria-selected="true">Single leg</button>
+        <button data-lang="vertical" role="tab" aria-selected="false">Vertical spread</button>
+        <button data-lang="condor"   role="tab" aria-selected="false">Iron condor</button>
+      </div>
+
+      <div class="tab-panel" data-lang="single" role="tabpanel">
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+  <span class="c-key">"strategy"</span>:   <span class="c-str">"SINGLE"</span>,
+  <span class="c-key">"legs"</span>: [ { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>,
+              <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> } ],
+  <span class="c-key">"quantity"</span>:    <span class="c-str">"5"</span>,        <span class="c-com">// 5 contracts</span>
+  <span class="c-key">"orderType"</span>:   <span class="c-str">"LIMIT"</span>,
+  <span class="c-key">"limitPrice"</span>:  <span class="c-str">"12.40"</span>,    <span class="c-com">// per contract → 12.40 × 5 × 100 = 6,200</span>
+  <span class="c-key">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="vertical" role="tabpanel" hidden>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>,
+  <span class="c-key">"strategy"</span>:   <span class="c-str">"VERTICAL"</span>,
+  <span class="c-key">"legs"</span>: [
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00250000"</span>,
+      <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_AAPL_20261218C00260000"</span>,
+      <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> }
+  ],
+  <span class="c-key">"quantity"</span>:    <span class="c-str">"10"</span>,          <span class="c-com">// 10 SPREADS = 20 contracts</span>
+  <span class="c-key">"orderType"</span>:   <span class="c-str">"NET_DEBIT"</span>,
+  <span class="c-key">"netPrice"</span>:    <span class="c-str">"3.15"</span>,        <span class="c-com">// always positive</span>
+  <span class="c-key">"priceEffect"</span>: <span class="c-str">"DEBIT"</span>,       <span class="c-com">// direction lives here, not in the sign</span>
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+      </div>
+
+      <div class="tab-panel" data-lang="condor" role="tabpanel" hidden>
+<pre><code>{ <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>, <span class="c-key">"strategy"</span>: <span class="c-str">"IRON_CONDOR"</span>,
+  <span class="c-key">"legs"</span>: [
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120P00520000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120P00540000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120C00600000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL_TO_OPEN"</span>, <span class="c-key">"ratio"</span>: <span class="c-num">1</span> },
+    { <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_op_SPY_20261120C00620000"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>,  <span class="c-key">"ratio"</span>: <span class="c-num">1</span> }
+  ],
+  <span class="c-key">"quantity"</span>:    <span class="c-str">"2"</span>,
+  <span class="c-key">"orderType"</span>:   <span class="c-str">"NET_CREDIT"</span>,
+  <span class="c-key">"netPrice"</span>:    <span class="c-str">"1.85"</span>,
+  <span class="c-key">"priceEffect"</span>: <span class="c-str">"CREDIT"</span>,
+  <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span> }</code></pre>
+      </div>
+    </div>
+
+    <div class="danger">
+      <span class="lbl">Two ways to get option sizing badly wrong</span>
+      <p>
+        <strong><code>quantity</code> is strategy units, not contracts.</strong> A quantity of
+        10 on a two-leg vertical is ten <em>spreads</em> — twenty contracts — with each leg
+        scaled by its <code>ratio</code>.
+      </p>
+      <p>
+        <strong>Declaring <code>strategy</code> is not cosmetic.</strong> It is what makes the
+        risk engine apply spread margin instead of margining each leg independently. The
+        identical legs sent as <code>CUSTOM</code> get the short call margined as if naked,
+        typically demanding an order of magnitude more buying power — often the difference
+        between accepted and rejected.
+      </p>
+    </div>
+
+    <h3 id="chains">Resolving contracts</h3>
+
+    <div class="endpoint">
+      <div class="ep-line"><span class="verb get">GET</span>/v1/instruments/{underlyingSymbol}/option-chain</div>
+      <div class="ep-meta">
+        Requires <span class="pill">instruments:read</span> ·
+        always narrow with <code>expiration</code>
+      </div>
+    </div>
+
+    <p>
+      Contracts carry a 21-character OSI symbol — <code>AAPL&nbsp;&nbsp;261218C00250000</code>:
+      six characters of root (space-padded), <code>YYMMDD</code>, <code>C</code>/<code>P</code>,
+      then strike × 1000 in eight digits. Useful as a check on your own logic, but the
+      <code>instrumentId</code> is what you trade against.
+    </p>
+
+    <h2 id="preview">Previewing an order</h2>
+
+    <div class="endpoint">
+      <div class="ep-line"><span class="verb post">POST</span>/v1/accounts/{accountId}/orders/preview</div>
+      <div class="ep-meta">Requires <span class="pill">orders:write</span> · creates nothing · no idempotency key</div>
+    </div>
+
+    <p>
+      Runs the full validation and pricing pipeline without routing. Same body as placement.
+      Use it to power a confirmation screen.
+    </p>
+
+<pre><code><span class="c-com">→ 200 OK</span>
+{ <span class="c-key">"valid"</span>:             false,
+  <span class="c-key">"estimatedCost"</span>:     <span class="c-str">"123750.00"</span>,
+  <span class="c-key">"commission"</span>:        <span class="c-str">"0.00"</span>,
+  <span class="c-key">"totalEstimated"</span>:    <span class="c-str">"123750.00"</span>,
+  <span class="c-key">"buyingPowerBefore"</span>: <span class="c-str">"84360.20"</span>,
+  <span class="c-key">"buyingPowerAfter"</span>:  <span class="c-str">"-39389.80"</span>,
+  <span class="c-key">"marginRequirement"</span>: <span class="c-str">"61875.00"</span>,
+  <span class="c-key">"maxLoss"</span>:           <span class="c-str">"3150.00"</span>,   <span class="c-com">// defined-risk only; null if unbounded</span>
+  <span class="c-key">"warnings"</span>: [
+    { <span class="c-key">"code"</span>: <span class="c-str">"EXCEEDS_BUYING_POWER"</span>, <span class="c-key">"severity"</span>: <span class="c-str">"ERROR"</span>,
+      <span class="c-key">"message"</span>: <span class="c-str">"This order exceeds available stock buying power by 39,389.80 USD."</span> },
+    { <span class="c-key">"code"</span>: <span class="c-str">"CONCENTRATION"</span>, <span class="c-key">"severity"</span>: <span class="c-str">"WARNING"</span>,
+      <span class="c-key">"message"</span>: <span class="c-str">"After this order, MSFT would be 67% of account equity."</span> }
+  ] }</code></pre>
+
+    <p>
+      <code>valid</code> is false when any warning has <code>severity: ERROR</code>. Submitting
+      anyway will be rejected — show the warnings instead.
+    </p>
+
+    <h2 id="amend-cancel">Amending and cancelling</h2>
+
+    <div class="endpoint">
+      <div class="ep-line"><span class="verb patch">PATCH</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+      <div class="ep-line"><span class="verb delete">DELETE</span>/v1/accounts/{accountId}/orders/{orderId}</div>
+      <div class="ep-meta">
+        Requires <span class="pill">orders:write</span> ·
+        <code>If-Match</code> <strong>required</strong> on both
+      </div>
+    </div>
+
+    <p>
+      Amendment uses JSON Merge Patch. Only <code>quantity</code>, <code>limitPrice</code>,
+      <code>stopPrice</code>, <code>trailingAmount</code>, <code>trailingPercent</code>,
+      <code>netPrice</code>, <code>timeInForce</code>, and <code>goodTilDate</code> are
+      amendable. Changing the instrument, side, or leg structure is a different order.
+    </p>
+
+<pre><code><span class="c-com"># 1. Read, and keep the validator</span>
+GET /v1/accounts/acct_…/orders/ord_…
+→ 200 OK
+  ETag: W/"ord-7-1755441062"
+
+<span class="c-com"># 2. Mutate, asserting you saw that exact version</span>
+PATCH /v1/accounts/acct_…/orders/ord_…
+If-Match: W/"ord-7-1755441062"
+Content-Type: application/merge-patch+json
+
+{ <span class="c-key">"quantity"</span>: <span class="c-str">"200"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"413.25"</span> }</code></pre>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:14%">Outcome</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="status-pill s-2xx">200</span></td><td>Unchanged since your read. Amendment accepted; a new <code>ETag</code> is returned.</td></tr>
+        <tr><td><span class="status-pill s-4xx">412</span></td><td>The order changed after your read. <strong>Re-read and decide again</strong> — do not blindly retry with the newer <code>ETag</code>.</td></tr>
+        <tr><td><span class="status-pill s-4xx">428</span></td><td>You omitted <code>If-Match</code>. Rejected rather than defaulted, on purpose.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="warn">
+      <span class="lbl">The race this closes</span>
+      <p>
+        You read an order showing 100 of 300 shares filled and decide to reprice the remaining
+        200. While you are deciding, it fills completely. Without <code>If-Match</code>, your
+        amendment lands against an order you believe is working, and the outcome depends on
+        timing you cannot observe. With it, you get a
+        <span class="status-pill s-4xx">412</span> and a chance to look again.
+      </p>
+    </div>
+
+    <p>
+      Cancellation is idempotent — cancelling an already-cancelled order returns
+      <span class="status-pill s-2xx">200</span> with the cancelled order, not an error.
+    </p>
+
+    <h2 id="streaming">Order events and webhooks</h2>
+
+    <div class="endpoint">
+      <div class="ep-line"><span class="verb get">GET</span>/v1/accounts/{accountId}/orders/events</div>
+      <div class="ep-meta">Requires <span class="pill">orders:read</span> · <code>text/event-stream</code></div>
+    </div>
+
+<pre><code>id: evt_01HQ9E1A2B3C4D5E
+event: execution
+data: {"eventId":"evt_01HQ9E1A2B3C4D5E","eventType":"execution",
+data: "orderId":"ord_01HQ9D4N7Q1S5U8X","status":"PARTIALLY_FILLED",
+data: "execution":{"quantity":"100","price":"412.48","venue":"XNAS"}}</code></pre>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:24%">Behavior</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr><td>Resume</td><td>Send <code>Last-Event-ID</code> on reconnect to replay from just after that event. Retention is 5 minutes.</td></tr>
+        <tr><td>Heartbeat</td><td>A comment frame every 15 seconds. Treat 45 seconds of silence as a dead connection.</td></tr>
+        <tr><td>Delivery</td><td><strong>At-least-once.</strong> Deduplicate on <code>eventId</code>.</td></tr>
+        <tr><td>Limit</td><td>5 concurrent streams per grant.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 id="webhooks">Webhooks</h3>
+
+    <p>
+      For server-side integrations that would rather be called than hold a connection open.
+      Same <code>OrderEvent</code> payload, delivered by <code>POST</code>.
+    </p>
+
+    <ul>
+      <li>Signed with <code>Webhook-Signature</code> — HMAC-SHA256 over the <strong>raw</strong> body, keyed by your webhook secret.</li>
+      <li>Return <code>2xx</code> within 5 seconds. Failures are retried with backoff for 24 hours.</li>
+      <li>At-least-once delivery, so handlers must be idempotent on <code>eventId</code>.</li>
+    </ul>
+
+    <div class="warn">
+      <span class="lbl">Verify the signature over raw bytes</span>
+      <p>
+        Compute the HMAC over the body exactly as received, before any JSON parse and
+        re-serialize. Round-tripping through a parser reorders keys and normalizes whitespace,
+        which changes the bytes and breaks the signature — and the usual "fix" is to skip
+        verification, which is how forged fill events get accepted.
+      </p>
+    </div>
+
+    <div class="next-prev">
+      <a href="accounts.html"><span class="dir">Previous</span><span class="ttl">← Accounts</span></a>
+      <a class="nxt" href="examples.html"><span class="dir">Next</span><span class="ttl">Code examples →</span></a>
+    </div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"></nav>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>Brokerage API</strong> · v1.0.0 · Developer Portal</div>
+    <div><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0</a> · <a href="errors.html">Errors</a> · <a href="reference.html">Reference</a></div>
+  </div>
+</footer>
+
+<script src="assets/portal.js"></script>
+</body>
+</html>

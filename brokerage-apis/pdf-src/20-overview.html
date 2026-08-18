@@ -1,0 +1,153 @@
+<!-- ========================= 1. OVERVIEW ========================= -->
+<h1 id="overview"><span class="num">1</span>Overview</h1>
+
+<p class="lede">
+  This document specifies a REST API for the brokerage domain: reading accounts and
+  positions, tracking orders and settled activity, and trading stocks and listed equity
+  options. It is written for the engineers who will build against it, and it states not
+  only what each endpoint does but why it was shaped that way.
+</p>
+
+<h2 id="what-for"><span class="num">1.1</span>What this API is for, and what it deliberately excludes</h2>
+
+<p>
+  The surface covers the operations a trading application actually needs on a customer's
+  behalf: enumerate their accounts, read balances and holdings, place and manage stock and
+  option orders, and reconcile what happened afterwards. Everything is scoped to a single
+  authenticated customer's grant.
+</p>
+
+<p>Three areas are intentionally out of scope, and no endpoint here touches them:</p>
+
+<table>
+  <thead>
+    <tr><th style="width:32%">Excluded</th><th>Why, and where it belongs instead</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Institutional application process</b></td>
+      <td>Account opening, entity onboarding, and suitability review are a compliance
+          workflow, not a trading API. They are governed by different regulation, run on
+          human timescales, and carry PII this surface never handles.</td>
+    </tr>
+    <tr>
+      <td><b>Futures trading</b></td>
+      <td>Futures carry a different margin model (SPAN rather than Reg&nbsp;T), different
+          contract identifiers, and different exchange plumbing. Folding them into the same
+          order resource would compromise both.</td>
+    </tr>
+    <tr>
+      <td><b>Crypto trading</b></td>
+      <td>Different custody model, 24/7 sessions, no settlement cycle, and a separate
+          regulatory regime. It shares almost nothing with an equity order except the word
+          "buy".</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  A small <b>instruments</b> surface is included even though it was not requested, for a
+  practical reason: an option order references a contract by <code>instrumentId</code>, and
+  without a way to resolve <code>AAPL Dec-18-2026 250 Call</code> into that identifier the
+  trading endpoints cannot be used at all. It is kept minimal and marked as supporting.
+</p>
+
+<h2 id="environments"><span class="num">1.2</span>Environments and base URLs</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:20%">Environment</th><th style="width:42%">Base URL</th><th>Behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Sandbox</b></td>
+      <td><code>https://api.sandbox.brokerage.example.com/v1</code></td>
+      <td>Paper money, simulated fills against a delayed book. Functionally identical
+          surface. Use it for development, conformance, and CI.</td>
+    </tr>
+    <tr>
+      <td><b>Production</b></td>
+      <td><code>https://api.brokerage.example.com/v1</code></td>
+      <td>Live orders against real money and a real customer's account.</td>
+    </tr>
+    <tr>
+      <td><b>Authorization</b></td>
+      <td><code>https://auth.brokerage.example.com</code></td>
+      <td>OAuth 2.1 authorization server. Separate host from the resource API by design.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">Recommendation</span>
+  <p>
+    Make the base URL a deployment configuration value with <b>sandbox as the default</b>, so
+    that reaching production is an explicit act rather than something a missing environment
+    variable can cause. The example clients in Section 6 are written this way.
+  </p>
+</div>
+
+<h2 id="contract"><span class="num">1.3</span>The design contract at a glance</h2>
+
+<table class="long">
+  <thead>
+    <tr><th style="width:26%">Concern</th><th>Decision</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Style</td><td>Resource-oriented REST over HTTPS with JSON representations. Nouns as paths, HTTP methods as verbs, status codes as outcomes.</td></tr>
+    <tr><td>Hypermedia</td><td>Every representation carries a <code>_links</code> map. Clients bookmark the API root and discover everything else (§3.1).</td></tr>
+    <tr><td>Authorization</td><td>OAuth 2.1 authorization code grant with mandatory PKCE (S256), optionally DPoP-bound (§2).</td></tr>
+    <tr><td>Errors</td><td>RFC 9457 <code>application/problem+json</code>, with a stable, dereferenceable <code>type</code> URI to branch on (§3.2).</td></tr>
+    <tr><td>Money and quantities</td><td>Decimal <b>strings</b> plus an ISO 4217 currency. Never IEEE-754 floats (§3.3).</td></tr>
+    <tr><td>Time</td><td>RFC 3339 timestamps, always UTC, always with an explicit offset.</td></tr>
+    <tr><td>Pagination</td><td>Opaque forward cursors, surfaced as a <code>next</code> link rather than a page number (§3.4).</td></tr>
+    <tr><td>Safe retries</td><td><code>Idempotency-Key</code> required on every unsafe, non-idempotent operation (§3.5).</td></tr>
+    <tr><td>Concurrency</td><td>Strong <code>ETag</code> plus mandatory <code>If-Match</code> on order mutation (§3.6).</td></tr>
+    <tr><td>Rate limits</td><td>RFC 9913 <code>RateLimit</code> headers; <code>Retry-After</code> on 429 (§3.7).</td></tr>
+    <tr><td>Versioning</td><td>Major version in the path (<code>/v1</code>). Additive changes ship without a bump, so clients must tolerate unknown fields and enum values (§3.8).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="references"><span class="num">1.4</span>Reference implementations we borrowed from</h2>
+
+<p>
+  Two production brokerage APIs informed this design. Where their choices are good, we
+  followed them; where they reflect history rather than intent, we did not.
+</p>
+
+<table>
+  <thead>
+    <tr><th style="width:22%">Source</th><th style="width:39%">What we adopted</th><th>What we changed</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Webull</b><br><span class="small">developer.webull.com</span></td>
+      <td>Clear separation of trading, market data, and account concerns. Explicit
+          open/close semantics on option orders. A dedicated preview step before
+          submission.</td>
+      <td>Webull authenticates with an app key and HMAC request signing. We use OAuth 2.1
+          instead, so the customer grants scoped access without the application ever
+          holding a long-lived shared secret.</td>
+    </tr>
+    <tr>
+      <td><b>Interactive Brokers</b><br><span class="small">interactivebrokers.com/docs/web-api</span></td>
+      <td>Rich order types, multi-leg combination orders priced as a unit, and a portfolio
+          model that separates ledger, positions, and summary.</td>
+      <td>IBKR relies on a stateful session that must be kept alive by periodic
+          <code>/tickle</code> calls, and on OAuth 1.0a for third parties. We use stateless
+          bearer tokens: no session to keep warm, no request signing ceremony.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">On the OAuth choice</span>
+  <p>
+    Neither reference API uses OAuth 2.1 with PKCE today. Adopting it here is a deliberate
+    departure, and Section 2.1 makes the argument for it. The short version: request signing
+    forces every integrator to hold a credential that can do everything forever, while a
+    scoped, expiring, revocable token lets a customer grant read-only access to one
+    application and full trading access to another — and take either back without changing a
+    secret.
+  </p>
+</div>

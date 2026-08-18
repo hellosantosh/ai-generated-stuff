@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Endpoint reference — Brokerage API</title>
+<meta name="description" content="Every operation in the Brokerage REST API, generated from the OpenAPI 3.2.0 specification.">
+<link rel="stylesheet" href="assets/portal.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231f4f8f'/><text x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>B</text></svg>">
+<style>
+  .op-title { margin: 10px 0 6px; font-size: 15px; text-transform: none; letter-spacing: -0.01em; color: var(--ink); font-weight: 650; }
+  .endpoint h5 { margin: 16px 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); }
+  .endpoint table { font-size: 13px; }
+  .endpoint p { font-size: 14px; }
+  .req { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--red); margin-left: 5px; }
+  .op-id { margin: 14px 0 0; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--ink-faint); }
+  .guide-link { font-size: 13px; font-weight: 500; margin-left: 10px; white-space: nowrap; }
+  .generated { font-size: 13px; color: var(--ink-faint); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menu-toggle" type="button" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="index.html"><span class="mark">B</span> Brokerage API <span class="ver">v1</span></a>
+  <nav class="topnav">
+    <a href="index.html">Overview</a>
+    <a href="authentication.html">Authentication</a>
+    <a href="accounts.html">Accounts</a>
+    <a href="trading.html">Trading</a>
+    <a href="examples.html">Examples</a>
+    <a href="reference.html" class="active">Reference</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h4>Get started</h4>
+    <ul><li><a href="index.html">Overview</a></li></ul>
+    <h4>Guides</h4>
+    <ul>
+      <li><a href="authentication.html">Authentication</a></li>
+      <li><a href="accounts.html">Accounts</a></li>
+      <li><a href="trading.html">Trading</a></li>
+      <li><a href="examples.html">Code examples</a></li>
+    </ul>
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference.html" class="active">Endpoint reference</a></li>
+      <li><a href="#sec-discovery">Discovery</a></li><li><a href="#sec-accounts">Accounts</a></li><li><a href="#sec-trading">Trading</a></li><li><a href="#sec-instruments">Instruments</a></li><li><a href="#sec-streaming">Streaming</a></li>
+      <li><a href="errors.html">Errors &amp; status codes</a></li>
+      <li><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0 (YAML)</a></li>
+      <li><a href="openapi/brokerage-api.json">OpenAPI 3.2.0 (JSON)</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <h1>Endpoint reference</h1>
+    <p class="page-lede">
+      Every operation in the API — 21 across 17 paths.
+      This page is generated from the OpenAPI 3.2.0 specification, which is the
+      normative artifact: where the guides and the specification disagree, the
+      specification wins.
+    </p>
+
+    <div class="kv-grid"><div><dt>Production</dt><dd>https://api.brokerage.example.com/v1</dd></div><div><dt>Sandbox</dt><dd>https://api.sandbox.brokerage.example.com/v1</dd></div></div>
+
+    <p class="generated">
+      Generated from <code>openapi/brokerage-api.yaml</code> · API version 1.0.0 ·
+      regenerate with <code>python3 tools/build-reference.py</code>
+    </p>
+
+    <h2 id="sec-discovery">Discovery <a class="guide-link" href="index.html">Guide →</a></h2><p>The single bookmarkable entry point for the API.</p>
+<div class="endpoint tall" id="getApiRoot">
+  <div class="ep-line"><span class="verb get">GET</span>/</div>
+  <h4 class="op-title">API root</h4>
+  <p>The hypermedia entry point. This is the only URL a client should hard-code; everything else is reached by following <code>_links</code>.</p>
+  <div class='ep-meta'>Any valid access token</div>
+  
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Entry point returned</strong><br>The root document with links to every top-level collection.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getApiRoot</code></p>
+</div>
+<h2 id="sec-accounts">Accounts <a class="guide-link" href="accounts.html">Guide →</a></h2><p>Read-only views of a customer&#x27;s brokerage accounts: which accounts the access token can reach, what they hold, what they owe, and what they have done.</p>
+<div class="endpoint tall" id="listAccounts">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts</div>
+  <h4 class="op-title">Account list</h4>
+  <p>Returns every account the presented access token is authorized to see.</p>
+  <div class='ep-meta'>Requires <span class="pill">accounts:read</span></div>
+  
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Accounts returned</strong><br>Zero or more accounts, newest first.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">429</span></td><td><strong>Too many requests</strong><br>Rate limit exceeded. Back off for <code>Retry-After</code> seconds, then retry with full jitter. Repeatedly ignoring <code>Retry-After</code> escalates to a temporary client suspension.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: listAccounts</code></p>
+</div>
+
+<div class="endpoint tall" id="getAccount">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}</div>
+  <h4 class="op-title">Get one account</h4>
+  <p>Retrieve a single account by its opaque identifier.</p>
+  <div class='ep-meta'>Requires <span class="pill">accounts:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Account returned</strong><br>The account resource.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getAccount</code></p>
+</div>
+
+<div class="endpoint tall" id="getAccountBalances">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/balances</div>
+  <h4 class="op-title">Account balances</h4>
+  <p>Cash, buying power, margin, and net liquidation value for one account.</p>
+  <div class='ep-meta'>Requires <span class="pill">accounts:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Balances returned</strong><br>A balance snapshot in the account&#x27;s base currency.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getAccountBalances</code></p>
+</div>
+
+<div class="endpoint tall" id="listPositions">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/positions</div>
+  <h4 class="op-title">Account positions</h4>
+  <p>Open positions on the account, one row per instrument and side.</p>
+  <div class='ep-meta'>Requires <span class="pill">positions:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>instrumentType</code></td><td><code>query</code></td><td><code>enum</code></td><td>Restrict to one instrument class.</td></tr><tr><td><code>symbol</code></td><td><code>query</code></td><td><code>string</code></td><td>Restrict to one underlying symbol. Matches option positions on that underlying too.</td></tr><tr><td><code>cursor</code></td><td><code>query</code></td><td><code>string</code></td><td>Opaque forward cursor from the previous page&#x27;s <code>next</code> link. Do not construct or parse it; its encoding is not part of the contract.</td></tr><tr><td><code>limit</code></td><td><code>query</code></td><td><code>integer</code></td><td>Maximum items per page.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Positions returned</strong><br>A page of open positions.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: listPositions</code></p>
+</div>
+
+<div class="endpoint tall" id="getPosition">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/positions/{positionId}</div>
+  <h4 class="op-title">Get one position</h4>
+  <p></p>
+  <div class='ep-meta'>Requires <span class="pill">positions:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>positionId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque position identifier.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Position returned</strong><br>A single open position.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getPosition</code></p>
+</div>
+
+<div class="endpoint tall" id="listTransactions">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/transactions</div>
+  <h4 class="op-title">Transaction history</h4>
+  <p>Cash and position activity on the account: trades, dividends, interest, fees, transfers, assignments, exercises, expirations, and corporate actions.</p>
+  <div class='ep-meta'>Requires <span class="pill">transactions:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>from</code></td><td><code>query</code></td><td><code>string</code></td><td>Inclusive lower bound on trade date. Defaults to 90 days ago.</td></tr><tr><td><code>to</code></td><td><code>query</code></td><td><code>string</code></td><td>Inclusive upper bound on trade date. Defaults to today.</td></tr><tr><td><code>type</code></td><td><code>query</code></td><td><code>array</code></td><td>Restrict to one or more transaction types. Repeat the parameter to OR them.</td></tr><tr><td><code>symbol</code></td><td><code>query</code></td><td><code>string</code></td><td>Restrict to activity in one symbol or its options.</td></tr><tr><td><code>cursor</code></td><td><code>query</code></td><td><code>string</code></td><td>Opaque forward cursor from the previous page&#x27;s <code>next</code> link. Do not construct or parse it; its encoding is not part of the contract.</td></tr><tr><td><code>limit</code></td><td><code>query</code></td><td><code>integer</code></td><td>Maximum items per page.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Transactions returned</strong><br>A page of transactions, most recent first.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: listTransactions</code></p>
+</div>
+
+<div class="endpoint tall" id="getTransaction">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/transactions/{transactionId}</div>
+  <h4 class="op-title">Get one transaction</h4>
+  <p></p>
+  <div class='ep-meta'>Requires <span class="pill">transactions:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>transactionId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent transaction identifier.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Transaction returned</strong><br>A single transaction.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getTransaction</code></p>
+</div>
+
+<div class="endpoint tall" id="listOrders">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/orders</div>
+  <h4 class="op-title">Account order status</h4>
+  <p>Orders on the account, newest first.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>status</code></td><td><code>query</code></td><td><code>array</code></td><td>Restrict to one or more statuses. Repeat to OR them. The literal <code>ALL</code> disables the default working-orders-only filter.</td></tr><tr><td><code>symbol</code></td><td><code>query</code></td><td><code>string</code></td><td>Restrict to one underlying symbol, including its option orders.</td></tr><tr><td><code>from</code></td><td><code>query</code></td><td><code>string</code></td><td>Inclusive lower bound on <code>createdAt</code>. Defaults to 7 days ago.</td></tr><tr><td><code>to</code></td><td><code>query</code></td><td><code>string</code></td><td>Inclusive upper bound on <code>createdAt</code>. Defaults to now.</td></tr><tr><td><code>cursor</code></td><td><code>query</code></td><td><code>string</code></td><td>Opaque forward cursor from the previous page&#x27;s <code>next</code> link. Do not construct or parse it; its encoding is not part of the contract.</td></tr><tr><td><code>limit</code></td><td><code>query</code></td><td><code>integer</code></td><td>Maximum items per page.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Orders returned</strong><br>A page of orders.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-4xx">429</span></td><td><strong>Too many requests</strong><br>Rate limit exceeded. Back off for <code>Retry-After</code> seconds, then retry with full jitter. Repeatedly ignoring <code>Retry-After</code> escalates to a temporary client suspension.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: listOrders</code></p>
+</div>
+
+<div class="endpoint tall" id="getOrder">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/orders/{orderId}</div>
+  <h4 class="op-title">Get order status</h4>
+  <p>The current state of one order, including fills to date and the average fill price. Responds with a strong <code>ETag</code>; send it back as <code>If-None-Match</code> to poll cheaply and get <code>304</code> when nothing has changed.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>orderId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Server-assigned order identifier.</td></tr><tr><td><code>If-None-Match</code></td><td><code>header</code></td><td><code>string</code></td><td>Conditional GET. Returns <code>304</code> when the order is unchanged.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Order returned</strong><br>Current order state.</td></tr><tr><td><span class="status-pill s-3xx">304</span></td><td><strong>Not modified</strong><br>The order has not changed since the supplied <code>ETag</code>.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getOrder</code></p>
+</div>
+
+<div class="endpoint tall" id="listOrderExecutions">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/orders/{orderId}/executions</div>
+  <h4 class="op-title">Order executions</h4>
+  <p>Individual fills against an order, oldest first. A single order can fill in many prints across venues; this is the audit trail behind <code>filledQuantity</code> and <code>averageFillPrice</code>.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>orderId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Server-assigned order identifier.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Executions returned</strong><br>All fills recorded against the order.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: listOrderExecutions</code></p>
+</div>
+<h2 id="sec-trading">Trading <a class="guide-link" href="trading.html">Guide →</a></h2><p>Operations that create, replace, or cancel orders. All require <code>orders:write</code>.</p>
+<div class="endpoint tall" id="placeOrder">
+  <div class="ep-line"><span class="verb post">POST</span>/accounts/{accountId}/orders</div>
+  <h4 class="op-title">Place an order</h4>
+  <p>Submit a stock or option order. The request body is a discriminated union on <code>assetClass</code>: <code>EQUITY</code> for single-leg stock and ETF orders, <code>OPTION</code> for single- and multi-leg listed option orders.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:write</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>Idempotency-Key</code> <span class="req">required</span></td><td><code>header</code></td><td><code>string</code></td><td>A client-generated UUIDv4 that uniquely identifies this order intent. Reuse it verbatim on every retry. Retained 24 hours.</td></tr></tbody></table></div>
+  <h5>Request body (required)</h5><p><code>application/json</code></p>
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">201</span></td><td><strong>Order accepted and routed</strong><br>The order was created. <code>Location</code> points at the new order resource. Check <code>status</code> — an order can be accepted and then immediately rejected by the venue, which surfaces as a later <code>REJECTED</code> state, not as an error on this call.</td></tr><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Idempotent replay</strong><br>This exact <code>Idempotency-Key</code> and body were already processed. The original order is returned unchanged and nothing new was created.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Not permitted</strong><br>The grant lacks <code>orders:write</code>, or the account is not approved for this trade — most often an options strategy above the account&#x27;s approval level.</td></tr><tr><td><span class="status-pill s-4xx">409</span></td><td><strong>Conflicting state</strong><br>The account is restricted, or a conflicting order is already working.</td></tr><tr><td><span class="status-pill s-4xx">422</span></td><td><strong>Unprocessable order</strong><br>The body parsed and the schema validated, but the order cannot be accepted: insufficient buying power, a price outside collar limits, a closed market for the requested session, an untradable instrument, or an idempotency key reused with a different body.</td></tr><tr><td><span class="status-pill s-4xx">429</span></td><td><strong>Too many requests</strong><br>Rate limit exceeded. Back off for <code>Retry-After</code> seconds, then retry with full jitter. Repeatedly ignoring <code>Retry-After</code> escalates to a temporary client suspension.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: placeOrder</code></p>
+</div>
+
+<div class="endpoint tall" id="previewOrder">
+  <div class="ep-line"><span class="verb post">POST</span>/accounts/{accountId}/orders/preview</div>
+  <h4 class="op-title">Preview an order</h4>
+  <p>Run an order through the full validation and pricing pipeline **without** routing it. Same request body as [<code>placeOrder</code>](#operation/placeOrder).</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:write</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr></tbody></table></div>
+  <h5>Request body (required)</h5><p><code>application/json</code></p>
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Preview computed</strong><br>Estimated economics and warnings. No order was created.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: previewOrder</code></p>
+</div>
+
+<div class="endpoint tall" id="replaceOrder">
+  <div class="ep-line"><span class="verb patch">PATCH</span>/accounts/{accountId}/orders/{orderId}</div>
+  <h4 class="op-title">Replace (amend) an order</h4>
+  <p>Amend a working order in place. Only <code>quantity</code>, <code>limitPrice</code>, <code>stopPrice</code>, <code>trailingAmount</code>, <code>trailingPercent</code>, <code>netPrice</code>, <code>timeInForce</code>, and <code>goodTilDate</code> may be changed — an amendment that would alter the instrument, side, or leg structure is a different order and must be cancelled and replaced explicitly.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:write</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>orderId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Server-assigned order identifier.</td></tr><tr><td><code>If-Match</code> <span class="req">required</span></td><td><code>header</code></td><td><code>string</code></td><td>The <code>ETag</code> from your most recent read of this order. Required — a mutation without it is rejected with <code>428 Precondition Required</code>.</td></tr><tr><td><code>Idempotency-Key</code> <span class="req">required</span></td><td><code>header</code></td><td><code>string</code></td><td>A client-generated UUIDv4 that uniquely identifies this order intent. Reuse it verbatim on every retry. Retained 24 hours.</td></tr></tbody></table></div>
+  <h5>Request body (required)</h5><p><code>application/merge-patch+json</code></p>
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Amendment accepted</strong><br>The amended order. Note the new <code>ETag</code>.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-4xx">409</span></td><td><strong>Order not amendable</strong><br>The order is in a terminal state, or an amendment is already pending.</td></tr><tr><td><span class="status-pill s-4xx">412</span></td><td><strong>Precondition failed</strong><br>The supplied <code>If-Match</code> does not match the resource&#x27;s current <code>ETag</code> — the order changed after you read it. Re-read it, decide again, and retry.</td></tr><tr><td><span class="status-pill s-4xx">428</span></td><td><strong>Precondition required</strong><br>The mutation was rejected because no <code>If-Match</code> header was supplied.</td></tr><tr><td><span class="status-pill s-4xx">422</span></td><td><strong>Unprocessable order</strong><br>The request was well-formed but the order cannot be accepted.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: replaceOrder</code></p>
+</div>
+
+<div class="endpoint tall" id="cancelOrder">
+  <div class="ep-line"><span class="verb delete">DELETE</span>/accounts/{accountId}/orders/{orderId}</div>
+  <h4 class="op-title">Cancel an order</h4>
+  <p>Request cancellation of a working order.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:write</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>orderId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Server-assigned order identifier.</td></tr><tr><td><code>If-Match</code> <span class="req">required</span></td><td><code>header</code></td><td><code>string</code></td><td>The <code>ETag</code> from your most recent read of this order. Required — a mutation without it is rejected with <code>428 Precondition Required</code>.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Cancellation requested</strong><br>The cancel was accepted. <code>status</code> will be <code>PENDING_CANCEL</code> — or <code>CANCELLED</code> if the venue acknowledged synchronously.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">403</span></td><td><strong>Forbidden</strong><br>Authenticated, but not permitted. Either the grant lacks the required scope, or the token is valid for a different account than the one addressed.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-4xx">409</span></td><td><strong>Order not cancellable</strong><br>The order already reached a terminal state other than <code>CANCELLED</code>.</td></tr><tr><td><span class="status-pill s-4xx">412</span></td><td><strong>Precondition failed</strong><br>The supplied <code>If-Match</code> does not match the resource&#x27;s current <code>ETag</code> — the order changed after you read it. Re-read it, decide again, and retry.</td></tr><tr><td><span class="status-pill s-4xx">428</span></td><td><strong>Precondition required</strong><br>The mutation was rejected because no <code>If-Match</code> header was supplied.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: cancelOrder</code></p>
+</div>
+<h2 id="sec-instruments">Instruments <a class="guide-link" href="trading.html#chains">Guide →</a></h2><p>Symbol and contract resolution. Supporting surface — you need an <code>instrumentId</code> before you can place an order against a contract.</p>
+<div class="endpoint tall" id="searchInstruments">
+  <div class="ep-line"><span class="verb get">GET</span>/instruments</div>
+  <h4 class="op-title">Search instruments</h4>
+  <p>Resolve a symbol or name to a tradable <code>instrumentId</code>. Covers listed equities and ETFs. Use the option chain endpoint for option contracts.</p>
+  <div class='ep-meta'>Requires <span class="pill">instruments:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>query</code> <span class="req">required</span></td><td><code>query</code></td><td><code>string</code></td><td>Ticker or company name fragment. Minimum 1 character.</td></tr><tr><td><code>type</code></td><td><code>query</code></td><td><code>enum</code></td><td>Restrict to one instrument class.</td></tr><tr><td><code>limit</code></td><td><code>query</code></td><td><code>integer</code></td><td>Maximum items per page.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Matches returned</strong><br>Instruments matching the query, best match first.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: searchInstruments</code></p>
+</div>
+
+<div class="endpoint tall" id="queryInstruments">
+  <div class="ep-line"><span class="verb query">QUERY</span>/instruments</div>
+  <h4 class="op-title">Structured instrument screen</h4>
+  <p>A safe, idempotent search that takes a structured filter in the request body. Semantically identical to <code>GET /instruments</code> but able to express filters that will not fit in a URL.</p>
+  <div class='ep-meta'>Requires <span class="pill">instruments:read</span></div>
+  
+  <h5>Request body (required)</h5><p><code>application/json</code></p>
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Matches returned</strong><br>Instruments matching the structured filter.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: queryInstruments</code></p>
+</div>
+
+<div class="endpoint tall" id="screenInstruments">
+  <div class="ep-line"><span class="verb post">POST</span>/instrument-screener</div>
+  <h4 class="op-title">Structured instrument screen (POST alias)</h4>
+  <p>Compatibility alias for [<code>QUERY /instruments</code>](#operation/queryInstruments), for clients that cannot issue a QUERY request — notably browser <code>fetch()</code>. Identical request and response bodies.</p>
+  <div class='ep-meta'>Requires <span class="pill">instruments:read</span></div>
+  
+  <h5>Request body (required)</h5><p><code>application/json</code></p>
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Matches returned</strong><br>Instruments matching the structured filter.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: screenInstruments</code></p>
+</div>
+
+<div class="endpoint tall" id="getInstrument">
+  <div class="ep-line"><span class="verb get">GET</span>/instruments/{instrumentId}</div>
+  <h4 class="op-title">Get an instrument</h4>
+  <p></p>
+  <div class='ep-meta'>Requires <span class="pill">instruments:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>instrumentId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque instrument identifier.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Instrument returned</strong><br>Instrument metadata including tradability flags.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getInstrument</code></p>
+</div>
+
+<div class="endpoint tall" id="getOptionChain">
+  <div class="ep-line"><span class="verb get">GET</span>/instruments/{underlyingSymbol}/option-chain</div>
+  <h4 class="op-title">Get an option chain</h4>
+  <p>Listed option contracts on an underlying, with the <code>instrumentId</code> you need in an order leg. Always narrow with <code>expiration</code> — an unfiltered chain on a liquid name is thousands of contracts.</p>
+  <div class='ep-meta'>Requires <span class="pill">instruments:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>underlyingSymbol</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Underlying ticker.</td></tr><tr><td><code>expiration</code></td><td><code>query</code></td><td><code>string</code></td><td>Restrict to one expiration date.</td></tr><tr><td><code>optionType</code></td><td><code>query</code></td><td><code>enum</code></td><td></td></tr><tr><td><code>strikeMin</code></td><td><code>query</code></td><td><code></code></td><td></td></tr><tr><td><code>strikeMax</code></td><td><code>query</code></td><td><code></code></td><td></td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Chain returned</strong><br>Matching option contracts.</td></tr><tr><td><span class="status-pill s-4xx">400</span></td><td><strong>Bad request</strong><br>The request was syntactically invalid or failed schema validation.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-4xx">404</span></td><td><strong>Not found</strong><br>No such resource, or the resource exists but is outside this grant. The two are deliberately indistinguishable so the API cannot be used to enumerate account identifiers.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: getOptionChain</code></p>
+</div>
+<h2 id="sec-streaming">Streaming <a class="guide-link" href="trading.html#streaming">Guide →</a></h2><p>Server-sent order and execution events.</p>
+<div class="endpoint tall" id="streamOrderEvents">
+  <div class="ep-line"><span class="verb get">GET</span>/accounts/{accountId}/orders/events</div>
+  <h4 class="op-title">Stream order events</h4>
+  <p>A Server-Sent Events stream of order lifecycle transitions and executions for the account. Prefer this over polling <code>listOrders</code>.</p>
+  <div class='ep-meta'>Requires <span class="pill">orders:read</span></div>
+  <h5>Parameters</h5><div class="table-wrap"><table><thead><tr><th>Name</th><th>In</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>accountId</code> <span class="req">required</span></td><td><code>path</code></td><td><code>string</code></td><td>Opaque, permanent account identifier from <code>GET /accounts</code>.</td></tr><tr><td><code>Last-Event-ID</code></td><td><code>header</code></td><td><code>string</code></td><td>Resume the stream immediately after this event id.</td></tr></tbody></table></div>
+  
+  <h5>Responses</h5><div class="table-wrap"><table><thead><tr><th style='width:14%'>Status</th><th>Meaning</th></tr></thead><tbody><tr><td><span class="status-pill s-2xx">200</span></td><td><strong>Stream opened</strong><br>An open <code>text/event-stream</code> connection.</td></tr><tr><td><span class="status-pill s-4xx">401</span></td><td><strong>Unauthorized</strong><br>The access token is missing, malformed, expired, or revoked. The <code>WWW-Authenticate</code> header names the failure. Refresh and retry once; if the refresh also fails, send the user back through authorization.</td></tr><tr><td><span class="status-pill s-3xx">default</span></td><td><strong>Error</strong><br>An unexpected error, described as RFC 9457 problem details.</td></tr></tbody></table></div>
+  <p class="op-id"><code>operationId: streamOrderEvents</code></p>
+</div>
+
+
+    <div class="next-prev">
+      <a href="examples.html"><span class="dir">Previous</span><span class="ttl">← Code examples</span></a>
+      <a class="nxt" href="errors.html"><span class="dir">Next</span><span class="ttl">Errors &amp; status codes →</span></a>
+    </div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"></nav>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>Brokerage API</strong> · v1.0.0 · Developer Portal</div>
+    <div><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0</a> · <a href="errors.html">Errors</a> · <a href="index.html">Overview</a></div>
+  </div>
+</footer>
+
+<script src="assets/portal.js"></script>
+</body>
+</html>

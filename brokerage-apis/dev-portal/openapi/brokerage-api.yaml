@@ -1,0 +1,2851 @@
+openapi: 3.2.0
+
+# The `$self` field is new in OpenAPI 3.2.0. It gives this document a stable,
+# self-assigned identity that also acts as the base URI for reference resolution,
+# independent of wherever the file happens to be retrieved from.
+$self: https://api.brokerage.example.com/openapi/brokerage-api.yaml
+
+info:
+  title: Brokerage REST API
+  summary: Accounts, positions, order status, transaction history, and stock and options trading.
+  description: |
+    A resource-oriented REST API for retail and advisor brokerage integrations.
+
+    ## Design contract
+
+    | Concern | Decision |
+    | --- | --- |
+    | Style | Resource-oriented REST over HTTPS, JSON representations |
+    | Hypermedia | Every representation carries a `_links` map (see [HATEOAS](#section/HATEOAS)) |
+    | Authorization | OAuth 2.1 authorization code grant with PKCE (S256), optionally DPoP-bound |
+    | Errors | RFC 9457 `application/problem+json` |
+    | Money | Decimal **strings** plus an ISO 4217 currency, never IEEE-754 floats |
+    | Time | RFC 3339 timestamps, always UTC, always with an explicit offset |
+    | Pagination | Opaque forward cursors, surfaced as a `next` link |
+    | Safe retries | `Idempotency-Key` on every unsafe, non-idempotent operation |
+    | Concurrency | Strong `ETag` plus mandatory `If-Match` on order mutation |
+
+    ## HATEOAS
+
+    Clients are expected to bookmark exactly one URL: the API root (`GET /`). Every
+    other URL in this API is discovered by following a link relation. Concretely:
+
+    * A representation's affordances live in `_links`, a map keyed by
+      [IANA link relation](https://www.iana.org/assignments/link-relations/) or by a
+      documented extension relation (`place-order`, `cancel`, `replace`, `positions`,
+      `balances`, `transactions`, `executions`, `events`).
+    * `_links` is **state-dependent**. A `FILLED` order has no `cancel` link. An
+      account without options approval has no `place-option-order` link. Clients MUST
+      branch on the presence of a link rather than on a status string, and MUST NOT
+      construct URLs by string concatenation.
+    * Each link carries `href` and, where the method is not `GET`, an explicit
+      `method`. Templated links set `templated: true` and use RFC 6570 syntax.
+
+    ## Versioning
+
+    The major version is pinned in the server path (`/v1`). Additive changes —
+    new fields, new enum members, new link relations — ship without a version bump,
+    so clients MUST tolerate unknown properties and unknown enum values rather than
+    failing closed.
+
+    ## Out of scope
+
+    This document covers stock and options trading only. Futures, crypto, event
+    contracts, and the institutional application process are deliberately excluded.
+  version: 1.0.0
+  termsOfService: https://developer.brokerage.example.com/terms
+  contact:
+    name: Brokerage Developer Platform
+    url: https://developer.brokerage.example.com/support
+    email: api-support@brokerage.example.com
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+externalDocs:
+  description: Developer portal, guides, and language examples
+  url: https://developer.brokerage.example.com
+
+servers:
+  - url: https://api.brokerage.example.com/v1
+    description: Production. Live orders against real money.
+  - url: https://api.sandbox.brokerage.example.com/v1
+    description: |
+      Sandbox. Simulated fills against a delayed book, funded with paper money.
+      Functionally identical surface; use it for conformance and CI.
+
+# ---------------------------------------------------------------------------
+# Tags. OpenAPI 3.2.0 adds `summary`, `parent`, and `kind` to the Tag Object,
+# which lets an API description express its own navigation hierarchy instead of
+# leaving that to renderer-specific extensions.
+# ---------------------------------------------------------------------------
+tags:
+  - name: discovery
+    summary: Discovery
+    description: The single bookmarkable entry point for the API.
+    kind: nav
+
+  - name: accounts
+    summary: Accounts
+    description: |
+      Read-only views of a customer's brokerage accounts: which accounts the
+      access token can reach, what they hold, what they owe, and what they have done.
+    kind: nav
+
+  - name: account-list
+    summary: Account list
+    description: Enumerate the accounts covered by the current grant.
+    parent: accounts
+    kind: nav
+
+  - name: balances
+    summary: Balances
+    description: Cash, buying power, margin, and net liquidation value.
+    parent: accounts
+    kind: nav
+
+  - name: positions
+    summary: Positions
+    description: Current equity and option holdings with cost basis and unrealized P&L.
+    parent: accounts
+    kind: nav
+
+  - name: order-status
+    summary: Order status
+    description: Read the working, filled, and terminal orders on an account.
+    parent: accounts
+    kind: nav
+
+  - name: transactions
+    summary: Transaction history
+    description: Settled and pending cash and position activity.
+    parent: accounts
+    kind: nav
+
+  - name: trading
+    summary: Trading
+    description: Operations that create, replace, or cancel orders. All require `orders:write`.
+    kind: nav
+
+  - name: stock-trading
+    summary: Stock trading
+    description: Single-leg equity orders, including short sales and extended-hours routing.
+    parent: trading
+    kind: nav
+
+  - name: options-trading
+    summary: Options trading
+    description: Single-leg and multi-leg listed equity option orders.
+    parent: trading
+    kind: nav
+
+  - name: instruments
+    summary: Instruments
+    description: |
+      Symbol and contract resolution. Supporting surface — you need an
+      `instrumentId` before you can place an order against a contract.
+    kind: nav
+
+  - name: streaming
+    summary: Streaming
+    description: Server-sent order and execution events.
+    kind: nav
+
+  - name: read-only
+    summary: Read-only
+    description: Operations reachable with read scopes alone.
+    kind: audience
+
+  - name: trade-enabled
+    summary: Trade-enabled
+    description: Operations that require an `orders:write` grant and a funded account.
+    kind: audience
+
+# ---------------------------------------------------------------------------
+# Default security. Every operation requires an OAuth 2.1 access token; the
+# per-operation `security` entries narrow this to the specific scopes needed.
+# ---------------------------------------------------------------------------
+security:
+  - oauth2: [accounts:read]
+
+paths:
+  /:
+    get:
+      operationId: getApiRoot
+      summary: API root
+      description: |
+        The hypermedia entry point. This is the only URL a client should hard-code;
+        everything else is reached by following `_links`.
+      tags: [discovery, read-only]
+      security:
+        - oauth2: []
+      responses:
+        "200":
+          summary: Entry point returned
+          description: The root document with links to every top-level collection.
+          headers:
+            RateLimit: { $ref: "#/components/headers/RateLimit" }
+            RateLimit-Policy: { $ref: "#/components/headers/RateLimitPolicy" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiRoot" }
+              examples:
+                root:
+                  summary: Root document
+                  value:
+                    apiVersion: "1.0.0"
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/" }
+                      accounts: { href: "https://api.brokerage.example.com/v1/accounts" }
+                      instruments:
+                        href: "https://api.brokerage.example.com/v1/instruments{?query,type}"
+                        templated: true
+                      documentation: { href: "https://developer.brokerage.example.com" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # =========================================================================
+  # ACCOUNTS
+  # =========================================================================
+  /accounts:
+    get:
+      operationId: listAccounts
+      summary: Account list
+      description: |
+        Returns every account the presented access token is authorized to see.
+
+        The `accountId` returned here is an opaque, permanent identifier. It is
+        **not** the account number the customer sees on statements — that value is
+        returned separately as `accountNumber`, masked unless the token carries the
+        `accounts:read:full` scope.
+
+        The list is small and bounded (a customer rarely has more than a handful of
+        accounts), so it is returned unpaginated.
+      tags: [account-list, accounts, read-only]
+      security:
+        - oauth2: [accounts:read]
+      responses:
+        "200":
+          summary: Accounts returned
+          description: Zero or more accounts, newest first.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            RateLimit: { $ref: "#/components/headers/RateLimit" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountCollection" }
+              examples:
+                twoAccounts:
+                  summary: An individual margin account and a Roth IRA
+                  value:
+                    items:
+                      - accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        accountNumber: "••••4471"
+                        nickname: "Main brokerage"
+                        type: MARGIN
+                        registration: INDIVIDUAL
+                        status: ACTIVE
+                        baseCurrency: USD
+                        optionsLevel: LEVEL_3
+                        dayTrader: true
+                        openedAt: "2021-03-14T00:00:00Z"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+                          balances: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/balances" }
+                          positions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/positions" }
+                          orders: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders" }
+                          transactions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions" }
+                          place-order:
+                            href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                            method: POST
+                            title: "Place a stock or option order"
+                      - accountId: "acct_01HQ8Z9T6B2V5N1D"
+                        accountNumber: "••••8830"
+                        nickname: "Roth IRA"
+                        type: CASH
+                        registration: ROTH_IRA
+                        status: ACTIVE
+                        baseCurrency: USD
+                        optionsLevel: LEVEL_1
+                        dayTrader: false
+                        openedAt: "2019-11-02T00:00:00Z"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z9T6B2V5N1D" }
+                          balances: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z9T6B2V5N1D/balances" }
+                          positions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z9T6B2V5N1D/positions" }
+                          orders: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z9T6B2V5N1D/orders" }
+                          transactions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z9T6B2V5N1D/transactions" }
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      operationId: getAccount
+      summary: Get one account
+      description: Retrieve a single account by its opaque identifier.
+      tags: [account-list, accounts, read-only]
+      security:
+        - oauth2: [accounts:read]
+      responses:
+        "200":
+          summary: Account returned
+          description: The account resource.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/balances:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      operationId: getAccountBalances
+      summary: Account balances
+      description: |
+        Cash, buying power, margin, and net liquidation value for one account.
+
+        Balances are a **snapshot**, stamped with `asOf`. Intraday they reflect
+        real-time marks on open positions and unsettled trade activity; after the
+        close they settle to end-of-day values. Do not cache beyond `Cache-Control`.
+
+        `buyingPower` is broken out by what it can be spent on, because the numbers
+        genuinely differ: a margin account's stock buying power is typically twice
+        its option buying power, and day-trading buying power is a separate,
+        larger number that resets each session.
+      tags: [balances, accounts, read-only]
+      security:
+        - oauth2: [accounts:read]
+      responses:
+        "200":
+          summary: Balances returned
+          description: A balance snapshot in the account's base currency.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+            Cache-Control:
+              description: Always `no-store` during market hours.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Balances" }
+              examples:
+                marginAccount:
+                  summary: Funded margin account, intraday
+                  value:
+                    accountId: "acct_01HQ8Z4M2X9K3P7R"
+                    currency: USD
+                    asOf: "2026-08-17T18:42:11Z"
+                    netLiquidation: "184320.55"
+                    equity: "184320.55"
+                    cash:
+                      total: "42180.10"
+                      settled: "39900.00"
+                      unsettled: "2280.10"
+                      withdrawable: "39900.00"
+                    buyingPower:
+                      stock: "84360.20"
+                      option: "39900.00"
+                      dayTrading: "168720.40"
+                    margin:
+                      maintenanceRequirement: "38504.00"
+                      initialRequirement: "71140.22"
+                      marginBalance: "0.00"
+                      excessLiquidity: "145816.55"
+                      marginCall: null
+                    positionsMarketValue: "142140.45"
+                    dayTradesUsed: 1
+                    dayTradesRemaining: 3
+                    patternDayTrader: true
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/balances" }
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+                      positions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/positions" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/positions:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      operationId: listPositions
+      summary: Account positions
+      description: |
+        Open positions on the account, one row per instrument and side.
+
+        Long and short exposure in the same underlying are returned as separate
+        positions. Option positions carry the full contract descriptor and are
+        quantified in **contracts**, not shares; `contractMultiplier` (normally 100)
+        tells you how to convert.
+
+        Closed positions are not returned here — use the transaction history for
+        realized activity.
+      tags: [positions, accounts, read-only]
+      security:
+        - oauth2: [positions:read]
+      parameters:
+        - name: instrumentType
+          in: query
+          description: Restrict to one instrument class.
+          required: false
+          schema:
+            type: string
+            enum: [EQUITY, ETF, OPTION]
+        - name: symbol
+          in: query
+          description: Restrict to one underlying symbol. Matches option positions on that underlying too.
+          required: false
+          schema: { type: string, examples: ["AAPL"] }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          summary: Positions returned
+          description: A page of open positions.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PositionCollection" }
+              examples:
+                mixed:
+                  summary: A long stock position and a short call against it
+                  value:
+                    items:
+                      - positionId: "pos_01HQ9A1F4C8M2Q6T"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        instrument:
+                          instrumentId: "inst_eq_AAPL"
+                          type: EQUITY
+                          symbol: "AAPL"
+                          name: "Apple Inc."
+                          currency: USD
+                        side: LONG
+                        quantity: "500"
+                        contractMultiplier: 1
+                        averageCost: "178.4200"
+                        costBasis: "89210.00"
+                        lastPrice: "231.1500"
+                        marketValue: "115575.00"
+                        unrealizedPnl: "26365.00"
+                        unrealizedPnlPercent: "29.5539"
+                        realizedPnlYtd: "1840.22"
+                        openedAt: "2024-06-11T13:41:07Z"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/positions/pos_01HQ9A1F4C8M2Q6T" }
+                          instrument: { href: "https://api.brokerage.example.com/v1/instruments/inst_eq_AAPL" }
+                          close-position:
+                            href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                            method: POST
+                            title: "Sell 500 AAPL to flatten"
+                      - positionId: "pos_01HQ9A3H7D1N4S8V"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        instrument:
+                          instrumentId: "inst_op_AAPL_20261218C00250000"
+                          type: OPTION
+                          symbol: "AAPL  261218C00250000"
+                          name: "AAPL Dec 18 2026 250 Call"
+                          currency: USD
+                          option:
+                            underlyingSymbol: "AAPL"
+                            underlyingInstrumentId: "inst_eq_AAPL"
+                            occSymbol: "AAPL  261218C00250000"
+                            expiration: "2026-12-18"
+                            strike: "250.00"
+                            optionType: CALL
+                            exerciseStyle: AMERICAN
+                            contractMultiplier: 100
+                        side: SHORT
+                        quantity: "-5"
+                        contractMultiplier: 100
+                        averageCost: "12.4000"
+                        costBasis: "-6200.00"
+                        lastPrice: "9.8500"
+                        marketValue: "-4925.00"
+                        unrealizedPnl: "1275.00"
+                        unrealizedPnlPercent: "20.5645"
+                        realizedPnlYtd: "0.00"
+                        openedAt: "2026-07-02T14:05:52Z"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/positions/pos_01HQ9A3H7D1N4S8V" }
+                          instrument: { href: "https://api.brokerage.example.com/v1/instruments/inst_op_AAPL_20261218C00250000" }
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/positions?limit=50" }
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/positions/{positionId}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+      - name: positionId
+        in: path
+        required: true
+        description: Opaque position identifier.
+        schema: { type: string, examples: ["pos_01HQ9A1F4C8M2Q6T"] }
+    get:
+      operationId: getPosition
+      summary: Get one position
+      tags: [positions, accounts, read-only]
+      security:
+        - oauth2: [positions:read]
+      responses:
+        "200":
+          summary: Position returned
+          description: A single open position.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Position" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/transactions:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      operationId: listTransactions
+      summary: Transaction history
+      description: |
+        Cash and position activity on the account: trades, dividends, interest,
+        fees, transfers, assignments, exercises, expirations, and corporate actions.
+
+        Results are ordered by `tradeDate` descending, then by `transactionId`
+        descending as a stable tiebreaker. Because settlement can back-date an entry,
+        a transaction may appear in a page you have already read; reconcile on
+        `transactionId`, which is permanent and unique.
+
+        The window defaults to the last 90 days. `from`/`to` accept any range up to
+        7 years; ranges wider than 1 year are served from cold storage and may take
+        several seconds.
+      tags: [transactions, accounts, read-only]
+      security:
+        - oauth2: [transactions:read]
+      parameters:
+        - name: from
+          in: query
+          description: Inclusive lower bound on trade date. Defaults to 90 days ago.
+          required: false
+          schema: { type: string, format: date, examples: ["2026-01-01"] }
+        - name: to
+          in: query
+          description: Inclusive upper bound on trade date. Defaults to today.
+          required: false
+          schema: { type: string, format: date, examples: ["2026-08-17"] }
+        - name: type
+          in: query
+          description: Restrict to one or more transaction types. Repeat the parameter to OR them.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items: { $ref: "#/components/schemas/TransactionType" }
+        - name: symbol
+          in: query
+          description: Restrict to activity in one symbol or its options.
+          required: false
+          schema: { type: string }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          summary: Transactions returned
+          description: A page of transactions, most recent first.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TransactionCollection" }
+              examples:
+                page:
+                  summary: A fill, a dividend, and a fee
+                  value:
+                    items:
+                      - transactionId: "txn_01HQ9C2K5M8P1R4W"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        type: TRADE
+                        subType: BUY
+                        description: "Bought 100 AAPL @ 231.05"
+                        tradeDate: "2026-08-15"
+                        settlementDate: "2026-08-18"
+                        instrument:
+                          instrumentId: "inst_eq_AAPL"
+                          type: EQUITY
+                          symbol: "AAPL"
+                          name: "Apple Inc."
+                          currency: USD
+                        quantity: "100"
+                        price: "231.0500"
+                        grossAmount: "-23105.00"
+                        fees:
+                          - type: REGULATORY
+                            description: "SEC Section 31 fee"
+                            amount: "0.00"
+                        netAmount: "-23105.00"
+                        currency: USD
+                        relatedOrderId: "ord_01HQ9C1J3L7N0Q3V"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions/txn_01HQ9C2K5M8P1R4W" }
+                          order: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9C1J3L7N0Q3V" }
+                      - transactionId: "txn_01HQ9B8G4J2L6N9S"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        type: DIVIDEND
+                        subType: CASH_DIVIDEND
+                        description: "AAPL cash dividend 0.26/share on 500 shares"
+                        tradeDate: "2026-08-14"
+                        settlementDate: "2026-08-14"
+                        instrument:
+                          instrumentId: "inst_eq_AAPL"
+                          type: EQUITY
+                          symbol: "AAPL"
+                          name: "Apple Inc."
+                          currency: USD
+                        quantity: "500"
+                        grossAmount: "130.00"
+                        fees: []
+                        netAmount: "130.00"
+                        currency: USD
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions/txn_01HQ9B8G4J2L6N9S" }
+                      - transactionId: "txn_01HQ9B1D9F3H5K7M"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        type: FEE
+                        subType: MARGIN_INTEREST
+                        description: "Margin interest, Jul 2026"
+                        tradeDate: "2026-08-01"
+                        settlementDate: "2026-08-01"
+                        grossAmount: "-18.44"
+                        fees: []
+                        netAmount: "-18.44"
+                        currency: USD
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions/txn_01HQ9B1D9F3H5K7M" }
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions?from=2026-08-01&limit=3" }
+                      next: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/transactions?from=2026-08-01&limit=3&cursor=eyJvIjoxMjAwfQ" }
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/transactions/{transactionId}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+      - name: transactionId
+        in: path
+        required: true
+        description: Opaque, permanent transaction identifier.
+        schema: { type: string, examples: ["txn_01HQ9C2K5M8P1R4W"] }
+    get:
+      operationId: getTransaction
+      summary: Get one transaction
+      tags: [transactions, accounts, read-only]
+      security:
+        - oauth2: [transactions:read]
+      responses:
+        "200":
+          summary: Transaction returned
+          description: A single transaction.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Transaction" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # =========================================================================
+  # ORDERS — status (read) and trading (write) share one collection resource.
+  # =========================================================================
+  /accounts/{accountId}/orders:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+
+    get:
+      operationId: listOrders
+      summary: Account order status
+      description: |
+        Orders on the account, newest first.
+
+        With no filter this returns **working orders only** (`PENDING_NEW`, `NEW`,
+        `PARTIALLY_FILLED`, `PENDING_REPLACE`, `PENDING_CANCEL`) — the set a trading
+        UI needs on load. Pass `status` explicitly, or `status=ALL`, to widen it.
+
+        This is a polling endpoint with a 1-second minimum interval. For sub-second
+        updates use the [order event stream](#operation/streamOrderEvents) instead;
+        polling harder will earn a `429`.
+      tags: [order-status, accounts, read-only]
+      security:
+        - oauth2: [orders:read]
+      parameters:
+        - name: status
+          in: query
+          description: |
+            Restrict to one or more statuses. Repeat to OR them. The literal `ALL`
+            disables the default working-orders-only filter.
+          required: false
+          explode: true
+          schema:
+            type: array
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/OrderStatus"
+                - type: string
+                  enum: [ALL]
+        - name: symbol
+          in: query
+          description: Restrict to one underlying symbol, including its option orders.
+          required: false
+          schema: { type: string, examples: ["AAPL"] }
+        - name: from
+          in: query
+          description: Inclusive lower bound on `createdAt`. Defaults to 7 days ago.
+          required: false
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          description: Inclusive upper bound on `createdAt`. Defaults to now.
+          required: false
+          schema: { type: string, format: date-time }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          summary: Orders returned
+          description: A page of orders.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderCollection" }
+              examples:
+                working:
+                  summary: One working limit order
+                  value:
+                    items:
+                      - orderId: "ord_01HQ9D4N7Q1S5U8X"
+                        clientOrderId: "ui-2026-08-17-0007"
+                        accountId: "acct_01HQ8Z4M2X9K3P7R"
+                        assetClass: EQUITY
+                        strategy: SINGLE
+                        status: PARTIALLY_FILLED
+                        side: BUY
+                        instrument:
+                          instrumentId: "inst_eq_MSFT"
+                          type: EQUITY
+                          symbol: "MSFT"
+                          name: "Microsoft Corporation"
+                          currency: USD
+                        quantity: "300"
+                        filledQuantity: "100"
+                        remainingQuantity: "200"
+                        orderType: LIMIT
+                        limitPrice: "412.50"
+                        timeInForce: DAY
+                        extendedHours: false
+                        averageFillPrice: "412.48"
+                        currency: USD
+                        createdAt: "2026-08-17T14:31:02Z"
+                        updatedAt: "2026-08-17T14:33:19Z"
+                        _links:
+                          self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X" }
+                          cancel:
+                            href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                            method: DELETE
+                            title: "Cancel the unfilled 200 shares"
+                          replace:
+                            href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                            method: PATCH
+                            title: "Amend price or quantity"
+                          executions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X/executions" }
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders" }
+                      events: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/events" }
+                      place-order:
+                        href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                        method: POST
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        default: { $ref: "#/components/responses/Problem" }
+
+    post:
+      operationId: placeOrder
+      summary: Place an order
+      description: |
+        Submit a stock or option order. The request body is a discriminated union on
+        `assetClass`: `EQUITY` for single-leg stock and ETF orders, `OPTION` for
+        single- and multi-leg listed option orders.
+
+        ### Idempotency is mandatory
+
+        `Idempotency-Key` is **required**. Send a fresh UUIDv4 per order intent and
+        reuse it verbatim on every retry of that same intent.
+
+        * First call with a key: the order is created, `201` is returned.
+        * Replay with the same key **and an identical body**: the original order is
+          returned with `200` and `Idempotency-Replayed: true`. No second order.
+        * Replay with the same key and a **different** body: `422` with
+          `type: .../idempotency-key-reuse`. Nothing is created.
+
+        Keys are retained for 24 hours. Without this, a socket timeout on a market
+        order is indistinguishable from a rejection, and the natural retry doubles
+        the customer's position.
+
+        ### Order of operations
+
+        The service validates in this order and stops at the first failure, so a
+        rejection tells you the *first* thing wrong, not every thing:
+        schema → instrument tradability → market/session eligibility →
+        options approval level → buying power and margin → risk limits → route.
+
+        ### Response is an acknowledgement, not a fill
+
+        `201` means the order was accepted and routed. It does **not** mean it
+        executed. Terminal state arrives via the event stream, a webhook, or by
+        polling the order resource.
+      tags: [stock-trading, options-trading, trading, trade-enabled]
+      security:
+        - oauth2: [orders:write]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        description: The order to place.
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderRequest" }
+            examples:
+              equityLimitBuy:
+                summary: Stock — buy 300 MSFT limit 412.50, day
+                value:
+                  assetClass: EQUITY
+                  clientOrderId: "ui-2026-08-17-0007"
+                  side: BUY
+                  instrumentId: "inst_eq_MSFT"
+                  quantity: "300"
+                  orderType: LIMIT
+                  limitPrice: "412.50"
+                  timeInForce: DAY
+                  extendedHours: false
+              equityMarketSell:
+                summary: Stock — market sell to flatten a position
+                value:
+                  assetClass: EQUITY
+                  clientOrderId: "flatten-aapl-01"
+                  side: SELL
+                  instrumentId: "inst_eq_AAPL"
+                  quantity: "500"
+                  orderType: MARKET
+                  timeInForce: DAY
+              equityTrailingStop:
+                summary: Stock — trailing stop 5% below the high
+                value:
+                  assetClass: EQUITY
+                  side: SELL
+                  instrumentId: "inst_eq_NVDA"
+                  quantity: "50"
+                  orderType: TRAILING_STOP
+                  trailingPercent: "5.0"
+                  timeInForce: GTC
+              equityBracket:
+                summary: Stock — entry with an attached profit target and stop (OCO exit)
+                value:
+                  assetClass: EQUITY
+                  side: BUY
+                  instrumentId: "inst_eq_MSFT"
+                  quantity: "100"
+                  orderType: LIMIT
+                  limitPrice: "410.00"
+                  timeInForce: DAY
+                  bracket:
+                    takeProfit:
+                      orderType: LIMIT
+                      limitPrice: "430.00"
+                    stopLoss:
+                      orderType: STOP
+                      stopPrice: "398.00"
+              optionSingleLeg:
+                summary: Option — buy 5 AAPL Dec-26 250 calls to open, limit 12.40
+                value:
+                  assetClass: OPTION
+                  strategy: SINGLE
+                  clientOrderId: "opt-open-0031"
+                  legs:
+                    - instrumentId: "inst_op_AAPL_20261218C00250000"
+                      side: BUY_TO_OPEN
+                      ratio: 1
+                  quantity: "5"
+                  orderType: LIMIT
+                  limitPrice: "12.40"
+                  priceEffect: DEBIT
+                  timeInForce: DAY
+              optionVerticalSpread:
+                summary: Option — 10 AAPL Dec-26 250/260 call debit spreads, net 3.15
+                value:
+                  assetClass: OPTION
+                  strategy: VERTICAL
+                  clientOrderId: "opt-vert-0044"
+                  legs:
+                    - instrumentId: "inst_op_AAPL_20261218C00250000"
+                      side: BUY_TO_OPEN
+                      ratio: 1
+                    - instrumentId: "inst_op_AAPL_20261218C00260000"
+                      side: SELL_TO_OPEN
+                      ratio: 1
+                  quantity: "10"
+                  orderType: NET_DEBIT
+                  netPrice: "3.15"
+                  priceEffect: DEBIT
+                  timeInForce: DAY
+              optionIronCondor:
+                summary: Option — 4-leg iron condor for a net credit of 1.85
+                value:
+                  assetClass: OPTION
+                  strategy: IRON_CONDOR
+                  legs:
+                    - instrumentId: "inst_op_SPY_20261120P00520000"
+                      side: BUY_TO_OPEN
+                      ratio: 1
+                    - instrumentId: "inst_op_SPY_20261120P00540000"
+                      side: SELL_TO_OPEN
+                      ratio: 1
+                    - instrumentId: "inst_op_SPY_20261120C00600000"
+                      side: SELL_TO_OPEN
+                      ratio: 1
+                    - instrumentId: "inst_op_SPY_20261120C00620000"
+                      side: BUY_TO_OPEN
+                      ratio: 1
+                  quantity: "2"
+                  orderType: NET_CREDIT
+                  netPrice: "1.85"
+                  priceEffect: CREDIT
+                  timeInForce: DAY
+      responses:
+        "201":
+          summary: Order accepted and routed
+          description: |
+            The order was created. `Location` points at the new order resource.
+            Check `status` — an order can be accepted and then immediately rejected
+            by the venue, which surfaces as a later `REJECTED` state, not as an
+            error on this call.
+          headers:
+            Location:
+              required: true
+              description: Canonical URL of the created order.
+              schema: { type: string, format: uri }
+            ETag: { $ref: "#/components/headers/ETag" }
+            Idempotency-Replayed: { $ref: "#/components/headers/IdempotencyReplayed" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+              examples:
+                accepted:
+                  summary: Accepted equity limit order
+                  value:
+                    orderId: "ord_01HQ9D4N7Q1S5U8X"
+                    clientOrderId: "ui-2026-08-17-0007"
+                    accountId: "acct_01HQ8Z4M2X9K3P7R"
+                    assetClass: EQUITY
+                    strategy: SINGLE
+                    status: NEW
+                    side: BUY
+                    instrument:
+                      instrumentId: "inst_eq_MSFT"
+                      type: EQUITY
+                      symbol: "MSFT"
+                      name: "Microsoft Corporation"
+                      currency: USD
+                    quantity: "300"
+                    filledQuantity: "0"
+                    remainingQuantity: "300"
+                    orderType: LIMIT
+                    limitPrice: "412.50"
+                    timeInForce: DAY
+                    extendedHours: false
+                    currency: USD
+                    estimatedCost: "123750.00"
+                    createdAt: "2026-08-17T14:31:02Z"
+                    updatedAt: "2026-08-17T14:31:02Z"
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X" }
+                      cancel:
+                        href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                        method: DELETE
+                      replace:
+                        href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                        method: PATCH
+                      executions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X/executions" }
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+        "200":
+          summary: Idempotent replay
+          description: |
+            This exact `Idempotency-Key` and body were already processed. The
+            original order is returned unchanged and nothing new was created.
+          headers:
+            Idempotency-Replayed: { $ref: "#/components/headers/IdempotencyReplayed" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          summary: Not permitted
+          description: |
+            The grant lacks `orders:write`, or the account is not approved for this
+            trade — most often an options strategy above the account's approval level.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                optionsLevel:
+                  summary: Strategy above approval level
+                  value:
+                    type: "https://developer.brokerage.example.com/problems/options-level-insufficient"
+                    title: "Options approval level insufficient"
+                    status: 403
+                    detail: "Selling uncovered calls requires LEVEL_4; this account is approved for LEVEL_3."
+                    instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                    requiredLevel: "LEVEL_4"
+                    currentLevel: "LEVEL_3"
+                    traceId: "01HQ9D4N7Q1S5U8X9Z2A4C6E"
+        "409":
+          summary: Conflicting state
+          description: The account is restricted, or a conflicting order is already working.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "422":
+          summary: Unprocessable order
+          description: |
+            The body parsed and the schema validated, but the order cannot be
+            accepted: insufficient buying power, a price outside collar limits,
+            a closed market for the requested session, an untradable instrument,
+            or an idempotency key reused with a different body.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                insufficientBuyingPower:
+                  summary: Not enough buying power
+                  value:
+                    type: "https://developer.brokerage.example.com/problems/insufficient-buying-power"
+                    title: "Insufficient buying power"
+                    status: 422
+                    detail: "Order requires 123,750.00 USD of stock buying power; 84,360.20 USD available."
+                    instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                    required: { amount: "123750.00", currency: "USD" }
+                    available: { amount: "84360.20", currency: "USD" }
+                    traceId: "01HQ9D5P8R2T6V9Y0B3D5F7H"
+                marketClosed:
+                  summary: Session not open for this order
+                  value:
+                    type: "https://developer.brokerage.example.com/problems/market-closed"
+                    title: "Market closed"
+                    status: 422
+                    detail: "Regular session is closed. Resubmit with extendedHours=true or timeInForce=GTC."
+                    instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                    nextOpen: "2026-08-18T13:30:00Z"
+                    traceId: "01HQ9D6Q9S3U7W0Z1C4E6G8J"
+                idempotencyConflict:
+                  summary: Key reused with a different body
+                  value:
+                    type: "https://developer.brokerage.example.com/problems/idempotency-key-reuse"
+                    title: "Idempotency key reused with a different payload"
+                    status: 422
+                    detail: "Key 6f1c2a90-... was first used for a 300-share order; this request is for 500 shares."
+                    instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                    originalOrderId: "ord_01HQ9D4N7Q1S5U8X"
+                    traceId: "01HQ9D7R0T4V8X1A2D5F7H9K"
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/orders/preview:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    post:
+      operationId: previewOrder
+      summary: Preview an order
+      description: |
+        Run an order through the full validation and pricing pipeline **without**
+        routing it. Same request body as [`placeOrder`](#operation/placeOrder).
+
+        Returns estimated cost, commissions and regulatory fees, the buying-power
+        impact, margin requirement, and any warnings the customer should see before
+        confirming. Use it to power a confirmation screen.
+
+        This operation is safe in the sense that matters — it never creates an order —
+        but it is modelled as `POST` because the request body is large and structured.
+        It is not cacheable and takes no `Idempotency-Key`.
+      tags: [stock-trading, options-trading, trading, trade-enabled]
+      security:
+        - oauth2: [orders:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderRequest" }
+            examples:
+              equity:
+                summary: Preview a 300-share MSFT limit buy
+                value:
+                  assetClass: EQUITY
+                  side: BUY
+                  instrumentId: "inst_eq_MSFT"
+                  quantity: "300"
+                  orderType: LIMIT
+                  limitPrice: "412.50"
+                  timeInForce: DAY
+      responses:
+        "200":
+          summary: Preview computed
+          description: Estimated economics and warnings. No order was created.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderPreview" }
+              examples:
+                preview:
+                  summary: Preview of a marginable equity buy
+                  value:
+                    valid: true
+                    estimatedCost: "123750.00"
+                    estimatedProceeds: null
+                    commission: "0.00"
+                    fees:
+                      - type: REGULATORY
+                        description: "SEC Section 31 fee"
+                        amount: "0.00"
+                    totalEstimated: "123750.00"
+                    currency: USD
+                    buyingPowerBefore: "84360.20"
+                    buyingPowerAfter: "-39389.80"
+                    marginRequirement: "61875.00"
+                    warnings:
+                      - code: EXCEEDS_BUYING_POWER
+                        severity: ERROR
+                        message: "This order exceeds available stock buying power by 39,389.80 USD."
+                      - code: CONCENTRATION
+                        severity: WARNING
+                        message: "After this order, MSFT would be 67% of account equity."
+                    _links:
+                      place-order:
+                        href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                        method: POST
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/orders/events:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+    get:
+      operationId: streamOrderEvents
+      summary: Stream order events
+      description: |
+        A Server-Sent Events stream of order lifecycle transitions and executions
+        for the account. Prefer this over polling `listOrders`.
+
+        The stream replays from `Last-Event-ID` when the client reconnects, so no
+        event is lost across a dropped connection as long as you reconnect within the
+        5-minute retention window. Heartbeat comments arrive every 15 seconds; treat
+        45 seconds of silence as a dead connection and reconnect.
+      tags: [streaming, order-status, read-only]
+      security:
+        - oauth2: [orders:read]
+      parameters:
+        - name: Last-Event-ID
+          in: header
+          required: false
+          description: Resume the stream immediately after this event id.
+          schema: { type: string }
+      responses:
+        "200":
+          summary: Stream opened
+          description: An open `text/event-stream` connection.
+          content:
+            text/event-stream:
+              # `itemSchema` is new in OpenAPI 3.2.0. Unlike `schema`, which would
+              # describe the whole stream as an array, `itemSchema` describes each
+              # event independently — which is what a streaming consumer actually
+              # processes as bytes arrive.
+              itemSchema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Monotonic event id. Pass back as `Last-Event-ID` to resume.
+                  event:
+                    type: string
+                    enum: [order.accepted, order.replaced, order.cancelled, order.rejected, order.expired, execution, heartbeat]
+                  data:
+                    type: string
+                    contentMediaType: application/json
+                    contentSchema: { $ref: "#/components/schemas/OrderEvent" }
+                required: [id, event, data]
+              examples:
+                fill:
+                  summary: A partial fill event
+                  value: |
+                    id: evt_01HQ9E1A2B3C4D5E
+                    event: execution
+                    data: {"orderId":"ord_01HQ9D4N7Q1S5U8X","executionId":"exec_01HQ9E1A2B3C","quantity":"100","price":"412.48","executedAt":"2026-08-17T14:33:19Z","status":"PARTIALLY_FILLED"}
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+      - $ref: "#/components/parameters/OrderId"
+
+    get:
+      operationId: getOrder
+      summary: Get order status
+      description: |
+        The current state of one order, including fills to date and the average fill
+        price. Responds with a strong `ETag`; send it back as `If-None-Match` to poll
+        cheaply and get `304` when nothing has changed.
+      tags: [order-status, accounts, read-only]
+      security:
+        - oauth2: [orders:read]
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          description: Conditional GET. Returns `304` when the order is unchanged.
+          schema: { type: string }
+      responses:
+        "200":
+          summary: Order returned
+          description: Current order state.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+              examples:
+                filled:
+                  summary: A fully filled option spread
+                  value:
+                    orderId: "ord_01HQ9F2G3H4J5K6L"
+                    clientOrderId: "opt-vert-0044"
+                    accountId: "acct_01HQ8Z4M2X9K3P7R"
+                    assetClass: OPTION
+                    strategy: VERTICAL
+                    status: FILLED
+                    legs:
+                      - legId: "leg_1"
+                        instrument:
+                          instrumentId: "inst_op_AAPL_20261218C00250000"
+                          type: OPTION
+                          symbol: "AAPL  261218C00250000"
+                          currency: USD
+                          option:
+                            underlyingSymbol: "AAPL"
+                            underlyingInstrumentId: "inst_eq_AAPL"
+                            occSymbol: "AAPL  261218C00250000"
+                            expiration: "2026-12-18"
+                            strike: "250.00"
+                            optionType: CALL
+                            exerciseStyle: AMERICAN
+                            contractMultiplier: 100
+                        side: BUY_TO_OPEN
+                        ratio: 1
+                        filledQuantity: "10"
+                        averageFillPrice: "12.40"
+                      - legId: "leg_2"
+                        instrument:
+                          instrumentId: "inst_op_AAPL_20261218C00260000"
+                          type: OPTION
+                          symbol: "AAPL  261218C00260000"
+                          currency: USD
+                          option:
+                            underlyingSymbol: "AAPL"
+                            underlyingInstrumentId: "inst_eq_AAPL"
+                            occSymbol: "AAPL  261218C00260000"
+                            expiration: "2026-12-18"
+                            strike: "260.00"
+                            optionType: CALL
+                            exerciseStyle: AMERICAN
+                            contractMultiplier: 100
+                        side: SELL_TO_OPEN
+                        ratio: 1
+                        filledQuantity: "10"
+                        averageFillPrice: "9.25"
+                    quantity: "10"
+                    filledQuantity: "10"
+                    remainingQuantity: "0"
+                    orderType: NET_DEBIT
+                    netPrice: "3.15"
+                    priceEffect: DEBIT
+                    averageFillPrice: "3.15"
+                    timeInForce: DAY
+                    currency: USD
+                    createdAt: "2026-08-17T15:02:41Z"
+                    updatedAt: "2026-08-17T15:02:44Z"
+                    filledAt: "2026-08-17T15:02:44Z"
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9F2G3H4J5K6L" }
+                      executions: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9F2G3H4J5K6L/executions" }
+                      account: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+                      # No `cancel` or `replace`: the order is terminal. Clients
+                      # branch on link presence, not on the status string.
+        "304":
+          summary: Not modified
+          description: The order has not changed since the supplied `ETag`.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+    patch:
+      operationId: replaceOrder
+      summary: Replace (amend) an order
+      description: |
+        Amend a working order in place. Only `quantity`, `limitPrice`, `stopPrice`,
+        `trailingAmount`, `trailingPercent`, `netPrice`, `timeInForce`, and
+        `goodTilDate` may be changed — an amendment that would alter the instrument,
+        side, or leg structure is a different order and must be cancelled and
+        replaced explicitly.
+
+        `If-Match` with the order's current `ETag` is **required**. This closes the
+        race where you read an order, decide to reprice it, and it fills before your
+        amendment lands: the `ETag` will have moved and you get `412` instead of
+        silently amending an order that no longer exists in the state you assumed.
+
+        Amendment is best-effort against a live venue. A `200` means the amendment
+        was accepted for routing; the order may still fill at the old price if the
+        fill was already in flight.
+      tags: [stock-trading, options-trading, trading, trade-enabled]
+      security:
+        - oauth2: [orders:write]
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/OrderAmendment" }
+            examples:
+              reprice:
+                summary: Move the limit up and shrink the order
+                value:
+                  quantity: "200"
+                  limitPrice: "413.25"
+              extend:
+                summary: Convert a day order to good-til-cancelled
+                value:
+                  timeInForce: GTC
+      responses:
+        "200":
+          summary: Amendment accepted
+          description: The amended order. Note the new `ETag`.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          summary: Order not amendable
+          description: The order is in a terminal state, or an amendment is already pending.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+              examples:
+                terminal:
+                  value:
+                    type: "https://developer.brokerage.example.com/problems/order-not-amendable"
+                    title: "Order is not amendable"
+                    status: 409
+                    detail: "Order ord_01HQ9D4N7Q1S5U8X is FILLED and can no longer be modified."
+                    instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                    currentStatus: FILLED
+                    traceId: "01HQ9G1H2J3K4L5M6N7P8Q9R"
+        "412": { $ref: "#/components/responses/PreconditionFailed" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
+        "422": { $ref: "#/components/responses/UnprocessableOrder" }
+        default: { $ref: "#/components/responses/Problem" }
+
+    delete:
+      operationId: cancelOrder
+      summary: Cancel an order
+      description: |
+        Request cancellation of a working order.
+
+        Cancellation is a **request**, not a guarantee. The order moves to
+        `PENDING_CANCEL` and reaches `CANCELLED` only once the venue acknowledges.
+        If a fill was already in flight the order may still reach `FILLED`, or
+        `PARTIALLY_FILLED` with the remainder cancelled. Always confirm terminal
+        state from the order resource or the event stream.
+
+        `If-Match` is required, for the same reason it is on `PATCH`.
+
+        This operation is idempotent: cancelling an already-cancelled order returns
+        `200` with the cancelled order rather than an error.
+      tags: [stock-trading, options-trading, trading, trade-enabled]
+      security:
+        - oauth2: [orders:write]
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          summary: Cancellation requested
+          description: |
+            The cancel was accepted. `status` will be `PENDING_CANCEL` — or
+            `CANCELLED` if the venue acknowledged synchronously.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+              examples:
+                pendingCancel:
+                  summary: Cancel accepted, awaiting venue acknowledgement
+                  value:
+                    orderId: "ord_01HQ9D4N7Q1S5U8X"
+                    accountId: "acct_01HQ8Z4M2X9K3P7R"
+                    assetClass: EQUITY
+                    strategy: SINGLE
+                    status: PENDING_CANCEL
+                    side: BUY
+                    instrument:
+                      instrumentId: "inst_eq_MSFT"
+                      type: EQUITY
+                      symbol: "MSFT"
+                      currency: USD
+                    quantity: "300"
+                    filledQuantity: "100"
+                    remainingQuantity: "200"
+                    orderType: LIMIT
+                    limitPrice: "412.50"
+                    timeInForce: DAY
+                    currency: USD
+                    createdAt: "2026-08-17T14:31:02Z"
+                    updatedAt: "2026-08-17T14:41:55Z"
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X" }
+                      events: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/events" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          summary: Order not cancellable
+          description: The order already reached a terminal state other than `CANCELLED`.
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "412": { $ref: "#/components/responses/PreconditionFailed" }
+        "428": { $ref: "#/components/responses/PreconditionRequired" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /accounts/{accountId}/orders/{orderId}/executions:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      operationId: listOrderExecutions
+      summary: Order executions
+      description: |
+        Individual fills against an order, oldest first. A single order can fill in
+        many prints across venues; this is the audit trail behind
+        `filledQuantity` and `averageFillPrice`.
+      tags: [order-status, accounts, read-only]
+      security:
+        - oauth2: [orders:read]
+      responses:
+        "200":
+          summary: Executions returned
+          description: All fills recorded against the order.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExecutionCollection" }
+              examples:
+                twoPrints:
+                  summary: Two prints on one order
+                  value:
+                    items:
+                      - executionId: "exec_01HQ9E1A2B3C4D5E"
+                        orderId: "ord_01HQ9D4N7Q1S5U8X"
+                        legId: null
+                        quantity: "100"
+                        price: "412.48"
+                        venue: "XNAS"
+                        liquidity: REMOVED
+                        executedAt: "2026-08-17T14:33:19.418Z"
+                        settlementDate: "2026-08-19"
+                        commission: "0.00"
+                        fees: []
+                      - executionId: "exec_01HQ9E4F5G6H7J8K"
+                        orderId: "ord_01HQ9D4N7Q1S5U8X"
+                        legId: null
+                        quantity: "200"
+                        price: "412.50"
+                        venue: "ARCX"
+                        liquidity: ADDED
+                        executedAt: "2026-08-17T14:35:02.771Z"
+                        settlementDate: "2026-08-19"
+                        commission: "0.00"
+                        fees: []
+                    _links:
+                      self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X/executions" }
+                      order: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # =========================================================================
+  # INSTRUMENTS — supporting surface. You need an instrumentId to trade.
+  # =========================================================================
+  /instruments:
+    get:
+      operationId: searchInstruments
+      summary: Search instruments
+      description: |
+        Resolve a symbol or name to a tradable `instrumentId`. Covers listed equities
+        and ETFs. Use the option chain endpoint for option contracts.
+      tags: [instruments, read-only]
+      security:
+        - oauth2: [instruments:read]
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: Ticker or company name fragment. Minimum 1 character.
+          schema: { type: string, minLength: 1, examples: ["MSFT"] }
+        - name: type
+          in: query
+          required: false
+          description: Restrict to one instrument class.
+          schema:
+            type: string
+            enum: [EQUITY, ETF]
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          summary: Matches returned
+          description: Instruments matching the query, best match first.
+          headers:
+            Cache-Control:
+              description: Instrument metadata is stable; cached for 1 hour.
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstrumentCollection" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        default: { $ref: "#/components/responses/Problem" }
+
+    # The `query` field is new in OpenAPI 3.2.0, alongside `additionalOperations`
+    # for methods with no dedicated field. HTTP QUERY is safe, idempotent, and
+    # cacheable, but carries a request body. A structured screener filter is too
+    # large and too nested for a query string, yet it is still a *read* — QUERY
+    # says so honestly, where POST would misrepresent the semantics.
+    query:
+      operationId: queryInstruments
+      summary: Structured instrument screen
+      description: |
+        A safe, idempotent search that takes a structured filter in the request
+        body. Semantically identical to `GET /instruments` but able to express
+        filters that will not fit in a URL.
+
+        Browser `fetch()` cannot issue a QUERY request. Clients on such stacks
+        should `POST` the identical body to `/instrument-screener` instead.
+      tags: [instruments, read-only]
+      security:
+        - oauth2: [instruments:read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InstrumentQuery" }
+            examples:
+              screen:
+                summary: Optionable US large-cap technology names
+                value:
+                  filters:
+                    exchanges: [XNAS, XNYS]
+                    types: [EQUITY]
+                    optionable: true
+                    marketCapMin: "10000000000"
+                    sectors: ["Information Technology"]
+                  sort: [{ field: marketCap, direction: DESC }]
+                  limit: 50
+      responses:
+        "200":
+          summary: Matches returned
+          description: Instruments matching the structured filter.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstrumentCollection" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /instrument-screener:
+    post:
+      operationId: screenInstruments
+      summary: Structured instrument screen (POST alias)
+      description: |
+        Compatibility alias for [`QUERY /instruments`](#operation/queryInstruments),
+        for clients that cannot issue a QUERY request — notably browser `fetch()`.
+        Identical request and response bodies.
+
+        Despite the `POST`, this operation creates nothing and has no side effects.
+        Responses are marked `Cache-Control: no-store` because `POST` responses are
+        not reliably cacheable; if caching matters, use QUERY.
+      tags: [instruments, read-only]
+      security:
+        - oauth2: [instruments:read]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InstrumentQuery" }
+      responses:
+        "200":
+          summary: Matches returned
+          description: Instruments matching the structured filter.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstrumentCollection" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /instruments/{instrumentId}:
+    parameters:
+      - name: instrumentId
+        in: path
+        required: true
+        description: Opaque instrument identifier.
+        schema: { type: string, examples: ["inst_eq_MSFT"] }
+    get:
+      operationId: getInstrument
+      summary: Get an instrument
+      tags: [instruments, read-only]
+      security:
+        - oauth2: [instruments:read]
+      responses:
+        "200":
+          summary: Instrument returned
+          description: Instrument metadata including tradability flags.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Instrument" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /instruments/{underlyingSymbol}/option-chain:
+    parameters:
+      - name: underlyingSymbol
+        in: path
+        required: true
+        description: Underlying ticker.
+        schema: { type: string, examples: ["AAPL"] }
+    get:
+      operationId: getOptionChain
+      summary: Get an option chain
+      description: |
+        Listed option contracts on an underlying, with the `instrumentId` you need in
+        an order leg. Always narrow with `expiration` — an unfiltered chain on a
+        liquid name is thousands of contracts.
+      tags: [instruments, options-trading, read-only]
+      security:
+        - oauth2: [instruments:read]
+      parameters:
+        - name: expiration
+          in: query
+          required: false
+          description: Restrict to one expiration date.
+          schema: { type: string, format: date, examples: ["2026-12-18"] }
+        - name: optionType
+          in: query
+          required: false
+          schema: { type: string, enum: [CALL, PUT] }
+        - name: strikeMin
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/Decimal" }
+        - name: strikeMax
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/Decimal" }
+      responses:
+        "200":
+          summary: Chain returned
+          description: Matching option contracts.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OptionChain" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+# ---------------------------------------------------------------------------
+# Webhooks. An alternative to the SSE stream for server-side integrations that
+# would rather be called than hold a connection open.
+# ---------------------------------------------------------------------------
+webhooks:
+  orderUpdated:
+    post:
+      operationId: onOrderUpdated
+      summary: Order state changed
+      description: |
+        Delivered when an order transitions state or receives a fill. Signed with
+        `Webhook-Signature` (HMAC-SHA256 over the raw body, keyed by your webhook
+        secret) — verify it before trusting the payload, and compare in constant time.
+
+        Return `2xx` within 5 seconds. Non-2xx and timeouts are retried with
+        exponential backoff for 24 hours. Delivery is at-least-once, so handlers must
+        be idempotent on `eventId`.
+      tags: [streaming]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderEvent" }
+      responses:
+        "200":
+          summary: Acknowledged
+          description: Receipt acknowledged; the event will not be retried.
+
+components:
+
+  # -------------------------------------------------------------------------
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: |
+        OAuth 2.1 with mandatory PKCE. Only the authorization code grant is
+        supported for user-facing applications; the implicit and resource owner
+        password credentials grants are removed by OAuth 2.1 and are not offered
+        here at any tier.
+
+        Access tokens are JWTs signed with RS256, valid for 15 minutes. Refresh
+        tokens are opaque, rotate on every use, and are valid for 90 days of
+        inactivity. Reuse of a rotated refresh token is treated as theft: the entire
+        token family is revoked immediately.
+
+        Public clients (mobile, SPA, CLI) MUST use PKCE with `S256` and MUST NOT ship
+        a client secret. Confidential clients SHOULD additionally use
+        `private_key_jwt` client authentication.
+
+        High-assurance integrations SHOULD request DPoP-bound tokens (RFC 9449), which
+        makes a stolen bearer token useless without the corresponding private key.
+      # `oauth2MetadataUrl` is new in OpenAPI 3.2.0: it points tooling at the
+      # RFC 8414 authorization server metadata document, so endpoints, supported
+      # PKCE methods, and grant types are discovered rather than hard-coded.
+      oauth2MetadataUrl: https://auth.brokerage.example.com/.well-known/oauth-authorization-server
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.brokerage.example.com/oauth2/authorize
+          tokenUrl: https://auth.brokerage.example.com/oauth2/token
+          refreshUrl: https://auth.brokerage.example.com/oauth2/token
+          scopes:
+            "accounts:read": Read the account list and account metadata.
+            "accounts:read:full": Read unmasked account numbers. Requires additional review.
+            "positions:read": Read open positions, cost basis, and unrealized P&L.
+            "orders:read": Read order status, order history, and executions.
+            "orders:write": Place, amend, and cancel stock and option orders.
+            "transactions:read": Read transaction and settlement history.
+            "instruments:read": Search instruments and read option chains.
+            "offline_access": Receive a refresh token for long-lived background access.
+        # The device authorization flow is declarable in OpenAPI 3.2.0. It exists
+        # for input-constrained clients — a TV app or a headless terminal — where
+        # a redirect-based browser flow is not possible.
+        deviceAuthorization:
+          deviceAuthorizationUrl: https://auth.brokerage.example.com/oauth2/device_authorization
+          tokenUrl: https://auth.brokerage.example.com/oauth2/token
+          refreshUrl: https://auth.brokerage.example.com/oauth2/token
+          scopes:
+            "accounts:read": Read the account list and account metadata.
+            "positions:read": Read open positions, cost basis, and unrealized P&L.
+            "orders:read": Read order status, order history, and executions.
+            "transactions:read": Read transaction and settlement history.
+            "offline_access": Receive a refresh token for long-lived background access.
+
+    dpop:
+      type: http
+      scheme: DPoP
+      description: |
+        Sender-constrained access tokens per RFC 9449. Send the access token as
+        `Authorization: DPoP <token>` together with a `DPoP` proof JWT bound to the
+        request method and URI. Required for `orders:write` on accounts above the
+        institutional risk threshold; recommended for everyone else.
+
+  # -------------------------------------------------------------------------
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      description: Opaque, permanent account identifier from `GET /accounts`.
+      schema:
+        type: string
+        pattern: "^acct_[0-9A-HJKMNP-TV-Z]{16}$"
+        examples: ["acct_01HQ8Z4M2X9K3P7R"]
+
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      description: Server-assigned order identifier.
+      schema:
+        type: string
+        pattern: "^ord_[0-9A-HJKMNP-TV-Z]{16}$"
+        examples: ["ord_01HQ9D4N7Q1S5U8X"]
+
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        Opaque forward cursor from the previous page's `next` link. Do not construct
+        or parse it; its encoding is not part of the contract.
+      schema: { type: string }
+
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum items per page.
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: |
+        A client-generated UUIDv4 that uniquely identifies this order intent.
+        Reuse it verbatim on every retry. Retained 24 hours.
+      schema:
+        type: string
+        format: uuid
+        examples: ["6f1c2a90-3f5b-4c1e-9c2a-8d7b6e5f4a30"]
+
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: |
+        The `ETag` from your most recent read of this order. Required — a mutation
+        without it is rejected with `428 Precondition Required`.
+      schema: { type: string, examples: ['W/"ord-7-1755441062"'] }
+
+  # -------------------------------------------------------------------------
+  headers:
+    ETag:
+      description: Strong validator for the resource. Feed back as `If-Match` or `If-None-Match`.
+      schema: { type: string }
+    IdempotencyReplayed:
+      description: Present and `true` when the response was served from the idempotency cache.
+      schema: { type: boolean }
+    RateLimit:
+      description: |
+        Remaining quota for the active window, per RFC 9913. Example:
+        `"default";r=94;t=51`.
+      schema: { type: string }
+    RateLimitPolicy:
+      description: |
+        The quota policy in force. Example: `"default";q=120;w=60`.
+      schema: { type: string }
+    RetryAfter:
+      description: Seconds to wait before retrying.
+      schema: { type: integer }
+
+  # -------------------------------------------------------------------------
+  responses:
+    Problem:
+      summary: Error
+      description: An unexpected error, described as RFC 9457 problem details.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+    BadRequest:
+      summary: Bad request
+      description: The request was syntactically invalid or failed schema validation.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            validation:
+              summary: Field-level validation failures
+              value:
+                type: "https://developer.brokerage.example.com/problems/validation-failed"
+                title: "Request validation failed"
+                status: 400
+                detail: "2 fields failed validation."
+                instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                errors:
+                  - pointer: "/quantity"
+                    detail: "Must be a positive decimal string."
+                  - pointer: "/limitPrice"
+                    detail: "Required when orderType is LIMIT."
+                traceId: "01HQ9H1J2K3L4M5N6P7Q8R9S"
+
+    Unauthorized:
+      summary: Unauthorized
+      description: |
+        The access token is missing, malformed, expired, or revoked. The
+        `WWW-Authenticate` header names the failure. Refresh and retry once; if the
+        refresh also fails, send the user back through authorization.
+      headers:
+        WWW-Authenticate:
+          description: 'e.g. `Bearer realm="brokerage", error="invalid_token", error_description="expired"`'
+          schema: { type: string }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            expired:
+              value:
+                type: "https://developer.brokerage.example.com/problems/invalid-token"
+                title: "Invalid access token"
+                status: 401
+                detail: "The access token expired at 2026-08-17T14:20:00Z."
+                instance: "/v1/accounts"
+                traceId: "01HQ9H2K3L4M5N6P7Q8R9S0T"
+
+    Forbidden:
+      summary: Forbidden
+      description: |
+        Authenticated, but not permitted. Either the grant lacks the required scope,
+        or the token is valid for a different account than the one addressed.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            scope:
+              value:
+                type: "https://developer.brokerage.example.com/problems/insufficient-scope"
+                title: "Insufficient scope"
+                status: 403
+                detail: "This operation requires the orders:write scope."
+                instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                requiredScope: "orders:write"
+                grantedScopes: ["accounts:read", "orders:read"]
+                traceId: "01HQ9H3L4M5N6P7Q8R9S0T1U"
+
+    NotFound:
+      summary: Not found
+      description: |
+        No such resource, or the resource exists but is outside this grant. The two
+        are deliberately indistinguishable so the API cannot be used to enumerate
+        account identifiers.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+    PreconditionFailed:
+      summary: Precondition failed
+      description: |
+        The supplied `If-Match` does not match the resource's current `ETag` — the
+        order changed after you read it. Re-read it, decide again, and retry.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            stale:
+              value:
+                type: "https://developer.brokerage.example.com/problems/precondition-failed"
+                title: "Stale order version"
+                status: 412
+                detail: "The order was filled after you read it; your If-Match is stale."
+                instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders/ord_01HQ9D4N7Q1S5U8X"
+                currentETag: 'W/"ord-9-1755441620"'
+                traceId: "01HQ9H4M5N6P7Q8R9S0T1U2V"
+
+    PreconditionRequired:
+      summary: Precondition required
+      description: The mutation was rejected because no `If-Match` header was supplied.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+    UnprocessableOrder:
+      summary: Unprocessable order
+      description: The request was well-formed but the order cannot be accepted.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+    TooManyRequests:
+      summary: Too many requests
+      description: |
+        Rate limit exceeded. Back off for `Retry-After` seconds, then retry with
+        full jitter. Repeatedly ignoring `Retry-After` escalates to a temporary
+        client suspension.
+      headers:
+        Retry-After: { $ref: "#/components/headers/RetryAfter" }
+        RateLimit: { $ref: "#/components/headers/RateLimit" }
+        RateLimit-Policy: { $ref: "#/components/headers/RateLimitPolicy" }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+          examples:
+            throttled:
+              value:
+                type: "https://developer.brokerage.example.com/problems/rate-limit-exceeded"
+                title: "Rate limit exceeded"
+                status: 429
+                detail: "120 requests per 60s exceeded for policy 'default'."
+                instance: "/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"
+                retryAfterSeconds: 23
+                traceId: "01HQ9H5N6P7Q8R9S0T1U2V3W"
+
+  # -------------------------------------------------------------------------
+  schemas:
+
+    Decimal:
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+      description: |
+        A fixed-point decimal carried as a string. Prices, quantities, and money are
+        never JSON numbers in this API: IEEE-754 doubles cannot represent `0.1`
+        exactly, and a rounding error in a share count or a limit price is a real
+        financial defect. Parse into a decimal type — `BigDecimal`, `decimal.Decimal`,
+        `Big.js` — never into a `float` or a JavaScript `number`.
+      examples: ["412.50", "-4925.00", "0.0001"]
+
+    Currency:
+      type: string
+      pattern: "^[A-Z]{3}$"
+      description: ISO 4217 currency code.
+      examples: ["USD"]
+
+    Money:
+      type: object
+      description: An amount paired with its currency.
+      properties:
+        amount: { $ref: "#/components/schemas/Decimal" }
+        currency: { $ref: "#/components/schemas/Currency" }
+      required: [amount, currency]
+
+    Link:
+      type: object
+      description: |
+        One hypermedia affordance. The relation name is the key in the enclosing
+        `_links` map.
+      properties:
+        href:
+          type: string
+          format: uri-reference
+          description: Target URI. RFC 6570 template when `templated` is true.
+        method:
+          type: string
+          enum: [GET, POST, PATCH, PUT, DELETE, QUERY]
+          default: GET
+          description: HTTP method to use. Absent means `GET`.
+        title:
+          type: string
+          description: Human-readable label, safe to render in a UI.
+        templated:
+          type: boolean
+          default: false
+          description: True when `href` is an RFC 6570 URI template.
+        type:
+          type: string
+          description: Expected media type of the target.
+      required: [href]
+
+    Links:
+      type: object
+      description: |
+        Available affordances, keyed by link relation. **State-dependent** — a link
+        that is absent is an action that is not currently permitted. Branch on
+        presence, do not build URLs by hand.
+      additionalProperties: { $ref: "#/components/schemas/Link" }
+      examples:
+        - self: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R" }
+          balances: { href: "https://api.brokerage.example.com/v1/accounts/acct_01HQ8Z4M2X9K3P7R/balances" }
+
+    Problem:
+      type: object
+      description: |
+        RFC 9457 problem details. `type` is a stable, dereferenceable URI and is the
+        only field safe to branch on — `title` and `detail` are human-facing prose and
+        may be reworded without notice.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Stable URI identifying the problem class. Branch on this.
+          default: "about:blank"
+        title:
+          type: string
+          description: Short human-readable summary. Do not parse.
+        status:
+          type: integer
+          minimum: 100
+          maximum: 599
+          description: HTTP status code, repeated for convenience.
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence.
+        instance:
+          type: string
+          format: uri-reference
+          description: URI reference identifying the specific occurrence.
+        traceId:
+          type: string
+          description: Correlation id. Quote this in every support request.
+        errors:
+          type: array
+          description: Field-level failures, present on validation problems.
+          items:
+            type: object
+            properties:
+              pointer:
+                type: string
+                description: RFC 6901 JSON Pointer to the offending field.
+              detail: { type: string }
+            required: [pointer, detail]
+      required: [type, title, status]
+      additionalProperties: true
+
+    ApiRoot:
+      type: object
+      properties:
+        apiVersion: { type: string, examples: ["1.0.0"] }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [apiVersion, _links]
+
+    # --- Accounts ---------------------------------------------------------
+    AccountType:
+      type: string
+      enum: [CASH, MARGIN]
+      description: |
+        `CASH` settles trade-by-trade and cannot borrow. `MARGIN` can borrow against
+        equity, which changes buying power, short-sale eligibility, and the option
+        strategies the account may use.
+
+    AccountRegistration:
+      type: string
+      enum: [INDIVIDUAL, JOINT, TRADITIONAL_IRA, ROTH_IRA, SEP_IRA, ROLLOVER_IRA, TRUST, CUSTODIAL, CORPORATE]
+
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, RESTRICTED, CLOSED, PENDING]
+      description: |
+        `RESTRICTED` accounts can read but not trade — typically a compliance hold or
+        an unmet margin call. Trading operations on a restricted account return `409`.
+
+    OptionsLevel:
+      type: string
+      enum: [NONE, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4]
+      description: |
+        Approved option strategies, cumulative:
+        `LEVEL_1` covered calls and cash-secured puts ·
+        `LEVEL_2` long calls and puts ·
+        `LEVEL_3` spreads and other defined-risk multi-leg strategies ·
+        `LEVEL_4` uncovered (naked) short options.
+
+    Account:
+      type: object
+      properties:
+        accountId: { type: string, examples: ["acct_01HQ8Z4M2X9K3P7R"] }
+        accountNumber:
+          type: string
+          description: |
+            Customer-facing account number, masked to the last four digits unless the
+            grant carries `accounts:read:full`.
+          examples: ["••••4471"]
+        nickname: { type: [string, "null"] }
+        type: { $ref: "#/components/schemas/AccountType" }
+        registration: { $ref: "#/components/schemas/AccountRegistration" }
+        status: { $ref: "#/components/schemas/AccountStatus" }
+        baseCurrency: { $ref: "#/components/schemas/Currency" }
+        optionsLevel: { $ref: "#/components/schemas/OptionsLevel" }
+        dayTrader:
+          type: boolean
+          description: True when flagged as a pattern day trader, which imposes the 25,000 USD minimum equity rule.
+        openedAt: { type: string, format: date-time }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [accountId, accountNumber, type, registration, status, baseCurrency, optionsLevel, _links]
+
+    AccountCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Account" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    Balances:
+      type: object
+      properties:
+        accountId: { type: string }
+        currency: { $ref: "#/components/schemas/Currency" }
+        asOf:
+          type: string
+          format: date-time
+          description: When this snapshot was computed. Balances are not real-time streaming values.
+        netLiquidation:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Total account value if every position were liquidated at current marks.
+        equity: { $ref: "#/components/schemas/Decimal" }
+        positionsMarketValue: { $ref: "#/components/schemas/Decimal" }
+        cash:
+          type: object
+          properties:
+            total: { $ref: "#/components/schemas/Decimal" }
+            settled:
+              allOf: [{ $ref: "#/components/schemas/Decimal" }]
+              description: Cash available without triggering a good-faith violation in a cash account.
+            unsettled: { $ref: "#/components/schemas/Decimal" }
+            withdrawable: { $ref: "#/components/schemas/Decimal" }
+          required: [total, settled, unsettled, withdrawable]
+        buyingPower:
+          type: object
+          description: |
+            Broken out by use, because the numbers differ materially. In a margin
+            account `stock` is typically 2× `option`, and `dayTrading` is typically 4×
+            maintenance excess and resets each session.
+          properties:
+            stock: { $ref: "#/components/schemas/Decimal" }
+            option: { $ref: "#/components/schemas/Decimal" }
+            dayTrading: { $ref: "#/components/schemas/Decimal" }
+          required: [stock, option]
+        margin:
+          type: [object, "null"]
+          description: Null for cash accounts.
+          properties:
+            maintenanceRequirement: { $ref: "#/components/schemas/Decimal" }
+            initialRequirement: { $ref: "#/components/schemas/Decimal" }
+            marginBalance:
+              allOf: [{ $ref: "#/components/schemas/Decimal" }]
+              description: Amount currently borrowed. Negative or zero when not borrowing.
+            excessLiquidity: { $ref: "#/components/schemas/Decimal" }
+            marginCall:
+              type: [object, "null"]
+              description: Present only when a call is outstanding.
+              properties:
+                type: { type: string, enum: [FED_CALL, MAINTENANCE_CALL, DAY_TRADE_CALL, CASH_CALL] }
+                amount: { $ref: "#/components/schemas/Decimal" }
+                dueDate: { type: string, format: date }
+              required: [type, amount, dueDate]
+        dayTradesUsed: { type: integer, minimum: 0 }
+        dayTradesRemaining:
+          type: integer
+          minimum: 0
+          description: Day trades left in the rolling 5-business-day window before the PDT rule bites.
+        patternDayTrader: { type: boolean }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [accountId, currency, asOf, netLiquidation, equity, cash, buyingPower, _links]
+
+    # --- Instruments ------------------------------------------------------
+    InstrumentType:
+      type: string
+      enum: [EQUITY, ETF, OPTION]
+
+    OptionType:
+      type: string
+      enum: [CALL, PUT]
+
+    OptionDetail:
+      type: object
+      properties:
+        underlyingSymbol: { type: string, examples: ["AAPL"] }
+        underlyingInstrumentId: { type: string, examples: ["inst_eq_AAPL"] }
+        occSymbol:
+          type: string
+          description: |
+            21-character OSI contract symbol: 6 chars root (space-padded),
+            6 digits `YYMMDD`, 1 char `C`/`P`, 8 digits strike × 1000.
+          examples: ["AAPL  261218C00250000"]
+        expiration: { type: string, format: date }
+        strike: { $ref: "#/components/schemas/Decimal" }
+        optionType: { $ref: "#/components/schemas/OptionType" }
+        exerciseStyle: { type: string, enum: [AMERICAN, EUROPEAN] }
+        settlementType: { type: string, enum: [PHYSICAL, CASH] }
+        contractMultiplier:
+          type: integer
+          default: 100
+          description: Shares per contract. 100 for standard contracts; adjusted contracts differ.
+      required: [underlyingSymbol, occSymbol, expiration, strike, optionType, contractMultiplier]
+
+    Instrument:
+      type: object
+      properties:
+        instrumentId: { type: string, examples: ["inst_eq_MSFT"] }
+        type: { $ref: "#/components/schemas/InstrumentType" }
+        symbol: { type: string, examples: ["MSFT"] }
+        name: { type: string, examples: ["Microsoft Corporation"] }
+        currency: { $ref: "#/components/schemas/Currency" }
+        exchange: { type: string, description: ISO 10383 MIC., examples: ["XNAS"] }
+        tradable: { type: boolean }
+        shortable: { type: boolean }
+        fractionable: { type: boolean }
+        optionable: { type: boolean }
+        tickSize: { $ref: "#/components/schemas/Decimal" }
+        option:
+          allOf: [{ $ref: "#/components/schemas/OptionDetail" }]
+          description: Present only when `type` is `OPTION`.
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [instrumentId, type, symbol, currency]
+
+    InstrumentCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Instrument" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    InstrumentQuery:
+      type: object
+      description: Structured screen, used with the `QUERY` method on `/instruments`.
+      properties:
+        filters:
+          type: object
+          properties:
+            exchanges: { type: array, items: { type: string } }
+            types: { type: array, items: { $ref: "#/components/schemas/InstrumentType" } }
+            optionable: { type: boolean }
+            shortable: { type: boolean }
+            marketCapMin: { $ref: "#/components/schemas/Decimal" }
+            marketCapMax: { $ref: "#/components/schemas/Decimal" }
+            sectors: { type: array, items: { type: string } }
+        sort:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string, enum: [symbol, name, marketCap] }
+              direction: { type: string, enum: [ASC, DESC], default: ASC }
+            required: [field]
+        limit: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      required: [filters]
+
+    OptionChain:
+      type: object
+      properties:
+        underlyingSymbol: { type: string }
+        underlyingInstrumentId: { type: string }
+        expirations:
+          type: array
+          description: Every expiration listed on this underlying, for building a picker.
+          items: { type: string, format: date }
+        contracts:
+          type: array
+          items: { $ref: "#/components/schemas/Instrument" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [underlyingSymbol, contracts, _links]
+
+    # --- Positions --------------------------------------------------------
+    Position:
+      type: object
+      properties:
+        positionId: { type: string }
+        accountId: { type: string }
+        instrument: { $ref: "#/components/schemas/Instrument" }
+        side: { type: string, enum: [LONG, SHORT] }
+        quantity:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: |
+            Signed. Negative for short positions. Shares for equities, **contracts**
+            for options — multiply by `contractMultiplier` for share-equivalent exposure.
+        contractMultiplier: { type: integer, default: 1 }
+        averageCost: { $ref: "#/components/schemas/Decimal" }
+        costBasis: { $ref: "#/components/schemas/Decimal" }
+        lastPrice: { $ref: "#/components/schemas/Decimal" }
+        marketValue: { $ref: "#/components/schemas/Decimal" }
+        unrealizedPnl: { $ref: "#/components/schemas/Decimal" }
+        unrealizedPnlPercent: { $ref: "#/components/schemas/Decimal" }
+        realizedPnlYtd: { $ref: "#/components/schemas/Decimal" }
+        openedAt: { type: string, format: date-time }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [positionId, accountId, instrument, side, quantity, averageCost, marketValue, _links]
+
+    PositionCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Position" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    # --- Transactions -----------------------------------------------------
+    TransactionType:
+      type: string
+      enum:
+        [TRADE, DIVIDEND, INTEREST, FEE, DEPOSIT, WITHDRAWAL, TRANSFER,
+         ASSIGNMENT, EXERCISE, EXPIRATION, CORPORATE_ACTION, TAX, JOURNAL]
+
+    Fee:
+      type: object
+      properties:
+        type: { type: string, enum: [COMMISSION, REGULATORY, EXCHANGE, CLEARING, CONTRACT, OTHER] }
+        description: { type: string }
+        amount: { $ref: "#/components/schemas/Decimal" }
+      required: [type, amount]
+
+    Transaction:
+      type: object
+      properties:
+        transactionId: { type: string }
+        accountId: { type: string }
+        type: { $ref: "#/components/schemas/TransactionType" }
+        subType:
+          type: string
+          description: |
+            Narrower classification within `type` — `BUY`, `SELL`, `SELL_SHORT`,
+            `BUY_TO_COVER`, `CASH_DIVIDEND`, `MARGIN_INTEREST`, `ACH_DEPOSIT`, and so on.
+            New values are added without a version bump; treat unknown values as opaque.
+        description: { type: string }
+        tradeDate: { type: string, format: date }
+        settlementDate: { type: [string, "null"], format: date }
+        instrument:
+          allOf: [{ $ref: "#/components/schemas/Instrument" }]
+          description: Absent for cash-only activity such as interest or transfers.
+        quantity: { $ref: "#/components/schemas/Decimal" }
+        price: { $ref: "#/components/schemas/Decimal" }
+        grossAmount:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Signed from the account's perspective. Negative reduces cash.
+        fees:
+          type: array
+          items: { $ref: "#/components/schemas/Fee" }
+        netAmount:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: "`grossAmount` net of `fees`. This is the cash movement."
+        currency: { $ref: "#/components/schemas/Currency" }
+        relatedOrderId: { type: [string, "null"] }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [transactionId, accountId, type, tradeDate, grossAmount, netAmount, currency, _links]
+
+    TransactionCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Transaction" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    # --- Orders -----------------------------------------------------------
+    OrderStatus:
+      type: string
+      enum:
+        [PENDING_NEW, NEW, PARTIALLY_FILLED, FILLED, PENDING_CANCEL,
+         CANCELLED, PENDING_REPLACE, REPLACED, REJECTED, EXPIRED, SUSPENDED]
+      description: |
+        Lifecycle state. Terminal states are `FILLED`, `CANCELLED`, `REJECTED`,
+        `EXPIRED`, and `REPLACED`; everything else is working. New members may be
+        added — treat an unrecognized status as working and rely on `_links` to know
+        what you may do with the order.
+
+    EquitySide:
+      type: string
+      enum: [BUY, SELL, SELL_SHORT, BUY_TO_COVER]
+
+    OptionSide:
+      type: string
+      enum: [BUY_TO_OPEN, BUY_TO_CLOSE, SELL_TO_OPEN, SELL_TO_CLOSE]
+      description: |
+        Options are opened and closed explicitly. The open/close distinction drives
+        margin treatment and position netting, so it cannot be inferred from
+        buy/sell alone.
+
+    OrderType:
+      type: string
+      enum: [MARKET, LIMIT, STOP, STOP_LIMIT, TRAILING_STOP, TRAILING_STOP_LIMIT, NET_DEBIT, NET_CREDIT, NET_EVEN]
+      description: |
+        `NET_DEBIT`, `NET_CREDIT`, and `NET_EVEN` apply to multi-leg option orders and
+        price the combination as a whole rather than leg by leg.
+
+    TimeInForce:
+      type: string
+      enum: [DAY, GTC, GTD, IOC, FOK, OPG, CLS]
+      description: |
+        `DAY` expires at the close · `GTC` persists across sessions (typically capped
+        at 90 days) · `GTD` requires `goodTilDate` · `IOC` fills what it can
+        immediately and cancels the rest · `FOK` fills entirely and immediately or
+        cancels · `OPG` participates in the opening auction only · `CLS` the closing
+        auction only.
+
+    PriceEffect:
+      type: string
+      enum: [DEBIT, CREDIT, EVEN]
+      description: Whether the net price is paid or received. Required on multi-leg option orders.
+
+    OptionStrategy:
+      type: string
+      enum: [SINGLE, VERTICAL, CALENDAR, DIAGONAL, STRADDLE, STRANGLE, BUTTERFLY, IRON_CONDOR, COLLAR, COVERED_CALL, CUSTOM]
+      description: |
+        Declaring the strategy lets the risk engine apply spread margin instead of
+        naked margin on each leg — which is usually the difference between an order
+        being accepted and being rejected for buying power. `CUSTOM` is accepted but
+        margined leg by leg.
+
+    OrderLegRequest:
+      type: object
+      properties:
+        instrumentId:
+          type: string
+          description: Option contract identifier, from the option chain.
+          examples: ["inst_op_AAPL_20261218C00250000"]
+        side: { $ref: "#/components/schemas/OptionSide" }
+        ratio:
+          type: integer
+          minimum: 1
+          default: 1
+          description: |
+            Contracts of this leg per unit of `quantity`. A 1×2 ratio spread uses
+            ratios 1 and 2.
+      required: [instrumentId, side]
+
+    OrderLeg:
+      type: object
+      properties:
+        legId: { type: string }
+        instrument: { $ref: "#/components/schemas/Instrument" }
+        side: { $ref: "#/components/schemas/OptionSide" }
+        ratio: { type: integer }
+        filledQuantity: { $ref: "#/components/schemas/Decimal" }
+        averageFillPrice: { $ref: "#/components/schemas/Decimal" }
+      required: [legId, instrument, side, ratio]
+
+    BracketLeg:
+      type: object
+      properties:
+        orderType: { $ref: "#/components/schemas/OrderType" }
+        limitPrice: { $ref: "#/components/schemas/Decimal" }
+        stopPrice: { $ref: "#/components/schemas/Decimal" }
+      required: [orderType]
+
+    Bracket:
+      type: object
+      description: |
+        Exit orders attached to an entry. They are released only when the entry
+        fills, and are mutually one-cancels-the-other: whichever triggers first
+        cancels the other.
+      properties:
+        takeProfit: { $ref: "#/components/schemas/BracketLeg" }
+        stopLoss: { $ref: "#/components/schemas/BracketLeg" }
+
+    EquityOrderRequest:
+      type: object
+      description: A single-leg stock or ETF order.
+      properties:
+        assetClass: { type: string, enum: [EQUITY] }
+        clientOrderId:
+          type: string
+          maxLength: 64
+          description: |
+            Your own identifier, echoed on the order and every execution. Useful for
+            reconciliation; not a substitute for `Idempotency-Key`, which is what
+            actually prevents duplicates.
+        side: { $ref: "#/components/schemas/EquitySide" }
+        instrumentId: { type: string, examples: ["inst_eq_MSFT"] }
+        quantity:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: |
+            Positive share count. Fractional quantities are accepted only on
+            instruments where `fractionable` is true, and only for `MARKET`/`DAY`.
+        orderType: { $ref: "#/components/schemas/OrderType" }
+        limitPrice:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Required for `LIMIT`, `STOP_LIMIT`, and `TRAILING_STOP_LIMIT`.
+        stopPrice:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Required for `STOP` and `STOP_LIMIT`.
+        trailingAmount:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Absolute trail for trailing stops. Mutually exclusive with `trailingPercent`.
+        trailingPercent:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Percentage trail for trailing stops. Mutually exclusive with `trailingAmount`.
+        timeInForce: { $ref: "#/components/schemas/TimeInForce" }
+        goodTilDate:
+          type: string
+          format: date
+          description: Required when `timeInForce` is `GTD`.
+        extendedHours:
+          type: boolean
+          default: false
+          description: |
+            Route in the pre-market and post-market sessions. Extended-hours orders
+            must be `LIMIT` and `DAY`; spreads are wider and liquidity is thinner.
+        bracket: { $ref: "#/components/schemas/Bracket" }
+      required: [assetClass, side, instrumentId, quantity, orderType, timeInForce]
+      allOf:
+        - if:
+            properties: { orderType: { const: LIMIT } }
+            required: [orderType]
+          then:
+            required: [limitPrice]
+        - if:
+            properties: { orderType: { const: STOP } }
+            required: [orderType]
+          then:
+            required: [stopPrice]
+        - if:
+            properties: { orderType: { const: STOP_LIMIT } }
+            required: [orderType]
+          then:
+            required: [stopPrice, limitPrice]
+        - if:
+            properties: { timeInForce: { const: GTD } }
+            required: [timeInForce]
+          then:
+            required: [goodTilDate]
+
+    OptionOrderRequest:
+      type: object
+      description: |
+        A single- or multi-leg listed option order. Multi-leg orders are priced and
+        routed as one unit — legs never fill independently.
+      properties:
+        assetClass: { type: string, enum: [OPTION] }
+        clientOrderId: { type: string, maxLength: 64 }
+        strategy: { $ref: "#/components/schemas/OptionStrategy" }
+        legs:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: { $ref: "#/components/schemas/OrderLegRequest" }
+        quantity:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: |
+            Number of **strategy units**, not total contracts. A `quantity` of 10 on a
+            two-leg vertical is 10 spreads — 20 contracts — with each leg scaled by
+            its `ratio`.
+        orderType: { $ref: "#/components/schemas/OrderType" }
+        limitPrice:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: Per-contract price for single-leg `LIMIT` orders.
+        stopPrice: { $ref: "#/components/schemas/Decimal" }
+        netPrice:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: |
+            Per-unit net price for the whole combination. Always positive; the
+            direction of the cash flow is carried by `priceEffect`, not by a sign.
+            Required for `NET_DEBIT` and `NET_CREDIT`.
+        priceEffect: { $ref: "#/components/schemas/PriceEffect" }
+        timeInForce: { $ref: "#/components/schemas/TimeInForce" }
+        goodTilDate: { type: string, format: date }
+      required: [assetClass, strategy, legs, quantity, orderType, timeInForce]
+      allOf:
+        - if:
+            properties: { orderType: { enum: [NET_DEBIT, NET_CREDIT] } }
+            required: [orderType]
+          then:
+            required: [netPrice, priceEffect]
+        - if:
+            properties: { strategy: { const: SINGLE } }
+            required: [strategy]
+          then:
+            properties:
+              legs: { maxItems: 1 }
+
+    OrderRequest:
+      oneOf:
+        - $ref: "#/components/schemas/EquityOrderRequest"
+        - $ref: "#/components/schemas/OptionOrderRequest"
+      discriminator:
+        propertyName: assetClass
+        mapping:
+          EQUITY: "#/components/schemas/EquityOrderRequest"
+          OPTION: "#/components/schemas/OptionOrderRequest"
+
+    OrderAmendment:
+      type: object
+      description: |
+        JSON Merge Patch (RFC 7386) body. Only the listed fields are amendable.
+        An explicit `null` clears an optional field.
+      properties:
+        quantity:
+          allOf: [{ $ref: "#/components/schemas/Decimal" }]
+          description: New total quantity. Must be at least the quantity already filled.
+        limitPrice: { $ref: "#/components/schemas/Decimal" }
+        stopPrice: { $ref: "#/components/schemas/Decimal" }
+        trailingAmount: { $ref: "#/components/schemas/Decimal" }
+        trailingPercent: { $ref: "#/components/schemas/Decimal" }
+        netPrice: { $ref: "#/components/schemas/Decimal" }
+        timeInForce: { $ref: "#/components/schemas/TimeInForce" }
+        goodTilDate: { type: [string, "null"], format: date }
+      additionalProperties: false
+
+    Execution:
+      type: object
+      properties:
+        executionId: { type: string }
+        orderId: { type: string }
+        legId: { type: [string, "null"], description: Which leg filled, on multi-leg option orders. }
+        quantity: { $ref: "#/components/schemas/Decimal" }
+        price: { $ref: "#/components/schemas/Decimal" }
+        venue: { type: string, description: ISO 10383 MIC of the executing venue. }
+        liquidity:
+          type: [string, "null"]
+          enum: [ADDED, REMOVED, ROUTED, null]
+          description: Whether the fill added or removed liquidity. Null when the venue does not report it.
+        executedAt: { type: string, format: date-time }
+        settlementDate: { type: string, format: date }
+        commission: { $ref: "#/components/schemas/Decimal" }
+        fees:
+          type: array
+          items: { $ref: "#/components/schemas/Fee" }
+      required: [executionId, orderId, quantity, price, executedAt]
+
+    ExecutionCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Execution" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    Order:
+      type: object
+      properties:
+        orderId: { type: string }
+        clientOrderId: { type: [string, "null"] }
+        accountId: { type: string }
+        assetClass: { type: string, enum: [EQUITY, OPTION] }
+        strategy: { $ref: "#/components/schemas/OptionStrategy" }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        side:
+          oneOf:
+            - $ref: "#/components/schemas/EquitySide"
+            - $ref: "#/components/schemas/OptionSide"
+          description: Present on single-leg orders. Multi-leg orders carry per-leg sides instead.
+        instrument:
+          allOf: [{ $ref: "#/components/schemas/Instrument" }]
+          description: Present on single-leg orders.
+        legs:
+          type: array
+          description: Present on option orders, including single-leg ones.
+          items: { $ref: "#/components/schemas/OrderLeg" }
+        quantity: { $ref: "#/components/schemas/Decimal" }
+        filledQuantity: { $ref: "#/components/schemas/Decimal" }
+        remainingQuantity: { $ref: "#/components/schemas/Decimal" }
+        orderType: { $ref: "#/components/schemas/OrderType" }
+        limitPrice: { $ref: "#/components/schemas/Decimal" }
+        stopPrice: { $ref: "#/components/schemas/Decimal" }
+        trailingAmount: { $ref: "#/components/schemas/Decimal" }
+        trailingPercent: { $ref: "#/components/schemas/Decimal" }
+        netPrice: { $ref: "#/components/schemas/Decimal" }
+        priceEffect: { $ref: "#/components/schemas/PriceEffect" }
+        averageFillPrice: { $ref: "#/components/schemas/Decimal" }
+        timeInForce: { $ref: "#/components/schemas/TimeInForce" }
+        goodTilDate: { type: [string, "null"], format: date }
+        extendedHours: { type: boolean }
+        currency: { $ref: "#/components/schemas/Currency" }
+        estimatedCost: { $ref: "#/components/schemas/Decimal" }
+        rejectReason:
+          type: [object, "null"]
+          description: Present when `status` is `REJECTED`.
+          properties:
+            code: { type: string, examples: ["INSUFFICIENT_BUYING_POWER"] }
+            message: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        filledAt: { type: [string, "null"], format: date-time }
+        cancelledAt: { type: [string, "null"], format: date-time }
+        expiresAt: { type: [string, "null"], format: date-time }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [orderId, accountId, assetClass, status, quantity, filledQuantity, orderType, timeInForce, createdAt, updatedAt, _links]
+
+    OrderCollection:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Order" }
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [items, _links]
+
+    OrderPreview:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: |
+            False when at least one warning has severity `ERROR`. Submitting an
+            invalid preview will be rejected — surface the warnings instead.
+        estimatedCost:
+          oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }]
+          description: Cash required. Null on orders that generate proceeds rather than cost.
+        estimatedProceeds:
+          oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }]
+          description: Cash generated. Null on orders that cost rather than generate.
+        commission: { $ref: "#/components/schemas/Decimal" }
+        fees:
+          type: array
+          items: { $ref: "#/components/schemas/Fee" }
+        totalEstimated: { $ref: "#/components/schemas/Decimal" }
+        currency: { $ref: "#/components/schemas/Currency" }
+        buyingPowerBefore: { $ref: "#/components/schemas/Decimal" }
+        buyingPowerAfter: { $ref: "#/components/schemas/Decimal" }
+        marginRequirement: { $ref: "#/components/schemas/Decimal" }
+        maxLoss:
+          oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }]
+          description: Defined-risk option strategies only. Null when the downside is unbounded.
+        maxGain:
+          oneOf: [{ $ref: "#/components/schemas/Decimal" }, { type: "null" }]
+          description: Null when the upside is unbounded, as on a long call.
+        breakEven:
+          type: array
+          items: { $ref: "#/components/schemas/Decimal" }
+        warnings:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string, examples: ["EXCEEDS_BUYING_POWER"] }
+              severity: { type: string, enum: [INFO, WARNING, ERROR] }
+              message: { type: string }
+            required: [code, severity, message]
+        _links: { $ref: "#/components/schemas/Links" }
+      required: [valid, currency, warnings, _links]
+
+    OrderEvent:
+      type: object
+      description: One order lifecycle event, delivered over SSE or webhook.
+      properties:
+        eventId:
+          type: string
+          description: Unique per event. Deduplicate on this — delivery is at-least-once.
+        eventType:
+          type: string
+          enum: [order.accepted, order.replaced, order.cancelled, order.rejected, order.expired, execution]
+        occurredAt: { type: string, format: date-time }
+        accountId: { type: string }
+        orderId: { type: string }
+        clientOrderId: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        execution:
+          allOf: [{ $ref: "#/components/schemas/Execution" }]
+          description: Present when `eventType` is `execution`.
+        order:
+          allOf: [{ $ref: "#/components/schemas/Order" }]
+          description: Full order snapshot at the time of the event.
+      required: [eventId, eventType, occurredAt, accountId, orderId, status]

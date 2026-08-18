@@ -1,0 +1,286 @@
+<!-- ==================== APPENDIX A — ERRORS ====================== -->
+<h1 id="appendix-errors"><span class="num">A</span>Appendix: Error catalogue</h1>
+
+<p class="lede">
+  Every problem <code>type</code> this API returns. The URI is the stable contract — branch on
+  it, and treat <code>title</code> and <code>detail</code> as display text only.
+</p>
+
+<p class="small">
+  All types are relative to
+  <code>https://developer.brokerage.example.com/problems/</code>.
+</p>
+
+<table class="long">
+  <thead>
+    <tr><th style="width:26%">type</th><th style="width:9%">Status</th><th style="width:30%">Meaning</th><th>Extension fields · what to do</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>validation-failed</code></td>
+      <td><span class="status-pill s-4xx">400</span></td>
+      <td>Schema validation failed.</td>
+      <td><code>errors[]</code> with JSON Pointers. A bug in your code — fix and resubmit.</td>
+    </tr>
+    <tr>
+      <td><code>invalid-token</code></td>
+      <td><span class="status-pill s-4xx">401</span></td>
+      <td>Token missing, expired, malformed, or revoked.</td>
+      <td>Refresh once and retry. If the refresh also fails, re-authorize.</td>
+    </tr>
+    <tr>
+      <td><code>insufficient-scope</code></td>
+      <td><span class="status-pill s-4xx">403</span></td>
+      <td>The grant lacks a required scope.</td>
+      <td><code>requiredScope</code>, <code>grantedScopes[]</code>. Re-authorize with the wider scope; do not retry.</td>
+    </tr>
+    <tr>
+      <td><code>options-level-insufficient</code></td>
+      <td><span class="status-pill s-4xx">403</span></td>
+      <td>Strategy above the account's approval level.</td>
+      <td><code>requiredLevel</code>, <code>currentLevel</code>. Tell the customer which level to apply for.</td>
+    </tr>
+    <tr>
+      <td><code>account-not-found</code></td>
+      <td><span class="status-pill s-4xx">404</span></td>
+      <td>No such account, or it is outside this grant.</td>
+      <td>Deliberately ambiguous, so the API cannot be used to enumerate accounts.</td>
+    </tr>
+    <tr>
+      <td><code>order-not-found</code></td>
+      <td><span class="status-pill s-4xx">404</span></td>
+      <td>No such order on this account.</td>
+      <td>Check the <code>accountId</code> in the path matches the order.</td>
+    </tr>
+    <tr>
+      <td><code>account-restricted</code></td>
+      <td><span class="status-pill s-4xx">409</span></td>
+      <td>Compliance hold or unmet margin call.</td>
+      <td>Reads still work; trading does not. Not retryable.</td>
+    </tr>
+    <tr>
+      <td><code>order-not-amendable</code></td>
+      <td><span class="status-pill s-4xx">409</span></td>
+      <td>Order is terminal, or an amendment is already in flight.</td>
+      <td><code>currentStatus</code>. Re-read the order and re-decide.</td>
+    </tr>
+    <tr>
+      <td><code>precondition-failed</code></td>
+      <td><span class="status-pill s-4xx">412</span></td>
+      <td><code>If-Match</code> did not match the current <code>ETag</code>.</td>
+      <td><code>currentETag</code>. Re-read and decide again — <b>never</b> blind-retry with the new validator.</td>
+    </tr>
+    <tr>
+      <td><code>insufficient-buying-power</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Not enough buying power for this order.</td>
+      <td><code>required</code>, <code>available</code> (each an amount + currency). Check you read the right buying-power field (§4.2).</td>
+    </tr>
+    <tr>
+      <td><code>market-closed</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>The requested session is not open.</td>
+      <td><code>nextOpen</code>. Resubmit with <code>extendedHours</code> or <code>GTC</code>, or queue until <code>nextOpen</code>.</td>
+    </tr>
+    <tr>
+      <td><code>instrument-not-tradable</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Halted, delisted, or not supported.</td>
+      <td><code>reason</code>. Not retryable without a different instrument.</td>
+    </tr>
+    <tr>
+      <td><code>price-outside-collar</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Limit price too far from the current market.</td>
+      <td><code>collarLow</code>, <code>collarHigh</code>. A guard against fat-finger entry.</td>
+    </tr>
+    <tr>
+      <td><code>idempotency-key-reuse</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Key reused with a different body.</td>
+      <td><code>originalOrderId</code>. Nothing was created. A bug: one key per intent.</td>
+    </tr>
+    <tr>
+      <td><code>day-trade-limit</code></td>
+      <td><span class="status-pill s-4xx">422</span></td>
+      <td>Order would breach the pattern-day-trader rule.</td>
+      <td><code>dayTradesUsed</code>, <code>dayTradesRemaining</code>.</td>
+    </tr>
+    <tr>
+      <td><code>rate-limit-exceeded</code></td>
+      <td><span class="status-pill s-4xx">429</span></td>
+      <td>Quota exhausted.</td>
+      <td><code>retryAfterSeconds</code>. Back off with full jitter (§3.7).</td>
+    </tr>
+    <tr>
+      <td><code>venue-unavailable</code></td>
+      <td><span class="status-pill s-5xx">503</span></td>
+      <td>Upstream venue or clearing system down.</td>
+      <td>Retryable with backoff. Order state is unknown — reconcile before resubmitting.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ================== APPENDIX B — ENUMERATIONS ================== -->
+<h1 id="appendix-enums"><span class="num">B</span>Appendix: Enumerations</h1>
+
+<div class="note">
+  <span class="lbl">These lists grow</span>
+  <p>
+    New enum members are shipped as backward-compatible changes, without a version bump. Your
+    deserializer must not throw on an unrecognized value — treat an unknown
+    <code>OrderStatus</code> as working and rely on <code>_links</code> to know what actions
+    are available (§3.8).
+  </p>
+</div>
+
+<h2><span class="num">B.1</span>Time in force</h2>
+
+<table class="long">
+  <thead><tr><th style="width:14%">Value</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>DAY</code></td><td>Expires at the close of the regular session.</td></tr>
+    <tr><td><code>GTC</code></td><td>Good till cancelled. Persists across sessions, typically capped at 90 days.</td></tr>
+    <tr><td><code>GTD</code></td><td>Good till a date. Requires <code>goodTilDate</code>.</td></tr>
+    <tr><td><code>IOC</code></td><td>Immediate or cancel. Fills whatever it can at once; cancels the remainder.</td></tr>
+    <tr><td><code>FOK</code></td><td>Fill or kill. Fills entirely and immediately, or cancels entirely. No partials.</td></tr>
+    <tr><td><code>OPG</code></td><td>At the open. Participates in the opening auction only.</td></tr>
+    <tr><td><code>CLS</code></td><td>At the close. Participates in the closing auction only.</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.2</span>Order types</h2>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Value</th><th style="width:26%">Requires</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>MARKET</code></td><td>—</td><td>Execution guaranteed, price is not.</td></tr>
+    <tr><td><code>LIMIT</code></td><td><code>limitPrice</code></td><td>Price guaranteed, execution is not.</td></tr>
+    <tr><td><code>STOP</code></td><td><code>stopPrice</code></td><td>Becomes a market order when the stop trips.</td></tr>
+    <tr><td><code>STOP_LIMIT</code></td><td><code>stopPrice</code>, <code>limitPrice</code></td><td>Becomes a limit order when the stop trips. Can go unfilled in a fast market.</td></tr>
+    <tr><td><code>TRAILING_STOP</code></td><td><code>trailingAmount</code> <b>or</b> <code>trailingPercent</code></td><td>Stop follows the high-water mark. The two trail fields are mutually exclusive.</td></tr>
+    <tr><td><code>TRAILING_STOP_LIMIT</code></td><td>trail + <code>limitPrice</code></td><td>As above, triggering a limit order.</td></tr>
+    <tr><td><code>NET_DEBIT</code></td><td><code>netPrice</code>, <code>priceEffect</code></td><td>Multi-leg option combination, priced as a unit. Cash paid.</td></tr>
+    <tr><td><code>NET_CREDIT</code></td><td><code>netPrice</code>, <code>priceEffect</code></td><td>Multi-leg combination. Cash received.</td></tr>
+    <tr><td><code>NET_EVEN</code></td><td><code>priceEffect</code></td><td>Multi-leg combination at zero net cost.</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.3</span>Sides</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Asset class</th><th>Values</th></tr></thead>
+  <tbody>
+    <tr><td>Equity</td><td><code>BUY</code>, <code>SELL</code>, <code>SELL_SHORT</code>, <code>BUY_TO_COVER</code></td></tr>
+    <tr><td>Option</td><td><code>BUY_TO_OPEN</code>, <code>BUY_TO_CLOSE</code>, <code>SELL_TO_OPEN</code>, <code>SELL_TO_CLOSE</code></td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.4</span>Option strategies</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Value</th><th style="width:14%">Legs</th><th>Minimum approval level</th></tr></thead>
+  <tbody>
+    <tr><td><code>SINGLE</code></td><td>1</td><td><code>LEVEL_2</code> to open long; <code>LEVEL_4</code> to open naked short</td></tr>
+    <tr><td><code>COVERED_CALL</code></td><td>1</td><td><code>LEVEL_1</code> — requires 100 shares held per contract</td></tr>
+    <tr><td><code>VERTICAL</code>, <code>CALENDAR</code>, <code>DIAGONAL</code></td><td>2</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>STRADDLE</code>, <code>STRANGLE</code>, <code>COLLAR</code></td><td>2–3</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>BUTTERFLY</code></td><td>3–4</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>IRON_CONDOR</code></td><td>4</td><td><code>LEVEL_3</code></td></tr>
+    <tr><td><code>CUSTOM</code></td><td>1–4</td><td>Margined leg by leg — usually requires far more buying power</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">B.5</span>Transaction types</h2>
+
+<p class="kv">
+  <code>TRADE</code> &nbsp;<code>DIVIDEND</code> &nbsp;<code>INTEREST</code> &nbsp;<code>FEE</code>
+  &nbsp;<code>DEPOSIT</code> &nbsp;<code>WITHDRAWAL</code> &nbsp;<code>TRANSFER</code>
+  &nbsp;<code>ASSIGNMENT</code> &nbsp;<code>EXERCISE</code> &nbsp;<code>EXPIRATION</code>
+  &nbsp;<code>CORPORATE_ACTION</code> &nbsp;<code>TAX</code> &nbsp;<code>JOURNAL</code>
+</p>
+
+<!-- ==================== APPENDIX C — GLOSSARY =================== -->
+<h1 id="appendix-glossary"><span class="num">C</span>Appendix: Glossary</h1>
+
+<dl>
+  <dt>Buying power</dt>
+  <dd>What the account can spend. Differs by product — stock, option, and day-trading buying
+      power are three separate numbers in a margin account (§4.2).</dd>
+
+  <dt>Contract multiplier</dt>
+  <dd>Shares of the underlying per option contract. Normally 100; adjusted contracts, following
+      a split or merger, differ. Multiply option quantity by this for share-equivalent
+      exposure.</dd>
+
+  <dt>DPoP</dt>
+  <dd>Demonstrating Proof of Possession (RFC 9449). Binds an access token to a key pair so a
+      stolen token is inert without the private key (§2.9).</dd>
+
+  <dt>Good-faith violation</dt>
+  <dd>In a cash account, buying with unsettled proceeds and selling before they settle.
+      Repeated violations restrict the account to settled cash.</dd>
+
+  <dt>HATEOAS</dt>
+  <dd>Hypermedia as the Engine of Application State. Clients discover available actions from
+      links in the representation rather than from hard-coded URLs (§3.1).</dd>
+
+  <dt>Idempotency key</dt>
+  <dd>A client-generated UUID identifying one order <i>intent</i>, making retries safe. One key
+      per intent, reused across every retry of that intent (§3.5).</dd>
+
+  <dt>Liquidity (added / removed)</dt>
+  <dd>Whether a fill posted to the book and waited (added) or crossed the spread (removed).
+      Drives exchange rebates and fees.</dd>
+
+  <dt>Maintenance requirement</dt>
+  <dd>Minimum equity that must be held against margin positions. Falling below it triggers a
+      margin call.</dd>
+
+  <dt>Net liquidation value</dt>
+  <dd>Total account value if every position were liquidated at current marks.</dd>
+
+  <dt>OSI symbol</dt>
+  <dd>The 21-character options contract identifier:
+      <code>AAPL&nbsp;&nbsp;261218C00250000</code> — six characters of root (space-padded),
+      <code>YYMMDD</code>, <code>C</code>/<code>P</code>, then strike × 1000 in eight digits.</dd>
+
+  <dt>Pattern day trader (PDT)</dt>
+  <dd>An account making four or more day trades in five business days. Subject to a 25,000 USD
+      minimum equity requirement.</dd>
+
+  <dt>PKCE</dt>
+  <dd>Proof Key for Code Exchange (RFC 7636). Binds an authorization code to the client
+      instance that requested it. Mandatory under OAuth 2.1 (§2.4).</dd>
+
+  <dt>Price effect</dt>
+  <dd>Whether a multi-leg option order's net price is paid (<code>DEBIT</code>) or received
+      (<code>CREDIT</code>). Carries the direction, so <code>netPrice</code> is always
+      positive.</dd>
+
+  <dt>Problem details</dt>
+  <dd>RFC 9457. The machine-readable error format used throughout this API (§3.2).</dd>
+
+  <dt>Refresh token rotation</dt>
+  <dd>Issuing a new refresh token on every use and invalidating the old one. Replaying a spent
+      token is treated as theft and revokes the whole family (§2.7).</dd>
+
+  <dt>Settlement date</dt>
+  <dd>When cash and securities actually change hands. T+1 for US equities as of May 2024.</dd>
+
+  <dt>Strategy unit</dt>
+  <dd>One instance of a multi-leg option combination. A <code>quantity</code> of 10 on a
+      two-leg vertical means ten spreads — twenty contracts (§5.4).</dd>
+
+  <dt>Time in force</dt>
+  <dd>How long an order remains working before it expires. See Appendix B.1.</dd>
+</dl>
+
+<hr>
+
+<p class="small" style="text-align:center;margin-top:8mm">
+  <b>Brokerage REST API — Developer Specification v1.0.0</b><br>
+  Companion developer portal: <code>brokerage-apis/dev-portal/index.html</code><br>
+  Machine-readable specification: <code>brokerage-apis/openapi/brokerage-api.yaml</code><br>
+  Runnable examples: <code>brokerage-apis/examples/{java,node,python}/</code>
+</p>

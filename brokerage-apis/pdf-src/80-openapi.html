@@ -1,0 +1,235 @@
+<!-- ================== 7. OPENAPI SPECIFICATION =================== -->
+<h1 id="openapi"><span class="num">7</span>OpenAPI 3.2.0 Specification</h1>
+
+<p class="lede">
+  Every endpoint in this document is described by a machine-readable OpenAPI 3.2.0 document.
+  It is the normative artifact: where this prose and the specification disagree, the
+  specification wins.
+</p>
+
+<h2 id="spec-location"><span class="num">7.1</span>Where the specification lives</h2>
+
+<table>
+  <thead><tr><th style="width:38%">File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>openapi/brokerage-api.yaml</code></td><td>The source of truth. Hand-maintained, commented.</td></tr>
+    <tr><td><code>openapi/brokerage-api.json</code></td><td>Generated JSON rendering, for tooling that will not read YAML.</td></tr>
+    <tr><td><code>dev-portal/openapi/</code></td><td>The copy the developer portal serves and renders.</td></tr>
+  </tbody>
+</table>
+
+<p class="kv">
+  <b>17</b> paths &nbsp;·&nbsp; <b>21</b> operations &nbsp;·&nbsp; <b>48</b> schemas
+  &nbsp;·&nbsp; <b>1</b> webhook &nbsp;·&nbsp; validates clean against the official
+  OpenAPI 3.2 meta-schema.
+</p>
+
+<h2 id="what-320"><span class="num">7.2</span>What 3.2.0 gives us that 3.1 did not</h2>
+
+<p>
+  Five 3.2.0 additions earn their place in this document. Each is used because it lets the
+  description state something that previously needed a vendor extension or a prose footnote.
+</p>
+
+<h4><code>$self</code> — document identity</h4>
+
+<pre><code><span class="c-key">openapi</span>: <span class="c-num">3.2.0</span>
+<span class="c-key">$self</span>: https://api.brokerage.example.com/openapi/brokerage-api.yaml</code></pre>
+
+<p>
+  Gives the document a stable, self-assigned URI that also acts as the base for reference
+  resolution — so <code>$ref</code> targets resolve identically whether the file is read from
+  disk, a CDN, or a build pipeline. Previously the base URI was wherever the file happened to
+  be fetched from, which made references environment-dependent.
+</p>
+
+<h4>Hierarchical tags: <code>summary</code>, <code>parent</code>, <code>kind</code></h4>
+
+<pre><code><span class="c-key">tags</span>:
+  - <span class="c-key">name</span>: accounts
+    <span class="c-key">summary</span>: Accounts
+    <span class="c-key">kind</span>: nav
+  - <span class="c-key">name</span>: balances
+    <span class="c-key">summary</span>: Balances
+    <span class="c-key">parent</span>: accounts        <span class="c-com"># nests under Accounts in navigation</span>
+    <span class="c-key">kind</span>: nav
+  - <span class="c-key">name</span>: trade-enabled
+    <span class="c-key">summary</span>: Trade-enabled
+    <span class="c-key">kind</span>: audience         <span class="c-com"># an audience facet, not a nav node</span></code></pre>
+
+<p>
+  The API description now expresses its own navigation hierarchy instead of delegating that to
+  renderer-specific extensions like <code>x-tagGroups</code>. <code>kind</code> separates
+  structural navigation from cross-cutting facets — here, which operations need a write grant.
+</p>
+
+<h4>The <code>query</code> method</h4>
+
+<pre><code><span class="c-key">/instruments</span>:
+  <span class="c-key">get</span>:   <span class="c-com"># simple lookups by query string</span>
+  <span class="c-key">query</span>: <span class="c-com"># structured screens with a request body — safe, idempotent, cacheable</span></code></pre>
+
+<p>
+  HTTP QUERY is a safe, idempotent method that carries a request body. A structured instrument
+  screen — exchanges, sectors, market-cap bounds, sort order — is too large and too nested for
+  a query string, but it is still unambiguously a <i>read</i>. Before 3.2.0 the only way to
+  describe it was as a <code>POST</code>, which misrepresents the semantics and defeats
+  caching. A <code>POST /instrument-screener</code> alias remains for clients that cannot
+  issue QUERY, notably browser <code>fetch()</code>.
+</p>
+
+<h4><code>itemSchema</code> for streaming</h4>
+
+<pre><code><span class="c-key">content</span>:
+  <span class="c-key">text/event-stream</span>:
+    <span class="c-key">itemSchema</span>:            <span class="c-com"># describes ONE event, not the whole stream</span>
+      <span class="c-key">type</span>: object
+      <span class="c-key">properties</span>:
+        <span class="c-key">id</span>:    { <span class="c-key">type</span>: string }
+        <span class="c-key">event</span>: { <span class="c-key">type</span>: string, <span class="c-key">enum</span>: [order.accepted, execution, …] }
+        <span class="c-key">data</span>:
+          <span class="c-key">type</span>: string
+          <span class="c-key">contentMediaType</span>: application/json
+          <span class="c-key">contentSchema</span>: { <span class="c-key">$ref</span>: <span class="c-str">'#/components/schemas/OrderEvent'</span> }</code></pre>
+
+<p>
+  Unlike <code>schema</code>, which would describe the entire stream as an array,
+  <code>itemSchema</code> applies to each item independently — which is what a streaming
+  consumer actually processes as bytes arrive. It makes the order event stream properly
+  describable for the first time.
+</p>
+
+<h4><code>oauth2MetadataUrl</code> and the device flow</h4>
+
+<pre><code><span class="c-key">securitySchemes</span>:
+  <span class="c-key">oauth2</span>:
+    <span class="c-key">type</span>: oauth2
+    <span class="c-key">oauth2MetadataUrl</span>: https://auth.brokerage.example.com/.well-known/oauth-authorization-server
+    <span class="c-key">flows</span>:
+      <span class="c-key">authorizationCode</span>: { … }
+      <span class="c-key">deviceAuthorization</span>:      <span class="c-com"># declarable for the first time in 3.2.0</span>
+        <span class="c-key">deviceAuthorizationUrl</span>: …</code></pre>
+
+<p>
+  <code>oauth2MetadataUrl</code> points tooling at the RFC 8414 authorization server metadata
+  document, so endpoints, supported PKCE methods, and grant types are <i>discovered</i> rather
+  than hard-coded into the description and left to drift.
+</p>
+
+<h2 id="spec-structure"><span class="num">7.3</span>Document structure</h2>
+
+<pre class="long"><code>brokerage-api.yaml
+├─ openapi: 3.2.0
+├─ $self                      document identity and reference base
+├─ info                       title, summary, description, license (SPDX identifier)
+├─ servers                    production and sandbox
+├─ tags                       hierarchical navigation (parent / kind)
+├─ security                   default: oauth2 with accounts:read
+├─ paths
+│  ├─ /                                              API root — the one bookmarkable URL
+│  ├─ /accounts                                      account list
+│  ├─ /accounts/{id}                                 single account
+│  ├─ /accounts/{id}/balances                        balances
+│  ├─ /accounts/{id}/positions[/{positionId}]        positions
+│  ├─ /accounts/{id}/transactions[/{txnId}]          transaction history
+│  ├─ /accounts/{id}/orders                          GET status · POST place
+│  ├─ /accounts/{id}/orders/preview                  validate without routing
+│  ├─ /accounts/{id}/orders/events                   SSE stream (itemSchema)
+│  ├─ /accounts/{id}/orders/{orderId}                GET · PATCH · DELETE
+│  ├─ /accounts/{id}/orders/{orderId}/executions     fills
+│  ├─ /instruments                                   GET search · QUERY screen
+│  ├─ /instrument-screener                           POST alias for QUERY
+│  ├─ /instruments/{id}                              instrument detail
+│  └─ /instruments/{symbol}/option-chain             option contracts
+├─ webhooks
+│  └─ orderUpdated                                   push alternative to SSE
+└─ components
+   ├─ securitySchemes   oauth2 (authorizationCode + deviceAuthorization), dpop
+   ├─ parameters        AccountId, OrderId, Cursor, Limit, IdempotencyKey, IfMatch
+   ├─ headers           ETag, RateLimit, RateLimit-Policy, Retry-After, …
+   ├─ responses         Problem, BadRequest, Unauthorized, Forbidden, NotFound,
+   │                    PreconditionFailed, PreconditionRequired, TooManyRequests
+   └─ schemas           48 total — Order, OrderRequest (discriminated union),
+                        Balances, Position, Transaction, Instrument, Problem, …</code></pre>
+
+<div class="note">
+  <span class="lbl">A 3.1/3.2 detail that silently breaks clients</span>
+  <p>
+    OpenAPI 3.1 replaced its bespoke schema dialect with JSON Schema 2020-12, and
+    <code>nullable: true</code> is <b>not</b> a JSON Schema keyword — it was a 3.0-ism. Left in
+    a 3.1 or 3.2 document it is silently ignored, so a field you believe is nullable validates
+    as non-nullable and your generated client throws on a legitimate <code>null</code>.
+  </p>
+  <p>
+    The correct spelling is a type union: <code>type: [string, "null"]</code>, or
+    <code>oneOf: [{$ref: …}, {type: "null"}]</code> when the base type comes from a
+    <code>$ref</code>. This specification uses the correct form throughout; it is worth
+    grepping any 3.1+ document you inherit for <code>nullable</code>.
+  </p>
+</div>
+
+<h2 id="spec-tooling"><span class="num">7.4</span>Validating and generating from the specification</h2>
+
+<h4>Validate</h4>
+
+<pre><code><span class="c-com"># Against the official 3.2 meta-schema — the authoritative check.</span>
+curl -sL -o oas32.json https://spec.openapis.org/oas/3.2/schema/2025-09-17
+python3 - &lt;&lt;'PY'
+import json, yaml
+from jsonschema import Draft202012Validator
+meta = json.load(open('oas32.json'))
+doc  = yaml.safe_load(open('openapi/brokerage-api.yaml'))
+errors = list(Draft202012Validator(meta).iter_errors(doc))
+print('VALID' if not errors else f'{len(errors)} error(s)')
+for e in errors[:10]:
+    print(' /' + '/'.join(map(str, e.absolute_path)), '::', e.message[:200])
+PY
+
+<span class="c-com"># Linting and style. Note: 3.2.0 support varies by tool and version —</span>
+<span class="c-com"># check before trusting a "valid" from anything but the meta-schema.</span>
+npx @redocly/cli lint openapi/brokerage-api.yaml</code></pre>
+
+<div class="tip">
+  <span class="lbl">Validate the examples too</span>
+  <p>
+    A specification can be structurally valid and still carry examples that contradict their
+    own schemas — which is worse than no examples, because integrators copy them. Walk every
+    <code>examples</code> block, resolve its sibling <code>schema</code>, and validate the two
+    against each other in CI. Doing exactly that on this document is what surfaced the
+    <code>nullable</code> problem described above.
+  </p>
+</div>
+
+<h4>Generate clients</h4>
+
+<pre><code><span class="c-com"># Most generators do not yet target 3.2.0. Downgrade for generation only —</span>
+<span class="c-com"># the 3.2-specific fields ($self, query, itemSchema, tag parent/kind) are</span>
+<span class="c-com"># additive, so dropping them yields a valid 3.1 document.</span>
+npx @redocly/cli bundle openapi/brokerage-api.yaml -o build-3.1.yaml
+
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g java    -o clients/java
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g python  -o clients/python
+npx @openapitools/openapi-generator-cli generate \
+    -i build-3.1.yaml -g typescript-fetch -o clients/typescript</code></pre>
+
+<div class="warn">
+  <span class="lbl">Audit generated code for decimal handling</span>
+  <p>
+    Generators map <code>type: string</code> to a native string, which is correct here — but
+    some apply a "helpful" numeric coercion when they see a numeric-looking
+    <code>pattern</code> or <code>format</code>. Check that every price and quantity lands in
+    <code>BigDecimal</code>, <code>Decimal</code>, or a string, and never in
+    <code>double</code>. See §3.3.
+  </p>
+</div>
+
+<h4>Mock and test</h4>
+
+<pre><code><span class="c-com"># Prism serves a mock from the spec, including the response examples.</span>
+npx @stoplight/prism-cli mock openapi/brokerage-api.yaml --port 4010
+
+<span class="c-com"># Contract-test a running service against the description.</span>
+npx @stoplight/prism-cli proxy openapi/brokerage-api.yaml \
+    https://api.sandbox.brokerage.example.com/v1 --errors</code></pre>

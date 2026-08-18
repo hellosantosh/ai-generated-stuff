@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errors &amp; status codes — Brokerage API</title>
+<meta name="description" content="RFC 9457 problem details, the full error catalogue, status code semantics, rate limits, and retry guidance.">
+<link rel="stylesheet" href="assets/portal.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231f4f8f'/><text x='16' y='23' font-size='19' font-family='sans-serif' font-weight='700' fill='white' text-anchor='middle'>B</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <button class="icon-btn" id="menu-toggle" type="button" aria-label="Toggle navigation">☰</button>
+  <a class="brand" href="index.html"><span class="mark">B</span> Brokerage API <span class="ver">v1</span></a>
+  <nav class="topnav">
+    <a href="index.html">Overview</a>
+    <a href="authentication.html">Authentication</a>
+    <a href="accounts.html">Accounts</a>
+    <a href="trading.html">Trading</a>
+    <a href="examples.html">Examples</a>
+    <a href="reference.html">Reference</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">☾</button>
+</header>
+
+<div class="scrim"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <h4>Get started</h4>
+    <ul><li><a href="index.html">Overview</a></li></ul>
+    <h4>Guides</h4>
+    <ul>
+      <li><a href="authentication.html">Authentication</a></li>
+      <li><a href="accounts.html">Accounts</a></li>
+      <li><a href="trading.html">Trading</a></li>
+      <li><a href="examples.html">Code examples</a></li>
+    </ul>
+    <h4>Reference</h4>
+    <ul>
+      <li><a href="reference.html">Endpoint reference</a></li>
+      <li><a href="errors.html" class="active">Errors &amp; status codes</a></li>
+      <li><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0 (YAML)</a></li>
+      <li><a href="openapi/brokerage-api.json">OpenAPI 3.2.0 (JSON)</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <h1>Errors &amp; status codes</h1>
+    <p class="page-lede">
+      Every error response is an RFC 9457 problem document. This page is the complete
+      catalogue, plus what to actually do about each one.
+    </p>
+
+    <h2 id="shape">The shape of an error</h2>
+
+<pre><code>HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  <span class="c-key">"type"</span>:     <span class="c-str">"https://developer.brokerage.example.com/problems/insufficient-buying-power"</span>,
+  <span class="c-key">"title"</span>:    <span class="c-str">"Insufficient buying power"</span>,
+  <span class="c-key">"status"</span>:   <span class="c-num">422</span>,
+  <span class="c-key">"detail"</span>:   <span class="c-str">"Order requires 123,750.00 USD of stock buying power; 84,360.20 USD available."</span>,
+  <span class="c-key">"instance"</span>: <span class="c-str">"/v1/accounts/acct_01HQ8Z4M2X9K3P7R/orders"</span>,
+  <span class="c-key">"required"</span>:  { <span class="c-key">"amount"</span>: <span class="c-str">"123750.00"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"available"</span>: { <span class="c-key">"amount"</span>: <span class="c-str">"84360.20"</span>,  <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span> },
+  <span class="c-key">"traceId"</span>:  <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span>
+}</code></pre>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:20%">Field</th><th>How to treat it</th></tr></thead>
+      <tbody>
+        <tr><td><code>type</code></td><td><strong>The only field safe to branch on.</strong> A stable, dereferenceable URI identifying the problem class. It will not change without a version bump.</td></tr>
+        <tr><td><code>title</code>, <code>detail</code></td><td>Human-facing prose. Reworded without notice and localized in future. Display it; never parse it.</td></tr>
+        <tr><td><code>instance</code></td><td>Which request this was about.</td></tr>
+        <tr><td><code>traceId</code></td><td><strong>Log this on every failure.</strong> It is the first thing support will ask for and the only way to find your request in our logs.</td></tr>
+        <tr><td><code>errors[]</code></td><td>Field-level failures on validation problems, each with an RFC 6901 JSON Pointer.</td></tr>
+        <tr><td>Extensions</td><td>Each problem type adds its own fields, listed in the catalogue below.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="note">
+      <span class="lbl">Branch on type, not on status</span>
+      <p>
+        Several distinct problems share a status code — <span class="status-pill s-4xx">422</span>
+        covers buying power, market hours, price collars, and idempotency conflicts. The
+        status tells you the broad category; the <code>type</code> tells you what to do.
+      </p>
+    </div>
+
+    <h2 id="statuses">Status code semantics</h2>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:12%">Status</th><th style="width:30%">Meaning</th><th>Retryable?</th></tr></thead>
+      <tbody>
+        <tr><td><span class="status-pill s-4xx">400</span></td><td>Malformed syntax or schema validation failure. Never reached business logic.</td><td>No — fix the request.</td></tr>
+        <tr><td><span class="status-pill s-4xx">401</span></td><td>Token missing, expired, malformed, or revoked.</td><td>Once, after refreshing. Then re-authorize.</td></tr>
+        <tr><td><span class="status-pill s-4xx">403</span></td><td>Authenticated but not permitted — missing scope, or a strategy above the account's options level.</td><td>No — re-authorize with a wider scope.</td></tr>
+        <tr><td><span class="status-pill s-4xx">404</span></td><td>No such resource, <strong>or</strong> it exists outside your grant. Deliberately indistinguishable.</td><td>No.</td></tr>
+        <tr><td><span class="status-pill s-4xx">409</span></td><td>Conflicting state — account restricted, or the order already terminal.</td><td>No — re-read and re-decide.</td></tr>
+        <tr><td><span class="status-pill s-4xx">412</span></td><td><code>If-Match</code> did not match. The resource changed after you read it.</td><td>No — re-read and re-decide.</td></tr>
+        <tr><td><span class="status-pill s-4xx">422</span></td><td>Well-formed but unacceptable — buying power, market hours, collars, untradable instrument.</td><td>No — surface it to the customer.</td></tr>
+        <tr><td><span class="status-pill s-4xx">428</span></td><td>A required precondition header was not supplied.</td><td>No — add <code>If-Match</code>.</td></tr>
+        <tr><td><span class="status-pill s-4xx">429</span></td><td>Rate limited.</td><td><strong>Yes</strong> — honor <code>Retry-After</code>.</td></tr>
+        <tr><td><span class="status-pill s-5xx">502</span> <span class="status-pill s-5xx">503</span> <span class="status-pill s-5xx">504</span></td><td>Upstream venue or clearing system unavailable.</td><td><strong>Yes</strong> — backoff with full jitter.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="warn">
+      <span class="lbl">400 versus 422 is not cosmetic</span>
+      <p>
+        A <span class="status-pill s-4xx">400</span> means <em>your code</em> is wrong — fix it
+        and the request works. A <span class="status-pill s-4xx">422</span> means your code is
+        fine and <em>the world</em> said no: not enough buying power, market closed, instrument
+        halted. Treating them identically produces an application that shows "Invalid request"
+        when the honest answer is "the market is closed".
+      </p>
+    </div>
+
+    <h2 id="catalogue">Error catalogue</h2>
+
+    <p class="small">
+      All <code>type</code> values are relative to
+      <code>https://developer.brokerage.example.com/problems/</code>.
+    </p>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th style="width:24%">type</th><th style="width:8%">Status</th><th style="width:28%">Meaning</th><th>Extensions · what to do</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>validation-failed</code></td><td><span class="status-pill s-4xx">400</span></td><td>Schema validation failed.</td><td><code>errors[]</code> with JSON Pointers. A bug — fix and resubmit.</td></tr>
+        <tr><td><code>invalid-token</code></td><td><span class="status-pill s-4xx">401</span></td><td>Token missing, expired, malformed, or revoked.</td><td>Refresh once and retry. If refresh also fails, re-authorize.</td></tr>
+        <tr><td><code>insufficient-scope</code></td><td><span class="status-pill s-4xx">403</span></td><td>The grant lacks a required scope.</td><td><code>requiredScope</code>, <code>grantedScopes[]</code>. Re-authorize; do not retry.</td></tr>
+        <tr><td><code>options-level-insufficient</code></td><td><span class="status-pill s-4xx">403</span></td><td>Strategy above the account's approval level.</td><td><code>requiredLevel</code>, <code>currentLevel</code>. Tell the customer which level to apply for.</td></tr>
+        <tr><td><code>account-not-found</code></td><td><span class="status-pill s-4xx">404</span></td><td>No such account, or it is outside this grant.</td><td>Deliberately ambiguous, so the API cannot be used to enumerate accounts.</td></tr>
+        <tr><td><code>order-not-found</code></td><td><span class="status-pill s-4xx">404</span></td><td>No such order on this account.</td><td>Check the <code>accountId</code> in the path matches the order.</td></tr>
+        <tr><td><code>account-restricted</code></td><td><span class="status-pill s-4xx">409</span></td><td>Compliance hold or unmet margin call.</td><td>Reads work; trading does not. Not retryable.</td></tr>
+        <tr><td><code>order-not-amendable</code></td><td><span class="status-pill s-4xx">409</span></td><td>Order is terminal, or an amendment is already in flight.</td><td><code>currentStatus</code>. Re-read and re-decide.</td></tr>
+        <tr><td><code>precondition-failed</code></td><td><span class="status-pill s-4xx">412</span></td><td><code>If-Match</code> did not match the current <code>ETag</code>.</td><td><code>currentETag</code>. Re-read and decide again — <strong>never</strong> blind-retry with the new validator.</td></tr>
+        <tr><td><code>insufficient-buying-power</code></td><td><span class="status-pill s-4xx">422</span></td><td>Not enough buying power.</td><td><code>required</code>, <code>available</code>. Check you read the right <a href="accounts.html#balances">buying-power field</a>.</td></tr>
+        <tr><td><code>market-closed</code></td><td><span class="status-pill s-4xx">422</span></td><td>The requested session is not open.</td><td><code>nextOpen</code>. Resubmit with <code>extendedHours</code> or <code>GTC</code>, or queue.</td></tr>
+        <tr><td><code>instrument-not-tradable</code></td><td><span class="status-pill s-4xx">422</span></td><td>Halted, delisted, or unsupported.</td><td><code>reason</code>. Not retryable without a different instrument.</td></tr>
+        <tr><td><code>price-outside-collar</code></td><td><span class="status-pill s-4xx">422</span></td><td>Limit price too far from the market.</td><td><code>collarLow</code>, <code>collarHigh</code>. A fat-finger guard.</td></tr>
+        <tr><td><code>idempotency-key-reuse</code></td><td><span class="status-pill s-4xx">422</span></td><td>Key reused with a different body.</td><td><code>originalOrderId</code>. Nothing created. A bug: one key per intent.</td></tr>
+        <tr><td><code>day-trade-limit</code></td><td><span class="status-pill s-4xx">422</span></td><td>Order would breach the pattern-day-trader rule.</td><td><code>dayTradesUsed</code>, <code>dayTradesRemaining</code>.</td></tr>
+        <tr><td><code>rate-limit-exceeded</code></td><td><span class="status-pill s-4xx">429</span></td><td>Quota exhausted.</td><td><code>retryAfterSeconds</code>. Back off with full jitter.</td></tr>
+        <tr><td><code>venue-unavailable</code></td><td><span class="status-pill s-5xx">503</span></td><td>Upstream venue or clearing system down.</td><td>Retryable. <strong>Order state is unknown</strong> — reconcile before resubmitting.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2 id="rate-limits">Rate limits</h2>
+
+    <p>Every response carries the current quota state, per RFC 9913:</p>
+
+<pre><code>RateLimit: "default";r=94;t=51          <span class="c-com"># 94 requests remain, window resets in 51s</span>
+RateLimit-Policy: "default";q=120;w=60  <span class="c-com"># 120 requests per 60-second window</span></code></pre>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:24%">Policy</th><th style="width:20%">Quota</th><th>Applies to</th></tr></thead>
+      <tbody>
+        <tr><td><code>default</code></td><td>120 / minute</td><td>All read endpoints.</td></tr>
+        <tr><td><code>orders-write</code></td><td>60 / minute</td><td>Place, amend, cancel.</td></tr>
+        <tr><td><code>order-poll</code></td><td>1 / second per order</td><td>Single-order reads. Use the <a href="trading.html#streaming">event stream</a> instead.</td></tr>
+        <tr><td><code>streams</code></td><td>5 concurrent</td><td>Open SSE connections per grant.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h2 id="retry">Retry strategy</h2>
+
+    <p>
+      Retry only what is safe to retry, and randomize when you do.
+    </p>
+
+<pre><code>delay = random_between(0, min(2^attempt × base, cap))</code></pre>
+
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:22%">Method</th><th>Retry policy</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET</code>, <code>HEAD</code></td><td>Safe. Always retryable on <span class="status-pill s-4xx">429</span> and <span class="status-pill s-5xx">5xx</span>.</td></tr>
+        <tr><td><code>DELETE</code></td><td>Idempotent. Retryable — cancelling an already-cancelled order returns the cancelled order, not an error.</td></tr>
+        <tr><td><code>POST</code> (orders)</td><td>Retryable <strong>only</strong> with the same <code>Idempotency-Key</code>. Without one, a retry after a timeout can double the position.</td></tr>
+        <tr><td><code>PATCH</code></td><td>Retryable with the same <code>Idempotency-Key</code>, but on <span class="status-pill s-4xx">412</span> re-read first — do not retry with a fresh <code>ETag</code> you have not evaluated.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="danger">
+      <span class="lbl">Why full jitter</span>
+      <p>
+        When a venue hiccups, every client fails at once and every client retries at once.
+        Fixed backoff preserves that synchronization and reproduces the thundering herd on
+        each round, turning a two-second blip into a sustained outage. Randomizing the delay
+        between zero and your cap spreads the retries out.
+      </p>
+      <p>
+        Repeatedly ignoring <code>Retry-After</code> escalates to a temporary suspension of
+        the client.
+      </p>
+    </div>
+
+    <h2 id="handling">Handling errors well</h2>
+
+    <ul>
+      <li><strong>Log <code>traceId</code> on every failure.</strong> Without it, a support
+          conversation starts from nothing.</li>
+      <li><strong>Never log the <code>Authorization</code> header.</strong> Redact it in every
+          logger, APM agent, and error reporter.</li>
+      <li><strong>Distinguish "your bug" from "the world said no."</strong> A
+          <span class="status-pill s-4xx">422</span> usually deserves a message the customer
+          can act on, not a generic failure toast.</li>
+      <li><strong>Treat an unknown <code>type</code> as unhandled, not as success.</strong>
+          New problem types ship without a version bump; fall through to a generic handler that
+          surfaces <code>title</code> and <code>detail</code>.</li>
+      <li><strong>After a <span class="status-pill s-5xx">5xx</span> on order placement,
+          reconcile before resubmitting.</strong> The order may exist. Query by
+          <code>clientOrderId</code>, or replay the same <code>Idempotency-Key</code>, which
+          returns the original order rather than creating a second one.</li>
+    </ul>
+
+    <div class="next-prev">
+      <a href="reference.html"><span class="dir">Previous</span><span class="ttl">← Endpoint reference</span></a>
+      <a class="nxt" href="index.html"><span class="dir">Back to</span><span class="ttl">Overview →</span></a>
+    </div>
+  </main>
+
+  <nav class="toc" aria-label="On this page"></nav>
+</div>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>Brokerage API</strong> · v1.0.0 · Developer Portal</div>
+    <div><a href="openapi/brokerage-api.yaml">OpenAPI 3.2.0</a> · <a href="reference.html">Reference</a> · <a href="index.html">Overview</a></div>
+  </div>
+</footer>
+
+<script src="assets/portal.js"></script>
+</body>
+</html>

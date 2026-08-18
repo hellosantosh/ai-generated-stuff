@@ -1,0 +1,107 @@
+<!-- ============================ COVER ============================ -->
+<section class="cover">
+  <div class="eyebrow">Developer Specification &middot; Version 1.0.0</div>
+  <h1>Brokerage<br>REST API</h1>
+  <div class="sub">
+    Accounts, positions, order status, transaction history, and stock&nbsp;and options trading —
+    over an OAuth&nbsp;2.1 protected, hypermedia-driven REST surface.
+  </div>
+  <div class="rule"></div>
+  <div class="scope">
+    <b>In this document</b>
+    Authentication and authorization &middot; OAuth 2.1 + PKCE<br>
+    Accounts APIs &middot; list, balances, positions, order status, transactions<br>
+    Trading APIs &middot; stock and options<br>
+    Worked examples in Java, Node.js, and Python<br>
+    OpenAPI 3.2.0 specification
+  </div>
+  <div class="meta">
+    <strong>Audience</strong> &nbsp;Internal development team<br>
+    <strong>Status</strong> &nbsp;Draft for review<br>
+    <strong>Companion portal</strong> &nbsp;<code style="color:#fff;background:rgba(255,255,255,.14);border-color:transparent">brokerage-apis/dev-portal/</code><br>
+    <strong>Machine-readable spec</strong> &nbsp;<code style="color:#fff;background:rgba(255,255,255,.14);border-color:transparent">brokerage-apis/openapi/brokerage-api.yaml</code>
+  </div>
+</section>
+
+<!-- ============================ TOC ============================== -->
+<section class="toc">
+  <h1><span class="num">&nbsp;</span>Contents</h1>
+  <ol>
+    <li><span class="tnum">1</span>Overview
+      <ol>
+        <li><span class="tnum">1.1</span>What this API is for, and what it deliberately excludes</li>
+        <li><span class="tnum">1.2</span>Environments and base URLs</li>
+        <li><span class="tnum">1.3</span>The design contract at a glance</li>
+        <li><span class="tnum">1.4</span>Reference implementations we borrowed from</li>
+      </ol>
+    </li>
+    <li><span class="tnum">2</span>Authentication and Authorization
+      <ol>
+        <li><span class="tnum">2.1</span>Why OAuth 2.1 with PKCE</li>
+        <li><span class="tnum">2.2</span>Client registration and client types</li>
+        <li><span class="tnum">2.3</span>The authorization code flow, end to end</li>
+        <li><span class="tnum">2.4</span>PKCE mechanics: verifier, challenge, and what it defends</li>
+        <li><span class="tnum">2.5</span>Exchanging the code for a bearer token</li>
+        <li><span class="tnum">2.6</span>Access tokens: structure, lifetime, and validation</li>
+        <li><span class="tnum">2.7</span>Refresh tokens, rotation, and reuse detection</li>
+        <li><span class="tnum">2.8</span>Scopes and least privilege</li>
+        <li><span class="tnum">2.9</span>Sender-constrained tokens with DPoP</li>
+        <li><span class="tnum">2.10</span>Revocation, logout, and token hygiene</li>
+        <li><span class="tnum">2.11</span>Device authorization for input-constrained clients</li>
+      </ol>
+    </li>
+    <li><span class="tnum">3</span>API Conventions
+      <ol>
+        <li><span class="tnum">3.1</span>Hypermedia and HATEOAS</li>
+        <li><span class="tnum">3.2</span>Errors: RFC 9457 problem details</li>
+        <li><span class="tnum">3.3</span>Decimals, money, and why nothing is a float</li>
+        <li><span class="tnum">3.4</span>Pagination</li>
+        <li><span class="tnum">3.5</span>Idempotency</li>
+        <li><span class="tnum">3.6</span>Optimistic concurrency with ETags</li>
+        <li><span class="tnum">3.7</span>Rate limits and backoff</li>
+        <li><span class="tnum">3.8</span>Versioning and compatibility</li>
+      </ol>
+    </li>
+    <li><span class="tnum">4</span>Accounts APIs
+      <ol>
+        <li><span class="tnum">4.1</span>Account list</li>
+        <li><span class="tnum">4.2</span>Account balances</li>
+        <li><span class="tnum">4.3</span>Account positions</li>
+        <li><span class="tnum">4.4</span>Account order status</li>
+        <li><span class="tnum">4.5</span>Account transaction history</li>
+      </ol>
+    </li>
+    <li><span class="tnum">5</span>Trading APIs
+      <ol>
+        <li><span class="tnum">5.1</span>The order lifecycle</li>
+        <li><span class="tnum">5.2</span>Placing an order safely</li>
+        <li><span class="tnum">5.3</span>Stock trading</li>
+        <li><span class="tnum">5.4</span>Options trading</li>
+        <li><span class="tnum">5.5</span>Previewing an order</li>
+        <li><span class="tnum">5.6</span>Amending and cancelling</li>
+        <li><span class="tnum">5.7</span>Streaming order events and webhooks</li>
+      </ol>
+    </li>
+    <li><span class="tnum">6</span>Code Examples
+      <ol>
+        <li><span class="tnum">6.1</span>How the examples are organized</li>
+        <li><span class="tnum">6.2</span>Authorization: PKCE in three languages</li>
+        <li><span class="tnum">6.3</span>Accounts: reading balances and positions</li>
+        <li><span class="tnum">6.4</span>Trading: placing a stock order</li>
+        <li><span class="tnum">6.5</span>Trading: placing a multi-leg option order</li>
+        <li><span class="tnum">6.6</span>Amend and cancel with optimistic concurrency</li>
+      </ol>
+    </li>
+    <li><span class="tnum">7</span>OpenAPI 3.2.0 Specification
+      <ol>
+        <li><span class="tnum">7.1</span>Where the specification lives</li>
+        <li><span class="tnum">7.2</span>What 3.2.0 gives us that 3.1 did not</li>
+        <li><span class="tnum">7.3</span>Document structure</li>
+        <li><span class="tnum">7.4</span>Validating and generating from the specification</li>
+      </ol>
+    </li>
+    <li><span class="tnum">A</span>Appendix: Error catalogue</li>
+    <li><span class="tnum">B</span>Appendix: Enumerations</li>
+    <li><span class="tnum">C</span>Appendix: Glossary</li>
+  </ol>
+</section>
