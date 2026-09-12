@@ -1,0 +1,6 @@
+dev-guide/
+scripts/
+.run/
+*.md
+.git
+.DS_Store

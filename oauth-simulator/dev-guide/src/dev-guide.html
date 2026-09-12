@@ -1,0 +1,2212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OAuth 2.1 and PKCE - A Developer's Guide</title>
+<style>
+/* ==========================================================================
+   Print-first design system. Each .page is a fixed Letter-sized box so that
+   page breaks, footers and page numbers are exact rather than hopeful.
+   ========================================================================== */
+@page { size: Letter; margin: 0; }
+
+:root{
+  --ink:#14181f; --muted:#59617a; --faint:#8d95ab;
+  --accent:#2f4fd0; --accent-soft:#eaeeff;
+  --good:#0d7a52; --good-soft:#e6f6ee;
+  --warn:#a8620a; --warn-soft:#fdf1e0;
+  --bad:#c0203f;  --bad-soft:#fdeaee;
+  --panel:#f5f7fc; --panel-2:#eceff8; --line:#dbe1ef; --line-strong:#b9c2da;
+  --code-bg:#161b28; --code-ink:#e9edf7;
+  --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"SF Mono","Menlo","Consolas",monospace;
+}
+
+*{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+html,body{ margin:0; padding:0; background:#fff; }
+body{ font-family:var(--sans); color:var(--ink); font-size:10.4pt; line-height:1.55; }
+
+.page{
+  position:relative;
+  width:8.5in; height:11in;
+  padding:0.69in 0.78in 0.55in;
+  page-break-after:always; break-after:page;
+  overflow:hidden;
+}
+.page:last-child{ page-break-after:auto; break-after:auto; }
+
+/* running footer + page number */
+.pfoot{
+  position:absolute; left:0.78in; right:0.78in; bottom:0.25in;
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:7.6pt; color:var(--faint); letter-spacing:.04em;
+  border-top:0.5pt solid var(--line); padding-top:4pt;
+}
+.pfoot .ch{ text-transform:uppercase; }
+.pfoot .n{ font-family:var(--mono); font-weight:700; color:var(--muted); }
+
+/* ---------------- typography ---------------- */
+h1,h2,h3,h4{ margin:0; letter-spacing:-0.015em; }
+.chnum{
+  font-family:var(--mono); font-size:8.4pt; font-weight:700;
+  color:var(--accent); letter-spacing:.16em; text-transform:uppercase;
+  margin-bottom:5pt;
+}
+h1.title{ font-size:23pt; line-height:1.12; margin-bottom:6pt; }
+h2{ font-size:13.6pt; margin:16pt 0 5pt; }
+h2:first-of-type{ margin-top:0; }
+h3{ font-size:10.6pt; margin:12pt 0 3pt; }
+h4{ font-size:9.6pt; margin:9pt 0 2pt; }
+p{ margin:0 0 7pt; }
+.lede{ font-size:11.4pt; line-height:1.5; color:var(--muted); margin-bottom:11pt; }
+.small{ font-size:9pt; }
+.tiny{ font-size:8.2pt; line-height:1.45; }
+.muted{ color:var(--muted); }
+b,strong{ font-weight:700; }
+code,.mono{ font-family:var(--mono); font-size:0.9em; }
+p code,li code,td code,.icode{
+  background:var(--panel-2); padding:0.5pt 3pt; border-radius:3px;
+  font-size:8.9pt; color:#1d2433; white-space:nowrap;
+}
+a{ color:var(--accent); text-decoration:none; }
+
+ul,ol{ margin:0 0 7pt; padding-left:15pt; }
+li{ margin-bottom:3.5pt; }
+ul.tight li,ol.tight li{ margin-bottom:1.5pt; }
+ul.plain{ list-style:none; padding-left:0; }
+
+/* ---------------- blocks ---------------- */
+pre{
+  background:var(--code-bg); color:var(--code-ink);
+  padding:9pt 11pt; border-radius:5pt; margin:6pt 0;
+  font-family:var(--mono); font-size:8.3pt; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word;
+}
+pre .c{ color:#8b9bc4; }       /* comment */
+pre .k{ color:#ffcf70; }       /* key / keyword */
+pre .s{ color:#7fdba8; }       /* string / value */
+pre .r{ color:#ff9fb0; }       /* danger */
+
+.panel{ background:var(--panel); border:0.5pt solid var(--line); border-radius:6pt; padding:9pt 11pt; margin:8pt 0; }
+.panel.tight{ padding:7pt 9pt; }
+
+.callout{ border-left:2.5pt solid var(--accent); background:var(--accent-soft); padding:7pt 10pt; border-radius:0 5pt 5pt 0; margin:8pt 0; font-size:9.4pt; }
+.callout.good{ border-color:var(--good); background:var(--good-soft); }
+.callout.warn{ border-color:var(--warn); background:var(--warn-soft); }
+.callout.bad{ border-color:var(--bad); background:var(--bad-soft); }
+.callout .lbl{ font-weight:700; }
+
+.grid{ display:grid; gap:9pt; }
+.g2{ grid-template-columns:1fr 1fr; }
+.g3{ grid-template-columns:repeat(3,1fr); }
+.g21{ grid-template-columns:1.35fr 1fr; }
+.g12{ grid-template-columns:1fr 1.35fr; }
+
+table{ width:100%; border-collapse:collapse; font-size:8.9pt; margin:7pt 0; }
+th,td{ text-align:left; padding:4.5pt 6pt; border-bottom:0.5pt solid var(--line); vertical-align:top; }
+th{ font-size:7.6pt; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); border-bottom:1pt solid var(--line-strong); }
+td.k{ font-family:var(--mono); font-size:8.2pt; white-space:nowrap; }
+tr.hl td{ background:var(--accent-soft); }
+
+.tag{ display:inline-block; font-size:7.4pt; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      padding:1pt 5pt; border-radius:8pt; vertical-align:1pt; }
+.tag.a{ background:var(--accent-soft); color:var(--accent); }
+.tag.g{ background:var(--good-soft); color:var(--good); }
+.tag.w{ background:var(--warn-soft); color:var(--warn); }
+.tag.b{ background:var(--bad-soft); color:var(--bad); }
+.tag.m{ background:var(--panel-2); color:var(--muted); }
+
+svg{ display:block; max-width:100%; }
+figure{ margin:9pt 0; }
+figcaption{ font-size:8pt; color:var(--muted); margin-top:4pt; line-height:1.45; }
+figcaption b{ color:var(--ink); }
+
+/* ---------------- cover ---------------- */
+.cover{ display:flex; flex-direction:column; height:100%; padding:0; }
+.cover-top{ padding:0.9in 0.78in 0; }
+.cover-art{ padding:0 0.5in; }
+.cover-bottom{ padding:0 0.78in 0.6in; margin-top:auto; }
+.cover h1{ font-size:38pt; line-height:1.02; letter-spacing:-0.03em; margin:0 0 10pt; }
+.cover .sub{ font-size:14pt; color:var(--muted); line-height:1.35; max-width:5.6in; }
+.cover .eyebrow{ font-family:var(--mono); font-size:9pt; letter-spacing:.22em; text-transform:uppercase; color:var(--accent); margin-bottom:16pt; }
+.rule{ height:3pt; width:1.5in; background:var(--accent); margin:18pt 0; border-radius:2pt; }
+
+/* ---------------- contents ---------------- */
+.toc{ list-style:none; padding:0; margin:0; }
+.toc li{ display:flex; align-items:baseline; gap:6pt; padding:3.4pt 0; border-bottom:0.5pt dotted var(--line); }
+.toc .num{ font-family:var(--mono); font-size:8.4pt; font-weight:700; color:var(--accent); width:26pt; flex:none; }
+.toc .t{ flex:1; font-size:10pt; font-weight:600; }
+.toc .d{ font-size:8.4pt; color:var(--muted); flex:2.1; }
+.toc .pg{ font-family:var(--mono); font-size:8.6pt; color:var(--muted); font-weight:700; }
+
+/* ---------------- glossary ---------------- */
+.gloss h4{ margin:6pt 0 0; font-size:9.3pt; }
+.gloss h4:first-child{ margin-top:0; }
+.gloss p{ margin:0 0 2pt; }
+</style>
+</head>
+<body>
+
+<!-- ==================================================================== 1
+     COVER
+     ==================================================================== -->
+<section class="page cover">
+  <div class="cover-top">
+    <div class="eyebrow">Developer Guide</div>
+    <h1>OAuth&nbsp;2.1<br>and&nbsp;PKCE</h1>
+    <div class="rule"></div>
+    <p class="sub">How delegated authorization actually works &mdash;
+    from the problem it solves to the cryptography that makes it safe.
+    Written for developers meeting OAuth for the first time, and for
+    anyone who has used it for years without being sure why.</p>
+  </div>
+
+  <div style="flex:1"></div>
+  <div class="cover-art">
+    <svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#2f4fd0"/><stop offset="100%" stop-color="#6f45c8"/>
+        </linearGradient>
+        <marker id="cvArrow" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- the three parties -->
+      <g>
+        <rect x="14" y="96" width="150" height="62" rx="9" fill="#fff" stroke="#b9c2da" stroke-width="1.2"/>
+        <text x="89" y="121" text-anchor="middle" font-size="13" font-weight="700" fill="#14181f">Application</text>
+        <text x="89" y="139" text-anchor="middle" font-size="10" fill="#59617a">wants your data</text>
+
+        <rect x="255" y="96" width="150" height="62" rx="9" fill="url(#cg)"/>
+        <text x="330" y="121" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">Authorization</text>
+        <text x="330" y="139" text-anchor="middle" font-size="10" fill="#dfe4ff">Server + IdP</text>
+
+        <rect x="496" y="96" width="150" height="62" rx="9" fill="#fff" stroke="#b9c2da" stroke-width="1.2"/>
+        <text x="571" y="121" text-anchor="middle" font-size="13" font-weight="700" fill="#14181f">The API</text>
+        <text x="571" y="139" text-anchor="middle" font-size="10" fill="#59617a">holds your data</text>
+      </g>
+
+      <!-- flows -->
+      <path d="M164,118 L250,118" stroke="#2f4fd0" stroke-width="1.8" marker-end="url(#cvArrow)"/>
+      <text x="207" y="110" text-anchor="middle" font-size="8.5" font-family="SF Mono,Menlo,monospace" fill="#2f4fd0">code_challenge</text>
+
+      <path d="M250,142 L166,142" stroke="#0d7a52" stroke-width="1.8" marker-end="url(#cvArrow)"/>
+      <text x="207" y="157" text-anchor="middle" font-size="8.5" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">code</text>
+
+      <path d="M164,178 C164,215 571,215 571,168" stroke="#14181f" stroke-width="1.8" fill="none" marker-end="url(#cvArrow)"/>
+      <text x="367" y="232" text-anchor="middle" font-size="9" font-family="SF Mono,Menlo,monospace" fill="#14181f">Authorization: Bearer eyJhbGci...</text>
+
+      <path d="M405,127 L491,127" stroke="#8d95ab" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#cvArrow)"/>
+      <text x="448" y="119" text-anchor="middle" font-size="8" fill="#8d95ab">public keys</text>
+
+      <!-- the user, above -->
+      <g>
+        <circle cx="330" cy="30" r="14" fill="none" stroke="#14181f" stroke-width="1.6"/>
+        <circle cx="330" cy="26" r="4.6" fill="#14181f"/>
+        <path d="M322,39 a8.4,8.4 0 0,1 16.8,0" fill="#14181f"/>
+        <text x="310" y="70" text-anchor="end" font-size="10.5" font-weight="700" fill="#14181f">You</text>
+        <path d="M330,50 L330,90" stroke="#14181f" stroke-width="1.4" marker-end="url(#cvArrow)"/>
+      </g>
+      <text x="346" y="70" font-size="9" fill="#59617a">your password goes here, and only here</text>
+
+      <!-- the point -->
+      <g transform="translate(0,258)">
+        <rect x="14" y="0" width="632" height="34" rx="7" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8"/>
+        <text x="330" y="22" text-anchor="middle" font-size="11" fill="#14181f">
+          The application never learns your password. The API never asks who you are.
+        </text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="cover-bottom">
+    <table style="margin:0;font-size:9pt">
+      <tr style="border:0">
+        <td style="border:0;padding-left:0"><b>Covers</b><br>
+          <span class="muted tiny">Authorization Code flow &middot; PKCE &middot; tokens &amp; scopes &middot;
+          refresh rotation &middot; what OAuth&nbsp;2.1 removed &middot; the attacks each rule prevents</span></td>
+        <td style="border:0;width:1.9in"><b>Companion</b><br>
+          <span class="muted tiny">A runnable simulator ships alongside this guide.
+          Every diagram here corresponds to a lab you can execute.</span></td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- ==================================================================== 2
+     CONTENTS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Contents</div>
+  <h1 class="title">What is in this guide</h1>
+  <p class="lede">Read it in order the first time. Each chapter assumes only the ones before it.</p>
+
+  <ol class="toc">
+    <li><span class="num">01</span><span class="t">The problem OAuth solves</span><span class="d">Why handing over your password is the wrong answer</span><span class="pg">3</span></li>
+    <li><span class="num">02</span><span class="t">The four roles</span><span class="d">Resource owner, client, authorization server, resource server</span><span class="pg">4</span></li>
+    <li><span class="num">03</span><span class="t">Front channel and back channel</span><span class="d">The one distinction the whole protocol is built on</span><span class="pg">5</span></li>
+    <li><span class="num">04</span><span class="t">The Authorization Code flow</span><span class="d">All ten steps, drawn and then narrated</span><span class="pg">6</span></li>
+    <li><span class="num">05</span><span class="t">The attack PKCE prevents</span><span class="d">What a stolen authorization code used to be worth</span><span class="pg">10</span></li>
+    <li><span class="num">06</span><span class="t">PKCE, precisely</span><span class="d">Three lines of arithmetic, and why they are enough</span><span class="pg">11</span></li>
+    <li><span class="num">07</span><span class="t">Anatomy of a token</span><span class="d">Inside a JWT; access vs ID vs refresh tokens</span><span class="pg">13</span></li>
+    <li><span class="num">08</span><span class="t">Scopes and consent</span><span class="d">How authority is narrowed, three times over</span><span class="pg">15</span></li>
+    <li><span class="num">09</span><span class="t">Refresh tokens and rotation</span><span class="d">Long sessions from short-lived tokens</span><span class="pg">16</span></li>
+    <li><span class="num">10</span><span class="t">What OAuth 2.1 changed</span><span class="d">Mostly a list of deletions, and that is the point</span><span class="pg">17</span></li>
+    <li><span class="num">11</span><span class="t">How an API validates a token</span><span class="d">Four checks, in order, on every request</span><span class="pg">18</span></li>
+    <li><span class="num">12</span><span class="t">The mistakes that matter</span><span class="d">A checklist drawn from real incidents</span><span class="pg">19</span></li>
+    <li><span class="num">13</span><span class="t">Run it yourself</span><span class="d">Every concept here, as a lab in the simulator</span><span class="pg">20</span></li>
+    <li><span class="num">&mdash;</span><span class="t">Glossary</span><span class="d">Every term in one place</span><span class="pg">21</span></li>
+    <li><span class="num">&mdash;</span><span class="t">The specifications</span><span class="d">Which RFC says what, and which to read first</span><span class="pg">22</span></li>
+  </ol>
+
+  <h2>How to read this with the simulator</h2>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Two windows, side by side</h4>
+      <p class="tiny" style="margin:0">Keep <span class="icode">localhost:9020</span> (the labs) next to
+      <span class="icode">localhost:9000/trace</span> (the authorization server's live decisions).
+      Reading a rule here and then watching it fire there is the fastest way to make
+      any of this stick.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Break things deliberately</h4>
+      <p class="tiny" style="margin:0">The simulator has a <b>policy page</b> where each OAuth&nbsp;2.1
+      requirement can be switched off at runtime. Whenever this guide says
+      &ldquo;this rule prevents X&rdquo;, you can turn the rule off and watch X happen.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="lbl">A note on terminology.</span> OAuth is about <b>authorization</b>
+    (what an app may do), not <b>authentication</b> (who you are). The two get muddled
+    constantly because in practice they arrive together. Chapter&nbsp;7 separates them:
+    authentication is what OpenID&nbsp;Connect adds on top.
+  </div>
+
+  <div class="pfoot"><span class="ch">OAuth 2.1 and PKCE &mdash; Developer Guide</span><span class="n">2</span></div>
+</section>
+
+<!-- ==================================================================== 3
+     CH 1 - THE PROBLEM
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 01</div>
+  <h1 class="title">The problem OAuth solves</h1>
+  <p class="lede">An application needs data that belongs to you, held by somebody else.
+  There is an obvious way to arrange that, and it is a catastrophe.</p>
+
+  <p>Suppose a budgeting app wants to read your bank transactions. The naive design is
+  to ask you for your banking username and password and log in as you. Every single thing
+  wrong with that idea turns out to be something OAuth fixes.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 312" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="d1a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- ============ LEFT: the anti-pattern ============ -->
+      <g>
+        <rect x="0" y="0" width="336" height="312" rx="8" fill="#fdeaee" stroke="#f0b8c4" stroke-width="0.8"/>
+        <text x="16" y="22" font-size="11.5" font-weight="700" fill="#c0203f">THE PASSWORD ANTI-PATTERN</text>
+        <text x="16" y="38" font-size="9" fill="#8a4453">give the app your credentials</text>
+
+        <circle cx="52" cy="98" r="13" fill="none" stroke="#14181f" stroke-width="1.4"/>
+        <circle cx="52" cy="94" r="4.4" fill="#14181f"/>
+        <path d="M44.5,107 a7.8,7.8 0 0,1 15.6,0" fill="#14181f"/>
+        <text x="52" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">You</text>
+
+        <rect x="120" y="76" width="92" height="44" rx="6" fill="#fff" stroke="#c0203f" stroke-width="1.2"/>
+        <text x="166" y="96" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Budget App</text>
+        <text x="166" y="110" text-anchor="middle" font-size="8" fill="#c0203f">knows your password</text>
+
+        <rect x="240" y="76" width="80" height="44" rx="6" fill="#fff" stroke="#b9c2da" stroke-width="1.2"/>
+        <text x="280" y="102" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Your Bank</text>
+
+        <path d="M70,98 L115,98" stroke="#c0203f" stroke-width="1.6" marker-end="url(#d1a)"/>
+        <text x="92" y="90" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#c0203f">password</text>
+        <path d="M212,98 L235,98" stroke="#c0203f" stroke-width="1.6" marker-end="url(#d1a)"/>
+
+        <g font-size="8.6" fill="#14181f">
+          <text x="16" y="164" font-weight="700" fill="#c0203f">What you actually handed over</text>
+          <text x="18" y="184">&#10007;  <tspan font-weight="700">Everything.</tspan> Not just transactions &mdash;</text>
+          <text x="30" y="196">transfers, statements, your profile.</text>
+          <text x="18" y="214">&#10007;  <tspan font-weight="700">Forever.</tspan> The only way to revoke is to</text>
+          <text x="30" y="226">change your password, which breaks</text>
+          <text x="30" y="238">every other app at the same time.</text>
+          <text x="18" y="256">&#10007;  <tspan font-weight="700">Invisibly.</tspan> The bank cannot tell the app</text>
+          <text x="30" y="268">from you, so nothing can be audited.</text>
+          <text x="18" y="286">&#10007;  <tspan font-weight="700">And MFA is dead:</tspan> no second factor</text>
+          <text x="30" y="298">fits into &ldquo;the app logs in as you&rdquo;.</text>
+        </g>
+      </g>
+
+      <!-- ============ RIGHT: delegation ============ -->
+      <g transform="translate(364,0)">
+        <rect x="0" y="0" width="336" height="312" rx="8" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="0.8"/>
+        <text x="16" y="22" font-size="11.5" font-weight="700" fill="#0d7a52">DELEGATED AUTHORIZATION</text>
+        <text x="16" y="38" font-size="9" fill="#3e6d5b">give the app a narrow, expiring token</text>
+
+        <!-- the password goes straight to the bank, over the app's head -->
+        <path d="M52,84 C52,54 280,54 280,71" stroke="#0d7a52" stroke-width="1.6" fill="none" marker-end="url(#d1a)"/>
+        <text x="172" y="52" text-anchor="middle" font-size="8" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">your password, direct to the bank</text>
+
+        <circle cx="52" cy="98" r="13" fill="none" stroke="#14181f" stroke-width="1.4"/>
+        <circle cx="52" cy="94" r="4.4" fill="#14181f"/>
+        <path d="M44.5,107 a7.8,7.8 0 0,1 15.6,0" fill="#14181f"/>
+        <text x="52" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">You</text>
+
+        <rect x="120" y="76" width="92" height="44" rx="6" fill="#fff" stroke="#0d7a52" stroke-width="1.2"/>
+        <text x="166" y="96" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Budget App</text>
+        <text x="166" y="110" text-anchor="middle" font-size="8" fill="#0d7a52">holds only a token</text>
+
+        <rect x="240" y="76" width="80" height="44" rx="6" fill="#fff" stroke="#b9c2da" stroke-width="1.2"/>
+        <text x="280" y="96" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Your Bank</text>
+        <text x="280" y="109" text-anchor="middle" font-size="7.6" fill="#59617a">+ its identity provider</text>
+
+        <path d="M235,88 L216,88" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#d1a)"/>
+        <text x="225" y="81" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">token</text>
+        <path d="M212,110 L235,110" stroke="#14181f" stroke-width="1.4" marker-end="url(#d1a)"/>
+        <text x="224" y="126" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#14181f">read txns</text>
+
+        <g font-size="8.6" fill="#14181f">
+          <text x="16" y="164" font-weight="700" fill="#0d7a52">What the app actually gets</text>
+          <text x="18" y="184">&#10003;  <tspan font-weight="700">Only what you approved:</tspan> read</text>
+          <text x="30" y="196">transactions. No transfers.</text>
+          <text x="18" y="214">&#10003;  <tspan font-weight="700">Only for a while.</tspan> The token expires in</text>
+          <text x="30" y="226">minutes, and can be revoked instantly</text>
+          <text x="30" y="238">for this one app.</text>
+          <text x="18" y="256">&#10003;  <tspan font-weight="700">On the record.</tspan> The bank knows which</text>
+          <text x="30" y="268">app did what, on whose behalf.</text>
+          <text x="18" y="286">&#10003;  <tspan font-weight="700">MFA still works,</tspan> because the login</text>
+          <text x="30" y="298">still happens at the bank.</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>Figure 1.1</b> &mdash; The same goal, two arrangements. On the right, the password
+    travels only between you and the party that issued it; the application is handed a
+    credential that is narrow by construction.</figcaption>
+  </figure>
+
+  <h2>The one-sentence definition</h2>
+  <div class="callout good">
+    <b>OAuth 2.1 is a protocol for letting an application act on your behalf, in a limited
+    way, without ever seeing your password.</b> You authenticate to the party that already
+    knows you; that party issues the application a scoped, expiring, revocable token.
+  </div>
+
+  <p>The rest of this guide is about doing that <i>safely</i> when the exchange must pass
+  through a web browser &mdash; the single constraint, explored in Chapter&nbsp;3, that makes OAuth
+  look harder than the sentence above.</p>
+
+  <h2>Three things OAuth is not</h2>
+  <div class="grid g3">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Not authentication</h4>
+      <p class="tiny" style="margin:0">An access token says <i>what may be done</i>, not
+      <i>who is here</i>. Treating one as proof of identity is a vulnerability class of its
+      own; identity is a separate token (Chapter&nbsp;7).</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Not encryption</h4>
+      <p class="tiny" style="margin:0">A bearer token is a password-equivalent in plain
+      text: anyone who copies it can use it. OAuth assumes <b>TLS everywhere</b>.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Not a permission system</h4>
+      <p class="tiny" style="margin:0">Scopes are coarse labels on an app's authority.
+      Whether <i>this user</i> may touch <i>this record</i> stays your API's decision, on
+      every request.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 01 &middot; The problem OAuth solves</span><span class="n">3</span></div>
+</section>
+
+<!-- ==================================================================== 4
+     CH 2 - THE FOUR ROLES
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 02</div>
+  <h1 class="title">The four roles</h1>
+  <p class="lede">OAuth defines four participants. Almost every confusing sentence in the
+  specifications becomes clear once you know which of the four is being talked about.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 246" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="d2a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- 1. Resource owner -->
+      <g>
+        <rect x="6" y="56" width="150" height="88" rx="9" fill="#fff" stroke="#14181f" stroke-width="1.4"/>
+        <text x="18" y="76" font-size="7.6" font-family="SF Mono,Menlo,monospace" font-weight="700" fill="#8d95ab">ROLE 1</text>
+        <text x="18" y="94" font-size="11.5" font-weight="700" fill="#14181f">Resource Owner</text>
+        <text x="18" y="110" font-size="9" fill="#59617a">The human. You.</text>
+        <text x="18" y="128" font-size="8.4" fill="#59617a">Holds the authority</text>
+        <text x="18" y="139" font-size="8.4" fill="#59617a">that gets delegated.</text>
+      </g>
+
+      <!-- 2. Client -->
+      <g>
+        <rect x="182" y="56" width="150" height="88" rx="9" fill="#fff" stroke="#2f4fd0" stroke-width="1.4"/>
+        <text x="194" y="76" font-size="7.6" font-family="SF Mono,Menlo,monospace" font-weight="700" fill="#8d95ab">ROLE 2</text>
+        <text x="194" y="94" font-size="11.5" font-weight="700" fill="#2f4fd0">Client</text>
+        <text x="194" y="110" font-size="9" fill="#59617a">The application.</text>
+        <text x="194" y="128" font-size="8.4" fill="#59617a">Holds a client_id and</text>
+        <text x="194" y="139" font-size="8.4" fill="#59617a">the tokens it is given.</text>
+      </g>
+
+      <!-- 3. Authorization server -->
+      <g>
+        <rect x="368" y="56" width="150" height="88" rx="9" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.8"/>
+        <text x="380" y="76" font-size="7.6" font-family="SF Mono,Menlo,monospace" font-weight="700" fill="#8d95ab">ROLE 3</text>
+        <text x="380" y="94" font-size="11.5" font-weight="700" fill="#2f4fd0">Authorization</text>
+        <text x="380" y="108" font-size="11.5" font-weight="700" fill="#2f4fd0">Server</text>
+        <text x="380" y="126" font-size="8.4" fill="#59617a">Holds the accounts, the</text>
+        <text x="380" y="137" font-size="8.4" fill="#59617a">consent, the signing keys.</text>
+      </g>
+
+      <!-- 4. Resource server -->
+      <g>
+        <rect x="544" y="56" width="150" height="88" rx="9" fill="#fff" stroke="#0d7a52" stroke-width="1.4"/>
+        <text x="556" y="76" font-size="7.6" font-family="SF Mono,Menlo,monospace" font-weight="700" fill="#8d95ab">ROLE 4</text>
+        <text x="556" y="94" font-size="11.5" font-weight="700" fill="#0d7a52">Resource Server</text>
+        <text x="556" y="110" font-size="9" fill="#59617a">The API.</text>
+        <text x="556" y="128" font-size="8.4" fill="#59617a">Holds the data, and the</text>
+        <text x="556" y="139" font-size="8.4" fill="#59617a">AS's public keys.</text>
+      </g>
+
+      <!-- relationships between them -->
+      <path d="M156,86 L178,86" stroke="#14181f" stroke-width="1.5" marker-end="url(#d2a)"/>
+      <text x="167" y="46" text-anchor="middle" font-size="8" fill="#14181f" font-weight="700">uses</text>
+
+      <path d="M332,86 L364,86" stroke="#2f4fd0" stroke-width="1.5" marker-end="url(#d2a)"/>
+      <text x="348" y="40" text-anchor="middle" font-size="8" font-weight="700" fill="#2f4fd0">asks for</text>
+      <text x="348" y="50" text-anchor="middle" font-size="8" font-weight="700" fill="#2f4fd0">a token</text>
+
+      <path d="M518,120 L540,120" stroke="#0d7a52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#d2a)"/>
+      <text x="529" y="40" text-anchor="middle" font-size="8" font-weight="700" fill="#0d7a52">is trusted</text>
+      <text x="529" y="50" text-anchor="middle" font-size="8" font-weight="700" fill="#0d7a52">by</text>
+
+      <!-- owner authenticates at the AS, over the client's head -->
+      <path d="M81,52 C81,14 443,14 443,50" stroke="#14181f" stroke-width="1.5" fill="none" marker-end="url(#d2a)"/>
+      <text x="262" y="12" text-anchor="middle" font-size="8.4" font-weight="700" fill="#14181f">authenticates and consents here &mdash; never at the client</text>
+
+      <!-- client calls the api with the token -->
+      <path d="M257,148 C257,192 619,192 619,152" stroke="#2f4fd0" stroke-width="1.5" fill="none" marker-end="url(#d2a)"/>
+      <text x="438" y="186" text-anchor="middle" font-size="8.4" font-weight="700" fill="#2f4fd0">presents the token here</text>
+
+      <!-- the key insight strip -->
+      <g transform="translate(0,194)">
+        <rect x="6" y="0" width="688" height="48" rx="7" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8"/>
+        <text x="20" y="20" font-size="9.2" font-weight="700" fill="#14181f">The asymmetry that makes it work:</text>
+        <text x="20" y="36" font-size="9" fill="#14181f">the <tspan font-weight="700">client</tspan> never learns who you are, and the <tspan font-weight="700">API</tspan> never learns how you proved it. Each knows only what it needs.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 2.1</b> &mdash; The four roles and the relationships between them.
+    Roles 3 and 4 are often the same company but never the same code path: issuing
+    tokens and accepting them are different jobs.</figcaption>
+  </figure>
+
+  <h2>The same four roles, three ways</h2>
+  <table>
+    <thead><tr><th style="width:1.15in">Role</th><th>Bank example</th><th>&ldquo;Sign in with Google&rdquo;</th><th style="width:1.5in">In the simulator</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Resource Owner</td><td>You, the account holder</td><td>You, the Google user</td><td><code>alice</code> or <code>bob</code></td></tr>
+      <tr><td class="k">Client</td><td>The budgeting app</td><td>The site you are signing in to</td><td><code>:9020</code></td></tr>
+      <tr><td class="k">Authorization Server</td><td>The bank's login service</td><td>Google's OAuth service</td><td><code>:9000</code></td></tr>
+      <tr><td class="k">Resource Server</td><td>The bank's accounts API</td><td>Gmail / Drive / Calendar APIs</td><td><code>:9010</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Two kinds of client, and why it matters so much</h2>
+  <p>This distinction decides how a client may authenticate, and it is why PKCE exists.</p>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Confidential client <span class="tag g">has a secret</span></h4>
+      <p class="tiny" style="margin:0 0 4pt">Code that runs on a server you control. It can
+      keep a <code>client_secret</code> because nobody can read its memory or disk.</p>
+      <p class="tiny" style="margin:0"><b>Examples:</b> a server-rendered web app, a backend
+      service. <b>Proves identity by:</b> sending its secret to the token endpoint.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Public client <span class="tag w">cannot keep a secret</span></h4>
+      <p class="tiny" style="margin:0 0 4pt">Code that runs on someone else's device. Anyone
+      can read the JavaScript bundle or decompile the binary, so any embedded secret is
+      published to the world.</p>
+      <p class="tiny" style="margin:0"><b>Examples:</b> a single-page app, a mobile app, a CLI.
+      <b>Proves identity by:</b> PKCE, and nothing else.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="lbl">The mistake to avoid.</span> A single-page app is a <b>public</b> client
+    however private your bundle feels: a secret shipped to a browser or an app store is not a
+    secret. OAuth&nbsp;2.1's answer is to stop depending on one &mdash; PKCE is mandatory for every
+    client, so correctness no longer rests on this classification.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 02 &middot; The four roles</span><span class="n">4</span></div>
+</section>
+
+<!-- ==================================================================== 5
+     CH 3 - FRONT CHANNEL / BACK CHANNEL
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 03</div>
+  <h1 class="title">Front channel and back channel</h1>
+  <p class="lede">If you remember one idea from this guide, make it this one. Every rule in
+  OAuth&nbsp;2.1 &mdash; including all of PKCE &mdash; follows from the difference between these two
+  ways of moving data.</p>
+
+  <p>The client and the authorization server need to talk. They have two completely
+  different means of doing so, with completely different security properties.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="d3a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- ============== FRONT CHANNEL ============== -->
+      <rect x="4" y="4" width="692" height="140" rx="8" fill="#fdf1e0" stroke="#e6bc7e" stroke-width="1"/>
+      <text x="20" y="26" font-size="11.5" font-weight="700" fill="#a8620a">FRONT CHANNEL</text>
+      <text x="130" y="26" font-size="9" fill="#8a6a3a">via the user's browser, by redirect &mdash; treat as public</text>
+
+      <rect x="20" y="44" width="112" height="46" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="76" y="72" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Client App</text>
+
+      <rect x="286" y="44" width="128" height="46" rx="6" fill="#fff" stroke="#14181f" stroke-width="1.4"/>
+      <text x="350" y="66" text-anchor="middle" font-size="10" font-weight="700" fill="#14181f">The Browser</text>
+      <text x="350" y="80" text-anchor="middle" font-size="8" fill="#a8620a">sees, stores and logs everything</text>
+
+      <rect x="568" y="44" width="112" height="46" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.4"/>
+      <text x="624" y="66" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Authorization</text>
+      <text x="624" y="79" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Server</text>
+
+      <path d="M132,58 L281,58" stroke="#a8620a" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#d3a)"/>
+      <text x="206" y="52" text-anchor="middle" font-size="8" fill="#a8620a">302 redirect</text>
+      <path d="M414,58 L563,58" stroke="#a8620a" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#d3a)"/>
+      <text x="488" y="52" text-anchor="middle" font-size="8" fill="#a8620a">GET /authorize?...</text>
+      <path d="M563,80 L416,80" stroke="#a8620a" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#d3a)"/>
+      <text x="488" y="95" text-anchor="middle" font-size="8" fill="#a8620a">302 back with ?code=...</text>
+      <path d="M281,80 L134,80" stroke="#a8620a" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#d3a)"/>
+      <text x="206" y="95" text-anchor="middle" font-size="8" fill="#a8620a">GET /callback?code=...</text>
+
+      <g font-size="8.4">
+        <text x="20" y="114" font-weight="700" fill="#a8620a">Anything sent this way is visible in:</text>
+        <text x="20" y="128" fill="#14181f">the URL bar &middot; browser history &middot; server access logs &middot; <tspan font-family="SF Mono,Menlo,monospace" font-size="7.8">Referer</tspan> headers &middot; proxies &middot; other apps on the device &middot; screenshots</text>
+      </g>
+
+      <!-- ============== BACK CHANNEL ============== -->
+      <rect x="4" y="156" width="692" height="140" rx="8" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="1"/>
+      <text x="20" y="178" font-size="11.5" font-weight="700" fill="#0d7a52">BACK CHANNEL</text>
+      <text x="124" y="178" font-size="9" fill="#3e6d5b">a direct server-to-server HTTPS call</text>
+
+      <rect x="20" y="200" width="130" height="46" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="85" y="228" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Client App</text>
+
+      <rect x="550" y="200" width="130" height="46" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.4"/>
+      <text x="615" y="222" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Authorization</text>
+      <text x="615" y="235" text-anchor="middle" font-size="10" font-weight="700" fill="#2f4fd0">Server</text>
+
+      <path d="M150,213 L545,213" stroke="#0d7a52" stroke-width="1.8" marker-end="url(#d3a)"/>
+      <text x="348" y="207" text-anchor="middle" font-size="8" fill="#0d7a52" font-family="SF Mono,Menlo,monospace">POST /token   code + code_verifier + client_secret</text>
+
+      <path d="M545,235 L152,235" stroke="#0d7a52" stroke-width="1.8" marker-end="url(#d3a)"/>
+      <text x="348" y="248" text-anchor="middle" font-size="8" fill="#0d7a52" font-family="SF Mono,Menlo,monospace">200 OK   access_token + refresh_token</text>
+
+      <text x="348" y="270" text-anchor="middle" font-size="8.6" font-style="italic" fill="#3e6d5b">no browser, no redirect, no URL bar &mdash; the user's device is not in this path</text>
+
+      <text x="20" y="290" font-size="8.4" font-weight="700" fill="#0d7a52">Safe for secrets: nothing here is logged by the browser, cached in history, or readable by another app.</text>
+    </svg>
+    <figcaption><b>Figure 3.1</b> &mdash; The same two parties, two channels. Dashed arrows are
+    browser redirects; solid arrows are direct HTTPS calls.</figcaption>
+  </figure>
+
+  <h2>The rule that follows</h2>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">May cross the front channel</h4>
+      <ul class="tiny tight" style="margin:0;padding-left:13pt">
+        <li><code>client_id</code> &mdash; public by definition</li>
+        <li><code>redirect_uri</code>, <code>scope</code>, <code>state</code></li>
+        <li><code>code_challenge</code> &mdash; a hash, not a secret</li>
+        <li>the <code>code</code> &mdash; useless on its own <i>(this is the whole trick)</i></li>
+      </ul>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Must never cross it</h4>
+      <ul class="tiny tight" style="margin:0;padding-left:13pt">
+        <li><code>client_secret</code></li>
+        <li><code>code_verifier</code></li>
+        <li><code>access_token</code>, <code>refresh_token</code>, <code>id_token</code></li>
+        <li>the user's password, obviously</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <span class="lbl">This is why the implicit grant was removed.</span> It returned an
+    <i>access token</i> on the front channel, in the URL fragment &mdash; landing it in browser
+    history and in any <code>Referer</code> header the page emitted. Chapter&nbsp;10 has the
+    full list of what OAuth&nbsp;2.1 deleted and why.
+  </div>
+
+  <div class="panel tight">
+    <h4 style="margin-top:0">&ldquo;Front channel&rdquo; does not mean unencrypted</h4>
+    <p class="tiny" style="margin:0">Both channels run over TLS in production. The front
+    channel is dangerous not because it is exposed in transit, but because of where the data
+    <b>comes to rest</b>: browsers write URLs into history, servers into access logs, pages
+    leak them through <code>Referer</code>. TLS does nothing about any of that. OAuth&nbsp;2.1
+    still requires <code>https</code> everywhere, with two carve-outs &mdash;
+    <code>http://localhost</code> for development, and private-use schemes like
+    <code>com.example.app:/callback</code> for native apps. That is why the simulator may
+    run on plain HTTP, and why nothing else should.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 03 &middot; Front channel and back channel</span><span class="n">5</span></div>
+</section>
+
+<!-- ==================================================================== 6
+     CH 4 - THE FLOW (full-page diagram)
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 04</div>
+  <h1 class="title">The Authorization Code flow</h1>
+  <p class="lede">All of OAuth&nbsp;2.1 in one picture; the next two pages walk it step by step.</p>
+
+  <figure style="margin-top:4pt">
+    <svg viewBox="0 0 700 636" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="f1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7.5" markerHeight="6.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- ============ channel bands (drawn first, behind everything) ============ -->
+      <rect x="8" y="92" width="684" height="238" rx="7" fill="#fdf1e0" stroke="#e6bc7e" stroke-width="0.8" stroke-dasharray="5 4"/>
+      <text x="18" y="106" font-size="7.8" font-weight="700" fill="#a8620a" letter-spacing="0.08em">FRONT CHANNEL &mdash; THROUGH THE BROWSER, PUBLIC</text>
+
+      <rect x="8" y="342" width="684" height="132" rx="7" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="0.8" stroke-dasharray="5 4"/>
+      <text x="18" y="356" font-size="7.8" font-weight="700" fill="#0d7a52" letter-spacing="0.08em">BACK CHANNEL &mdash; SERVER TO SERVER, PRIVATE</text>
+
+      <rect x="8" y="486" width="684" height="118" rx="7" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8" stroke-dasharray="5 4"/>
+      <text x="18" y="500" font-size="7.8" font-weight="700" fill="#59617a" letter-spacing="0.08em">USING THE TOKEN &mdash; REPEATED UNTIL IT EXPIRES</text>
+
+      <!-- ============ lane headers ============ -->
+      <g>
+        <rect x="26" y="6" width="152" height="40" rx="7" fill="#fff" stroke="#14181f" stroke-width="1.3"/>
+        <text x="102" y="24" text-anchor="middle" font-size="9.6" font-weight="700" fill="#14181f">User + Browser</text>
+        <text x="102" y="37" text-anchor="middle" font-size="7.6" fill="#59617a">resource owner</text>
+
+        <rect x="192" y="6" width="152" height="40" rx="7" fill="#fff" stroke="#2f4fd0" stroke-width="1.3"/>
+        <text x="268" y="24" text-anchor="middle" font-size="9.6" font-weight="700" fill="#2f4fd0">Client App</text>
+        <text x="268" y="37" text-anchor="middle" font-size="7.6" fill="#59617a">wants the data</text>
+
+        <rect x="357" y="6" width="152" height="40" rx="7" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.7"/>
+        <text x="433" y="24" text-anchor="middle" font-size="9.6" font-weight="700" fill="#2f4fd0">Authz Server + IdP</text>
+        <text x="433" y="37" text-anchor="middle" font-size="7.6" fill="#59617a">issues the tokens</text>
+
+        <rect x="522" y="6" width="152" height="40" rx="7" fill="#fff" stroke="#0d7a52" stroke-width="1.3"/>
+        <text x="598" y="24" text-anchor="middle" font-size="9.6" font-weight="700" fill="#0d7a52">Resource Server</text>
+        <text x="598" y="37" text-anchor="middle" font-size="7.6" fill="#59617a">holds the data</text>
+      </g>
+
+      <!-- ============ lifelines ============ -->
+      <g stroke="#c3cade" stroke-width="1.2" stroke-dasharray="3 4">
+        <line x1="102" y1="46" x2="102" y2="628"/>
+        <line x1="268" y1="46" x2="268" y2="628"/>
+        <line x1="433" y1="46" x2="433" y2="628"/>
+        <line x1="598" y1="46" x2="598" y2="628"/>
+      </g>
+
+      <!-- ======================= STEP 1 ======================= -->
+      <g>
+        <text x="268" y="66" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">create code_verifier, derive code_challenge</text>
+        <path d="M268,74 h30 v12 h-30" fill="none" stroke="#59617a" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f1)"/>
+        <text x="316" y="84" font-size="7.6" font-style="italic" fill="#59617a">kept in session &mdash; never sent yet</text>
+        <circle cx="268" cy="80" r="8.6" fill="#59617a"/>
+        <text x="268" y="83.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">1</text>
+      </g>
+
+      <!-- ======================= STEP 2 ======================= -->
+      <g>
+        <text x="185" y="124" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">302 Found &rarr; /authorize</text>
+        <line x1="268" y1="134" x2="107" y2="134" stroke="#a8620a" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#f1)"/>
+        <circle cx="268" cy="134" r="8.6" fill="#a8620a"/>
+        <text x="268" y="137.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">2</text>
+      </g>
+
+      <!-- ======================= STEP 3 ======================= -->
+      <g>
+        <text x="267" y="162" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">GET /authorize?client_id&hellip;&amp;code_challenge&amp;state</text>
+        <line x1="102" y1="172" x2="428" y2="172" stroke="#a8620a" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#f1)"/>
+        <text x="267" y="185" text-anchor="middle" font-size="7.6" font-style="italic" fill="#a8620a">the server stores the challenge against this request</text>
+        <circle cx="102" cy="172" r="8.6" fill="#a8620a"/>
+        <text x="102" y="175.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">3</text>
+      </g>
+
+      <!-- ======================= STEP 4 ======================= -->
+      <g>
+        <text x="267" y="212" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">authenticate at the IdP, then approve the scopes</text>
+        <line x1="107" y1="222" x2="428" y2="222" stroke="#a8620a" stroke-width="1.7" marker-end="url(#f1)" marker-start="url(#f1)"/>
+        <text x="267" y="235" text-anchor="middle" font-size="7.6" font-style="italic" fill="#a8620a">the password is typed here, on the IdP's own origin &mdash; the client never sees it</text>
+        <circle cx="102" cy="222" r="8.6" fill="#a8620a"/>
+        <text x="102" y="225.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">4</text>
+      </g>
+
+      <!-- ======================= STEP 5 ======================= -->
+      <g>
+        <text x="267" y="262" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">302 Found &rarr; redirect_uri?code=&hellip;&amp;state=&hellip;&amp;iss=&hellip;</text>
+        <line x1="433" y1="272" x2="107" y2="272" stroke="#a8620a" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#f1)"/>
+        <text x="267" y="285" text-anchor="middle" font-size="7.6" font-style="italic" fill="#a8620a">short-lived, single-use, and bound to the challenge from step 3</text>
+        <circle cx="433" cy="272" r="8.6" fill="#a8620a"/>
+        <text x="433" y="275.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">5</text>
+      </g>
+
+      <!-- ======================= STEP 6 ======================= -->
+      <g>
+        <text x="185" y="308" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">GET /callback?code=&hellip;&amp;state=&hellip;</text>
+        <line x1="102" y1="318" x2="263" y2="318" stroke="#a8620a" stroke-width="1.7" marker-end="url(#f1)"/>
+        <circle cx="102" cy="318" r="8.6" fill="#a8620a"/>
+        <text x="102" y="321.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">6</text>
+        <text x="300" y="322" font-size="7.6" font-style="italic" fill="#a8620a">client checks state matches</text>
+      </g>
+
+      <!-- ======================= STEP 7 ======================= -->
+      <g>
+        <text x="350" y="374" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">POST /token &nbsp; code + code_verifier</text>
+        <line x1="268" y1="384" x2="428" y2="384" stroke="#0d7a52" stroke-width="1.9" marker-end="url(#f1)"/>
+        <circle cx="268" cy="384" r="8.6" fill="#0d7a52"/>
+        <text x="268" y="387.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">7</text>
+        <text x="450" y="388" font-size="7.6" font-style="italic" fill="#0d7a52">plus the client secret, if it has one</text>
+      </g>
+
+      <!-- ======================= STEP 8 ======================= -->
+      <g>
+        <text x="433" y="410" text-anchor="middle" font-size="8.8" font-weight="700" fill="#0d7a52">SHA256(code_verifier) == stored code_challenge ?</text>
+        <path d="M433,418 h30 v12 h-30" fill="none" stroke="#0d7a52" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f1)"/>
+        <circle cx="433" cy="424" r="8.6" fill="#0d7a52"/>
+        <text x="433" y="427.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">8</text>
+        <text x="481" y="428" font-size="7.6" font-style="italic" fill="#0d7a52">no match &rarr; invalid_grant</text>
+      </g>
+
+      <!-- ======================= STEP 9 ======================= -->
+      <g>
+        <text x="350" y="450" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">200 OK &nbsp; access_token + refresh_token (+ id_token)</text>
+        <line x1="433" y1="460" x2="273" y2="460" stroke="#0d7a52" stroke-width="1.9" marker-end="url(#f1)"/>
+        <circle cx="433" cy="460" r="8.6" fill="#0d7a52"/>
+        <text x="433" y="463.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">9</text>
+      </g>
+
+      <!-- ======================= STEP 10 ======================= -->
+      <g>
+        <text x="433" y="518" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">GET /api/accounts &nbsp; Authorization: Bearer &hellip;</text>
+        <line x1="268" y1="528" x2="593" y2="528" stroke="#2f4fd0" stroke-width="1.9" marker-end="url(#f1)"/>
+        <circle cx="268" cy="528" r="8.6" fill="#2f4fd0"/>
+        <text x="268" y="531.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">10</text>
+      </g>
+
+      <g>
+        <text x="433" y="556" text-anchor="middle" font-size="8.8" font-weight="700" fill="#14181f">200 OK &nbsp; the data</text>
+        <line x1="598" y1="566" x2="273" y2="566" stroke="#0d7a52" stroke-width="1.9" marker-end="url(#f1)"/>
+        <text x="433" y="580" text-anchor="middle" font-size="7.6" font-style="italic" fill="#59617a">signature, iss, aud, exp and scope all verified first &mdash; see Chapter 11</text>
+        <circle cx="598" cy="566" r="8.6" fill="#0d7a52"/>
+        <text x="598" y="569.4" text-anchor="middle" font-size="9.2" font-weight="700" fill="#fff">11</text>
+      </g>
+
+      <!-- ============ the summary strip ============ -->
+      <g transform="translate(0,596)">
+        <rect x="8" y="0" width="684" height="34" rx="6" fill="#eaeeff" stroke="#b6c2f0" stroke-width="0.8"/>
+        <text x="350" y="21" text-anchor="middle" font-size="9.4" fill="#14181f">
+          The <tspan font-weight="700">code</tspan> crosses the public channel. The <tspan font-weight="700">code_verifier</tspan> crosses the private one. Neither is useful without the other.
+        </text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 4.1</b> &mdash; Dashed arrows are browser redirects, solid arrows are
+    direct HTTP calls, looped arrows are local computation. Steps 10&ndash;11 repeat until the token expires.</figcaption>
+  </figure>
+
+  <h2 style="margin-top:6pt">Three things to notice</h2>
+  <div class="grid g3">
+    <div class="panel tight">
+      <h4 style="margin-top:0">The user is a participant</h4>
+      <p class="tiny" style="margin:0">Steps 2&ndash;6 happen in a browser because a human has
+      to be asked. That is not overhead &mdash; it is the consent.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">The code is a claim ticket</h4>
+      <p class="tiny" style="margin:0">It is not a token and grants nothing: a single-use
+      reference, valid about a minute, redeemable only by whoever started the flow.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Two channels, one flow</h4>
+      <p class="tiny" style="margin:0">The split at step&nbsp;7 is the design: the risky
+      public hop carries something worthless, the valuable exchange happens out of reach.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 04 &middot; The Authorization Code flow</span><span class="n">6</span></div>
+</section>
+
+<!-- ==================================================================== 7
+     CH 4 - WALKTHROUGH, STEPS 1-6
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 04 &middot; continued</div>
+  <h1 class="title">Step by step: the front channel</h1>
+  <p class="lede">The same flow again, this time as real HTTP. Every value below was taken
+  from an actual run of the simulator.</p>
+
+  <h2>1 &middot; The client invents a secret it will not send</h2>
+  <p>Before anything touches the network, the client generates a high-entropy random string
+  and hashes it. The random string is the <b>code_verifier</b>; the hash is the
+  <b>code_challenge</b>.</p>
+<pre><span class="c"># 32 random bytes, base64url-encoded => exactly 43 characters</span>
+<span class="k">code_verifier</span>  = <span class="s">3TbF_QUTBOiHthQdOrRr_6GcCTQKN_nPqc9j3P0FCBg</span>
+
+<span class="c"># BASE64URL(SHA256(ASCII(code_verifier)))</span>
+<span class="k">code_challenge</span> = <span class="s">kPX0H7VuZIrt1ZXIk7nOC2HkA6r0YNI3lDys2XF1Crk</span></pre>
+  <p class="small">The verifier is stored in the client's own session. It must survive until
+  step&nbsp;7 and must never appear in a URL, a cookie readable by script, or a log line.</p>
+
+  <h2>2&ndash;3 &middot; Redirect the user to the authorization endpoint</h2>
+  <p>The client does not call <code>/authorize</code> itself. It sends a <code>302</code> so
+  that the <i>browser</i> goes there, carrying the parameters in the query string.</p>
+<pre>GET /authorize?<span class="k">response_type</span>=<span class="s">code</span>
+              &amp;<span class="k">client_id</span>=<span class="s">demo-web-app</span>
+              &amp;<span class="k">redirect_uri</span>=<span class="s">http%3A%2F%2Flocalhost%3A9020%2Fcallback</span>
+              &amp;<span class="k">scope</span>=<span class="s">openid+profile+accounts%3Aread</span>
+              &amp;<span class="k">state</span>=<span class="s">cclt66TixPmn7BXxpsyNEA</span>
+              &amp;<span class="k">code_challenge</span>=<span class="s">kPX0H7VuZIrt1ZXIk7nOC2HkA6r0YNI3lDys2XF1Crk</span>
+              &amp;<span class="k">code_challenge_method</span>=<span class="s">S256</span>
+Host: localhost:9000</pre>
+
+  <table>
+    <thead><tr><th style="width:1.35in">Parameter</th><th>What it is for</th></tr></thead>
+    <tbody>
+      <tr><td class="k">response_type</td><td>Always <code>code</code> in OAuth&nbsp;2.1. The other values are gone.</td></tr>
+      <tr><td class="k">client_id</td><td>Which application is asking. Public, not a credential.</td></tr>
+      <tr><td class="k">redirect_uri</td><td>Where to send the code. Compared by <b>exact string match</b> against registration.</td></tr>
+      <tr><td class="k">scope</td><td>What the application wants to be allowed to do. Ask for the least you need.</td></tr>
+      <tr><td class="k">state</td><td>Random, per-request. Echoed back so the client can recognise its own callback.</td></tr>
+      <tr class="hl"><td class="k">code_challenge</td><td>The hash from step&nbsp;1. The server stores it against this request.</td></tr>
+      <tr class="hl"><td class="k">code_challenge_method</td><td><code>S256</code>. Send it explicitly &mdash; omitting it means <code>plain</code>, which protects nothing.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pfoot"><span class="ch">Chapter 04 &middot; Step by step</span><span class="n">7</span></div>
+</section>
+
+<!-- ==================================================================== 8
+     CH 4 - WALKTHROUGH, STEPS 7-11
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 04 &middot; continued</div>
+  <h1 class="title">Step by step: the exchange</h1>
+  <p class="lede">The user takes over, and hands back a code that is worth nothing by itself.
+  Turning it into a token takes a direct call, and a proof.</p>
+
+  <h2>4&ndash;6 &middot; The user authenticates, consents, and comes back with a code</h2>
+  <p>Everything in this step happens on the authorization server's own origin. The client is
+  not running, cannot see the password, and cannot influence the consent screen. When it is
+  done, the server redirects the browser back:</p>
+<pre>HTTP/1.1 302 Found
+Location: http://localhost:9020/callback?<span class="k">code</span>=<span class="s">bnBKJfGg0H4Mm_fzI4bE622-5t0w7U8kbKIHpudbQ4o</span>
+                                       &amp;<span class="k">state</span>=<span class="s">cclt66TixPmn7BXxpsyNEA</span>
+                                       &amp;<span class="k">iss</span>=<span class="s">http://localhost:9000</span></pre>
+
+  <div class="callout">
+    <span class="lbl">Two checks the client must make here.</span>
+    First, <code>state</code> has to equal the value it generated in step&nbsp;2 &mdash; otherwise this
+    callback was not started by this browser session, and the code must be dropped. Second,
+    <code>iss</code> must name the authorization server the flow began with (RFC&nbsp;9207),
+    which prevents a code from one server being replayed at another.
+  </div>
+
+  <h2>7 &middot; Redeem the code, and prove you started the flow</h2>
+  <p>This is a server-to-server <code>POST</code>. The browser is not involved and never sees
+  any of it.</p>
+<pre>POST /token HTTP/1.1
+Host: localhost:9000
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic ZGVtby13ZWItYXBwOndlYi1hcHAtc3VwZXItc2VjcmV0   <span class="c">&lt;- only if confidential</span>
+
+<span class="k">grant_type</span>=<span class="s">authorization_code</span>
+&amp;<span class="k">code</span>=<span class="s">bnBKJfGg0H4Mm_fzI4bE622-5t0w7U8kbKIHpudbQ4o</span>
+&amp;<span class="k">redirect_uri</span>=<span class="s">http://localhost:9020/callback</span>
+&amp;<span class="k">code_verifier</span>=<span class="s">3TbF_QUTBOiHthQdOrRr_6GcCTQKN_nPqc9j3P0FCBg</span></pre>
+
+  <h2>8 &middot; What the authorization server checks, in order</h2>
+  <ol class="small tight">
+    <li>Does this <code>code</code> exist, and has it been used before? <span class="muted">A replay means someone has a copy; every token it produced is revoked.</span></li>
+    <li>Has it expired? <span class="muted">Codes live about a minute, because they cross the browser.</span></li>
+    <li>Was it issued to <i>this</i> <code>client_id</code>? <span class="muted">A code belongs to one client.</span></li>
+    <li>Does <code>redirect_uri</code> match the one from step&nbsp;3? <span class="muted">Both halves of the flow must agree.</span></li>
+    <li><b>Does <code>SHA256(code_verifier)</code> equal the stored <code>code_challenge</code>?</b></li>
+    <li>If the client is confidential, did it authenticate correctly?</li>
+  </ol>
+  <p class="small">Any failure returns <code>400 invalid_grant</code> and no token &mdash; and check&nbsp;5
+  is the only one an attacker holding a stolen code cannot satisfy.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 04 &middot; Step by step</span><span class="n">8</span></div>
+</section>
+
+<!-- ==================================================================== 9
+     CH 4 - WALKTHROUGH, THE TOKENS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 04 &middot; continued</div>
+  <h1 class="title">Step by step: the tokens</h1>
+  <p class="lede" style="margin-bottom:7pt">What comes back, how it is used, and what the failures mean.</p>
+
+  <h2>9 &middot; The tokens come back</h2>
+<pre>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  "<span class="k">access_token</span>":  "<span class="s">eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCJ9.eyJpc3MiOiJodHRwOi8v...</span>",
+  "<span class="k">token_type</span>":    "<span class="s">Bearer</span>",
+  "<span class="k">expires_in</span>":    <span class="s">300</span>,
+  "<span class="k">scope</span>":         "<span class="s">openid profile accounts:read</span>",
+  "<span class="k">refresh_token</span>": "<span class="s">hz9ZLvVJ2akqMFGb7pQx...</span>",
+  "<span class="k">id_token</span>":      "<span class="s">eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8v...</span>"
+}</pre>
+  <p class="small"><code>Cache-Control: no-store</code> is required, not decorative: these are
+  credentials. Note too that <code>scope</code> comes back in the response &mdash; the user may
+  have granted <b>less</b> than was asked for, and a correct client reads what it received.</p>
+
+  <h2 style="margin-top:12pt">10&ndash;11 &middot; Call the API</h2>
+<pre>GET /api/accounts HTTP/1.1
+Host: localhost:9010
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCJ9...</pre>
+  <p class="small">The token goes in the <code>Authorization</code> header &mdash; never in a
+  query string, where it lands in every access log on the path. OAuth&nbsp;2.1 removes the
+  query-string option OAuth&nbsp;2.0 allowed.</p>
+
+  <h2 style="margin-top:12pt">When it goes wrong: decoding the error</h2>
+  <table>
+    <thead><tr><th style="width:1.3in">Error</th><th>Usual cause</th></tr></thead>
+    <tbody>
+      <tr><td class="k">invalid_grant</td><td>The code was used already, expired, issued to another client, or the <code>code_verifier</code> did not match. Deliberately vague: the server will not tell an attacker which check failed.</td></tr>
+      <tr><td class="k">invalid_client</td><td>Wrong <code>client_id</code> or secret, or a confidential client that sent no credentials at all.</td></tr>
+      <tr><td class="k">invalid_request</td><td>A required parameter is missing or duplicated. Commonly a forgotten <code>code_challenge_method</code>.</td></tr>
+      <tr><td class="k">unauthorized_client<br>invalid_scope</td><td>The client is not registered for this grant type, or asked for a scope it is not allowed (or that does not exist).</td></tr>
+      <tr><td class="k">access_denied</td><td>The user pressed Deny. Not a bug; handle it gracefully.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <span class="lbl">That is the entire flow.</span> Eleven steps, two channels, one hash
+    comparison. Every remaining chapter is either a detail of what is inside the tokens, or a
+    rule protecting one of these steps.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 04 &middot; Step by step</span><span class="n">9</span></div>
+</section>
+
+<!-- ==================================================================== 10
+     CH 5 - THE ATTACK PKCE PREVENTS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 05</div>
+  <h1 class="title">The attack PKCE prevents</h1>
+  <p class="lede">The authorization code has to cross the browser, and the browser is not a
+  private place. So assume the code leaks &mdash; and ask what it is worth.</p>
+
+  <figure style="margin-top:2pt">
+    <svg viewBox="0 0 700 428" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- ===== shared setup: the interception ===== -->
+      <rect x="6" y="4" width="688" height="150" rx="7" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8"/>
+      <text x="18" y="22" font-size="8" font-weight="700" fill="#59617a" letter-spacing="0.08em">STEP 1 &mdash; A PERFECTLY NORMAL FLOW, AND A LEAK</text>
+
+      <rect x="20" y="34" width="120" height="40" rx="6" fill="#fff" stroke="#14181f" stroke-width="1.2"/>
+      <text x="80" y="50" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">Victim's</text>
+      <text x="80" y="63" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">browser</text>
+
+      <rect x="544" y="34" width="132" height="40" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.4"/>
+      <text x="610" y="50" text-anchor="middle" font-size="9" font-weight="700" fill="#2f4fd0">Authorization</text>
+      <text x="610" y="63" text-anchor="middle" font-size="9" font-weight="700" fill="#2f4fd0">Server</text>
+
+      <!-- the honest exchange -->
+      <path d="M140,44 L539,44" stroke="#59617a" stroke-width="1.5" marker-end="url(#a1)"/>
+      <text x="340" y="38" text-anchor="middle" font-size="8" fill="#59617a">the user signs in and consents, exactly as designed</text>
+      <path d="M539,64 L142,64" stroke="#a8620a" stroke-width="1.7" stroke-dasharray="6 4" marker-end="url(#a1)"/>
+      <text x="300" y="78" text-anchor="end" font-size="8" font-weight="700" fill="#a8620a">302 &rarr; redirect_uri?code=SplxlOBeZQQ&hellip;</text>
+
+      <!-- the attacker taps the redirect -->
+      <rect x="248" y="104" width="188" height="38" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.4"/>
+      <text x="342" y="120" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Attacker reads the code</text>
+      <text x="342" y="133" text-anchor="middle" font-size="7.6" fill="#8a4453">from a log, a malicious app, a proxy&hellip;</text>
+      <path d="M342,72 L342,99" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a1)"/>
+
+      <!-- ===== the question ===== -->
+      <text x="350" y="176" text-anchor="middle" font-size="10.5" font-weight="700" fill="#14181f">The attacker now holds a valid authorization code. What is it worth?</text>
+
+      <!-- ===== branch A: no PKCE ===== -->
+      <g>
+        <rect x="6" y="192" width="336" height="230" rx="7" fill="#fdeaee" stroke="#f0b8c4" stroke-width="1"/>
+        <text x="20" y="212" font-size="10" font-weight="700" fill="#c0203f">OAuth 2.0, PKCE not used</text>
+
+        <rect x="20" y="226" width="104" height="34" rx="5" fill="#fff" stroke="#c0203f" stroke-width="1.2"/>
+        <text x="72" y="247" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">Attacker</text>
+
+        <rect x="224" y="226" width="104" height="34" rx="5" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="276" y="241" text-anchor="middle" font-size="8.2" font-weight="700" fill="#2f4fd0">Authorization</text>
+        <text x="276" y="252" text-anchor="middle" font-size="8.2" font-weight="700" fill="#2f4fd0">Server</text>
+
+        <path d="M124,237 L219,237" stroke="#c0203f" stroke-width="1.6" marker-end="url(#a1)"/>
+        <text x="172" y="231" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">POST /token</text>
+        <text x="172" y="252" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">code + client_id</text>
+
+        <text x="174" y="280" text-anchor="middle" font-size="8" fill="#8a4453">the client_id is public, so this is all it takes</text>
+
+        <path d="M276,292 L276,312" stroke="#c0203f" stroke-width="1.6" marker-end="url(#a1)"/>
+        <rect x="20" y="316" width="308" height="38" rx="5" fill="#fff" stroke="#c0203f" stroke-width="1.4"/>
+        <text x="174" y="332" text-anchor="middle" font-size="9.4" font-weight="700" fill="#c0203f">200 OK &mdash; access_token issued</text>
+        <text x="174" y="346" text-anchor="middle" font-size="7.8" fill="#8a4453">to the attacker, for the victim's account</text>
+
+        <text x="174" y="378" text-anchor="middle" font-size="9.6" font-weight="700" fill="#c0203f">Account compromised.</text>
+        <text x="174" y="394" text-anchor="middle" font-size="8" fill="#8a4453">The server had no way to tell the attacker</text>
+        <text x="174" y="406" text-anchor="middle" font-size="8" fill="#8a4453">from the app that started the flow.</text>
+      </g>
+
+      <!-- ===== branch B: PKCE ===== -->
+      <g>
+        <rect x="358" y="192" width="336" height="230" rx="7" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="1"/>
+        <text x="372" y="212" font-size="10" font-weight="700" fill="#0d7a52">OAuth 2.1, PKCE required</text>
+
+        <rect x="372" y="226" width="104" height="34" rx="5" fill="#fff" stroke="#c0203f" stroke-width="1.2"/>
+        <text x="424" y="247" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">Attacker</text>
+
+        <rect x="576" y="226" width="104" height="34" rx="5" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="628" y="241" text-anchor="middle" font-size="8.2" font-weight="700" fill="#2f4fd0">Authorization</text>
+        <text x="628" y="252" text-anchor="middle" font-size="8.2" font-weight="700" fill="#2f4fd0">Server</text>
+
+        <path d="M476,237 L571,237" stroke="#c0203f" stroke-width="1.6" marker-end="url(#a1)"/>
+        <text x="524" y="231" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">POST /token</text>
+        <text x="524" y="252" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">code + &lt;no verifier&gt;</text>
+        <g stroke="#c0203f" stroke-width="2.2">
+          <line x1="517" y1="230" x2="531" y2="244"/><line x1="517" y1="244" x2="531" y2="230"/>
+        </g>
+
+        <text x="526" y="280" text-anchor="middle" font-size="8" fill="#3e6d5b">the verifier never crossed the browser</text>
+
+        <path d="M628,292 L628,312" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#a1)"/>
+        <rect x="372" y="316" width="308" height="38" rx="5" fill="#fff" stroke="#0d7a52" stroke-width="1.4"/>
+        <text x="526" y="332" text-anchor="middle" font-size="9.4" font-weight="700" fill="#0d7a52">400 invalid_grant</text>
+        <text x="526" y="346" text-anchor="middle" font-size="7.8" fill="#3e6d5b">SHA256(nothing) does not match the challenge</text>
+
+        <text x="526" y="378" text-anchor="middle" font-size="9.6" font-weight="700" fill="#0d7a52">The code was worthless.</text>
+        <text x="526" y="394" text-anchor="middle" font-size="8" fill="#3e6d5b">The leak still happened &mdash; it simply</text>
+        <text x="526" y="406" text-anchor="middle" font-size="8" fill="#3e6d5b">stopped being an incident.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 5.1</b> &mdash; Identical theft, two outcomes. PKCE does not prevent the
+    code from leaking; it removes the value of having it.</figcaption>
+  </figure>
+
+  <h2>How codes actually leak</h2>
+  <p class="small">None of these are exotic. Every one has produced real CVEs:</p>
+  <div class="grid g2">
+    <div>
+      <ul class="tiny tight" style="padding-left:13pt">
+        <li><b>A malicious app on the same device</b> registering the same custom URI scheme (<code>myapp://callback</code>) &mdash; the OS may hand the redirect to either app.</li>
+        <li><b>Server access logs.</b> The callback URL, complete with code, is written to disk by every proxy and web server in the path.</li>
+        <li><b>The <code>Referer</code> header</b> leaking the callback URL to any third-party script or image on the landing page.</li>
+      </ul>
+    </div>
+    <div>
+      <ul class="tiny tight" style="padding-left:13pt">
+        <li><b>An open redirect</b> on the client's own domain, used to bounce the code to the attacker's server.</li>
+        <li><b>Browser history</b> on a shared or managed machine.</li>
+        <li><b>A TLS-terminating proxy</b> on a corporate or hostile network.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="lbl">Why OAuth&nbsp;2.1 requires PKCE even for confidential clients.</span>
+    A server-side app with a secret is already protected against most of this &mdash; the attacker
+    would need the secret too. But PKCE also protects against a code being <i>injected</i> into
+    an honest client's session, costs nothing, and removes any need to reason about which
+    category a client falls into. Universal rules fail safe; conditional ones get misapplied.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 05 &middot; The attack PKCE prevents</span><span class="n">10</span></div>
+</section>
+
+<!-- ==================================================================== 11
+     CH 6 - PKCE, PRECISELY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 06</div>
+  <h1 class="title">PKCE, precisely</h1>
+  <p class="lede">Proof Key for Code Exchange (RFC&nbsp;7636). One random string, one hash, one
+  comparison &mdash; and the authorization code stops being worth stealing.</p>
+
+  <p>The name is unhelpful; the idea is simple. Before starting the flow the client invents a
+  secret, sends only a <i>fingerprint</i> of it through the browser, and later proves it holds
+  the original. Only the app that began the flow can finish it.</p>
+
+  <figure style="margin:6pt 0">
+    <svg viewBox="0 0 700 316" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="p1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- stage 0 -->
+      <rect x="150" y="6" width="400" height="30" rx="5" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8"/>
+      <text x="350" y="25" text-anchor="middle" font-size="9" fill="#59617a">a cryptographically secure random generator &mdash; 32 bytes</text>
+      <path d="M350,36 L350,54" stroke="#59617a" stroke-width="1.5" marker-end="url(#p1)"/>
+      <text x="358" y="49" font-size="7.6" font-style="italic" fill="#59617a">base64url encode</text>
+
+      <!-- the verifier -->
+      <rect x="150" y="58" width="400" height="52" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.6"/>
+      <text x="164" y="74" font-size="8.4" font-weight="700" fill="#2f4fd0">code_verifier</text>
+      <text x="164" y="94" font-size="8.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">3TbF_QUTBOiHthQdOrRr_6GcCTQKN_nPqc9j3P0FCBg</text>
+      <text x="164" y="105" font-size="7.2" fill="#59617a">43 characters from [A-Za-z0-9-._~] &mdash; the secret; never leaves the client until step 7</text>
+
+      <!-- arrow: hash it -->
+      <path d="M350,110 L350,140" stroke="#14181f" stroke-width="1.8" marker-end="url(#p1)"/>
+      <rect x="360" y="114" width="106" height="20" rx="4" fill="#14181f"/>
+      <text x="413" y="128" text-anchor="middle" font-size="8.4" font-weight="700" fill="#fff">SHA-256</text>
+      <text x="474" y="128" font-size="7.6" font-style="italic" fill="#59617a">one-way: cannot be reversed</text>
+
+      <!-- the digest -->
+      <rect x="150" y="144" width="400" height="46" rx="6" fill="#fff" stroke="#b9c2da" stroke-width="1.1"/>
+      <text x="164" y="159" font-size="8.4" font-weight="700" fill="#59617a">the 32-byte digest, in hex</text>
+      <text x="164" y="177" font-size="7.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">90f5f41fb56e648aedd595c893b9ce0b61e403aaf460d237943cacd971750ab9</text>
+
+      <!-- arrow: encode it -->
+      <path d="M350,190 L350,220" stroke="#14181f" stroke-width="1.8" marker-end="url(#p1)"/>
+      <rect x="360" y="194" width="106" height="20" rx="4" fill="#14181f"/>
+      <text x="413" y="208" text-anchor="middle" font-size="8.4" font-weight="700" fill="#fff">base64url</text>
+      <text x="474" y="208" font-size="7.6" font-style="italic" fill="#59617a">not base64: -_ instead of +/, no padding</text>
+
+      <!-- the challenge -->
+      <rect x="150" y="224" width="400" height="52" rx="6" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.6"/>
+      <text x="164" y="240" font-size="8.4" font-weight="700" fill="#a8620a">code_challenge</text>
+      <text x="164" y="260" font-size="8.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">kPX0H7VuZIrt1ZXIk7nOC2HkA6r0YNI3lDys2XF1Crk</text>
+      <text x="164" y="271" font-size="7.2" fill="#8a6a3a">43 characters &mdash; a fingerprint, not a credential; safe in a URL</text>
+
+      <!-- where each one travels -->
+      <g>
+        <path d="M150,84 L60,84 L60,300 L140,300" fill="none" stroke="#0d7a52" stroke-width="1.5" marker-end="url(#p1)"/>
+        <rect x="144" y="286" width="196" height="26" rx="5" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1"/>
+        <text x="242" y="303" text-anchor="middle" font-size="8" font-weight="700" fill="#0d7a52">BACK channel, at /token</text>
+
+        <path d="M550,250 L640,250 L640,300 L560,300" fill="none" stroke="#a8620a" stroke-width="1.5" marker-end="url(#p1)"/>
+        <rect x="360" y="286" width="196" height="26" rx="5" fill="#fdf1e0" stroke="#a8620a" stroke-width="1"/>
+        <text x="458" y="303" text-anchor="middle" font-size="8" font-weight="700" fill="#a8620a">FRONT channel, at /authorize</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 6.1</b> &mdash; Deriving the challenge from the verifier, with real values.
+    The two results travel on different channels, and only one of them is a secret.</figcaption>
+  </figure>
+
+  <h2>Why a hash is enough</h2>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">The attacker sees the challenge</h4>
+      <p class="tiny" style="margin:0">It is right there in the authorization URL. To use the
+      stolen code they would need a string that hashes to it &mdash; that is a SHA-256 preimage,
+      which nobody can compute. The challenge is public <i>by design</i>.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">The attacker cannot guess the verifier</h4>
+      <p class="tiny" style="margin:0">It is 256 bits of randomness. There is no dictionary,
+      no pattern and no structure to attack. This is why the specification insists on a
+      <i>cryptographically secure</i> generator, not <code>Math.random()</code>.</p>
+    </div>
+  </div>
+
+  <div class="callout bad">
+    <span class="lbl">Never use <code>code_challenge_method=plain</code>.</span> With
+    <code>plain</code>, the &ldquo;challenge&rdquo; <i>is</i> the verifier, sent in the clear through
+    the browser &mdash; so anyone who sees the authorization request can redeem the code. It
+    exists in RFC&nbsp;7636 only for devices that genuinely could not compute SHA-256 in 2015.
+    Worse, RFC&nbsp;7636 says that an <b>omitted</b> <code>code_challenge_method</code> defaults to
+    <code>plain</code>. Always send <code>S256</code> explicitly.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 06 &middot; PKCE, precisely</span><span class="n">11</span></div>
+</section>
+
+<!-- ==================================================================== 12
+     CH 6 - PKCE: THE CHECK, AND HOW TO IMPLEMENT IT
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 06 &middot; continued</div>
+  <h1 class="title">The check, and how to write it</h1>
+  <p class="lede">What the server does with the two halves, and the code that produces them.</p>
+
+  <figure style="margin:4pt 0 8pt">
+    <svg viewBox="0 0 700 176" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="v1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- what the AS remembered, from step 3 -->
+      <rect x="6" y="10" width="250" height="48" rx="6" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.3"/>
+      <text x="18" y="26" font-size="8" font-weight="700" fill="#a8620a">STORED AT /authorize (step 3)</text>
+      <text x="18" y="42" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">code_challenge = kPX0H7VuZIrt1ZXIk7&hellip;</text>
+      <text x="18" y="53" font-size="7" fill="#8a6a3a">held against this one authorization code</text>
+
+      <!-- what arrived, at step 7 -->
+      <rect x="6" y="112" width="250" height="48" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.3"/>
+      <text x="18" y="128" font-size="8" font-weight="700" fill="#0d7a52">PRESENTED AT /token (step 7)</text>
+      <text x="18" y="144" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">code_verifier = 3TbF_QUTBOiHthQdOr&hellip;</text>
+      <text x="18" y="155" font-size="7" fill="#3e6d5b">arrived on the back channel, unseen by the browser</text>
+
+      <!-- hash the presented verifier -->
+      <path d="M256,136 L300,136" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#v1)"/>
+      <rect x="304" y="122" width="86" height="28" rx="5" fill="#14181f"/>
+      <text x="347" y="140" text-anchor="middle" font-size="8.6" font-weight="700" fill="#fff">SHA-256</text>
+
+      <!-- the comparison -->
+      <path d="M390,136 L430,136 L430,96" stroke="#0d7a52" stroke-width="1.6" fill="none" marker-end="url(#v1)"/>
+      <path d="M256,34 L430,34 L430,76" stroke="#a8620a" stroke-width="1.6" fill="none" marker-end="url(#v1)"/>
+
+      <rect x="352" y="76" width="156" height="24" rx="12" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.5"/>
+      <text x="430" y="92" text-anchor="middle" font-size="9.6" font-weight="700" fill="#2f4fd0">byte-for-byte equal?</text>
+
+      <!-- outcomes -->
+      <path d="M508,82 L548,62" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#v1)"/>
+      <rect x="552" y="24" width="142" height="46" rx="6" fill="#fff" stroke="#0d7a52" stroke-width="1.4"/>
+      <text x="623" y="42" text-anchor="middle" font-size="9" font-weight="700" fill="#0d7a52">YES &rarr; issue tokens</text>
+      <text x="623" y="58" text-anchor="middle" font-size="7.4" fill="#3e6d5b">same app that started the flow</text>
+
+      <path d="M508,94 L548,114" stroke="#c0203f" stroke-width="1.6" marker-end="url(#v1)"/>
+      <rect x="552" y="106" width="142" height="46" rx="6" fill="#fff" stroke="#c0203f" stroke-width="1.4"/>
+      <text x="623" y="124" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">NO &rarr; invalid_grant</text>
+      <text x="623" y="140" text-anchor="middle" font-size="7.4" fill="#8a4453">and burn the code, so it cannot be retried</text>
+    </svg>
+    <figcaption><b>Figure 6.2</b> &mdash; The whole verification. Compare in <b>constant time</b>, so a
+    rejection cannot be timed byte by byte, and treat a failure as a security event, not a retry.</figcaption>
+  </figure>
+
+  <h2>Generating the pair</h2>
+  <div class="grid g2">
+    <div>
+      <h4 style="margin-top:0">Browser (Web Crypto)</h4>
+<pre>const b64url = (b) =&gt; btoa(
+  String.fromCharCode(...b))
+  .replace(/\+/g, '-')
+  .replace(/\//g, '_')
+  .replace(/=+$/, '');
+
+const verifier = b64url(
+  crypto.getRandomValues(new Uint8Array(32)));
+
+const hash = await crypto.subtle.digest(
+  'SHA-256',
+  new TextEncoder().encode(verifier));
+
+const challenge = b64url(new Uint8Array(hash));</pre>
+    </div>
+    <div>
+      <h4 style="margin-top:0">Node.js</h4>
+<pre><span class="k">const</span> crypto = require(<span class="s">'node:crypto'</span>);
+
+<span class="k">const</span> verifier = crypto.randomBytes(32)
+  .toString(<span class="s">'base64url'</span>);
+
+<span class="k">const</span> challenge = crypto.createHash(<span class="s">'sha256'</span>)
+  .update(verifier).digest(<span class="s">'base64url'</span>);</pre>
+
+      <h4>Python</h4>
+<pre><span class="k">import</span> base64, hashlib, os
+
+b64 = <span class="k">lambda</span> b: base64.urlsafe_b64encode(b).rstrip(b<span class="s">'='</span>)
+
+verifier  = b64(os.urandom(32))
+challenge = b64(hashlib.sha256(verifier).digest())</pre>
+    </div>
+  </div>
+
+  <p class="small" style="margin-top:2pt">In all three, the SHA-256 is taken over the
+  <b>base64url text</b> of the verifier, never over the raw random bytes. Getting that
+  backwards is the most common PKCE bug and the hardest to spot, because both values still
+  look like valid base64url.</p>
+
+  <div class="callout">
+    <span class="lbl">One pair per authorization request.</span> A verifier is a nonce, not a
+    configuration value: generate a fresh one every time and discard it the moment the code
+    is exchanged. On the server side, compare with <code>timingSafeEqual</code> rather than
+    <code>==</code>, and treat a mismatch as a security event &mdash; invalidate the code, return
+    the generic <code>invalid_grant</code>, and never reveal which check failed. The common
+    implementation mistakes are collected in Chapter&nbsp;12.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 06 &middot; PKCE, precisely</span><span class="n">12</span></div>
+</section>
+
+<!-- ==================================================================== 13
+     CH 7 - ANATOMY OF A TOKEN
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 07</div>
+  <h1 class="title">Anatomy of a token</h1>
+  <p class="lede">An access token is usually a JWT: three base64url segments joined by dots.
+  Two of them are plain text that anyone can read.</p>
+
+  <figure style="margin:4pt 0 8pt">
+    <svg viewBox="0 0 700 152" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <!-- the encoded token, in three colours -->
+      <text x="6" y="24" font-size="8.2" font-family="SF Mono,Menlo,monospace">
+        <tspan fill="#2f4fd0">eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6InNpbS1FYXJIZkNO</tspan><tspan fill="#14181f" font-weight="700">.</tspan>
+      </text>
+      <text x="6" y="38" font-size="8.2" font-family="SF Mono,Menlo,monospace">
+        <tspan fill="#a8620a">eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjkwMDAiLCJzdWIiOiJ1LTEwMDEiLCJh</tspan><tspan fill="#14181f" font-weight="700">.</tspan>
+      </text>
+      <text x="6" y="52" font-size="8.2" font-family="SF Mono,Menlo,monospace">
+        <tspan fill="#0d7a52">OkNChhb8y_TlJlTQquscjcfnwn2VKkzJZPB0fzVrsgjNsesPiNaCJaZZgq5Qxl</tspan>
+      </text>
+
+      <!-- brackets and labels -->
+      <path d="M6,60 L6,66 L560,66 L560,60" fill="none" stroke="#2f4fd0" stroke-width="1"/>
+      <path d="M6,74 L6,80 L560,80 L560,74" fill="none" stroke="#a8620a" stroke-width="1" opacity="0"/>
+
+      <g>
+        <rect x="6" y="72" width="222" height="70" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.3"/>
+        <text x="18" y="88" font-size="9" font-weight="700" fill="#2f4fd0">1 &middot; HEADER</text>
+        <text x="18" y="102" font-size="7.6" fill="#14181f">Which algorithm signed it, and</text>
+        <text x="18" y="113" font-size="7.6" fill="#14181f">which key (<tspan font-family="SF Mono,Menlo,monospace">kid</tspan>) to verify with.</text>
+        <text x="18" y="130" font-size="7.4" font-style="italic" fill="#59617a">Readable by anyone. Never trust</text>
+        <text x="18" y="139" font-size="7.4" font-style="italic" fill="#59617a">its <tspan font-family="SF Mono,Menlo,monospace">alg</tspan> blindly.</text>
+
+        <rect x="238" y="72" width="222" height="70" rx="6" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.3"/>
+        <text x="250" y="88" font-size="9" font-weight="700" fill="#a8620a">2 &middot; PAYLOAD (CLAIMS)</text>
+        <text x="250" y="102" font-size="7.6" fill="#14181f">Who, what, where, until when.</text>
+        <text x="250" y="113" font-size="7.6" fill="#14181f">This is the authorization itself.</text>
+        <text x="250" y="130" font-size="7.4" font-style="italic" fill="#59617a">Also readable by anyone &mdash; so</text>
+        <text x="250" y="139" font-size="7.4" font-style="italic" fill="#59617a">never put a secret in here.</text>
+
+        <rect x="470" y="72" width="224" height="70" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.3"/>
+        <text x="482" y="88" font-size="9" font-weight="700" fill="#0d7a52">3 &middot; SIGNATURE</text>
+        <text x="482" y="102" font-size="7.6" fill="#14181f">RSA-SHA256 over segments 1+2,</text>
+        <text x="482" y="113" font-size="7.6" fill="#14181f">made with the AS's private key.</text>
+        <text x="482" y="130" font-size="7.4" font-style="italic" fill="#59617a">The only part that cannot be</text>
+        <text x="482" y="139" font-size="7.4" font-style="italic" fill="#59617a">forged or edited.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 7.1</b> &mdash; A JWT is not encrypted. Base64url is an encoding, not a
+    cipher: paste any token into a decoder and read it. The signature does not hide the
+    contents &mdash; it proves nobody changed them.</figcaption>
+  </figure>
+
+  <h2>What the segments say once decoded</h2>
+<pre><span class="c">// segment 1 - the header</span>
+{ "<span class="k">alg</span>": "<span class="s">RS256</span>", "<span class="k">typ</span>": "<span class="s">at+jwt</span>", "<span class="k">kid</span>": "<span class="s">sim-EarHfCN6MZTqOJjo</span>" }
+
+<span class="c">// segment 2 - the claims</span>
+{ "<span class="k">iss</span>":       "<span class="s">http://localhost:9000</span>",          <span class="c">// who issued it</span>
+  "<span class="k">sub</span>":       "<span class="s">u-1001</span>",                         <span class="c">// whose data it acts on</span>
+  "<span class="k">aud</span>":       "<span class="s">http://localhost:9010</span>",          <span class="c">// which API may accept it</span>
+  "<span class="k">client_id</span>": "<span class="s">demo-web-app</span>",                   <span class="c">// which app is holding it</span>
+  "<span class="k">scope</span>":     "<span class="s">openid profile accounts:read</span>",   <span class="c">// what it may do there</span>
+  "<span class="k">jti</span>":       "<span class="s">78e3f1b14a7c70e11fac6fc1</span>",       <span class="c">// unique id, for revocation</span>
+  "<span class="k">iat</span>": <span class="s">1789228222</span>, "<span class="k">nbf</span>": <span class="s">1789228222</span>,        <span class="c">// issued at / not before</span>
+  "<span class="k">exp</span>": <span class="s">1789228522</span> }                          <span class="c">// expires - 300 seconds later</span></pre>
+
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Why <code>typ: at+jwt</code> matters</h4>
+      <p class="tiny" style="margin:0">RFC&nbsp;9068 gives access tokens their own type, so an API
+      can reject anything that is not one &mdash; an ID token, for instance. Without it, two
+      different tokens from the same issuer look interchangeable.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Opaque tokens are also fine</h4>
+      <p class="tiny" style="margin:0">Plenty of servers issue random strings instead. The API
+      then calls <code>/introspect</code> to find out what a token means. Same protocol,
+      different trade-off &mdash; see Chapter&nbsp;11.</p>
+    </div>
+  </div>
+
+  <div class="callout bad">
+    <span class="lbl">A token is a bearer credential.</span> Whoever holds it can use it, exactly
+    as with a password. There is no cryptographic binding to the client that received it,
+    which is why they are short-lived, scoped and audience-restricted &mdash; three ways of
+    limiting the damage rather than preventing the theft.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 07 &middot; Anatomy of a token</span><span class="n">13</span></div>
+</section>
+
+<!-- ==================================================================== 14
+     CH 7 - THREE TOKENS, THREE JOBS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 07 &middot; continued</div>
+  <h1 class="title">Three tokens, three jobs</h1>
+  <p class="lede">A single token response can contain three completely different things.
+  Confusing two of them is the most common OAuth bug in production code.</p>
+
+  <figure style="margin:4pt 0 8pt">
+    <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="t1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- access token -->
+      <rect x="6" y="6" width="222" height="142" rx="7" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.5"/>
+      <text x="18" y="26" font-size="10.5" font-weight="700" fill="#0d7a52">access_token</text>
+      <text x="18" y="42" font-size="8" font-weight="700" fill="#14181f">&ldquo;This app may do X for Y.&rdquo;</text>
+      <line x1="18" y1="50" x2="216" y2="50" stroke="#a8d9c1" stroke-width="0.8"/>
+      <text x="18" y="66" font-size="7.8" fill="#14181f"><tspan font-family="SF Mono,Menlo,monospace">aud</tspan> = the API</text>
+      <text x="18" y="79" font-size="7.8" fill="#14181f">Sent to: the resource server</text>
+      <text x="18" y="92" font-size="7.8" fill="#14181f">Lifetime: minutes</text>
+      <text x="18" y="105" font-size="7.8" fill="#14181f">Read by: the API only</text>
+      <text x="18" y="124" font-size="7.4" font-style="italic" fill="#3e6d5b">The client should treat it as an</text>
+      <text x="18" y="132" font-size="7.4" font-style="italic" fill="#3e6d5b">opaque string it merely carries.</text>
+
+      <!-- id token -->
+      <rect x="238" y="6" width="222" height="142" rx="7" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.5"/>
+      <text x="250" y="26" font-size="10.5" font-weight="700" fill="#2f4fd0">id_token</text>
+      <text x="250" y="42" font-size="8" font-weight="700" fill="#14181f">&ldquo;Y signed in, just now.&rdquo;</text>
+      <line x1="250" y1="50" x2="448" y2="50" stroke="#b6c2f0" stroke-width="0.8"/>
+      <text x="250" y="66" font-size="7.8" fill="#14181f"><tspan font-family="SF Mono,Menlo,monospace">aud</tspan> = the client_id</text>
+      <text x="250" y="79" font-size="7.8" fill="#14181f">Sent to: nobody &mdash; it has arrived</text>
+      <text x="250" y="92" font-size="7.8" fill="#14181f">Lifetime: minutes</text>
+      <text x="250" y="105" font-size="7.8" fill="#14181f">Read by: the client</text>
+      <text x="250" y="124" font-size="7.4" font-style="italic" fill="#59617a">An OpenID Connect receipt for the</text>
+      <text x="250" y="132" font-size="7.4" font-style="italic" fill="#59617a">login. Not a key to anything.</text>
+
+      <!-- refresh token -->
+      <rect x="470" y="6" width="224" height="142" rx="7" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.5"/>
+      <text x="482" y="26" font-size="10.5" font-weight="700" fill="#a8620a">refresh_token</text>
+      <text x="482" y="42" font-size="8" font-weight="700" fill="#14181f">&ldquo;Give me another access token.&rdquo;</text>
+      <line x1="482" y1="50" x2="682" y2="50" stroke="#e6bc7e" stroke-width="0.8"/>
+      <text x="482" y="66" font-size="7.8" fill="#14181f">No audience &mdash; opaque and random</text>
+      <text x="482" y="79" font-size="7.8" fill="#14181f">Sent to: the authorization server</text>
+      <text x="482" y="92" font-size="7.8" fill="#14181f">Lifetime: hours to months</text>
+      <text x="482" y="105" font-size="7.8" fill="#14181f">Read by: nobody, ever</text>
+      <text x="482" y="124" font-size="7.4" font-style="italic" fill="#8a6a3a">The most dangerous thing a client</text>
+      <text x="482" y="132" font-size="7.4" font-style="italic" fill="#8a6a3a">holds. See Chapter 9.</text>
+
+      <!-- where each one goes -->
+      <rect x="6" y="180" width="222" height="34" rx="6" fill="#fff" stroke="#0d7a52" stroke-width="1.2"/>
+      <text x="117" y="201" text-anchor="middle" font-size="9" font-weight="700" fill="#0d7a52">Resource Server (API)</text>
+      <path d="M117,148 L117,175" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#t1)"/>
+
+      <rect x="238" y="180" width="222" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="349" y="201" text-anchor="middle" font-size="9" font-weight="700" fill="#2f4fd0">The client's own code</text>
+      <path d="M349,148 L349,175" stroke="#2f4fd0" stroke-width="1.6" marker-end="url(#t1)"/>
+
+      <rect x="470" y="180" width="224" height="34" rx="6" fill="#fff" stroke="#a8620a" stroke-width="1.2"/>
+      <text x="582" y="201" text-anchor="middle" font-size="9" font-weight="700" fill="#a8620a">Authorization Server</text>
+      <path d="M582,148 L582,175" stroke="#a8620a" stroke-width="1.6" marker-end="url(#t1)"/>
+
+      <!-- the rule -->
+      <rect x="6" y="226" width="688" height="28" rx="6" fill="#fdeaee" stroke="#f0b8c4" stroke-width="1"/>
+      <text x="350" y="244" text-anchor="middle" font-size="9.4" font-weight="700" fill="#c0203f">Each token has exactly one correct destination. Sending one to the wrong place is a bug, not a shortcut.</text>
+    </svg>
+    <figcaption><b>Figure 7.2</b> &mdash; Three tokens, three consumers. The <code>aud</code> claim is
+    not documentation: it is the mechanism that enforces this separation.</figcaption>
+  </figure>
+
+  <h2>The mistake, and why the API must refuse it</h2>
+  <p>An ID token is a JWT from the same issuer, so it is tempting to send it as a Bearer
+  token. It looks valid. It is not:</p>
+<pre><span class="c"># The ID token's own claims say who it is for:</span>
+"<span class="k">aud</span>": "<span class="s">demo-web-app</span>"          <span class="c"># the CLIENT, not the API</span>
+"<span class="k">typ</span>": "<span class="s">JWT</span>"                   <span class="c"># not at+jwt</span>
+<span class="c"># ...and it carries no `scope` at all, so there is nothing to authorize.</span>
+<span class="r">GET /api/accounts  Authorization: Bearer &lt;id_token&gt;   ->  401 invalid_token</span></pre>
+  <p class="small">An API accepting an ID token is accepting a credential minted for somebody
+  else, with no statement of what it may do &mdash; and in a federated setup that is exploitable.</p>
+
+  <div class="callout good">
+    <span class="lbl">The habit to build.</span> When a call fails with <code>401</code>, check
+    which token you sent before you check anything else. &ldquo;I sent the ID token&rdquo; accounts for
+    a remarkable share of lost afternoons. Lab&nbsp;08 in the simulator does exactly this, twice.
+  </div>
+
+  <h2>Where OpenID Connect fits</h2>
+  <p>OAuth alone never tells the client <i>who</i> the user is; it only hands over authority.
+  OpenID&nbsp;Connect is a thin layer that adds exactly that. &ldquo;Sign in with Google&rdquo; is
+  OpenID&nbsp;Connect, &ldquo;let this app read your Drive&rdquo; is plain OAuth, and most deployments
+  do both at once in the one flow from Chapter&nbsp;4:</p>
+  <ul class="small tight">
+    <li>Ask for the <code>openid</code> scope, and the token response gains an <code>id_token</code>.</li>
+    <li>Send a random <code>nonce</code>; it comes back inside the ID token, proving the token
+    was minted for <i>this</i> login rather than replayed.</li>
+    <li>A <code>/userinfo</code> endpoint returns profile claims, filtered by granted scope.</li>
+
+  </ul>
+
+
+  <div class="pfoot"><span class="ch">Chapter 07 &middot; Three tokens, three jobs</span><span class="n">14</span></div>
+</section>
+
+<!-- ==================================================================== 15
+     CH 8 - SCOPES AND CONSENT
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 08</div>
+  <h1 class="title">Scopes and consent</h1>
+  <p class="lede">A scope is a label for a slice of authority. What an application asks for
+  and what it gets are two different things, and it is narrowed three separate times.</p>
+
+  <figure style="margin:6pt 0 8pt">
+    <svg viewBox="0 0 700 268" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="s1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="6.5" markerHeight="5.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- 1. requested -->
+      <text x="6" y="16" font-size="8" font-weight="700" fill="#59617a">1 &middot; WHAT THE APP ASKS FOR</text>
+      <rect x="6" y="22" width="688" height="30" rx="5" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="16" y="41" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">openid  profile  email  accounts:read  payments:write</text>
+      <text x="684" y="41" text-anchor="end" font-size="8" font-weight="700" fill="#2f4fd0">5 scopes</text>
+
+      <path d="M350,52 L350,64" stroke="#59617a" stroke-width="1.4" marker-end="url(#s1)"/>
+      <text x="360" y="62" font-size="7.4" font-style="italic" fill="#59617a">capped by what the client is registered for</text>
+
+      <!-- 2. registration -->
+      <text x="6" y="80" font-size="8" font-weight="700" fill="#59617a">2 &middot; WHAT THE CLIENT MAY EVER REQUEST</text>
+      <rect x="6" y="86" width="688" height="30" rx="5" fill="#f5f7fc" stroke="#b9c2da" stroke-width="1.1"/>
+      <text x="16" y="105" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">openid  profile  email  accounts:read  payments:write</text>
+      <text x="684" y="105" text-anchor="end" font-size="8" fill="#59617a">unchanged &mdash; all 5 are registered</text>
+
+      <path d="M350,116 L350,128" stroke="#59617a" stroke-width="1.4" marker-end="url(#s1)"/>
+      <text x="360" y="126" font-size="7.4" font-style="italic" fill="#59617a">capped by the user's own entitlements &mdash; here, bob</text>
+
+      <!-- 3. entitlement -->
+      <text x="6" y="144" font-size="8" font-weight="700" fill="#59617a">3 &middot; WHAT THIS USER CAN DELEGATE AT ALL</text>
+      <rect x="6" y="150" width="550" height="30" rx="5" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.2"/>
+      <text x="16" y="169" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">openid  profile  email  accounts:read</text>
+      <rect x="560" y="150" width="134" height="30" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.1" stroke-dasharray="4 3"/>
+      <text x="627" y="169" text-anchor="middle" font-size="7.8" font-family="SF Mono,Menlo,monospace" fill="#c0203f">payments:write</text>
+      <text x="627" y="143" text-anchor="middle" font-size="7" font-weight="700" fill="#c0203f">bob cannot grant this</text>
+
+      <path d="M350,180 L350,192" stroke="#59617a" stroke-width="1.4" marker-end="url(#s1)"/>
+      <text x="360" y="190" font-size="7.4" font-style="italic" fill="#59617a">narrowed by what the user actually ticks</text>
+
+      <!-- 4. consent -->
+      <text x="6" y="208" font-size="8" font-weight="700" fill="#59617a">4 &middot; WHAT THE USER APPROVES ON THE CONSENT SCREEN</text>
+      <rect x="6" y="214" width="410" height="30" rx="5" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.6"/>
+      <text x="16" y="233" font-size="8.4" font-family="SF Mono,Menlo,monospace" font-weight="700" fill="#14181f">openid  profile  accounts:read</text>
+      <rect x="420" y="214" width="136" height="30" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.1" stroke-dasharray="4 3"/>
+      <text x="488" y="233" text-anchor="middle" font-size="7.8" font-family="SF Mono,Menlo,monospace" fill="#c0203f">email unticked</text>
+
+      <text x="6" y="260" font-size="9" font-weight="700" fill="#0d7a52">The token comes back with 3 scopes, not 5 &mdash; and the client must cope with that.</text>
+    </svg>
+    <figcaption><b>Figure 8.1</b> &mdash; Scope only ever narrows. Each stage can remove, never add,
+    which is why the token response repeats the <code>scope</code> it actually granted.</figcaption>
+  </figure>
+
+  <h2>Designing scopes people can consent to</h2>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Good</h4>
+      <ul class="tiny tight" style="margin:0;padding-left:13pt">
+        <li><code>accounts:read</code>, <code>payments:write</code> &mdash; resource plus verb</li>
+        <li>Separate read from write, always</li>
+        <li>Few enough to fit on one screen</li>
+        <li>Named for what the <i>user</i> loses if abused</li>
+      </ul>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Bad</h4>
+      <ul class="tiny tight" style="margin:0;padding-left:13pt">
+        <li><code>admin</code>, <code>full_access</code> &mdash; unconsentable</li>
+        <li>One scope per API endpoint &mdash; unreadable</li>
+        <li>Scopes encoding record ids (<code>account:4410</code>)</li>
+        <li>Internal role names leaked into the UI</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Scope is not the same as permission</h2>
+  <p>This distinction causes real vulnerabilities. A scope says <i>this application may perform
+  this kind of operation on this user's behalf</i>. It says nothing about which records that
+  user may touch.</p>
+<pre><span class="c"># The token carries scope=accounts:read and sub=u-1001.</span>
+GET /api/accounts/ACC-7100        <span class="c"># <- an account belonging to u-1002</span>
+
+<span class="r"># A scope check alone would ALLOW this. The API must also check ownership.</span></pre>
+  <p class="small">The simulator's API takes the user from the token's <code>sub</code> and never
+  from the request, which is the habit worth copying. An object reference supplied by the
+  caller must always be authorized against the token's subject.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 08 &middot; Scopes and consent</span><span class="n">15</span></div>
+</section>
+
+<!-- ==================================================================== 16
+     CH 9 - REFRESH TOKENS AND ROTATION
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 09</div>
+  <h1 class="title">Refresh tokens and rotation</h1>
+  <p class="lede">Access tokens expire in minutes. Users expect to stay signed in for weeks.
+  The refresh token bridges that gap &mdash; and needs careful handling because of it.</p>
+
+  <p>An access token cannot be recalled once issued, so it is given a short life: a leak is a
+  problem for five minutes, not five months. The refresh token mints replacements without
+  troubling the user.</p>
+
+  <figure style="margin:6pt 0 8pt">
+    <svg viewBox="0 0 700 262" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="r1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <text x="6" y="14" font-size="8" font-weight="700" fill="#59617a" letter-spacing="0.06em">ONE TOKEN FAMILY, OVER TIME</text>
+
+      <!-- generation 1 -->
+      <rect x="6" y="26" width="150" height="44" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/>
+      <text x="81" y="44" text-anchor="middle" font-size="9" font-weight="700" fill="#0d7a52">refresh token</text>
+      <text x="81" y="58" text-anchor="middle" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">generation 1</text>
+      <text x="70" y="84" text-anchor="middle" font-size="7.4" fill="#59617a">issued with the first</text>
+      <text x="70" y="93" text-anchor="middle" font-size="7.4" fill="#59617a">access token</text>
+
+      <!-- refresh 1 -->
+      <path d="M156,48 L242,48" stroke="#0d7a52" stroke-width="1.7" marker-end="url(#r1)"/>
+      <text x="199" y="36" text-anchor="middle" font-size="7.2" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">grant_type=</text>
+      <text x="199" y="45" text-anchor="middle" font-size="7.2" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">refresh_token</text>
+      <text x="199" y="62" text-anchor="middle" font-size="7" fill="#59617a">gen 1 retired</text>
+
+      <!-- generation 2 -->
+      <rect x="246" y="26" width="150" height="44" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/>
+      <text x="321" y="44" text-anchor="middle" font-size="9" font-weight="700" fill="#0d7a52">refresh token</text>
+      <text x="321" y="58" text-anchor="middle" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">generation 2</text>
+
+      <!-- refresh 2 -->
+      <path d="M396,48 L482,48" stroke="#0d7a52" stroke-width="1.7" marker-end="url(#r1)"/>
+      <text x="439" y="62" text-anchor="middle" font-size="7" fill="#59617a">gen 2 retired</text>
+
+      <!-- generation 3 -->
+      <rect x="486" y="26" width="150" height="44" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/>
+      <text x="561" y="44" text-anchor="middle" font-size="9" font-weight="700" fill="#0d7a52">refresh token</text>
+      <text x="561" y="58" text-anchor="middle" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">generation 3</text>
+      <text x="648" y="52" font-size="7.4" font-style="italic" fill="#59617a">and so on&hellip;</text>
+
+      <text x="321" y="84" text-anchor="middle" font-size="7.6" fill="#3e6d5b">each refresh returns a brand-new value; only the newest generation is alive</text>
+
+      <!-- the theft -->
+      <rect x="6" y="118" width="180" height="40" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.4"/>
+      <text x="96" y="134" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">Attacker copied gen 1</text>
+      <text x="96" y="148" text-anchor="middle" font-size="7.4" fill="#8a4453">from a backup, a log, a device</text>
+
+      <path d="M148,118 L148,74" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#r1)"/>
+
+      <!-- the replay -->
+      <path d="M186,138 L280,138" stroke="#c0203f" stroke-width="1.7" marker-end="url(#r1)"/>
+      <text x="233" y="131" text-anchor="middle" font-size="7.2" fill="#c0203f">replays it</text>
+
+      <rect x="284" y="112" width="220" height="52" rx="6" fill="#fff" stroke="#c0203f" stroke-width="1.5"/>
+      <text x="394" y="130" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Reuse detected</text>
+      <text x="394" y="144" text-anchor="middle" font-size="7.6" fill="#8a4453">a retired generation was presented,</text>
+      <text x="394" y="154" text-anchor="middle" font-size="7.6" fill="#8a4453">so someone has a copy</text>
+
+      <path d="M504,138 L560,138" stroke="#c0203f" stroke-width="1.7" marker-end="url(#r1)"/>
+
+      <!-- the response -->
+      <rect x="564" y="112" width="130" height="52" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.5"/>
+      <text x="629" y="132" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">invalid_grant</text>
+      <text x="629" y="148" text-anchor="middle" font-size="7.6" fill="#8a4453">for everyone</text>
+
+      <!-- the revocation band -->
+      <rect x="6" y="182" width="688" height="34" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.2"/>
+      <text x="350" y="203" text-anchor="middle" font-size="9.4" font-weight="700" fill="#c0203f">The ENTIRE family is revoked &mdash; generations 1, 2 and 3, plus every access token they produced.</text>
+
+      <rect x="6" y="224" width="688" height="32" rx="6" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="1"/>
+      <text x="350" y="244" text-anchor="middle" font-size="9" fill="#14181f">The user signs in again. The attacker is locked out, and the incident left a trace. <tspan font-weight="700">That is the correct outcome.</tspan></text>
+    </svg>
+    <figcaption><b>Figure 9.1</b> &mdash; Rotation with reuse detection (RFC&nbsp;9700 &sect;4.14). The
+    server cannot tell thief from victim, so it trusts neither: a silent, permanent compromise
+    becomes a visible, recoverable one.</figcaption>
+  </figure>
+
+  <h2>What this buys you</h2>
+  <ul class="small tight">
+    <li><b>A stolen refresh token stops working.</b> Whichever party refreshes second is
+    refused, and the theft is detected rather than lasting for months.</li>
+    <li><b>The theft becomes observable.</b> A reuse event is a high-quality security signal,
+    because correct clients never replay a retired token. This is why OAuth&nbsp;2.1 requires
+    rotation (or sender-constraining) for public clients.</li>
+  </ul>
+
+  <h2>How long should each one live?</h2>
+  <table>
+    <thead><tr><th style="width:1.5in">Credential</th><th style="width:1.1in">Typical</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="k">authorization code</td><td>30&ndash;60 s</td><td>It crosses the browser and is redeemed immediately. Anything longer is pure exposure.</td></tr>
+      <tr><td class="k">access token</td><td>5&ndash;15 min</td><td>Cannot be recalled, so its lifetime <i>is</i> the exposure window.</td></tr>
+      <tr><td class="k">refresh token</td><td>hours&ndash;months</td><td>Long, but rotating and revocable. Shorter for public clients.</td></tr>
+      <tr><td class="k">IdP session</td><td>hours</td><td>Decides whether a <i>new</i> authorization needs a fresh login.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <span class="lbl">The operational catch.</span> If a client crashes after sending a refresh
+    but before storing the new token, it will replay the old one and get the whole family
+    revoked &mdash; logging the user out for no good reason. Persist the rotated token before you
+    use the access token that came with it, and serialise refreshes so two tabs cannot race.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 09 &middot; Refresh tokens and rotation</span><span class="n">16</span></div>
+</section>
+
+<!-- ==================================================================== 17
+     CH 10 - WHAT OAUTH 2.1 CHANGED
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 10</div>
+  <h1 class="title">What OAuth 2.1 changed</h1>
+  <p class="lede">OAuth&nbsp;2.1 invents almost nothing. It deletes what proved dangerous and makes
+  the best existing practice mandatory &mdash; and that is precisely why it is an improvement.</p>
+
+  <p>OAuth&nbsp;2.0 is a framework of options. A decade of deployments showed which options were
+  traps, and the security Best Current Practice (RFC&nbsp;9700) documented them. OAuth&nbsp;2.1
+  consolidates that guidance into the core, so that the default reading of the specification
+  is now the safe one.</p>
+
+  <table>
+    <thead><tr><th style="width:1.65in">OAuth 2.0 (2012)</th><th style="width:1.5in">OAuth 2.1</th><th>Why it changed</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td>PKCE optional, recommended for mobile</td><td><b>Required for every authorization code request</b></td><td>Codes leak in ways nobody predicted, the defence costs almost nothing, and a universal rule cannot be misapplied.</td></tr>
+      <tr><td>Implicit grant (<code>response_type=token</code>)</td><td><b>Removed</b></td><td>It put an access token in the URL fragment: browser history, <code>Referer</code> headers, any script on the page &mdash; and the client could not be authenticated at all.</td></tr>
+      <tr><td>Password grant (<code>grant_type=password</code>)</td><td><b>Removed</b></td><td>The application handled the real password, so there was no consent, no MFA, no federation, and no way for a user to tell a real app from a phishing one.</td></tr>
+      <tr><td><code>redirect_uri</code> matching left to the server</td><td><b>Exact string comparison</b></td><td>Wildcards and prefix rules let an attacker append a path and have codes delivered to themselves.</td></tr>
+      <tr><td>Bearer tokens allowed in query strings</td><td><b>Header only</b></td><td>Query strings are written to every access log, proxy log and browser history on the path.</td></tr>
+      <tr><td>Refresh tokens static and long-lived</td><td><b>Rotate, or bind to the client</b></td><td>A stolen static refresh token is permanent, undetectable access. Rotation makes the theft visible and recoverable.</td></tr>
+      <tr><td>Little guidance on mixing up servers</td><td><b><code>iss</code> in the authorization response</b></td><td>Prevents a mix-up attack where a code from a malicious server is replayed at an honest one.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">If you already know OAuth 2.0</h4>
+      <p class="tiny" style="margin:0">You know OAuth&nbsp;2.1. Add PKCE everywhere, stop using
+      implicit and password, match redirect URIs exactly, and rotate refresh tokens. That is
+      the entire migration.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">On the specification's status</h4>
+      <p class="tiny" style="margin:0">OAuth&nbsp;2.1 is an IETF draft that consolidates published,
+      stable RFCs. Nothing in it is speculative &mdash; every requirement already exists as a
+      standard somewhere. Implementing it is not a bet on a draft.</p>
+    </div>
+  </div>
+
+  <div class="callout good">
+    <span class="lbl">The pattern worth noticing.</span> Every deletion removes a <i>choice</i> a
+    developer could get wrong. The most reliable security improvement is not a new mechanism
+    but the removal of an unsafe option &mdash; which is the actual lesson of OAuth&nbsp;2.1.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 10 &middot; What OAuth 2.1 changed</span><span class="n">17</span></div>
+</section>
+
+<!-- ==================================================================== 18
+     CH 11 - HOW AN API VALIDATES A TOKEN
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 11</div>
+  <h1 class="title">How an API validates a token</h1>
+  <p class="lede">The resource server is the part most tutorials skip. On every single request
+  it asks four questions, in this order.</p>
+
+  <figure style="margin:6pt 0 8pt">
+    <svg viewBox="0 0 700 232" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="g1" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <text x="6" y="14" font-size="8" font-weight="700" fill="#59617a">AN INCOMING REQUEST</text>
+
+      <!-- gate 1 -->
+      <rect x="6" y="24" width="152" height="62" rx="6" fill="#f5f7fc" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="18" y="40" font-size="8" font-weight="700" fill="#2f4fd0">1 &middot; PRESENT?</text>
+      <text x="18" y="55" font-size="7.8" fill="#14181f">Is there a Bearer token</text>
+      <text x="18" y="65" font-size="7.8" fill="#14181f">in the Authorization</text>
+      <text x="18" y="75" font-size="7.8" fill="#14181f">header?</text>
+
+      <!-- gate 2 -->
+      <rect x="180" y="24" width="152" height="62" rx="6" fill="#f5f7fc" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="192" y="40" font-size="8" font-weight="700" fill="#2f4fd0">2 &middot; AUTHENTIC?</text>
+      <text x="192" y="55" font-size="7.8" fill="#14181f">Does the signature</text>
+      <text x="192" y="65" font-size="7.8" fill="#14181f">verify against the</text>
+      <text x="192" y="75" font-size="7.8" fill="#14181f">issuer's published key?</text>
+
+      <!-- gate 3 -->
+      <rect x="354" y="24" width="152" height="62" rx="6" fill="#f5f7fc" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="366" y="40" font-size="8" font-weight="700" fill="#2f4fd0">3 &middot; FOR ME, NOW?</text>
+      <text x="366" y="55" font-size="7.8" fill="#14181f">Are <tspan font-family="SF Mono,Menlo,monospace">iss</tspan>, <tspan font-family="SF Mono,Menlo,monospace">aud</tspan>, <tspan font-family="SF Mono,Menlo,monospace">exp</tspan></text>
+      <text x="366" y="65" font-size="7.8" fill="#14181f">and <tspan font-family="SF Mono,Menlo,monospace">typ</tspan> all correct</text>
+      <text x="366" y="75" font-size="7.8" fill="#14181f">for this API?</text>
+
+      <!-- gate 4 -->
+      <rect x="528" y="24" width="166" height="62" rx="6" fill="#f5f7fc" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="540" y="40" font-size="8" font-weight="700" fill="#2f4fd0">4 &middot; PERMITTED?</text>
+      <text x="540" y="55" font-size="7.8" fill="#14181f">Does <tspan font-family="SF Mono,Menlo,monospace">scope</tspan> cover</text>
+      <text x="540" y="65" font-size="7.8" fill="#14181f">this particular</text>
+      <text x="540" y="75" font-size="7.8" fill="#14181f">operation?</text>
+
+      <!-- pass-through arrows -->
+      <path d="M158,55 L175,55" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#g1)"/>
+      <path d="M332,55 L349,55" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#g1)"/>
+      <path d="M506,55 L523,55" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#g1)"/>
+
+      <!-- failure exits -->
+      <g stroke="#c0203f" stroke-width="1.4">
+        <path d="M82,86 L82,112" marker-end="url(#g1)"/>
+        <path d="M256,86 L256,112" marker-end="url(#g1)"/>
+        <path d="M430,86 L430,112" marker-end="url(#g1)"/>
+        <path d="M611,86 L611,112" marker-end="url(#g1)"/>
+      </g>
+
+      <rect x="6" y="116" width="152" height="34" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.2"/>
+      <text x="82" y="131" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">401</text>
+      <text x="82" y="143" text-anchor="middle" font-size="7.4" fill="#8a4453">invalid_token</text>
+
+      <rect x="180" y="116" width="152" height="34" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.2"/>
+      <text x="256" y="131" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">401</text>
+      <text x="256" y="143" text-anchor="middle" font-size="7.4" fill="#8a4453">forged or altered</text>
+
+      <rect x="354" y="116" width="152" height="34" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.2"/>
+      <text x="430" y="131" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">401</text>
+      <text x="430" y="143" text-anchor="middle" font-size="7.4" fill="#8a4453">wrong API, or expired</text>
+
+      <rect x="528" y="116" width="166" height="34" rx="5" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.4"/>
+      <text x="611" y="131" text-anchor="middle" font-size="8.6" font-weight="700" fill="#a8620a">403 insufficient_scope</text>
+      <text x="611" y="143" text-anchor="middle" font-size="7.4" fill="#8a6a3a">valid token, wrong permission</text>
+
+      <!-- success -->
+      <rect x="6" y="168" width="688" height="56" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.5"/>
+      <text x="20" y="186" font-size="9.4" font-weight="700" fill="#0d7a52">All four pass &rarr; serve the data belonging to the token's <tspan font-family="SF Mono,Menlo,monospace">sub</tspan></text>
+      <text x="20" y="202" font-size="8" fill="#14181f">Take the user from the <tspan font-family="SF Mono,Menlo,monospace">sub</tspan> claim, never from a user id in the request path or body.</text>
+      <text x="20" y="216" font-size="8" font-style="italic" fill="#3e6d5b">Steps 1&ndash;4 need no contact with the authorization server at all: the signature is checked offline, against cached public keys.</text>
+    </svg>
+    <figcaption><b>Figure 11.1</b> &mdash; The four gates. Note the status codes: <b>401</b> means
+    &ldquo;this token is not acceptable&rdquo;; <b>403</b> means &ldquo;the token is fine but does not
+    authorize this&rdquo;. Returning 401 for a scope failure sends clients into pointless refresh loops.</figcaption>
+  </figure>
+
+  <h2>Local validation or introspection?</h2>
+  <div class="grid g2">
+    <div class="panel tight">
+      <h4 style="margin-top:0">Verify the JWT locally</h4>
+      <p class="tiny" style="margin:0 0 3pt">Fetch the issuer's public keys once from
+      <code>/jwks.json</code>, cache them by <code>kid</code>, verify offline.</p>
+      <p class="tiny" style="margin:0"><b>Fast</b> and needs no network. <b>But</b> it cannot see a
+      revocation: a revoked token stays acceptable until <code>exp</code>.</p>
+    </div>
+    <div class="panel tight">
+      <h4 style="margin-top:0">Ask the authorization server</h4>
+      <p class="tiny" style="margin:0 0 3pt">Call <code>/introspect</code> (RFC&nbsp;7662) per
+      request. Works with opaque tokens too.</p>
+      <p class="tiny" style="margin:0"><b>Always current</b>, including revocation. <b>But</b> it adds
+      a round trip to every call and makes the AS a hard dependency.</p>
+    </div>
+  </div>
+  <p class="small">This trade-off is the real reason access tokens are short-lived: a five-minute
+  window is the compromise between not calling the AS on every request and not honouring a
+  revocation for too long. Lab&nbsp;12 in the simulator revokes a token and then calls both kinds
+  of endpoint, so you can watch one accept it and the other refuse.</p>
+
+  <h2>Three ways to get validation wrong</h2>
+  <ul class="small tight">
+    <li><b>Trusting the token's own <code>alg</code> header.</b> If you let the token choose its
+    algorithm, an attacker sends <code>alg: none</code> (no signature at all) or swaps RS256 for
+    HS256 and signs with your <i>public</i> key as the HMAC secret. Pin the expected algorithm
+    in your code and reject everything else.</li>
+    <li><b>Skipping the <code>aud</code> check.</b> Then any token from that issuer works at your
+    API, including one minted for a low-value service that has no business here. A valid
+    signature only says who issued a token, not who it was for.</li>
+    <li><b>Caching keys without handling rotation.</b> Cache by <code>kid</code>, refetch when an
+    unknown <code>kid</code> appears, and rate-limit that refetch. An issuer that rotates keys
+    should not take your API down &mdash; nor should an unknown <code>kid</code> let an attacker
+    trigger unbounded fetches.</li>
+  </ul>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; How an API validates a token</span><span class="n">18</span></div>
+</section>
+
+<!-- ==================================================================== 19
+     CH 12 - THE MISTAKES THAT MATTER
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 12</div>
+  <h1 class="title">The mistakes that matter</h1>
+  <p class="lede">A checklist drawn from the failures that actually recur.</p>
+
+  <h2>Writing a client</h2>
+  <table>
+    <thead><tr><th style="width:2.3in">Mistake</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td>Hashing the raw random bytes instead of the base64url verifier text</td><td>Every exchange fails with <code>invalid_grant</code> and nothing in the error says why.</td></tr>
+      <tr><td>Using base64 instead of base64<b>url</b></td><td><code>+</code>, <code>/</code> and <code>=</code> get percent-encoded in the URL, and the comparison fails.</td></tr>
+      <tr><td>Reusing one <code>code_verifier</code> for every request</td><td>A single leak compromises every future flow. It is a nonce: generate a fresh pair each time.</td></tr>
+      <tr><td>Keeping the verifier or tokens in <code>localStorage</code></td><td>Readable by any script on the origin, so one XSS takes everything. Keep them server-side, or in memory.</td></tr>
+      <tr><td>Omitting <code>code_challenge_method</code></td><td>RFC&nbsp;7636 defaults it to <code>plain</code>: a strict server rejects you, a lenient one silently drops your protection.</td></tr>
+      <tr><td>Assuming the granted scope equals the requested scope</td><td>Features break confusingly when a user declines one checkbox. Read <code>scope</code> from the response.</td></tr>
+      <tr><td>Sending the <code>id_token</code> to the API</td><td><code>401</code>, and an afternoon lost. It is a login receipt, not an API key.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Running a server or an API</h2>
+  <table>
+    <thead><tr><th style="width:2.3in">Mistake</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td>Accepting the token's own <code>alg</code> header</td><td>Opens <code>alg: none</code> and RS256&rarr;HS256 confusion. Pin the algorithm server-side.</td></tr>
+      <tr><td>Not validating <code>aud</code></td><td>A token minted for any client of that issuer works at your API.</td></tr>
+      <tr><td>Prefix or wildcard <code>redirect_uri</code> matching</td><td>An attacker appends a path and has your users' codes delivered to them.</td></tr>
+      <tr><td>Letting an authorization code be redeemed twice</td><td>Whoever holds a copy can keep minting tokens. Single-use, and revoke on replay.</td></tr>
+      <tr><td>Returning <code>401</code> for a scope failure</td><td>Clients refresh in a loop trying to fix something a refresh cannot fix. Use <code>403</code>.</td></tr>
+      <tr><td>Taking the user id from the request instead of <code>sub</code></td><td>A textbook IDOR sitting on top of otherwise correct OAuth.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="lbl">A useful instinct.</span> When OAuth surprises you, ask <i>which channel is
+    this on, and who can see it?</i> Nearly every mistake above is a value that ended up on the
+    wrong channel, or a check skipped because the happy path worked without it.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 12 &middot; The mistakes that matter</span><span class="n">19</span></div>
+</section>
+
+<!-- ==================================================================== 20
+     CH 13 - RUN IT YOURSELF
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 13</div>
+  <h1 class="title">Run it yourself</h1>
+  <p class="lede">Reading about a protocol gets you halfway. The simulator that ships with this
+  guide runs a real OAuth&nbsp;2.1 deployment on your machine, and lets you break it on purpose.</p>
+
+  <div class="grid g2">
+    <div>
+      <h3 style="margin-top:0">Start it</h3>
+<pre>cd oauth-simulator
+make up          <span class="c"># Docker</span>
+make local       <span class="c"># or plain Node, no Docker</span></pre>
+      <p class="tiny" style="margin:0">Then open <b>localhost:9020</b> and sign in as
+      <code>alice</code> / <code>wonderland</code>. Stop with <code>make down</code>.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Or drive it from a terminal</h3>
+<pre>make demo          <span class="c"># the whole flow in curl</span>
+make demo-attack   <span class="c"># a stolen code, refused</span>
+make test          <span class="c"># every scenario at once</span></pre>
+      <p class="tiny" style="margin:0">Every parameter is printed, so you can follow the
+      protocol without a browser.</p>
+    </div>
+  </div>
+
+  <h2>What is running</h2>
+  <table>
+    <thead><tr><th style="width:1.5in">Service</th><th style="width:1.1in">URL</th><th>Role in this guide</th></tr></thead>
+    <tbody>
+      <tr><td>Client app + labs</td><td class="k">:9020</td><td>The <b>client</b> of Chapter&nbsp;2. Holds the labs and a flow inspector showing every request it made.</td></tr>
+      <tr><td>IdP + authorization server</td><td class="k">:9000</td><td>Chapter&nbsp;2's <b>authorization server</b>. Login, consent and tokens, plus a live trace and the policy switches.</td></tr>
+      <tr><td>Resource server</td><td class="k">:9010</td><td>The <b>API</b> of Chapter&nbsp;11, running all four gates on every request.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Each chapter, as a lab</h2>
+  <div class="grid g2" style="gap:0 16pt">
+    <table style="margin-top:0">
+      <thead><tr><th style="width:0.35in">Lab</th><th>What it does</th><th style="width:0.4in">Ch.</th></tr></thead>
+      <tbody>
+        <tr><td class="k">01</td><td>Authorization Code + PKCE, end to end</td><td class="k">3&ndash;4</td></tr>
+        <tr><td class="k">02</td><td>Hands your code to an attacker; PKCE blocks it</td><td class="k">5&ndash;6</td></tr>
+        <tr class="hl"><td class="k">03</td><td>Turns PKCE <i>off</i>; the same theft succeeds</td><td class="k">5&ndash;6</td></tr>
+        <tr><td class="k">04</td><td>Exchanges with the wrong <code>code_verifier</code></td><td class="k">6</td></tr>
+        <tr><td class="k">05</td><td>A public client with no secret at all</td><td class="k">2</td></tr>
+        <tr><td class="k">06</td><td>Rotation, then replays a retired refresh token</td><td class="k">9</td></tr>
+        <tr><td class="k">07</td><td>Scope narrowing and <code>403</code></td><td class="k">8</td></tr>
+      </tbody>
+    </table>
+    <table style="margin-top:0">
+      <thead><tr><th style="width:0.35in">Lab</th><th>What it does</th><th style="width:0.4in">Ch.</th></tr></thead>
+      <tbody>
+        <tr><td class="k">08</td><td>Sends the ID token, and a wrong-audience token</td><td class="k">7</td></tr>
+        <tr><td class="k">09</td><td>Tampers with <code>redirect_uri</code></td><td class="k">10</td></tr>
+        <tr><td class="k">10</td><td><code>state</code>, CSRF and the <code>iss</code> defence</td><td class="k">4</td></tr>
+        <tr><td class="k">11</td><td><code>client_credentials</code>: no user, no consent</td><td class="k">2</td></tr>
+        <tr><td class="k">12</td><td>Revokes a token; local validation accepts it</td><td class="k">11</td></tr>
+        <tr><td class="k">13</td><td>Resurrects implicit and password grants</td><td class="k">10</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout good">
+    <span class="lbl">The page worth opening first.</span> <code>localhost:9000/policy</code> lets
+    you switch off any OAuth&nbsp;2.1 requirement at runtime. Run Lab&nbsp;02 with PKCE on, turn
+    <code>require_pkce</code> off, run Lab&nbsp;03, and watch the same stolen code become a working
+    access token. Nothing in this guide teaches the point faster.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 13 &middot; Run it yourself</span><span class="n">20</span></div>
+</section>
+
+<!-- ==================================================================== 21
+     GLOSSARY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Glossary</h1>
+  <p class="lede">Every term used in this guide, in one place.</p>
+
+  <div class="grid g2 gloss" style="gap:0 20pt">
+    <div>
+      <h4 style="margin-top:0">access token</h4>
+      <p class="tiny">A credential saying what an application may do, on whose behalf, at which
+      API, until when. Usually a signed JWT. Sent to the resource server.</p>
+      <h4>authorization code</h4>
+      <p class="tiny">A short-lived, single-use reference handed to the client through the
+      browser, exchanged at the token endpoint for tokens. Worthless on its own.</p>
+      <h4>authorization server (AS)</h4>
+      <p class="tiny">The service that authenticates the user, collects consent, and issues
+      tokens. Publishes its metadata and public keys.</p>
+      <p class="tiny"><b>aud</b> &mdash; the &ldquo;audience&rdquo; claim: which recipient a token is for.
+      A resource server must reject tokens naming anyone else.</p>
+      <h4>back channel</h4>
+      <p class="tiny">A direct server-to-server HTTPS call, invisible to the browser. Safe for
+      secrets. See Chapter&nbsp;3.</p>
+      <h4>bearer token</h4>
+      <p class="tiny">A token usable by whoever holds it, with no further proof required &mdash;
+      like a password. Hence short lifetimes.</p>
+      <h4>client</h4>
+      <p class="tiny">The application requesting access. <b>Confidential</b> if it can keep a
+      secret (server-side), <b>public</b> if it cannot (SPA, mobile, CLI).</p>
+      <h4>code_challenge / code_verifier</h4>
+      <p class="tiny">The PKCE pair. The verifier is a random secret held by the client; the
+      challenge is its SHA-256 hash, safe to send through the browser.</p>
+      <h4>front channel</h4>
+      <p class="tiny">Communication via browser redirects. Visible in URL bars, history, logs
+      and <code>Referer</code> headers. Never carries secrets.</p>
+    </div>
+    <div>
+      <h4 style="margin-top:0">grant type</h4>
+      <p class="tiny">How a client obtains a token. OAuth&nbsp;2.1 keeps
+      <code>authorization_code</code>, <code>refresh_token</code> and
+      <code>client_credentials</code>; <code>implicit</code> and <code>password</code> are gone.</p>
+      <h4>identity provider (IdP)</h4>
+      <p class="tiny">The service holding user accounts and performing authentication. Usually
+      packaged with the authorization server, but a distinct job.</p>
+      <h4>ID token</h4>
+      <p class="tiny">An OpenID&nbsp;Connect JWT stating who signed in and when, addressed to the
+      client. Not an API credential.</p>
+      <p class="tiny"><b>introspection</b> &mdash; RFC&nbsp;7662: an endpoint where a resource server can
+      ask whether a token is still active. Sees revocation immediately.</p>
+      <p class="tiny"><b>iss</b> &mdash; the &ldquo;issuer&rdquo; claim: which authorization server minted
+      a token. Checked on every validation.</p>
+      <p class="tiny"><b>JWKS</b> &mdash; JSON Web Key Set: the public keys an authorization server
+      publishes so anyone can verify its signatures offline.</p>
+      <h4>JWT</h4>
+      <p class="tiny">JSON Web Token: header, payload and signature, base64url-encoded and
+      dot-separated. Signed, <b>not</b> encrypted.</p>
+      <p class="tiny"><b>kid</b> &mdash; key id: names which published key signed a token, so keys can
+      be rotated without downtime.</p>
+      <h4>nonce</h4>
+      <p class="tiny">A random value echoed inside the ID token, proving it was minted for
+      this login.</p>
+      <h4>PKCE</h4>
+      <p class="tiny">Proof Key for Code Exchange (RFC&nbsp;7636). Binds an authorization code to
+      the application that requested it. Mandatory in OAuth&nbsp;2.1.</p>
+      <h4>refresh token</h4>
+      <p class="tiny">Exchanged for new access tokens without user interaction, and rotated
+      on every use.</p>
+      <h4>resource server</h4>
+      <p class="tiny">The API holding the data. Validates tokens and enforces scope.</p>
+      <h4>scope</h4>
+      <p class="tiny">A label for a slice of authority (<code>accounts:read</code>): requested,
+      capped by registration and entitlement, then approved by the user.</p>
+      <h4>state</h4>
+      <p class="tiny">A random per-request value echoed back on the callback, so a client can
+      recognise a flow it started.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Reference &middot; Glossary</span><span class="n">21</span></div>
+</section>
+
+<!-- ==================================================================== 22
+     THE SPECIFICATIONS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">The specifications</h1>
+  <p class="lede">Which document says what, and a sane order to read them in.</p>
+
+  <h2>Read these, in this order</h2>
+  <table>
+    <thead><tr><th style="width:1.5in">Document</th><th>What it gives you</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td><b>RFC 9700</b><br><span class="tiny muted">OAuth 2.0 Security BCP</span></td><td><b>Start here.</b> The accumulated lessons of a decade of deployments, with the attacks explained. Almost everything OAuth&nbsp;2.1 requires is justified in this document.</td></tr>
+      <tr class="hl"><td><b>OAuth 2.1</b><br><span class="tiny muted">draft-ietf-oauth-v2-1</span></td><td>The consolidated core: one specification with the dangerous options already removed. Read it after 9700 and it will feel inevitable.</td></tr>
+      <tr><td><b>RFC 7636</b><br><span class="tiny muted">PKCE</span></td><td>Short and readable. The definition of <code>code_verifier</code>, <code>code_challenge</code> and <code>S256</code>, and the attack that motivated them.</td></tr>
+      <tr><td><b>RFC 6749</b><br><span class="tiny muted">OAuth 2.0 core</span></td><td>The original framework. Still the normative text for most parameter definitions &mdash; but read it knowing which parts 2.1 deletes.</td></tr>
+      <tr><td><b>RFC 6750</b><br><span class="tiny muted">Bearer token usage</span></td><td>How to send a token and what each error code means. This is where <code>401</code> vs <code>403 insufficient_scope</code> is defined.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The ones you will need eventually</h2>
+  <table>
+    <thead><tr><th style="width:1.5in">Document</th><th>What it covers</th></tr></thead>
+    <tbody>
+      <tr><td><b>RFC 8414</b></td><td>Authorization server metadata: <code>/.well-known/oauth-authorization-server</code>, so clients discover endpoints instead of hard-coding them.</td></tr>
+      <tr><td><b>RFC 9068</b></td><td>JWT access tokens: the <code>at+jwt</code> type and the claims an API should expect.</td></tr>
+      <tr><td><b>RFC 7662 / 7009</b></td><td>Token introspection and revocation.</td></tr>
+      <tr><td><b>RFC 8252</b></td><td>OAuth for native apps: system browsers, custom URI schemes, and why an embedded web view is the wrong answer.</td></tr>
+      <tr><td><b>RFC 8707 / 9207</b></td><td>Resource indicators (audience selection) and the <code>iss</code> authorization-response parameter.</td></tr>
+      <tr><td><b>RFC 9449</b></td><td>DPoP: sender-constrained tokens, so a stolen token is useless without the client's key. The direction bearer tokens are heading.</td></tr>
+      <tr><td><b>OpenID Connect Core</b></td><td>Authentication on top of OAuth: ID tokens, <code>nonce</code>, <code>/userinfo</code> and the <code>openid</code> scope.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="lbl">One last piece of advice.</span> Do not write your own OAuth client or
+    server for production &mdash; use a maintained library and a real authorization server. The
+    value of understanding the protocol is in configuring it correctly, reading the error you
+    actually got, and noticing when somebody proposes quietly removing one of these rules.
+  </div>
+
+  <div style="margin-top:10pt;padding-top:8pt;border-top:0.5pt solid var(--line)">
+    <p class="tiny muted" style="margin:0">This guide accompanies the OAuth&nbsp;2.1 + PKCE
+    Simulator in <code>oauth-simulator/</code>. Regenerate it with <code>make guide</code> from
+    <code>dev-guide/src/dev-guide.html</code>.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Reference &middot; The specifications</span><span class="n">22</span></div>
+</section>
+
+</body>
+</html>

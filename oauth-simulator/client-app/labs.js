@@ -1,0 +1,247 @@
+'use strict';
+/**
+ * The lab catalogue.
+ *
+ * Each lab is a small, self-contained experiment: a claim about how OAuth 2.1
+ * behaves, a button that puts it to the test against a real authorization
+ * server, and an explanation of what the result means.
+ *
+ * `start` describes how to build the /authorize request; `exchange` describes
+ * how the callback should redeem the code. Deliberate mistakes live in these
+ * two objects, which keeps the flow engine itself honest.
+ */
+
+const LABS = [
+  {
+    id: '01-authorization-code-pkce',
+    num: '01',
+    title: 'Authorization Code + PKCE',
+    tagline: 'The one flow OAuth 2.1 wants you to use. Everything else is a variation of this.',
+    level: 'start here',
+    teaches: [
+      'The client mints a <b>code_verifier</b> and sends only its SHA-256 hash (the <b>code_challenge</b>) through the browser.',
+      'You type your password into the <b>identity provider</b>, never into the application.',
+      'The front channel carries a short-lived <b>code</b>; the back channel exchanges it for tokens.',
+      'The access token is a signed JWT naming an audience, a scope and an expiry.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid profile email accounts:read', pkce: 'S256', state: true, nonce: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+  },
+  {
+    id: '02-stolen-authorization-code',
+    num: '02',
+    title: 'The stolen authorization code',
+    tagline: 'Hand the code to an attacker and watch PKCE make it worthless.',
+    level: 'attack',
+    teaches: [
+      'Authorization codes travel through the browser: URL bars, history, logs, referrers, malicious apps.',
+      'Assume the code leaks. PKCE makes that survivable.',
+      'Only the app holding the original <b>code_verifier</b> can redeem the code.',
+      'The attacker cannot derive the verifier from the challenge &mdash; SHA-256 does not run backwards.',
+      'This lab uses the <b>public</b> SPA client, which has no secret at all &mdash; so PKCE is the <i>only</i> thing standing between the thief and your data. (A confidential client also has its secret as a second barrier, but PKCE protects both.)',
+    ],
+    start: { client: 'demo-spa', scope: 'openid profile accounts:read', pkce: 'S256', state: true },
+    exchange: { mode: 'attacker-first' },
+    expect: 'attack-blocked',
+    followUp: 'Now turn <b>require_pkce</b> off at <a href="http://localhost:9000/policy" target="_blank">the policy page</a> and run Lab 03. The same theft then succeeds completely.',
+  },
+  {
+    id: '03-no-pkce',
+    num: '03',
+    title: 'OAuth 2.0 without PKCE',
+    tagline: 'Ask for a code with no challenge at all. First it is refused; turn the rule off and see the 2013-era bug come back.',
+    level: 'attack',
+    teaches: [
+      'An OAuth 2.1 server refuses an authorization request that has no <b>code_challenge</b>.',
+      'With the rule disabled, a code is bound to nothing but the client_id &mdash; which in a public client is not a secret.',
+      'This is the exact vulnerability PKCE was invented to close, and why OAuth 2.1 made it mandatory for <i>every</i> client.',
+      'Again a <b>public</b> client: with no PKCE and no secret, holding the code <i>is</i> holding the account.',
+    ],
+    start: { client: 'demo-spa', scope: 'openid accounts:read', pkce: 'none', state: true },
+    exchange: { mode: 'attacker-first' },
+    expect: 'depends-on-policy',
+    policyHint: { key: 'require_pkce', wantOff: true },
+  },
+  {
+    id: '04-wrong-code-verifier',
+    num: '04',
+    title: 'The wrong code_verifier',
+    tagline: 'Redeem a legitimately obtained code with a freshly invented verifier.',
+    level: 'attack',
+    teaches: [
+      'The AS recomputes <code>BASE64URL(SHA256(verifier))</code> and compares it to the stored challenge.',
+      'A mismatch is <b>invalid_grant</b>, and the code is burned so it cannot be retried.',
+      'This is also the failure you get in real life when a client loses its session between /authorize and /callback.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid accounts:read', pkce: 'S256', state: true },
+    exchange: { mode: 'wrong-verifier' },
+    expect: 'failure',
+  },
+  {
+    id: '05-public-client-spa',
+    num: '05',
+    title: 'A public client (SPA / mobile)',
+    tagline: 'No client secret anywhere. PKCE is the only proof of identity.',
+    level: 'core',
+    teaches: [
+      'A single-page app or mobile app cannot keep a secret &mdash; anyone can read the bundle or decompile the binary.',
+      'Such a client authenticates with <b>nothing</b>: <code>token_endpoint_auth_method: none</code>.',
+      'PKCE is what stops anyone else from using its client_id to redeem a code.',
+      'This is why OAuth 2.1 requires PKCE universally rather than only for public clients.',
+    ],
+    start: { client: 'demo-spa', scope: 'openid profile accounts:read', pkce: 'S256', state: true, nonce: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+  },
+  {
+    id: '06-refresh-rotation',
+    num: '06',
+    title: 'Refresh tokens and rotation',
+    tagline: 'Short-lived access tokens, long-lived sessions, and what happens when a refresh token is replayed.',
+    level: 'core',
+    teaches: [
+      'Access tokens expire in minutes so a leak has a short blast radius.',
+      'Each refresh returns a <b>brand-new</b> refresh token; the old one is retired immediately.',
+      'Presenting a retired refresh token means someone has a copy, so the AS revokes the entire family.',
+      'The user is forced to sign in again. That is the safe outcome, not a bug.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid profile accounts:read', pkce: 'S256', state: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+    actions: ['refresh', 'replay-old-refresh'],
+  },
+  {
+    id: '07-scopes-and-consent',
+    num: '07',
+    title: 'Scopes, consent and least privilege',
+    tagline: 'Ask for the world; get only what the user holds and ticked.',
+    level: 'core',
+    teaches: [
+      'Scope is capped three times: by client registration, by the user\'s own entitlements, and by what the user ticks at consent.',
+      'Sign in as <b>bob</b> (password <code>builder</code>) &mdash; he cannot delegate <code>payments:write</code> at all.',
+      'Untick a box at consent and the token comes back narrower than requested. Clients must handle that.',
+      'A valid token without the needed scope gets <b>403 insufficient_scope</b> from the API, never 401.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid profile email accounts:read payments:write', pkce: 'S256', state: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+    actions: ['call-payments'],
+  },
+  {
+    id: '08-token-confusion',
+    num: '08',
+    title: 'ID token is not an access token',
+    tagline: 'The most common OAuth bug in production code, demonstrated twice.',
+    level: 'core',
+    teaches: [
+      'An <b>ID token</b> is for the client: it says who signed in. Its <code>aud</code> is the client_id.',
+      'An <b>access token</b> is for the API: it says what may be done. Its <code>aud</code> is the API.',
+      'Sending an ID token as a Bearer token must fail &mdash; and here it does, on <code>typ</code> and <code>aud</code>.',
+      'A token minted for a different audience must also fail, even though its signature is perfect.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid profile accounts:read', pkce: 'S256', state: true, nonce: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+    actions: ['send-id-token', 'wrong-audience'],
+  },
+  {
+    id: '09-redirect-uri',
+    num: '09',
+    title: 'redirect_uri exact matching',
+    tagline: 'Try to have the code delivered somewhere it was never registered.',
+    level: 'attack',
+    teaches: [
+      'OAuth 2.1 requires the AS to compare <code>redirect_uri</code> by <b>exact string equality</b>.',
+      'Wildcards and prefix matching let an attacker append a path and receive your codes.',
+      'When the redirect_uri does not match, the AS must render an error rather than redirect &mdash; otherwise it is an open redirector.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid accounts:read', pkce: 'S256', state: true, tamperRedirect: true },
+    exchange: { mode: 'normal' },
+    expect: 'failure',
+    policyHint: { key: 'require_exact_redirect_uri', wantOff: true },
+  },
+  {
+    id: '10-state-and-mixup',
+    num: '10',
+    title: 'state, CSRF and the mix-up defence',
+    tagline: 'What the state parameter is actually for, now that PKCE exists.',
+    level: 'core',
+    teaches: [
+      '<b>state</b> lets the client recognise a callback it started, and carry its own UI state across the redirect.',
+      'A callback with an unknown state must be dropped: someone else is feeding you a code.',
+      'Since PKCE binds the code cryptographically, state is no longer the primary CSRF defence &mdash; but it is still required practice.',
+      'The <code>iss</code> parameter (RFC 9207) stops a mix-up attack where a code from one AS is replayed at another.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid accounts:read', pkce: 'S256', state: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+    actions: ['forged-callback'],
+  },
+  {
+    id: '11-client-credentials',
+    num: '11',
+    title: 'Machine to machine',
+    tagline: 'No user, no browser, no consent. Just one service calling another.',
+    level: 'core',
+    teaches: [
+      'The <b>client_credentials</b> grant authenticates the application itself.',
+      'There is no user, so <code>sub</code> is the client_id and there is nobody to show a consent screen to.',
+      'No refresh token is issued: the client can simply ask again with its own credentials.',
+      'Never use this grant to act on a user\'s behalf &mdash; nobody delegated anything.',
+    ],
+    start: null,
+    actions: ['m2m'],
+  },
+  {
+    id: '12-introspection-and-revocation',
+    num: '12',
+    title: 'Introspection vs local validation',
+    tagline: 'Revoke a token, then watch one API notice and the other not.',
+    level: 'advanced',
+    teaches: [
+      'Local JWT validation is fast and offline, but cannot see a revocation until the token expires.',
+      'Introspection (RFC 7662) asks the AS on every call: slower, but instantly correct.',
+      'This is the real trade-off behind short access-token lifetimes.',
+      'Revoking a refresh token kills its whole family, which is what "sign out everywhere" means.',
+    ],
+    start: { client: 'demo-web-app', scope: 'openid accounts:read', pkce: 'S256', state: true },
+    exchange: { mode: 'normal' },
+    expect: 'success',
+    actions: ['introspect', 'revoke-then-compare'],
+  },
+  {
+    id: '13-removed-grants',
+    num: '13',
+    title: 'What OAuth 2.1 deleted',
+    tagline: 'The implicit and password grants, and why their removal is the best part of 2.1.',
+    level: 'advanced',
+    teaches: [
+      'The <b>implicit</b> grant returned an access token in the URL fragment: in history, in logs, in Referer headers, with no way to authenticate the client.',
+      'The <b>password</b> grant made the application handle the real password, which defeats consent, MFA and federation.',
+      'Both are gone in OAuth 2.1. Authorization Code + PKCE replaces both.',
+      'Turn on <code>allow_legacy_grants</code> to resurrect them and see exactly what you have been spared.',
+    ],
+    start: null,
+    actions: ['legacy-password', 'legacy-implicit'],
+    policyHint: { key: 'allow_legacy_grants', wantOff: false },
+  },
+];
+
+const ACTION_LABELS = {
+  refresh: { label: 'Refresh the access token', hint: 'POST /token with grant_type=refresh_token. Watch the refresh token itself change.' },
+  'replay-old-refresh': { label: 'Replay the OLD refresh token', hint: 'Pretend to be a thief with a stale copy. The whole family dies.', danger: true },
+  'call-payments': { label: 'POST /api/payments', hint: 'Needs payments:write. Succeeds or gives 403 depending on what was granted.' },
+  'send-id-token': { label: 'Send the ID token to the API', hint: 'The classic mistake. The API must reject it.', danger: true },
+  'wrong-audience': { label: 'Get a token for a different API, then use it here', hint: 'Uses the resource parameter (RFC 8707) to mint aud=http://localhost:9999.', danger: true },
+  'forged-callback': { label: 'Deliver a callback with an unknown state', hint: 'Simulates a CSRF-style injected callback. The client must drop it.', danger: true },
+  m2m: { label: 'Get a token with client_credentials', hint: 'No user is involved at all.' },
+  introspect: { label: 'Introspect the current access token', hint: 'Ask the AS whether it is still active.' },
+  'revoke-then-compare': { label: 'Revoke it, then call both APIs', hint: 'Local validation still accepts it; introspection does not.', danger: true },
+  'legacy-password': { label: 'Try the password grant', hint: 'Removed in OAuth 2.1.', danger: true },
+  'legacy-implicit': { label: 'Try the implicit grant', hint: 'Removed in OAuth 2.1.', danger: true },
+};
+
+const byId = (id) => LABS.find((l) => l.id === id) || null;
+
+module.exports = { LABS, ACTION_LABELS, byId };

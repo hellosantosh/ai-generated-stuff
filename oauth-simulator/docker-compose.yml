@@ -1,0 +1,114 @@
+# OAuth 2.1 + PKCE Simulator
+#
+#   docker compose up --build -d     start everything
+#   docker compose logs -f           watch the protocol run
+#   docker compose down              stop and remove
+#
+# ---------------------------------------------------------------------------
+# The one subtlety worth understanding here is the FRONT/BACK CHANNEL URL
+# SPLIT, and it is the thing that trips up every first local OAuth setup:
+#
+#   * The BROWSER reaches the authorization server at http://localhost:9000.
+#     So the issuer, and every URL the browser is redirected to, must say
+#     "localhost" -- a container name means nothing to your browser.
+#
+#   * The CONTAINERS reach each other over the compose network by service
+#     name, e.g. http://authorization-server:9000. "localhost" inside the
+#     client container is the client container itself.
+#
+# So each service gets both: a public URL for redirects, and an internal URL
+# for back-channel calls. The issuer stays the public one, because that is
+# the string that ends up in every token's `iss` claim and gets compared by
+# the resource server.
+# ---------------------------------------------------------------------------
+
+name: oauth-simulator
+
+services:
+  authorization-server:
+    build:
+      context: .
+      dockerfile: authorization-server/Dockerfile
+    container_name: oauth-sim-authorization-server
+    ports:
+      - "9000:9000"
+    environment:
+      PORT: 9000
+      # Browser-facing identity of this AS. Goes into every token as `iss`.
+      ISSUER: http://localhost:9000
+      # Token lifetimes, deliberately short so you can watch expiry happen.
+      CODE_TTL_SEC: 60
+      ACCESS_TOKEN_TTL_SEC: 300
+      REFRESH_TOKEN_TTL_SEC: 3600
+      SESSION_TTL_SEC: 1800
+      DEMO_WEB_APP_SECRET: web-app-super-secret
+      DEMO_SERVICE_SECRET: service-super-secret
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9000/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: unless-stopped
+
+  resource-server:
+    build:
+      context: .
+      dockerfile: resource-server/Dockerfile
+    container_name: oauth-sim-resource-server
+    ports:
+      - "9010:9010"
+    environment:
+      PORT: 9010
+      # The audience this API answers to. A token minted for anything else
+      # is rejected here even if its signature is perfect.
+      AUDIENCE: http://localhost:9010
+      TRUSTED_ISSUER: http://localhost:9000
+      # Back channel: fetch JWKS and introspect over the compose network.
+      AS_INTERNAL_URL: http://authorization-server:9000
+      RS_CLIENT_ID: demo-service
+      RS_CLIENT_SECRET: service-super-secret
+    depends_on:
+      authorization-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9010/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: unless-stopped
+
+  client-app:
+    build:
+      context: .
+      dockerfile: client-app/Dockerfile
+    container_name: oauth-sim-client-app
+    ports:
+      - "9020:9020"
+    environment:
+      PORT: 9020
+      SELF_URL: http://localhost:9020
+      # Front channel: where the BROWSER is sent.
+      AS_PUBLIC_URL: http://localhost:9000
+      # Back channel: where THIS SERVER calls the AS.
+      AS_INTERNAL_URL: http://authorization-server:9000
+      RS_INTERNAL_URL: http://resource-server:9010
+      DEMO_WEB_APP_SECRET: web-app-super-secret
+      DEMO_SERVICE_SECRET: service-super-secret
+    depends_on:
+      authorization-server:
+        condition: service_healthy
+      resource-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9020/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    restart: unless-stopped
+
+# No volumes and no database on purpose: every service keeps its state in
+# memory, so `docker compose restart` is also how you reset the simulator.
+# Note that restarting the authorization server rotates its signing keys.
