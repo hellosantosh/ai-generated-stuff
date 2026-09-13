@@ -1,0 +1,933 @@
+<style>
+/* ==========================================================================
+   The Ultimate Developer's Guide to OAuth 2.1 and PKCE - product page
+   Hand-written CSS: no CDN, so the page can never render unstyled.
+   Everything is scoped under #oa-root, including the theme tokens, so it
+   survives being injected as a fragment.
+   ========================================================================== */
+#oa-root{
+  --bg:#f7f8fc; --panel:#ffffff; --panel-2:#eef1f8; --ink:#111725; --muted:#5a6480;
+  --faint:#8b95ad; --line:#dee3ef; --line-2:#c8d0e2;
+  --accent:#2f4fd0; --accent-ink:#2442b8; --accent-soft:#e9edff;
+  --btn-bg:#2f4fd0; --btn-ink:#ffffff; --btn-pill:rgba(255,255,255,.22);
+  --violet:#7d4fe0; --violet-soft:#f1eaff;
+  --good:#0d7a52; --good-soft:#e4f6ee;
+  --warn:#a8620a; --warn-soft:#fdf2e2;
+  --bad:#c0203f; --bad-soft:#fdeaee;
+  --code-bg:#111827; --code-ink:#e8edf9;
+  --radius:14px; --shadow:0 1px 2px rgba(17,23,37,.05),0 8px 28px rgba(17,23,37,.07);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+
+  background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+@media (prefers-color-scheme:dark){
+  #oa-root:not([data-theme="light"]){
+    --bg:#080b14; --panel:#101725; --panel-2:#18202f; --ink:#e9edf7; --muted:#9aa5bd;
+    --faint:#71799130; --faint:#717991; --line:#232c3d; --line-2:#33405a;
+    --accent:#7e9dff; --accent-ink:#a8c0ff; --accent-soft:#151f3a;
+  --btn-bg:#7e9dff; --btn-ink:#081120; --btn-pill:rgba(0,0,0,.17);
+    --btn-bg:#7e9dff; --btn-ink:#081120; --btn-pill:rgba(0,0,0,.17);
+    --violet:#b48cff; --violet-soft:#1e1733;
+    --good:#3ecf95; --good-soft:#0e2620;
+    --warn:#e0a13c; --warn-soft:#2a2113;
+    --bad:#ff7089; --bad-soft:#2b1319;
+    --code-bg:#060910; --code-ink:#e3e9f7;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.34);
+  }
+}
+#oa-root[data-theme="dark"]{
+  --bg:#080b14; --panel:#101725; --panel-2:#18202f; --ink:#e9edf7; --muted:#9aa5bd;
+  --faint:#717991; --line:#232c3d; --line-2:#33405a;
+  --accent:#7e9dff; --accent-ink:#a8c0ff; --accent-soft:#151f3a;
+  --btn-bg:#7e9dff; --btn-ink:#081120; --btn-pill:rgba(0,0,0,.17);
+  --violet:#b48cff; --violet-soft:#1e1733;
+  --good:#3ecf95; --good-soft:#0e2620;
+  --warn:#e0a13c; --warn-soft:#2a2113;
+  --bad:#ff7089; --bad-soft:#2b1319;
+  --code-bg:#060910; --code-ink:#e3e9f7;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.34);
+}
+
+#oa-root *,#oa-root *::before,#oa-root *::after{box-sizing:border-box}
+#oa-root h1,#oa-root h2,#oa-root h3,#oa-root h4,#oa-root p,#oa-root ul,#oa-root ol,
+#oa-root figure,#oa-root dl{margin:0}
+#oa-root img,#oa-root svg{max-width:100%;display:block}
+#oa-root a{color:var(--accent);text-decoration:none}
+#oa-root a:hover{text-decoration:underline}
+#oa-root code,#oa-root kbd{font-family:var(--mono);font-size:.88em}
+#oa-root :focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+.oa-wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+.oa-sec{padding:62px 0;border-top:1px solid var(--line)}
+.oa-sec:first-of-type{border-top:0}
+.oa-eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--accent)}
+.oa-h2{font-size:clamp(25px,3.4vw,35px);line-height:1.15;letter-spacing:-.022em;
+  font-weight:800;margin:10px 0 12px}
+.oa-lede{font-size:clamp(16px,1.7vw,18.5px);color:var(--muted);max-width:66ch;line-height:1.55}
+.oa-small{font-size:14.5px;color:var(--muted)}
+.oa-tiny{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* ---------- sticky buy bar ---------- */
+.oa-bar{position:sticky;top:0;z-index:60;background:color-mix(in srgb,var(--panel) 86%,transparent);
+  backdrop-filter:saturate(150%) blur(12px);-webkit-backdrop-filter:saturate(150%) blur(12px);
+  border-bottom:1px solid var(--line);
+  transform:translateY(-100%);transition:transform .28s ease;}
+.oa-bar.is-on{transform:translateY(0)}
+.oa-bar-in{max-width:1080px;margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:14px}
+.oa-bar-t{font-weight:700;font-size:14.5px;letter-spacing:-.01em;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.oa-bar .oa-btn{margin-left:auto;flex:none}
+
+/* ---------- buttons ---------- */
+.oa-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  background:var(--btn-bg);color:var(--btn-ink);border:0;cursor:pointer;
+  font:700 16px/1 var(--sans);letter-spacing:-.01em;
+  padding:15px 26px;border-radius:11px;text-decoration:none;
+  box-shadow:0 1px 2px rgba(17,23,37,.14);
+  transition:transform .12s ease,filter .15s ease}
+.oa-btn:hover{filter:brightness(1.07);text-decoration:none;transform:translateY(-1px)}
+.oa-btn:active{transform:translateY(0)}
+.oa-btn .oa-price{background:var(--btn-pill);padding:3px 9px;border-radius:7px;font-size:14.5px}
+.oa-btn.sm{padding:10px 17px;font-size:14.5px;border-radius:9px}
+.oa-btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line-2);
+  box-shadow:none}
+.oa-btn.ghost:hover{border-color:var(--accent);filter:none}
+/* `#oa-root a` outranks `.oa-btn`, so re-assert button colours at (1,1,0) */
+#oa-root a.oa-btn{color:var(--btn-ink);text-decoration:none}
+#oa-root a.oa-btn:hover{color:var(--btn-ink);text-decoration:none}
+#oa-root a.oa-btn.ghost,#oa-root a.oa-btn.ghost:hover{color:var(--accent)}
+
+/* ---------- hero ---------- */
+.oa-hero{padding:52px 0 58px;position:relative;overflow:hidden}
+.oa-hero-grid{display:grid;gap:40px;align-items:center}
+@media(min-width:900px){.oa-hero-grid{grid-template-columns:1.12fr .88fr;gap:52px}}
+.oa-h1{font-size:clamp(31px,5vw,50px);line-height:1.06;letter-spacing:-.032em;
+  font-weight:800;margin:14px 0 0}
+.oa-sub{font-size:clamp(16.5px,1.9vw,19.5px);color:var(--muted);margin-top:16px;
+  max-width:44ch;line-height:1.52}
+.oa-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;list-style:none;padding:0}
+.oa-stats li{font-family:var(--mono);font-size:12.5px;font-weight:600;
+  background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+  padding:6px 11px;border-radius:999px}
+.oa-cta{display:flex;flex-wrap:wrap;gap:13px;align-items:center;margin-top:28px}
+.oa-reassure{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:16px;list-style:none;padding:0}
+.oa-reassure li{font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.oa-tick{color:var(--good);font-weight:800}
+
+.oa-cover-wrap{position:relative}
+.oa-cover{border-radius:12px;box-shadow:var(--shadow);border:1px solid var(--line);
+  width:100%;height:auto;background:var(--panel-2)}
+.oa-cover-glow{position:absolute;inset:-9% -6% -14%;z-index:-1;border-radius:50%;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--accent) 30%,transparent),transparent 72%);
+  filter:blur(34px)}
+.oa-badge-float{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);
+  border-radius:999px;padding:8px 15px;font:700 13px var(--sans);white-space:nowrap}
+
+/* ---------- panels / grids ---------- */
+.oa-grid{display:grid;gap:16px}
+@media(min-width:700px){.oa-2{grid-template-columns:1fr 1fr}}
+@media(min-width:860px){.oa-3{grid-template-columns:repeat(3,1fr)}}
+.oa-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px}
+.oa-card h3{font-size:17.5px;letter-spacing:-.015em;margin-bottom:7px}
+.oa-card p{font-size:14.8px;color:var(--muted);line-height:1.55}
+.oa-note{border-left:3px solid var(--accent);background:var(--accent-soft);
+  padding:16px 20px;border-radius:0 12px 12px 0;font-size:15.5px}
+.oa-note.bad{border-color:var(--bad);background:var(--bad-soft)}
+.oa-note.good{border-color:var(--good);background:var(--good-soft)}
+.oa-note b{font-weight:800}
+
+/* ---------- the question list ---------- */
+.oa-q{list-style:none;padding:0;margin:22px 0 0;counter-reset:q}
+.oa-q li{counter-increment:q;position:relative;padding:15px 0 15px 44px;
+  border-bottom:1px solid var(--line);font-size:16.5px;line-height:1.5}
+.oa-q li:last-child{border-bottom:0}
+.oa-q li::before{content:counter(q);position:absolute;left:0;top:14px;
+  width:27px;height:27px;border-radius:50%;background:var(--panel-2);
+  border:1px solid var(--line-2);color:var(--muted);
+  font:700 12.5px/27px var(--mono);text-align:center}
+
+/* ---------- chapters ---------- */
+.oa-ch{list-style:none;padding:0;margin:0;display:grid;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+@media(min-width:640px){.oa-ch{grid-template-columns:1fr 1fr}}
+@media(min-width:980px){.oa-ch{grid-template-columns:repeat(3,1fr)}}
+.oa-ch li{background:var(--panel);padding:15px 17px;display:flex;gap:12px;align-items:baseline}
+.oa-ch .n{font:700 12px var(--mono);color:var(--accent);flex:none;letter-spacing:.06em}
+.oa-ch .t{font-size:14.8px;font-weight:600;letter-spacing:-.01em}
+.oa-ch li.part{background:var(--accent-soft)}
+.oa-ch li.part .t{color:var(--accent-ink)}
+
+/* ---------- terminal ---------- */
+.oa-term{background:var(--code-bg);border-radius:12px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);box-shadow:var(--shadow)}
+.oa-term-top{display:flex;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.oa-term-top i{width:11px;height:11px;border-radius:50%;background:#39415a;display:block}
+.oa-term pre{margin:0;padding:16px 18px;overflow-x:auto;color:var(--code-ink);
+  font-family:var(--mono);font-size:13px;line-height:1.72}
+.oa-term .c{color:#7f8db3}
+.oa-term .g{color:#5fd6a4}
+.oa-term .r{color:#ff8fa3}
+.oa-term .y{color:#ffd479}
+
+/* ---------- the live PKCE demo ---------- */
+.oa-demo{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:24px;box-shadow:var(--shadow)}
+.oa-field{margin-top:15px}
+.oa-field label{display:block;font:700 12.5px var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.oa-field input{width:100%;font-family:var(--mono);font-size:14px;padding:12px 13px;
+  border:1px solid var(--line-2);border-radius:9px;background:var(--bg);color:var(--ink)}
+.oa-out{font-family:var(--mono);font-size:13px;word-break:break-all;line-height:1.6;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+  padding:11px 13px;margin-top:6px;min-height:42px}
+.oa-out.hash{color:var(--muted)}
+.oa-out.chal{color:var(--good);font-weight:600;border-color:var(--good)}
+.oa-arrow{text-align:center;color:var(--faint);font-family:var(--mono);font-size:12px;
+  margin:11px 0 2px;letter-spacing:.08em}
+
+/* ---------- channel diagram (pure HTML/CSS) ---------- */
+.oa-chan{border-radius:14px;padding:20px;border:1px solid}
+.oa-chan + .oa-chan{margin-top:16px}
+.oa-chan.front{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 42%,transparent)}
+.oa-chan.back{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 42%,transparent)}
+.oa-chan-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em}
+.oa-chan.front .oa-chan-tag{color:var(--warn)}
+.oa-chan.back .oa-chan-tag{color:var(--good)}
+.oa-chan-sub{font-size:13.5px;color:var(--muted);margin-top:4px}
+.oa-flow{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+@media(min-width:780px){.oa-flow{flex-direction:row;align-items:center;gap:0}}
+.oa-node{background:var(--panel);border:1.5px solid var(--line-2);border-radius:10px;
+  padding:13px 15px;text-align:center;font-weight:700;font-size:15px;letter-spacing:-.01em}
+@media(min-width:780px){.oa-node{flex:0 0 170px}}
+.oa-node small{display:block;font-weight:500;font-size:11.5px;margin-top:3px;color:var(--warn)}
+.oa-node.is-app{border-color:var(--accent)}
+.oa-node.is-as{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.oa-link{flex:1;display:flex;flex-direction:column;gap:7px;padding:4px 12px;min-width:0}
+.oa-lbl{font-family:var(--mono);font-size:11.5px;text-align:center;line-height:1.4;
+  word-break:break-word}
+.oa-chan.front .oa-lbl{color:var(--warn)}
+.oa-chan.back .oa-lbl{color:var(--good)}
+.oa-line{position:relative;height:0;border-top:2px dashed var(--warn);margin:5px 0}
+.oa-chan.back .oa-line{border-top-style:solid;border-top-color:var(--good)}
+.oa-line::after{content:"";position:absolute;top:-5px;right:-2px;border:5px solid transparent;
+  border-left-color:var(--warn);border-left-width:7px}
+.oa-line.rev::after{right:auto;left:-2px;border-left-color:transparent;
+  border-right-color:var(--warn);border-right-width:7px}
+.oa-chan.back .oa-line::after{border-left-color:var(--good)}
+.oa-chan.back .oa-line.rev::after{border-left-color:transparent;border-right-color:var(--good)}
+
+/* ---------- reviews ---------- */
+.oa-rating{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.oa-stars{color:var(--warn);font-size:17px;letter-spacing:2px}
+.oa-rating .oa-small{margin:0}
+
+/* ---------- faq ---------- */
+.oa-faq{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+  background:var(--panel)}
+.oa-faq details{border-bottom:1px solid var(--line)}
+.oa-faq details:last-child{border-bottom:0}
+.oa-faq summary{cursor:pointer;padding:17px 20px;font-weight:700;font-size:16px;
+  display:flex;align-items:center;gap:12px;letter-spacing:-.01em;list-style:none}
+.oa-faq summary::-webkit-details-marker{display:none}
+.oa-faq summary::after{content:"+";margin-left:auto;font:700 20px var(--mono);
+  color:var(--accent);flex:none}
+.oa-faq details[open] summary::after{content:"\2013"}
+.oa-faq .a{padding:0 20px 18px;font-size:15px;color:var(--muted);line-height:1.6;max-width:74ch}
+
+/* ---------- final ---------- */
+.oa-final{text-align:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:20px;padding:clamp(30px,5vw,54px) 24px;box-shadow:var(--shadow)}
+.oa-foot{border-top:1px solid var(--line);padding:26px 0 46px;color:var(--faint);font-size:13px}
+.oa-foot a{color:var(--muted)}
+
+/* ---------- theme toggle ---------- */
+.oa-theme{position:fixed;right:14px;bottom:14px;z-index:70;width:42px;height:42px;
+  border-radius:50%;border:1px solid var(--line-2);background:var(--panel);
+  color:var(--ink);cursor:pointer;box-shadow:var(--shadow);font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center}
+
+/* ---------- modal ---------- */
+.oa-modal{position:fixed;inset:0;z-index:90;display:none;place-items:center;padding:18px;
+  background:rgba(6,9,16,.62)}
+.oa-modal[open],.oa-modal.is-open{display:grid}
+.oa-modal-box{background:var(--panel);border-radius:16px;border:1px solid var(--line);
+  max-width:620px;width:100%;max-height:88vh;overflow:auto;padding:26px;box-shadow:var(--shadow)}
+.oa-modal-x{float:right;background:none;border:0;font-size:24px;line-height:1;cursor:pointer;
+  color:var(--muted);padding:2px 6px}
+
+/* ---------- scroll reveal ---------- */
+.oa-rise{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.oa-rise.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  #oa-root *{animation:none!important;transition:none!important}
+  .oa-rise{opacity:1;transform:none}
+  .oa-bar{transition:none}
+}
+</style>
+
+<div id="oa-root">
+
+  <!-- ====================== sticky buy bar ====================== -->
+  <div class="oa-bar" id="oaBar">
+    <div class="oa-bar-in">
+      <span class="oa-bar-t" data-gumroad-field="name">The Ultimate Developer's Guide to OAuth 2.1 and PKCE</span>
+      <a class="oa-btn sm" data-gumroad-action="buy" role="button" tabindex="0">
+        Get the book <span class="oa-price" data-gumroad-field="price">$5</span>
+      </a>
+    </div>
+  </div>
+
+  <main>
+  <!-- ====================== hero ====================== -->
+  <header class="oa-hero">
+    <div class="oa-wrap oa-hero-grid">
+      <div>
+        <p class="oa-eyebrow">Smiroh Publishers &middot; First Edition</p>
+        <h1 class="oa-h1" data-gumroad-field="name">The Ultimate Developer's Guide to OAuth 2.1 and PKCE</h1>
+        <p class="oa-sub">Stop shipping OAuth config you don't fully trust. 54 pages,
+        11 original diagrams, and a complete authorization server printed in the
+        book &mdash; which you can break on purpose and watch exactly what breaks.</p>
+
+        <ul class="oa-stats">
+          <li>54 pages</li>
+          <li>13 chapters</li>
+          <li>10 hands-on labs</li>
+          <li>1,363 lines of source</li>
+          <li>~2 hour read</li>
+        </ul>
+
+        <div class="oa-cta" id="buy">
+          <a class="oa-btn" data-gumroad-action="buy" role="button" tabindex="0">
+            I want this <span class="oa-price" data-gumroad-field="price">$5</span>
+          </a>
+          <button class="oa-btn ghost" type="button" id="oaPeek">Look inside</button>
+        </div>
+
+        <ul class="oa-reassure">
+          <li><span class="oa-tick">&#10003;</span> Instant PDF download</li>
+          <li><span class="oa-tick">&#10003;</span> Searchable, copyable code</li>
+          <li><span class="oa-tick">&#10003;</span> Yours forever, no subscription</li>
+        </ul>
+
+        <div class="oa-rating">
+          <span class="oa-stars" aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span class="oa-small"><strong data-gumroad-field="rating">Be the first to review</strong></span>
+          <span class="oa-small" data-gumroad-field="review-count">no ratings yet</span>
+        </div>
+      </div>
+
+      <figure class="oa-cover-wrap">
+        <span class="oa-cover-glow" aria-hidden="true"></span>
+        <img class="oa-cover" width="670" height="867"
+             src="https://public-files.gumroad.com/89c5pybgixrdkfyqzk7lc6fxtesv"
+             alt="Book cover: The Ultimate Developer's Guide to OAuth 2.1 and PKCE, by Smiroh Dev. A dark technical cover showing the front channel and back channel as two arcs around a keyhole emblem marked S256.">
+        <figcaption class="oa-badge-float">Part&nbsp;II prints the whole program</figcaption>
+      </figure>
+    </div>
+  </header>
+
+  <!-- ====================== the gap ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">The honest test</p>
+      <h2 class="oa-h2">You've shipped OAuth. Could you defend it?</h2>
+      <p class="oa-lede">Most of us wire up a library, the redirect works, and we
+      move on. These are the questions that come up in an incident review &mdash;
+      or a security interview.</p>
+
+      <ol class="oa-q">
+        <li>Why does OAuth&nbsp;2.1 require PKCE even for a server-side app that
+          already has a client secret?</li>
+        <li>An attacker has your authorization code. What <em>exactly</em> stops
+          them redeeming it &mdash; and what happens if that one rule is off?</li>
+        <li>Your API receives a perfectly valid, unexpired JWT from the right
+          issuer. Name the checks it must <em>still</em> run before serving data.</li>
+        <li>A refresh token gets replayed. What should the server do, and why does
+          the honest user get logged out as a result?</li>
+        <li>Someone sends an ID token as a Bearer token and it works. What went
+          wrong, and on whose side?</li>
+      </ol>
+
+      <div class="oa-note" style="margin-top:26px">
+        If any of those made you pause, that's the gap this book closes &mdash; in
+        an afternoon, with a server on your own machine that you can take apart.
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== live PKCE demo ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap">
+      <div class="oa-rise">
+        <p class="oa-eyebrow">Try the core idea &middot; right here</p>
+        <h2 class="oa-h2">PKCE, in one hash</h2>
+        <p class="oa-lede">This is the whole mechanism. Type anything below: the page
+        computes a real SHA-256 and shows you what the browser is allowed to carry
+        and what it never sees. No network, no libraries &mdash; the same arithmetic
+        Chapter&nbsp;6 walks through.</p>
+      </div>
+
+      <div class="oa-grid oa-2 oa-rise" style="margin-top:26px;align-items:start">
+        <div class="oa-demo">
+          <div class="oa-field">
+            <label for="oaVer">1 &middot; code_verifier <span style="text-transform:none;letter-spacing:0">(the secret &mdash; stays in the app)</span></label>
+            <input id="oaVer" type="text" spellcheck="false" autocomplete="off"
+                   aria-describedby="oaVerHelp">
+            <p id="oaVerHelp" class="oa-tiny" style="margin-top:6px">43 random characters.
+              <button type="button" id="oaRoll" class="oa-btn ghost sm"
+                      style="padding:4px 10px;font-size:12.5px;margin-left:4px">Randomise</button>
+            </p>
+          </div>
+
+          <p class="oa-arrow">&#8595; &nbsp;SHA-256&nbsp; &#8595;</p>
+          <div class="oa-field" style="margin-top:0">
+            <label for="oaHash">2 &middot; the digest, in hex</label>
+            <div class="oa-out hash" id="oaHash" role="status" aria-live="polite"></div>
+          </div>
+
+          <p class="oa-arrow">&#8595; &nbsp;base64url&nbsp; &#8595;</p>
+          <div class="oa-field" style="margin-top:0">
+            <label for="oaChal">3 &middot; code_challenge <span style="text-transform:none;letter-spacing:0">(safe to put in a URL)</span></label>
+            <div class="oa-out chal" id="oaChal" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="oa-card">
+            <h3>Why a hash is enough</h3>
+            <p>The attacker sees the challenge &mdash; it's right there in the
+            authorization URL. To use a stolen code they'd need a string that hashes
+            to it, which is a SHA-256 preimage. Nobody can compute that.</p>
+            <p style="margin-top:10px">And they can't guess the verifier: it's 256
+            bits of randomness with no structure to attack.</p>
+          </div>
+          <div class="oa-note bad" style="margin-top:16px">
+            <b>Change one character above.</b> The challenge changes completely.
+            That's the property the whole flow rests on &mdash; and the book shows
+            you the server code that checks it, in constant time.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== the diagram ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">11 original diagrams</p>
+      <h2 class="oa-h2">Drawn to show the mechanism, not the vibe</h2>
+      <p class="oa-lede">Every diagram in the book is hand-built for it. Here's the
+      idea the rest of the protocol hangs off &mdash; the split between what the
+      browser can see and what it can't.</p>
+
+      <figure style="margin-top:30px">
+        <div class="oa-chan front">
+          <span class="oa-chan-tag">FRONT CHANNEL &mdash; THROUGH THE BROWSER</span>
+          <p class="oa-chan-sub">Visible in the URL bar, browser history, server logs
+          and <code>Referer</code> headers. Treat everything here as public.</p>
+          <div class="oa-flow">
+            <div class="oa-node is-app">Your app</div>
+            <div class="oa-link">
+              <span class="oa-lbl">code_challenge</span>
+              <span class="oa-line"></span>
+              <span class="oa-line rev"></span>
+              <span class="oa-lbl">code &mdash; useless on its own</span>
+            </div>
+            <div class="oa-node">The browser<small>sees everything</small></div>
+            <div class="oa-link">
+              <span class="oa-lbl">redirect</span>
+              <span class="oa-line"></span>
+              <span class="oa-line rev"></span>
+              <span class="oa-lbl">redirect back</span>
+            </div>
+            <div class="oa-node is-as">Authorization server</div>
+          </div>
+        </div>
+
+        <div class="oa-chan back">
+          <span class="oa-chan-tag">BACK CHANNEL &mdash; SERVER TO SERVER</span>
+          <p class="oa-chan-sub">A direct call the browser never sees, never logs and
+          cannot interfere with. This is where secrets are allowed to travel.</p>
+          <div class="oa-flow">
+            <div class="oa-node is-app">Your app</div>
+            <div class="oa-link">
+              <span class="oa-lbl">code + code_verifier</span>
+              <span class="oa-line"></span>
+              <span class="oa-line rev"></span>
+              <span class="oa-lbl">access_token + refresh_token</span>
+            </div>
+            <div class="oa-node is-as">Authorization server</div>
+          </div>
+        </div>
+        <figcaption class="oa-tiny" style="margin-top:14px;text-align:center">
+          The code crosses the public channel. The verifier crosses the private one.
+          Neither is worth anything without the other.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ====================== contents ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">What's inside</p>
+      <h2 class="oa-h2">13 chapters, then the whole program</h2>
+      <p class="oa-lede">Each chapter assumes only the ones before it. No fluff, no
+      padding to hit a page count &mdash; the book is deliberately short enough to
+      finish in one sitting.</p>
+
+      <ol class="oa-ch" style="margin-top:28px">
+        <li><span class="n">01</span><span class="t">The problem OAuth solves</span></li>
+        <li><span class="n">02</span><span class="t">The four roles</span></li>
+        <li><span class="n">03</span><span class="t">Front channel and back channel</span></li>
+        <li><span class="n">04</span><span class="t">The Authorization Code flow</span></li>
+        <li><span class="n">05</span><span class="t">The attack PKCE prevents</span></li>
+        <li><span class="n">06</span><span class="t">PKCE, precisely</span></li>
+        <li><span class="n">07</span><span class="t">Anatomy of a token</span></li>
+        <li><span class="n">08</span><span class="t">Scopes and consent</span></li>
+        <li><span class="n">09</span><span class="t">Refresh tokens and rotation</span></li>
+        <li><span class="n">10</span><span class="t">What OAuth 2.1 changed</span></li>
+        <li><span class="n">11</span><span class="t">How an API validates a token</span></li>
+        <li><span class="n">12</span><span class="t">The mistakes that matter</span></li>
+        <li><span class="n">13</span><span class="t">Run it yourself</span></li>
+        <li class="part"><span class="n">II</span><span class="t">The Labs &mdash; 10 exercises</span></li>
+        <li class="part"><span class="n">A&ndash;D</span><span class="t">Complete source, 1,363 lines</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ====================== part II / the labs ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap">
+      <div class="oa-rise">
+        <p class="oa-eyebrow">Part II &middot; the part other books don't have</p>
+        <h2 class="oa-h2">Turn PKCE off and watch the theft succeed</h2>
+        <p class="oa-lede">Part&nbsp;II prints a complete OAuth&nbsp;2.1 deployment
+        &mdash; authorization server, API and client &mdash; as four files you can
+        read and run. No repository to clone, nothing to install: it runs on Node's
+        own modules. Then ten labs put it under attack.</p>
+      </div>
+
+      <div class="oa-grid oa-2 oa-rise" style="margin-top:28px;align-items:start">
+        <div class="oa-term">
+          <div class="oa-term-top" aria-hidden="true"><i></i><i></i><i></i></div>
+<pre><span class="c"># Lab 3 - steal the authorization code</span>
+$ node client.js attack
+  <span class="g">PASS</span>  REFUSED: invalid_grant
+  <span class="g">PASS</span>  REFUSED: the hash of a guess never matches
+
+<span class="c"># Lab 4 - the same theft, PKCE switched off</span>
+$ node client.js nopkce
+  <span class="r">FAIL</span>  ATTACK SUCCEEDED - the attacker holds
+        a real access token
+  <span class="r">FAIL</span>  and it WORKS: {<span class="y">"balance"</span>: 4820.55}</pre>
+        </div>
+
+        <div>
+          <div class="oa-note bad">
+            <b>Identical theft. Opposite outcomes. One flag apart.</b> Nothing
+            explains why OAuth&nbsp;2.1 made PKCE mandatory faster than running
+            those two commands back to back.
+          </div>
+          <div class="oa-card" style="margin-top:16px">
+            <h3>Every safety rule is a switch</h3>
+            <p>The authorization server exposes its policy at runtime &mdash; exact
+            redirect matching, single-use codes, refresh rotation, reuse detection.
+            Turn one off, re-run the labs, and read the warnings the server prints
+            as it does something it shouldn't.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="oa-grid oa-3 oa-rise" style="margin-top:20px">
+        <div class="oa-card">
+          <h3>Runs in one command</h3>
+          <p>The client walks the front channel with a cookie jar instead of a
+          browser, so each lab is one command whose result is printed rather than
+          clicked.</p>
+        </div>
+        <div class="oa-card">
+          <h3>Zero dependencies</h3>
+          <p>1,363 lines across four files, on <code>node:http</code> and
+          <code>node:crypto</code>. A library would hide exactly the parts you're
+          here to understand.</p>
+        </div>
+        <div class="oa-card">
+          <h3>The code is the tested code</h3>
+          <p>The listings are generated from the source that passes the lab suite,
+          so what's printed is what runs &mdash; and it's selectable text in the
+          PDF, not screenshots.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== what you get ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">What you get</p>
+      <h2 class="oa-h2">One PDF. Everything in it.</h2>
+      <div class="oa-grid oa-2" style="margin-top:24px">
+        <div class="oa-card">
+          <h3>The book &mdash; 54 pages</h3>
+          <p>13 chapters and 11 full-page diagrams, from the problem OAuth solves
+          through to a checklist of the mistakes that actually recur. Letter size,
+          embedded fonts, fully searchable.</p>
+        </div>
+        <div class="oa-card">
+          <h3>Part II &mdash; the labs</h3>
+          <p>10 exercises and the complete source of an authorization server, a
+          resource server and a client, printed in full with line numbers and
+          syntax colouring.</p>
+        </div>
+        <div class="oa-card">
+          <h3>A glossary and an RFC map</h3>
+          <p>Every term in one place, plus which specification says what &mdash;
+          and a sane order to read them in, starting with the security BCP.</p>
+        </div>
+        <div class="oa-card">
+          <h3>Instant, permanent access</h3>
+          <p>Download the moment you buy. No account to keep, no subscription, no
+          expiry. Updates to this edition are free.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== fit ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <div class="oa-grid oa-2">
+        <div>
+          <h2 class="oa-h2" style="font-size:clamp(21px,2.6vw,26px)">Written for you if&hellip;</h2>
+          <ul class="oa-q" style="counter-reset:none">
+            <li style="padding-left:0">You've integrated OAuth from a library's
+              quickstart and want to actually understand it.</li>
+            <li style="padding-left:0">You're building or reviewing an API that
+              accepts tokens.</li>
+            <li style="padding-left:0">You have an interview, a design review or an
+              audit coming up.</li>
+            <li style="padding-left:0">You learn by running things and breaking them.</li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="oa-h2" style="font-size:clamp(21px,2.6vw,26px)">Probably not if&hellip;</h2>
+          <ul class="oa-q" style="counter-reset:none">
+            <li style="padding-left:0">You want a copy-paste integration guide for
+              one specific vendor's SDK.</li>
+            <li style="padding-left:0">You need SAML, LDAP or enterprise SSO
+              federation &mdash; different protocols.</li>
+            <li style="padding-left:0">You already implement the security BCP from
+              memory. You'd be skimming.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== seller's own description ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">From the author</p>
+      <h2 class="oa-h2">About this book</h2>
+      <div class="oa-card" style="margin-top:20px">
+        <div class="oa-lede" data-gumroad-field="description" style="max-width:none">
+          A precise, no-fluff guide to OAuth 2.1 and PKCE, with a runnable
+          simulator you can use as a lab exercise.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== faq ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <p class="oa-eyebrow">Before you buy</p>
+      <h2 class="oa-h2">Questions</h2>
+      <div class="oa-faq" style="margin-top:24px">
+        <details>
+          <summary>Do I need the code from anywhere else?</summary>
+          <div class="a">No. Part&nbsp;II prints all 1,363 lines &mdash; four files,
+          complete, nothing elided. You need Node.js 18 or newer and nothing else:
+          there's no <code>package.json</code> and no dependency to install.</div>
+        </details>
+        <details>
+          <summary>What format is it, and can I copy the code out?</summary>
+          <div class="a">A single PDF, Letter size, with embedded fonts and a real
+          text layer &mdash; so the listings are searchable and the code is
+          selectable and copyable, not screenshots.</div>
+        </details>
+        <details>
+          <summary>Is this OAuth 2.0 or 2.1?</summary>
+          <div class="a">2.1, which is mostly a list of deletions: the implicit and
+          password grants are gone, PKCE is required for every client, and redirect
+          URIs match exactly. Chapter&nbsp;10 covers exactly what changed and why.
+          If you know 2.0, that chapter is your migration.</div>
+        </details>
+        <details>
+          <summary>Does it cover OpenID Connect?</summary>
+          <div class="a">The part that matters for most developers: the
+          <code>openid</code> scope, ID tokens, <code>nonce</code>, and the
+          difference between authentication and authorization. Chapter&nbsp;7 is
+          largely about not confusing an ID token with an access token &mdash; the
+          single most common bug in production OAuth code.</div>
+        </details>
+        <details>
+          <summary>How long does it take to read?</summary>
+          <div class="a">About two hours for the 13 chapters. The labs are as long
+          as you want them to be &mdash; the first one is a single command.</div>
+        </details>
+        <details>
+          <summary>Can I use this code in production?</summary>
+          <div class="a">Please don't. It's a teaching implementation that
+          deliberately includes insecure modes so you can watch them fail, and it
+          keeps everything in memory on plain HTTP. Use a maintained, audited
+          library in production &mdash; the book's point is that you'll then
+          configure it correctly and understand the errors.</div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== final cta ====================== -->
+  <section class="oa-sec">
+    <div class="oa-wrap oa-rise">
+      <div class="oa-final">
+        <p class="oa-eyebrow">54 pages &middot; 10 labs &middot; complete source</p>
+        <h2 class="oa-h2" style="margin-top:12px">Understand it once, properly.</h2>
+        <p class="oa-lede" style="margin:0 auto 26px">One afternoon, and you'll stop
+        guessing at the flow that guards your users' data &mdash; with a server on
+        your own machine to prove every claim in it.</p>
+        <a class="oa-btn" data-gumroad-action="buy" role="button" tabindex="0" style="font-size:17.5px;padding:17px 32px">
+          I want this <span class="oa-price" data-gumroad-field="price">$5</span>
+        </a>
+        <p class="oa-tiny" style="margin-top:16px">Instant download &middot; yours
+        forever &middot; <span data-gumroad-field="review-count">be the first to review it</span></p>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="oa-foot">
+    <div class="oa-wrap">
+      <p><strong data-gumroad-field="name">The Ultimate Developer's Guide to OAuth 2.1 and PKCE</strong>
+      &mdash; by Smiroh Dev &middot; Smiroh Publishers &middot; First edition, September 2026</p>
+      <p style="margin-top:6px">More from this author: <a href="https://smiroh.gumroad.com">smiroh.gumroad.com</a></p>
+    </div>
+  </footer>
+
+  <!-- ====================== look inside modal ====================== -->
+  <div class="oa-modal" id="oaModal" role="dialog" aria-modal="true"
+       aria-labelledby="oaModalT" hidden>
+    <div class="oa-modal-box">
+      <button class="oa-modal-x" type="button" id="oaModalX" aria-label="Close">&times;</button>
+      <h3 id="oaModalT" style="font-size:21px;letter-spacing:-.02em">Inside the book</h3>
+      <p class="oa-small" style="margin-top:10px">A sample of Listing&nbsp;B &mdash;
+      the authorization server's PKCE check, exactly as it appears in Part&nbsp;II,
+      line numbers and all.</p>
+      <div class="oa-term" style="margin-top:16px">
+<pre><span class="c">371</span>  <span class="c">// ===== the PKCE check: prove you started this flow =====</span>
+<span class="c">372</span>  if (entry.challenge) {
+<span class="c">373</span>    const r = C.verifyPkce(body.get(<span class="y">'code_verifier'</span>),
+<span class="c">374</span>                           entry.challenge, entry.method);
+<span class="c">375</span>    if (!r.ok) {
+<span class="c">376</span>      entry.used = true;   <span class="c">// burn it: something is wrong</span>
+<span class="c">377</span>      return json(res, 400, { error: <span class="y">'invalid_grant'</span>,
+<span class="c">378</span>        error_description: <span class="y">'PKCE check failed...'</span> });
+<span class="c">379</span>    }
+<span class="c">380</span>    log(<span class="y">'ok'</span>, <span class="g">'PKCE verified: SHA256(verifier) == challenge'</span>);
+<span class="c">381</span>  }</pre>
+      </div>
+      <p class="oa-tiny" style="margin-top:14px">Part&nbsp;II prints all 1,363 lines
+      like this, across Listings A&ndash;D.</p>
+      <div style="margin-top:20px">
+        <a class="oa-btn" data-gumroad-action="buy" role="button" tabindex="0">
+          Get the book <span class="oa-price" data-gumroad-field="price">$5</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <button class="oa-theme" id="oaTheme" type="button"
+          aria-label="Switch between light and dark mode">&#9680;</button>
+</div>
+
+<style>#oa-root .oa-modal[hidden]{display:none!important}</style>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("oa-root");
+  if (!root) return;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ------------------------------------------------------------------
+     SHA-256, in plain JS.
+     The page may run in a sandboxed frame with an opaque origin, where
+     crypto.subtle is not available, so the demo carries its own.
+     ------------------------------------------------------------------ */
+  var K = [
+    0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+
+  function sha256(bytes) {
+    var H = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+                             0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    var l = bytes.length, pad = (56 - (l + 1) % 64 + 64) % 64, total = l + 1 + pad + 8;
+    var m = new Uint8Array(total);
+    m.set(bytes); m[l] = 0x80;
+    var dv = new DataView(m.buffer), bits = l * 8;
+    dv.setUint32(total - 8, Math.floor(bits / 4294967296));
+    dv.setUint32(total - 4, bits >>> 0);
+    var w = new Uint32Array(64), i, t;
+    function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (i = 0; i < total; i += 64) {
+      for (t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+      for (t = 16; t < 64; t++) {
+        var s0 = rotr(w[t-15],7) ^ rotr(w[t-15],18) ^ (w[t-15] >>> 3);
+        var s1 = rotr(w[t-2],17) ^ rotr(w[t-2],19) ^ (w[t-2] >>> 10);
+        w[t] = (w[t-16] + s0 + w[t-7] + s1) >>> 0;
+      }
+      var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for (t = 0; t < 64; t++) {
+        var S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+        var ch = (e & f) ^ (~e & g);
+        var t1 = (h + S1 + ch + K[t] + w[t]) >>> 0;
+        var S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+        var mj = (a & b) ^ (a & c) ^ (b & c);
+        var t2 = (S0 + mj) >>> 0;
+        h=g; g=f; f=e; e=(d + t1) >>> 0; d=c; c=b; b=a; a=(t1 + t2) >>> 0;
+      }
+      H[0]=(H[0]+a)>>>0; H[1]=(H[1]+b)>>>0; H[2]=(H[2]+c)>>>0; H[3]=(H[3]+d)>>>0;
+      H[4]=(H[4]+e)>>>0; H[5]=(H[5]+f)>>>0; H[6]=(H[6]+g)>>>0; H[7]=(H[7]+h)>>>0;
+    }
+    var out = new Uint8Array(32), odv = new DataView(out.buffer);
+    for (i = 0; i < 8; i++) odv.setUint32(i * 4, H[i]);
+    return out;
+  }
+
+  function toHex(b) {
+    var s = "";
+    for (var i = 0; i < b.length; i++) s += ("0" + b[i].toString(16)).slice(-2);
+    return s;
+  }
+  function toB64url(b) {
+    var s = "";
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function asciiBytes(str) {
+    var out = new Uint8Array(str.length);
+    for (var i = 0; i < str.length; i++) out[i] = str.charCodeAt(i) & 0xff;
+    return out;
+  }
+  function randomVerifier() {
+    var raw = new Uint8Array(32);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(raw);
+    else for (var i = 0; i < 32; i++) raw[i] = Math.floor(Math.random() * 256);
+    return toB64url(raw);
+  }
+
+  /* ---------------- the live demo ---------------- */
+  var ver = $("oaVer"), hashOut = $("oaHash"), chalOut = $("oaChal"), roll = $("oaRoll");
+  function recompute() {
+    var v = ver.value;
+    if (!v) { hashOut.textContent = "—"; chalOut.textContent = "—"; return; }
+    var digest = sha256(asciiBytes(v));
+    hashOut.textContent = toHex(digest);
+    chalOut.textContent = toB64url(digest);
+  }
+  if (ver) {
+    ver.value = randomVerifier();
+    ver.addEventListener("input", recompute);
+    if (roll) roll.addEventListener("click", function () {
+      ver.value = randomVerifier(); recompute();
+    });
+    recompute();
+  }
+
+  /* ---------------- sticky buy bar ---------------- */
+  var bar = $("oaBar"), hero = document.querySelector(".oa-hero");
+  if (bar && hero && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (entries) {
+      bar.classList.toggle("is-on", !entries[0].isIntersecting);
+    }, { rootMargin: "-120px 0px 0px 0px" }).observe(hero);
+  }
+
+  /* ---------------- scroll reveal ---------------- */
+  var rises = document.querySelectorAll(".oa-rise");
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+      });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.05 });
+    Array.prototype.forEach.call(rises, function (el) { io.observe(el); });
+  } else {
+    Array.prototype.forEach.call(rises, function (el) { el.classList.add("in"); });
+  }
+
+  /* ---------------- theme ---------------- */
+  var themeBtn = $("oaTheme");
+  function store(v) { try { localStorage.setItem("oa-theme", v); } catch (e) {} }
+  function load() { try { return localStorage.getItem("oa-theme"); } catch (e) { return null; } }
+  var saved = load();
+  if (saved === "light" || saved === "dark") root.setAttribute("data-theme", saved);
+  if (themeBtn) themeBtn.addEventListener("click", function () {
+    var prefersDark = window.matchMedia
+      && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var current = root.getAttribute("data-theme") || (prefersDark ? "dark" : "light");
+    var next = current === "dark" ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    store(next);
+  });
+
+  /* ---------------- look inside modal ---------------- */
+  var modal = $("oaModal"), openBtn = $("oaPeek"), closeBtn = $("oaModalX"), lastFocus = null;
+  function openModal() {
+    if (!modal) return;
+    lastFocus = document.activeElement;
+    modal.hidden = false;
+    modal.classList.add("is-open");
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeModal() {
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    modal.hidden = true;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  if (openBtn) openBtn.addEventListener("click", openModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+  if (modal) modal.addEventListener("click", function (e) {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && modal && !modal.hidden) closeModal();
+  });
+
+  /* Buy elements are anchors without href so the page cannot jump; make them
+     behave like buttons for keyboard users. Gumroad's own delegated handler
+     turns the click into a checkout. */
+  Array.prototype.forEach.call(
+    document.querySelectorAll('[data-gumroad-action="buy"]'),
+    function (el) {
+      el.style.cursor = "pointer";
+      el.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); }
+      });
+    });
+})();
+</script>

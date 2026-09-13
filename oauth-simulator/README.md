@@ -26,9 +26,11 @@ server top to bottom in one sitting.
             token     └──────────────────────────────────────────────────┘
 ```
 
-**New to OAuth?** Read [`dev-guide/dev-guide.pdf`](dev-guide/dev-guide.pdf) first — a
-20-page illustrated developer guide that explains OAuth 2.1 and PKCE from first
-principles, with full-page diagrams. Then come back and run the labs.
+**New to OAuth?** Read the book first — [`dev-guide/dev-guide.pdf`](dev-guide/dev-guide.pdf),
+*The Ultimate Developer's Guide to OAUTH 2.1 and PKCE* by Smiroh Dev (Smiroh Publishers).
+54 pages, illustrated, explaining OAuth 2.1 and PKCE from first principles with full-page
+diagrams — and **Part II prints the complete source of a working OAuth 2.1 server, API and
+client**, so every lab in the book runs without this repository at all.
 
 ---
 
@@ -95,7 +97,8 @@ Identical behaviour — the services have no dependencies to install.
 | `make reset` | Wipe sessions, codes, tokens and consent; restore safe policy |
 | `make open` | Open the simulator in your browser |
 | `make policy` | Open the page where you break OAuth rules on purpose |
-| `make guide` | Rebuild `dev-guide/dev-guide.pdf` from its HTML source |
+| `make guide` | Rebuild `dev-guide/dev-guide.pdf` (and its metadata) from source |
+| `make cover` | Re-export `dev-guide/cover.png` for a store listing |
 | `make clean` | Stop everything and remove run artifacts |
 | `make help` | List all targets |
 
@@ -257,13 +260,21 @@ oauth-simulator/
 ├── authorization-server/     the IdP + AS: config, state store, views, server
 ├── resource-server/          the API, and the four checks it runs per request
 ├── client-app/               the labs, the flow engine, the inspector
+├── lab/                      the book's Part II: self-contained, zero-dependency
+│   ├── crypto-lab.js         PKCE + JWT primitives          (Listing A)
+│   ├── authz-server.js       the authorization server + IdP (Listing B)
+│   ├── api-server.js         the resource server            (Listing C)
+│   └── client.js             the client and all ten labs    (Listing D)
 ├── scripts/
 │   ├── demo-flow.sh          the whole flow in curl
 │   └── run-local.sh          start/stop without Docker
 └── dev-guide/
-    ├── dev-guide.pdf         the illustrated developer guide, 22 pages  ← start here
-    ├── build-guide.sh        regenerates the PDF (needs Chrome or Chromium)
+    ├── dev-guide.pdf         the book: 54 pages, 13 chapters + Part II labs  ← start here
+    ├── cover.png             the cover as a standalone image, for store listings
+    ├── build-guide.sh        rebuilds the PDF (needs Chrome or Chromium)
     ├── renumber.py           derives page numbers, so the contents never drifts
+    ├── set-metadata.py       writes /Title, /Author, /Subject into the PDF
+    ├── export-cover.py       re-exports cover.png at any resolution
     └── src/dev-guide.html    the source: fixed-layout HTML with inline SVG diagrams
 ```
 

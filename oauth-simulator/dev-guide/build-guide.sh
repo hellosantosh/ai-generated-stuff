@@ -37,8 +37,11 @@ if [ -z "$CHROME" ]; then
   exit 1
 fi
 
-# Page numbers are derived from the document, never hand-maintained.
+# Part II's code listings are generated from the real lab/*.js sources, so the
+# code printed in the book is by construction the code that was tested.
+# Page numbers are then derived from the document, never hand-maintained.
 if command -v python3 > /dev/null; then
+  python3 build-labs.py
   python3 renumber.py
 fi
 
@@ -57,6 +60,12 @@ echo "  rendering with: $(basename "$CHROME")"
 if [ ! -s "$OUT" ]; then
   echo "  PDF was not produced" >&2
   exit 1
+fi
+
+# Chrome sets only /Title. Fill in /Author, /Subject and /Keywords so readers,
+# retailers and library software show the right thing.
+if command -v python3 > /dev/null; then
+  python3 set-metadata.py
 fi
 
 pages="unknown"

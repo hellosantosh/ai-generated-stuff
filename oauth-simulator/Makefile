@@ -15,7 +15,7 @@ API := http://localhost:9010
 .DEFAULT_GOAL := help
 .PHONY: help up down restart rebuild build logs logs-as logs-api logs-client ps status \
         local local-stop local-restart local-status local-logs \
-        demo demo-attack demo-replay demo-refresh test open urls policy reset guide clean
+        demo demo-attack demo-replay demo-refresh test open urls policy reset guide cover clean
 
 ## ---------------------------------------------------------------- Docker
 
@@ -120,6 +120,9 @@ urls:
 
 guide: ## Rebuild dev-guide/dev-guide.pdf from its HTML source
 	@./dev-guide/build-guide.sh
+
+cover: ## Re-export dev-guide/cover.png (the cover as a standalone image)
+	@./dev-guide/export-cover.py
 
 clean: ## Stop everything and remove local run artifacts
 	-$(COMPOSE) down --remove-orphans
