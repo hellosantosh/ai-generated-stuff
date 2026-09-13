@@ -2,7 +2,7 @@
 // ===========================================================================
 // LAB FILE 3 of 4 - api-server.js          run:  node api-server.js
 // The resource server: the API that owns the data. On every request it runs
-// the four checks from Chapter 11, and nothing else.
+// the four checks from Chapter 12, and nothing else.
 // ===========================================================================
 const http = require('node:http');
 const crypto = require('node:crypto');
@@ -45,6 +45,27 @@ async function keyFor(kid) {
 }
 
 const log = (tag, msg) => console.log('  [api] ' + tag.padEnd(7) + msg);
+
+function readBody(req) {
+  return new Promise((resolve) => {
+    let raw = '';
+    req.on('data', (c) => { raw += c; if (raw.length > 1e5) req.destroy(); });
+    req.on('end', () => resolve(new URLSearchParams(raw)));
+  });
+}
+
+// Flatten the RFC 8693 `act` chain into something loggable:
+//   alice  <-  demo-orchestrator  <-  demo-agent
+function actorChain(claims) {
+  const chain = [];
+  for (let a = claims.act; a; a = a.act) chain.push(a.sub);
+  return chain;
+}
+
+// Find the structured grant (RFC 9396) that covers a given action.
+function detailFor(claims, type) {
+  return (claims.authorization_details || []).find((d) => d.type === type) || null;
+}
 const json = (res, status, obj) => (res.writeHead(status,
   { 'content-type': 'application/json' }), res.end(JSON.stringify(obj, null, 2)));
 
@@ -144,20 +165,55 @@ const server = http.createServer(async (req, res) => {
     if (a.status) return json(res, a.status, a.body);
     const rec = DB[a.claims.sub];
     return json(res, 200, { sub: a.claims.sub, accounts: rec ? rec.accounts : [],
+      acting_chain: actorChain(a.claims),
       note: 'The API picked the data from the token\'s `sub`, never from a user id '
         + 'in the request. Trusting a caller-supplied id here is how you build an '
         + 'IDOR on top of perfectly good OAuth.' });
   }
 
   // ---- payments, needs `payments:write` ----
+  // Scope says the caller may move money at all. authorization_details says
+  // how much, and out of which account. See Chapter 15.
   if (path === '/api/payments' && req.method === 'POST') {
+    const body = await readBody(req);
     const a = await authorize(req, res, ['payments:write']);
     if (a.status) return json(res, a.status, a.body);
     const rec = DB[a.claims.sub];
     if (!rec) return json(res, 404, { error: 'no_such_subject' });
+
+    const amount = Number(body.get('amount') || 42);
+    const from = body.get('from') || rec.accounts[0].id;
+    const chain = actorChain(a.claims);
+    if (chain.length)
+      log('info', 'acting chain: ' + a.claims.sub + ' <- ' + chain.join(' <- '));
+
+    // If the token carries a structured grant, it BINDS the request. A scope
+    // alone would have allowed any amount from any account.
+    const grant = detailFor(a.claims, 'payment_initiation');
+    if (grant) {
+      const cap = Number(grant.maxAmount);
+      if (Number.isFinite(cap) && amount > cap) {
+        log('403', 'over the granted limit: ' + amount + ' > ' + cap);
+        return json(res, 403, { error: 'insufficient_authorization',
+          error_description: 'This token authorizes at most ' + grant.maxAmount
+            + ' per payment; the request asked for ' + amount + '. The scope '
+            + 'payments:write was satisfied - the structured limit was not.',
+          granted: grant, requested: { amount, from } });
+      }
+      if (grant.fromAccount && grant.fromAccount !== from) {
+        log('403', 'wrong source account: ' + from);
+        return json(res, 403, { error: 'insufficient_authorization',
+          error_description: 'This token only authorizes payments from '
+            + grant.fromAccount + '.', granted: grant, requested: { amount, from } });
+      }
+    }
+
     const payment = { id: 'PAY-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
-      from: rec.accounts[0].id, to: 'ACC-EXTERNAL', amount: 42, status: 'accepted' };
+      from, to: body.get('to') || 'ACC-EXTERNAL', amount, status: 'accepted',
+      authorized_by: a.claims.sub, acting: chain.length ? chain : undefined,
+      constrained_by: grant || undefined };
     rec.payments.push(payment);
+    log('ok', 'payment ' + payment.id + ' for ' + amount);
     return json(res, 201, { payment });
   }
 

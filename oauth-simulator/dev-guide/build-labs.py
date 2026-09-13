@@ -35,10 +35,10 @@ FILES = [
      "handling three grants. The <code>policy</code> object near the top is what "
      "Lab 4 switches off."),
     ("api-server.js", "Listing C", "The resource server",
-     "The four gates of Chapter 11, in order, in one function. Note that steps "
+     "The four gates of Chapter 12, in order, in one function. Note that steps "
      "1&ndash;3 never contact the authorization server: the signature is checked "
      "offline against cached public keys."),
-    ("client.js", "Listing D", "The client, and all ten labs",
+    ("client.js", "Listing D", "The client, and all fifteen labs",
      "The client walks the front channel with a cookie jar instead of a browser, "
      "so every lab is one command whose result is printed rather than clicked. "
      "Each <code>LABS.*</code> entry is one exercise."),
@@ -246,8 +246,11 @@ def main():
         sys.exit("no LAB_LISTINGS marker found in src/dev-guide.html")
     SRC.write_text(doc)
 
+    # rstrip first, or a trailing newline counts as an extra line per file
+    total_lines = sum(len((LAB / f[0]).read_text().rstrip("\n").split("\n"))
+                      for f in FILES)
     print(f"  generated {len(sections)} listing pages from {len(FILES)} files "
-          f"({sum((LAB / f[0]).read_text().count(chr(10)) + 1 for f in FILES)} lines)")
+          f"({total_lines} lines)")
 
 
 if __name__ == "__main__":

@@ -17,6 +17,10 @@ const REDIRECT = 'http://localhost:7020/callback';
 const CLIENT = { id: 'demo-web-app', secret: 'web-app-secret' };
 const SPA = { id: 'demo-spa', secret: null };
 const SERVICE = { id: 'demo-service', secret: 'service-secret' };
+const AGENT = { id: 'demo-agent', secret: null };
+const ORCH = { id: 'demo-orchestrator', secret: 'orchestrator-secret' };
+const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
+const EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
 // --- printing -------------------------------------------------------------
 const B = '\x1b[1m', D = '\x1b[2m', R = '\x1b[0m';
@@ -77,6 +81,21 @@ async function callApi(path, accessToken, method = 'GET') {
 const setPolicy = (key, value) =>
   fetch(AS + '/policy', form({ key, value: String(value) })).then((r) => r.json());
 
+// POST a form to any AS endpoint, authenticating as the given client.
+async function post(path, params, client) {
+  const headers = { 'content-type': 'application/x-www-form-urlencoded' };
+  const body = new URLSearchParams(params);
+  if (client && client.secret) {
+    headers.authorization = 'Basic ' + Buffer.from(
+      encodeURIComponent(client.id) + ':' + encodeURIComponent(client.secret)
+    ).toString('base64');
+  } else if (client) { body.set('client_id', client.id); }
+  const res = await fetch(AS + path, { method: 'POST', headers,
+    body: body.toString() });
+  return { status: res.status, body: await res.json().catch(() => ({})) };
+}
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
 // ===========================================================================
 // The front channel, walked end to end. Returns the authorization code.
 // ===========================================================================
@@ -87,9 +106,10 @@ async function getCode({ client = CLIENT, scope = 'openid profile accounts:read'
   const verifier = C.createVerifier();
   const challenge = C.challengeS256(verifier);
   const state = C.randomToken(16);
+  const nonce = C.randomToken(12);
 
   const q = new URLSearchParams({ response_type: 'code', client_id: client.id,
-    redirect_uri: redirect, scope, state, nonce: C.randomToken(12) });
+    redirect_uri: redirect, scope, state, nonce });
   if (pkce) { q.set('code_challenge', challenge);
               q.set('code_challenge_method', 'S256'); }
 
@@ -127,7 +147,7 @@ async function getCode({ client = CLIENT, scope = 'openid profile accounts:read'
              description: u.searchParams.get('error_description'), verifier };
   return { code: u.searchParams.get('code'), state: u.searchParams.get('state'),
            iss: u.searchParams.get('iss'), verifier, challenge, sentState: state,
-           offered };
+           sentNonce: nonce, offered };
 }
 
 // ===========================================================================
@@ -414,9 +434,244 @@ LABS.revoke = { title: 'Revocation: local validation vs introspection',
   note('are given lifetimes measured in minutes.');
 } };
 
+// ---------------------------------------------------------------- Lab 11
+LABS.oidc = { title: 'Who is this? (OpenID Connect)', run: async () => {
+  step(1, 'Ask for the openid scope, and send a nonce');
+  why('That one scope is what turns an OAuth grant into an OpenID Connect one.');
+  const f = await getCode({ scope: 'openid profile email accounts:read' });
+  if (f.error) return fail(f.error + ': ' + f.description);
+  val('nonce we sent', f.sentNonce);
+  const t = await token({ grant_type: 'authorization_code', code: f.code,
+    redirect_uri: REDIRECT, code_verifier: f.verifier }, CLIENT);
+  if (t.status !== 200) return fail(JSON.stringify(t.body));
+  t.body.id_token ? pass('the response now carries an id_token as well')
+                  : fail('no id_token - was the openid scope granted?');
+
+  step(2, 'Two tokens, two different jobs');
+  const at = C.decodeJwt(t.body.access_token), it = C.decodeJwt(t.body.id_token);
+  val('access  typ / aud', at.header.typ + '  /  ' + at.payload.aud);
+  val('id      typ / aud', it.header.typ + '  /  ' + it.payload.aud);
+  why('The access token is addressed to the API. The ID token is addressed to');
+  why('THIS CLIENT - which is why the client is the one that validates it.');
+  console.log(JSON.stringify(it.payload, null, 2).split('\n')
+    .map((l) => '  ' + l).join('\n'));
+
+  step(3, 'Validate the ID token the way a client must');
+  const jwks = await (await fetch(AS + '/jwks.json')).json();
+  const crypto = require('node:crypto');
+  const key = crypto.createPublicKey({ key: jwks.keys[0], format: 'jwk' });
+  // signature + iss + aud + exp, all in one pass
+  const v = C.verifyJwt(t.body.id_token, { getKey: () => key, issuer: AS,
+    audience: CLIENT.id, requiredTyp: 'JWT' });
+  v.valid ? pass('signature, iss, aud and exp all check out')
+          : fail('rejected: ' + v.reason);
+  // the nonce is the check people forget: it ties this token to THIS request
+  it.payload.nonce === f.sentNonce
+    ? pass('nonce matches the one we generated - not a replayed token')
+    : fail('nonce mismatch');
+  val('sub', it.payload.sub + '   <- the stable identifier. Key your user on this.');
+  val('auth_time', it.payload.auth_time + '   (when they actually authenticated)');
+
+  step(4, 'A token minted for someone else must be refused');
+  const other = C.verifyJwt(t.body.id_token, { getKey: () => key, issuer: AS,
+    audience: 'some-other-app', requiredTyp: 'JWT' });
+  !other.valid ? pass('REFUSED: ' + other.reason + ' - aud is checked, not assumed')
+               : fail('accepted a token addressed to another client!');
+  why('Without this check, any client of this issuer could replay an ID token');
+  why('at any other client and be logged in as that user.');
+
+  step(5, 'Fetch fresh claims from /userinfo');
+  why('Note which token it takes: the ACCESS token, not the ID token.');
+  let r = await fetch(AS + '/userinfo',
+    { headers: { authorization: 'Bearer ' + t.body.access_token } });
+  let b = await r.json();
+  r.status === 200 ? pass('200 ' + JSON.stringify(b)) : fail(JSON.stringify(b));
+  why('The claims are filtered by granted scope, exactly as in the ID token.');
+
+  step(6, 'And without the openid scope there is no identity to return');
+  const f2 = await getCode({ scope: 'accounts:read', quiet: true });
+  const t2 = await token({ grant_type: 'authorization_code', code: f2.code,
+    redirect_uri: REDIRECT, code_verifier: f2.verifier }, CLIENT);
+  val('id_token present', t2.body.id_token ? 'yes' : 'no  <- correct');
+  r = await fetch(AS + '/userinfo',
+    { headers: { authorization: 'Bearer ' + t2.body.access_token } });
+  b = await r.json();
+  r.status === 403 ? pass('403 ' + b.error + ' at /userinfo')
+                   : fail('expected 403, got ' + r.status);
+  note('OAuth answers "what may this app do". OpenID Connect answers "who is');
+  note('this, and when did they prove it". You opt into the second with a scope.');
+} };
+
+// ---------------------------------------------------------------- Lab 12
+LABS['agent-device'] = { title: 'An agent with no browser (device grant)',
+  run: async () => {
+  step(1, 'The agent asks for a code a human can type somewhere else');
+  why('It has no browser, so there is no redirect it could ever receive.');
+  const limits = [{ type: 'payment_initiation', actions: ['initiate'],
+                    maxAmount: '100.00', fromAccount: 'ACC-4410' }];
+  const start = await post('/device_authorization', {
+    scope: 'openid accounts:read payments:write',
+    authorization_details: JSON.stringify(limits) }, AGENT);
+  if (start.status !== 200) return fail(JSON.stringify(start.body));
+  val('user_code', start.body.user_code);
+  val('verification_uri', start.body.verification_uri);
+  val('poll interval', start.body.interval + 's');
+  why('The agent shows that code to the operator and starts polling.');
+
+  step(2, 'The agent polls before anyone has approved');
+  let t = await post('/token', { grant_type: DEVICE_GRANT,
+    device_code: start.body.device_code }, AGENT);
+  t.body.error === 'authorization_pending'
+    ? pass('authorization_pending - correct, it must keep waiting')
+    : fail(JSON.stringify(t.body));
+
+  step(3, 'Polling too fast is told to back off');
+  t = await post('/token', { grant_type: DEVICE_GRANT,
+    device_code: start.body.device_code }, AGENT);
+  t.body.error === 'slow_down' ? pass('slow_down - the interval is enforced')
+                               : note('got ' + t.body.error);
+
+  step(4, 'The human approves on their own device');
+  const approve = await fetch(AS + '/device', form({
+    user_code: start.body.user_code, username: 'alice',
+    password: 'wonderland', action: 'allow' }));
+  (await approve.text()).includes('Approved')
+    ? pass('approved by alice, at the IdP, on a device with a screen')
+    : fail('approval failed');
+
+  step(5, 'The next poll returns tokens');
+  await pause(5200);   // respect the advertised interval
+  t = await post('/token', { grant_type: DEVICE_GRANT,
+    device_code: start.body.device_code }, AGENT);
+  if (t.status !== 200) return fail(JSON.stringify(t.body));
+  pass('tokens issued to the agent');
+  val('scope', t.body.scope);
+  val('refresh_token', t.body.refresh_token ? 'yes - it can work unattended' : 'none');
+  const claims = C.decodeJwt(t.body.access_token).payload;
+  val('sub', claims.sub + '   (the USER, not the agent)');
+  val('client_id', claims.client_id + '   (the agent)');
+  console.log('  authorization_details:',
+    JSON.stringify(claims.authorization_details));
+  note('The token acts for alice but records which agent holds it. That pair');
+  note('is what makes agent activity auditable.');
+  return t.body;
+} };
+
+// ---------------------------------------------------------------- Lab 13
+LABS['agent-rar'] = { title: 'Structured limits a scope cannot express',
+  run: async () => {
+  const tok = await LABS['agent-device'].run();
+  if (!tok || !tok.access_token) return fail('could not get an agent token');
+  const at = tok.access_token;
+
+  step(6, 'A payment inside the granted limit');
+  let r = await fetch(API + '/api/payments', { method: 'POST',
+    headers: { authorization: 'Bearer ' + at,
+      'content-type': 'application/x-www-form-urlencoded' },
+    body: 'amount=50&from=ACC-4410' });
+  let b = await r.json();
+  r.status === 201 ? pass('201 - payment of 50 accepted')
+                   : fail(r.status + ' ' + JSON.stringify(b));
+
+  step(7, 'The same token, a much larger payment');
+  r = await fetch(API + '/api/payments', { method: 'POST',
+    headers: { authorization: 'Bearer ' + at,
+      'content-type': 'application/x-www-form-urlencoded' },
+    body: 'amount=5000&from=ACC-4410' });
+  b = await r.json();
+  r.status === 403 ? pass('403 ' + b.error) : fail('expected 403, got ' + r.status);
+  why(b.error_description || '');
+
+  step(8, 'And from an account it was never granted');
+  r = await fetch(API + '/api/payments', { method: 'POST',
+    headers: { authorization: 'Bearer ' + at,
+      'content-type': 'application/x-www-form-urlencoded' },
+    body: 'amount=10&from=ACC-9982' });
+  b = await r.json();
+  r.status === 403 ? pass('403 ' + b.error) : fail('expected 403, got ' + r.status);
+  note('scope=payments:write was satisfied every time. The structured grant is');
+  note('what stopped it. This is why agents need RFC 9396, not bigger scopes.');
+} };
+
+// ---------------------------------------------------------------- Lab 14
+LABS['agent-exchange'] = { title: 'Delegation chains and the act claim',
+  run: async () => {
+  step(1, 'An agent obtains a user token (device grant, as in Lab 11)');
+  const tok = await (async () => {
+    const s2 = await post('/device_authorization',
+      { scope: 'openid accounts:read' }, AGENT);
+    await fetch(AS + '/device', form({ user_code: s2.body.user_code,
+      username: 'alice', password: 'wonderland', action: 'allow' }));
+    await pause(5200);
+    return (await post('/token',
+      { grant_type: DEVICE_GRANT, device_code: s2.body.device_code }, AGENT)).body;
+  })();
+  if (!tok.access_token) return fail('no agent token');
+  val('agent token sub', C.decodeJwt(tok.access_token).payload.sub);
+
+  step(2, 'The agent hands it to a backend service, which must call the API');
+  why('That service must not pretend to BE alice, and must not act as itself');
+  why('either. It exchanges the token for one that records both.');
+  const ex = await post('/token', { grant_type: EXCHANGE_GRANT,
+    subject_token: tok.access_token,
+    subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+    scope: 'accounts:read' }, ORCH);
+  if (ex.status !== 200) return fail(JSON.stringify(ex.body));
+  pass('exchanged');
+  const c = C.decodeJwt(ex.body.access_token).payload;
+  val('sub', c.sub + '   (still alice - the authority is hers)');
+  console.log('  act:', JSON.stringify(c.act) + '   <- who is acting');
+
+  step(3, 'The API sees the whole chain');
+  const r = await fetch(API + '/api/accounts',
+    { headers: { authorization: 'Bearer ' + ex.body.access_token } });
+  const b = await r.json();
+  val('status', r.status);
+  val('acting_chain', JSON.stringify(b.acting_chain));
+  note('Without `act`, that request would look exactly like alice at a browser.');
+  note('With it, an auditor can answer "which agent did this?" months later.');
+} };
+
+// ---------------------------------------------------------------- Lab 15
+LABS['agent-deputy'] = { title: 'A confused deputy tries to escalate',
+  run: async () => {
+  step(1, 'An agent is delegated read access only');
+  const s2 = await post('/device_authorization',
+    { scope: 'openid accounts:read' }, AGENT);
+  await fetch(AS + '/device', form({ user_code: s2.body.user_code,
+    username: 'alice', password: 'wonderland', action: 'allow' }));
+  await pause(5200);
+  const tok = (await post('/token',
+    { grant_type: DEVICE_GRANT, device_code: s2.body.device_code }, AGENT)).body;
+  val('granted scope', tok.scope);
+
+  step(2, 'The backend tries to exchange it for permission to move money');
+  why('This is the confused deputy: a trusted service being talked into using');
+  why('authority it holds on behalf of someone who never granted it.');
+  const ex = await post('/token', { grant_type: EXCHANGE_GRANT,
+    subject_token: tok.access_token,
+    subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+    scope: 'accounts:read payments:write' }, ORCH);
+  ex.status !== 200 ? pass('REFUSED: ' + ex.body.error)
+                    : fail('escalation succeeded - delegation must only narrow');
+  why(ex.body.error_description || '');
+
+  step(3, 'Even the agent\'s own token cannot reach the payments endpoint');
+  const r = await fetch(API + '/api/payments', { method: 'POST',
+    headers: { authorization: 'Bearer ' + tok.access_token,
+      'content-type': 'application/x-www-form-urlencoded' },
+    body: 'amount=10' });
+  r.status === 403 ? pass('403 insufficient_scope at the API too')
+                   : fail('expected 403, got ' + r.status);
+  note('Two independent checks refused it: the AS would not widen the grant,');
+  note('and the API would not honour a scope the token never carried.');
+} };
+
 // ===========================================================================
 const ORDER = ['happy', 'pkce', 'attack', 'nopkce', 'replay', 'refresh',
-               'scope', 'idtoken', 'm2m', 'revoke'];
+               'scope', 'idtoken', 'm2m', 'revoke',
+               'oidc', 'agent-device', 'agent-rar', 'agent-exchange',
+               'agent-deputy'];
 
 async function main() {
   const which = process.argv[2] || 'list';
@@ -424,7 +679,7 @@ async function main() {
   if (which === 'list') {
     console.log('\n' + B + '  OAuth 2.1 + PKCE labs' + R + '\n');
     ORDER.forEach((k, i) => console.log('  ' + String(i + 1).padStart(2)
-      + '  ' + k.padEnd(10) + LABS[k].title));
+      + '  ' + k.padEnd(15) + LABS[k].title));
     console.log('\n  node client.js <name>   |   node client.js all\n');
     return;
   }

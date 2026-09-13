@@ -12,6 +12,11 @@ const PORT = 7000;
 const ISSUER = 'http://localhost:7000';   // browser-facing identity; goes in `iss`
 const API = 'http://localhost:7010';      // the audience we mint tokens for
 
+// Grant types are URNs, not short names, once you leave the core spec.
+const DEVICE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code';
+const EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
+const ACCESS_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:access_token';
+
 // --- who can log in --------------------------------------------------------
 const USERS = {
   alice: { sub: 'u-1001', password: 'wonderland', name: 'Alice Liddell',
@@ -23,6 +28,8 @@ const USERS = {
            can: ['openid', 'profile', 'email', 'accounts:read'] },
 };
 const userBySub = (sub) => Object.values(USERS).find((u) => u.sub === sub);
+const usernameOf = (sub) =>
+  Object.keys(USERS).find((k) => USERS[k].sub === sub) || null;
 
 // --- which apps are registered --------------------------------------------
 const CLIENTS = {
@@ -40,6 +47,21 @@ const CLIENTS = {
   'demo-service': { secret: 'service-secret', type: 'confidential',
     redirect_uris: [], grants: ['client_credentials'],
     scopes: ['accounts:read', 'profile'] },
+
+  // --- agentic access (Chapter 15) ---------------------------------------
+  // An autonomous agent has no browser, so it cannot use a redirect. It asks
+  // for a code the human types in elsewhere: the device grant, RFC 8628.
+  // Public, because an agent binary or container cannot keep a secret either.
+  'demo-agent': { secret: null, type: 'public', redirect_uris: [],
+    grants: [DEVICE_GRANT, 'refresh_token'],
+    scopes: ['openid', 'profile', 'accounts:read', 'payments:write'] },
+
+  // The service an agent calls, which must then call the API *as the user*.
+  // It swaps the user's token for a downstream one (RFC 8693) that records
+  // who is acting, so the API can see the whole chain.
+  'demo-orchestrator': { secret: 'orchestrator-secret', type: 'confidential',
+    redirect_uris: [], grants: [EXCHANGE_GRANT, 'client_credentials'],
+    scopes: ['accounts:read', 'payments:write'] },
 };
 
 const SCOPES = ['openid', 'profile', 'email', 'accounts:read', 'payments:write'];
@@ -54,7 +76,7 @@ const policy = {
   detect_reuse: true,        // a replayed refresh token kills the whole family
 };
 
-const TTL = { code: 60, access: 300, refresh: 3600, session: 1800 };
+const TTL = { code: 60, access: 300, refresh: 3600, session: 1800, device: 300 };
 
 // --- server-side state (a real AS keeps this in a database) ---------------
 const sessions = new Map();   // browser is logged in to the IdP
@@ -62,6 +84,7 @@ const requests = new Map();   // an /authorize call parked during login
 const codes = new Map();      // one-time authorization codes
 const refresh = new Map();    // sha256(token) -> record, grouped into families
 const revoked = new Set();    // access-token ids killed before exp
+const devices = new Map();    // device_code -> a pending agent authorization
 
 const KEY = C.generateKey();
 const now = () => Math.floor(Date.now() / 1000);
@@ -130,13 +153,42 @@ function authenticateClient(req, body) {
 }
 
 // --- token minting --------------------------------------------------------
-function issueAccessToken(clientId, sub, scope, familyId, audience) {
+function issueAccessToken(clientId, sub, scope, familyId, audience, extra) {
   const iat = now(), jti = C.randomId(12);
-  const token = C.signJwt({
+  const claims = {
     iss: ISSUER, sub, aud: audience || API, client_id: clientId,
     scope: scope.join(' '), jti, iat, nbf: iat, exp: iat + TTL.access,
-  }, KEY, 'at+jwt');   // RFC 9068: an API can now reject anything that is not one
+  };
+  // `act` records WHO is acting on the subject's behalf (RFC 8693 4.1). The
+  // API can then log and authorize the whole chain, not just the end user.
+  if (extra && extra.act) claims.act = extra.act;
+  // `authorization_details` carries structured, per-request limits that a
+  // coarse scope string cannot express (RFC 9396). See Chapter 15.
+  if (extra && extra.details) claims.authorization_details = extra.details;
+  const token = C.signJwt(claims, KEY, 'at+jwt');
   return { token, jti, familyId };
+}
+
+// Parse and sanity-check an authorization_details value (RFC 9396).
+function parseDetails(raw) {
+  if (!raw) return null;
+  let d;
+  try { d = JSON.parse(raw); } catch { return { error: 'not JSON' }; }
+  if (!Array.isArray(d)) return { error: 'must be a JSON array' };
+  for (const entry of d) {
+    if (!entry || typeof entry !== 'object' || !entry.type)
+      return { error: 'each entry needs a "type"' };
+  }
+  return { value: d };
+}
+
+// A short code a human can read off a screen and type somewhere else.
+// The alphabet omits characters people confuse: 0/O, 1/I, etc.
+function makeUserCode() {
+  const AB = 'BCDFGHJKLMNPQRSTVWXZ';
+  let out = '';
+  for (let i = 0; i < 8; i++) out += AB[Math.floor(Math.random() * AB.length)];
+  return out.slice(0, 4) + '-' + out.slice(4);
 }
 
 function issueRefreshToken(clientId, sub, scope, familyId, generation) {
@@ -168,6 +220,14 @@ const server = http.createServer(async (req, res) => {
     issuer: ISSUER,
     authorization_endpoint: ISSUER + '/authorize',
     token_endpoint: ISSUER + '/token',
+    // RFC 8628 requires advertising this, or an agent cannot discover it.
+    device_authorization_endpoint: ISSUER + '/device_authorization',
+    // The OpenID Connect half of this server (Chapter 8).
+    userinfo_endpoint: ISSUER + '/userinfo',
+    subject_types_supported: ['public'],
+    id_token_signing_alg_values_supported: ['RS256'],
+    claims_supported: ['sub', 'name', 'preferred_username', 'email',
+                       'email_verified', 'auth_time', 'nonce'],
     jwks_uri: ISSUER + '/jwks.json',
     introspection_endpoint: ISSUER + '/introspect',
     revocation_endpoint: ISSUER + '/revoke',
@@ -176,7 +236,10 @@ const server = http.createServer(async (req, res) => {
     // can return a token in the front channel.
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token',
-                            'client_credentials'],
+                            'client_credentials', DEVICE_GRANT, EXCHANGE_GRANT],
+    // Tell clients we understand structured grants (RFC 9396), and which
+    // kinds. An agent can then ask for limits instead of broad scopes.
+    authorization_details_types_supported: ['payment_initiation'],
     code_challenge_methods_supported: ['S256'],   // never offer `plain`
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'none'],
   });
@@ -321,6 +384,83 @@ const server = http.createServer(async (req, res) => {
     if (r.state) out.searchParams.set('state', r.state);
     out.searchParams.set('iss', ISSUER);   // RFC 9207: mix-up defence
     return redirect(res, out.toString());
+  }
+
+  // ---------------- agentic access: the device grant (RFC 8628) ----------
+  // An agent with no browser asks here first. It gets a code the HUMAN types
+  // in somewhere else, on a device that does have a browser.
+  if (path === '/device_authorization' && req.method === 'POST') {
+    const auth = authenticateClient(req, body);
+    if (auth.error) return json(res, 401, { error: auth.error });
+    if (!auth.client.grants.includes(DEVICE_GRANT))
+      return json(res, 400, { error: 'unauthorized_client' });
+
+    const asked = splitScope(body.get('scope'));
+    const bad = asked.filter((x) => !auth.client.scopes.includes(x));
+    if (bad.length) return json(res, 400, { error: 'invalid_scope',
+      error_description: 'Not registered for: ' + bad.join(' ') });
+
+    // An agent may also ask for structured limits, not just scopes.
+    const parsed = parseDetails(body.get('authorization_details'));
+    if (parsed && parsed.error) return json(res, 400, {
+      error: 'invalid_authorization_details', error_description: parsed.error });
+
+    const deviceCode = C.randomToken(32), userCode = makeUserCode();
+    devices.set(deviceCode, { userCode, clientId: auth.id, scope: asked,
+      details: parsed ? parsed.value : null, status: 'pending', sub: null,
+      lastPoll: 0, expiresAt: now() + TTL.device });
+    log('ok', 'device authorization started, user_code=' + userCode);
+    return json(res, 200, {
+      device_code: deviceCode,
+      user_code: userCode,
+      verification_uri: ISSUER + '/device',
+      verification_uri_complete: ISSUER + '/device?user_code=' + userCode,
+      expires_in: TTL.device,
+      interval: 5,          // the agent must not poll faster than this
+    });
+  }
+
+  // The page the human opens. In a production server this would reuse the
+  // normal session and consent screens; it is collapsed into one form here
+  // so the lab stays readable.
+  if (path === '/device' && req.method === 'GET') {
+    const pre = q.get('user_code') || '';
+    return html(res,
+      '<h2>Authorize a device</h2><p>An application is asking to act on your '
+      + 'behalf. Check the code shown on that device matches the one below, then '
+      + 'sign in to approve it.</p>'
+      + '<form method=POST action=/device>'
+      + '<p><label>Code<br><input name=user_code value="' + esc(pre) + '"></label>'
+      + '<p><label>Username<br><input name=username autofocus></label>'
+      + '<p><label>Password<br><input name=password type=password></label>'
+      + '<p><button name=action value=allow>Approve</button> '
+      + '<button name=action value=deny>Deny</button></form>'
+      + '<hr><p style="color:#666;font-size:13px">alice / wonderland</p>');
+  }
+
+  if (path === '/device' && req.method === 'POST') {
+    const code = String(body.get('user_code') || '').trim().toUpperCase();
+    let entry = null;
+    for (const d of devices.values()) if (d.userCode === code) entry = d;
+    if (!entry || entry.expiresAt < now())
+      return html(res, '<h2>Unknown or expired code</h2>', 400);
+
+    if (body.get('action') === 'deny') {
+      entry.status = 'denied';
+      log('warn', 'the human DENIED the device request');
+      return html(res, '<h2>Denied</h2><p>You can close this page.</p>');
+    }
+    const user = USERS[String(body.get('username') || '').toLowerCase()];
+    if (!user || !C.safeEqual(body.get('password'), user.password))
+      return html(res, '<h2>Wrong username or password</h2>', 401);
+
+    // The user may hold less than the agent asked for. Narrow it here.
+    entry.scope = entry.scope.filter((x) => user.can.includes(x));
+    entry.sub = user.sub;
+    entry.status = 'approved';
+    log('ok', 'device approved by ' + user.name + ' scope=' + entry.scope.join(' '));
+    return html(res, '<h2>Approved</h2><p>The application can continue. You can '
+      + 'close this page.</p>');
   }
 
   // ---------------- /token : the BACK CHANNEL ----------------
@@ -489,7 +629,126 @@ const server = http.createServer(async (req, res) => {
         expires_in: TTL.access, scope: asked.join(' ') });
     }
 
+    // ===== device grant: the agent polls here until the human approves =====
+    if (grant === DEVICE_GRANT) {
+      const entry = devices.get(body.get('device_code'));
+      if (!entry || entry.clientId !== clientId)
+        return json(res, 400, { error: 'invalid_grant' });
+      if (entry.expiresAt < now()) {
+        devices.delete(body.get('device_code'));
+        return json(res, 400, { error: 'expired_token',
+          error_description: 'The human did not approve in time.' });
+      }
+      // Enforce the polling interval we advertised, so one agent cannot
+      // hammer the token endpoint while it waits.
+      if (now() - entry.lastPoll < 5) {
+        entry.lastPoll = now();
+        return json(res, 400, { error: 'slow_down',
+          error_description: 'Poll no faster than the advertised interval.' });
+      }
+      entry.lastPoll = now();
+
+      if (entry.status === 'pending') return json(res, 400, {
+        error: 'authorization_pending',
+        error_description: 'Waiting for the human to approve.' });
+      if (entry.status === 'denied') {
+        devices.delete(body.get('device_code'));
+        return json(res, 400, { error: 'access_denied' });
+      }
+
+      devices.delete(body.get('device_code'));   // single use, like a code
+      const familyId = C.randomId(8);
+      const at = issueAccessToken(clientId, entry.sub, entry.scope, familyId,
+                                 API, { details: entry.details });
+      log('ok', 'device grant completed for ' + entry.sub);
+      const out = { access_token: at.token, token_type: 'Bearer',
+        expires_in: TTL.access, scope: entry.scope.join(' ') };
+      if (client.grants.includes('refresh_token'))
+        out.refresh_token = issueRefreshToken(clientId, entry.sub, entry.scope,
+                                              familyId, 1);
+      if (entry.details) out.authorization_details = entry.details;
+      return json(res, 200, out);
+    }
+
+    // ===== token exchange (RFC 8693): act on someone else's behalf =====
+    // A service that received a user's token swaps it for a downstream one.
+    // The new token names the caller in `act`, so the API sees the chain.
+    if (grant === EXCHANGE_GRANT) {
+      const subject = body.get('subject_token');
+      const crypto2 = require('node:crypto');
+      const r = C.verifyJwt(subject, {
+        getKey: (kid) => kid === KEY.kid
+          ? crypto2.createPublicKey({ key: KEY.publicJwk, format: 'jwk' }) : null,
+        issuer: ISSUER, requiredTyp: 'at+jwt' });
+      if (!r.valid) return json(res, 400, { error: 'invalid_grant',
+        error_description: 'subject_token is not valid here (' + r.reason + ').' });
+
+      // Delegation may only ever NARROW. You cannot exchange your way up.
+      const held = splitScope(r.payload.scope);
+      const asked = body.get('scope') ? splitScope(body.get('scope')) : held;
+      const up = asked.filter((x) => !held.includes(x));
+      if (up.length) return json(res, 400, { error: 'invalid_scope',
+        error_description: 'Cannot widen scope on exchange: ' + up.join(' ') });
+
+      const parsed = parseDetails(body.get('authorization_details'));
+      if (parsed && parsed.error) return json(res, 400, {
+        error: 'invalid_authorization_details', error_description: parsed.error });
+
+      // Build the actor chain: whoever was acting before is nested inside.
+      const act = { sub: clientId };
+      if (r.payload.act) act.act = r.payload.act;
+      const at = issueAccessToken(clientId, r.payload.sub, asked, null,
+        body.get('resource') || API,
+        { act, details: parsed ? parsed.value : r.payload.authorization_details });
+      log('ok', 'token exchanged: ' + clientId + ' now acting for ' + r.payload.sub);
+      return json(res, 200, { access_token: at.token, token_type: 'Bearer',
+        issued_token_type: ACCESS_TOKEN_TYPE,
+        expires_in: TTL.access, scope: asked.join(' ') });
+    }
+
     return json(res, 400, { error: 'unsupported_grant_type' });
+  }
+
+  // ---------------- OIDC: /userinfo ----------------
+  // Claims about the signed-in user, filtered by the scopes actually granted.
+  // Note what it takes: the ACCESS token, not the ID token. The ID token is
+  // for the client to read; this endpoint is for fetching fresh claims.
+  if (path === '/userinfo') {
+    const header = req.headers.authorization || '';
+    if (!header.toLowerCase().startsWith('bearer '))
+      return json(res, 401, { error: 'invalid_token',
+        error_description: 'Send the access token as a Bearer token.' });
+
+    const crypto3 = require('node:crypto');
+    const r = C.verifyJwt(header.slice(7).trim(), {
+      getKey: (kid) => kid === KEY.kid
+        ? crypto3.createPublicKey({ key: KEY.publicJwk, format: 'jwk' }) : null,
+      issuer: ISSUER, requiredTyp: 'at+jwt' });
+    if (!r.valid) return json(res, 401, { error: 'invalid_token', reason: r.reason });
+
+    const granted = splitScope(r.payload.scope);
+    if (!granted.includes('openid'))
+      return json(res, 403, { error: 'insufficient_scope',
+        error_description: 'The openid scope is what turns an OAuth grant into an '
+          + 'OpenID Connect one. Without it there is no identity to return.' });
+
+    const user = userBySub(r.payload.sub);
+    if (!user) return json(res, 404, { error: 'no_such_subject',
+      error_description: 'A machine token has no user behind it.' });
+
+    // `sub` is always present; everything else is gated on scope, exactly as
+    // the claims in the ID token are.
+    const claims = { sub: user.sub };
+    if (granted.includes('profile')) {
+      claims.name = user.name;
+      claims.preferred_username = usernameOf(user.sub);
+    }
+    if (granted.includes('email')) {
+      claims.email = user.email;
+      claims.email_verified = true;
+    }
+    log('ok', '/userinfo for ' + user.sub + ' -> ' + Object.keys(claims).join(', '));
+    return json(res, 200, claims);
   }
 
   // ---------------- introspection (RFC 7662) ----------------
