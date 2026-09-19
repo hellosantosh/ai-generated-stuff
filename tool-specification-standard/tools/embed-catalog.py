@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Expand catalogue markers in the PDF source fragments.
+Expand catalog markers in the PDF source fragments.
 
 The book must print the descriptors that actually ship, not a retyped copy that
 drifts. Fragments therefore carry markers, and this script replaces each one
@@ -12,6 +12,7 @@ with a syntax-highlighted rendering of the corresponding file in catalog/.
     <!--CATALOG:brokerage_positions_list:output-->      just outputSchema
     <!--CATALOG:brokerage_positions_list:governance-->  just the governance block
     <!--JSONFILE:schemas/tool-descriptor.schema.json-->  any JSON file in the repository
+    <!--TOOLCARDS-->                                     a summary row per catalog descriptor
 
 Usage:  embed-catalog.py < assembled.html > expanded.html
 """
@@ -30,6 +31,7 @@ CATALOG = ROOT / "catalog"
 
 MARKER = re.compile(r"<!--CATALOG:([a-z0-9_]+):([a-z]+)-->")
 FILE_MARKER = re.compile(r"<!--JSONFILE:([A-Za-z0-9_./-]+)-->")
+CARDS_MARKER = re.compile(r"<!--TOOLCARDS-->")
 
 TOKEN = re.compile(
     r'"(?:[^"\\]|\\.)*"(?=\s*:)'      # key
@@ -80,9 +82,50 @@ def render(name: str, section: str) -> str:
     elif section == "governance":
         payload = json.dumps(doc["_meta"], indent=2, ensure_ascii=False)
     else:
-        raise SystemExit(f"unknown catalogue section '{section}'")
+        raise SystemExit(f"unknown catalog section '{section}'")
 
     return f'<pre class="long json"><code>{highlight(payload)}</code></pre>'
+
+
+TIER_CLASS = {0: "r0", 1: "r1", 2: "r2", 3: "r3"}
+
+
+def tool_cards() -> str:
+    """One row per catalog descriptor, read from the descriptors themselves."""
+    rows = []
+    docs = []
+    for path in sorted(CATALOG.glob("*.json")):
+        d = json.loads(path.read_text())
+        gov = next(v for k, v in d["_meta"].items() if k.endswith("/governance"))
+        docs.append((d, gov))
+    # Reads before writes, then by tier.
+    docs.sort(key=lambda t: (t[1]["riskTier"], not t[0]["annotations"]["readOnlyHint"]))
+    for d, gov in docs:
+        ann = d["annotations"]
+        pills = '<span class="pill ro">read-only</span>' if ann["readOnlyHint"] else \
+                '<span class="pill no">writes</span>'
+        if ann["destructiveHint"]:
+            pills += '<span class="pill no">destructive</span>'
+        if ann["idempotentHint"]:
+            pills += '<span class="pill">idempotent</span>'
+        if ann["openWorldHint"]:
+            pills += '<span class="pill">open world</span>'
+        scopes = "".join(f'<span class="pill sc">{html.escape(e)}</span>'
+                         for e in gov["entitlements"])
+        first = d["description"].split(". ")[0] + "."
+        approval = gov["approval"]["mode"]
+        rows.append(
+            "<tr>"
+            f'<td><code>{d["name"]}</code><br><span class="small">{html.escape(d["title"])}</span></td>'
+            f'<td><span class="risk {TIER_CLASS[gov["riskTier"]]}">T{gov["riskTier"]}</span><br>'
+            f'<span class="small">{html.escape(approval)}</span></td>'
+            f'<td>{pills}<br>{scopes}</td>'
+            f'<td>{html.escape(first)}</td>'
+            "</tr>")
+    return ('<table class="long">'
+            "<thead><tr><th style=\"width:26%\">Tool</th><th style=\"width:9%\">Tier</th>"
+            "<th style=\"width:22%\">Contract</th><th>Answers</th></tr></thead>"
+            "<tbody>" + "".join(rows) + "</tbody></table>")
 
 
 def main() -> int:
@@ -104,7 +147,8 @@ def main() -> int:
         payload = json.dumps(json.loads(target.read_text()), indent=2, ensure_ascii=False)
         return f'<pre class="long json"><code>{highlight(payload)}</code></pre>'
 
-    out = FILE_MARKER.sub(sub_file, MARKER.sub(sub, text))
+    out = CARDS_MARKER.sub(lambda _: tool_cards(),
+                           FILE_MARKER.sub(sub_file, MARKER.sub(sub, text)))
     if missing:
         print(f"embed-catalog: no descriptor for {sorted(set(missing))}", file=sys.stderr)
         return 1

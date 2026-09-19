@@ -1,0 +1,140 @@
+<h1><span class="n">10</span>Security, audit, versioning</h1>
+
+<h2>The five security principles</h2>
+
+<table>
+  <tbody>
+    <tr><td style="width:32%"><b>The agent has no authority of its own</b></td>
+        <td>Every action runs as a principal, with that principal's scopes. There is no service account "the assistant" uses to read customer accounts — that account is a standing breach waiting for a prompt.</td></tr>
+    <tr><td><b>Least privilege, per invocation</b></td>
+        <td>Scopes declared per tool, checked per invocation, against the specific resource — not once per session.</td></tr>
+    <tr><td><b>Model output is untrusted input</b></td>
+        <td>Validate and authorize arguments as though they came from an anonymous internet client, because in the relevant sense they did.</td></tr>
+    <tr><td><b>Tool output is untrusted input to the model</b></td>
+        <td>Customer- and counterparty-supplied strings are data, never instruction.</td></tr>
+    <tr><td><b>Controls live where they cannot be talked out of</b></td>
+        <td>The gateway and the implementation. Not the description, not the annotations, not the system prompt — all three are inputs to a system that can be persuaded.</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Non-negotiables</h3>
+    <ul class="tight">
+      <li>No argument asserts identity, role, or tenancy <span class="small">(<code>TS-SEC-02</code>)</span></li>
+      <li>Authorize the <b>specific resource</b> in the arguments, every call <span class="small">(<code>TS-SEC-08</code>)</span></li>
+      <li>Never forward an inbound token downstream — exchange it for one audienced to that system <span class="small">(<code>TS-SEC-10</code>)</span></li>
+      <li>No credentials in arguments, results, errors, or descriptions <span class="small">(<code>TS-SEC-03</code>)</span></li>
+      <li>Confirmation tokens: bound to principal + tool + argument hash, ≤120 s, single use <span class="small">(<code>TS-SEC-01</code>)</span></li>
+      <li>Kill switch for every T2+ tool, ≤60 s, no deployment <span class="small">(<code>TS-SEC-12</code>)</span></li>
+      <li>Descriptor hashes pinned; a changed hash is refused, not tolerated <span class="small">(<code>TS-SEC-09</code>)</span></li>
+      <li>Never ask for credentials or one-time codes through a tool's request for input <span class="small">(<code>TS-SEC-05</code>)</span></li>
+    </ul>
+  </div>
+  <div>
+    <h3>Untrusted text in this domain</h3>
+    <p class="small">Account nickname · order memo and client order id · instrument name and
+      description · transfer memo and beneficiary name · corporate action notes · upstream
+      error text.</p>
+    <p class="small">Length-cap it, strip control characters and markup, <b>delimit and label it
+      as untrusted in the text rendering</b>, and never interpolate it into a sentence that
+      reads as narration by the tool <span class="small">(<code>TS-SEC-11</code>)</span>.</p>
+    <h3>Alert on these</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Identical invocation repeated 3× in a conversation</li>
+      <li>Repeated <code>ENTITLEMENT_DENIED</code> or <code>NOT_FOUND</code> — the signature of enumeration</li>
+      <li><b>Approval denied, then retried with altered arguments</b> — the highest-signal event in the estate; block the conversation</li>
+      <li>Descriptor hash mismatch at a runtime</li>
+    </ul>
+  </div>
+</div>
+
+<h2>The audit record — one per invocation, every path</h2>
+
+<p class="small">
+  <code>traceId</code> · <code>conversationId</code> · <code>turnId</code> ·
+  <code>principal</code> and how the identity was established · <code>agent</code> and version ·
+  <code>toolName</code> · <code>toolVersion</code> · <b><code>descriptorHash</code></b> ·
+  validated <code>arguments</code> with <code>piiFields</code> masked · <code>outcome</code>
+  (success, or <code>code</code> + <code>domainCode</code>, or the policy decision) ·
+  <code>resultDigest</code> with size and record count · <code>approval</code> (mode, who, when,
+  the argument hash they approved, or the decline) · <code>entitlements</code> presented and the
+  decision · <code>latencyMs</code> · <code>upstreamCalls</code>.
+</p>
+
+<div class="key">
+  <span class="lbl">The descriptor hash is not optional</span>
+  <p>
+    Without it you cannot reconstruct what the model was told when it made the call — the first
+    question asked in any investigation. For tier 3, the record must also carry the confirmation
+    exactly as the principal saw it and their response. "The agent placed an order" is a summary
+    of a record, not a record.
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Metrics worth the instrumentation</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b>Selection accuracy</b></td><td>Was this the right tool for the question? Sampled and human-labeled. The most valuable metric in the estate</td></tr>
+        <tr><td><b>Refusal accuracy</b></td><td>Correctly left alone when it should not answer</td></tr>
+        <tr><td><b>Repeat-call rate</b></td><td>&gt;15% = descriptor defect. Fix the prose, not the agent</td></tr>
+        <tr><td><b>Truncation rate</b></td><td>High = wrong granularity</td></tr>
+        <tr><td><b>Post-call correction</b></td><td>User corrects the agent right after this tool returns</td></tr>
+        <tr><td><b>Error rate by <code>code</code></b></td><td>A rise in <code>BUSINESS_RULE_VIOLATION</code> is a market condition; a rise in <code>INVALID_ARGUMENT</code> is a descriptor defect</td></tr>
+        <tr><td><b>Approval decline rate</b></td><td>Near zero means the confirmation is being rubber-stamped</td></tr>
+        <tr><td><b>Silent wrongness</b></td><td>Succeeded, valid data, wrong answer. Only measurable by reading conversations. Budget for it</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Breaking vs compatible</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:62%">Optional input parameter with a safe default</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>New output field</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>New member of an <b>output</b> enum</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>Relaxing a constraint</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>Clarifying prose</td><td><span class="pill ro">encouraged</span></td></tr>
+        <tr><td>Optional → required</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>Removing or renaming any field</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>New member of an <b>input</b> enum</td><td><span class="pill no">breaking in effect</span></td></tr>
+        <tr><td>Tightening a constraint</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td><b>Changing a unit, convention, or sign</b></td><td><span class="pill no">breaking &amp; dangerous</span></td></tr>
+        <tr><td>Changing omission behavior</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>Raising the risk tier</td><td><span class="pill">announce it</span></td></tr>
+      </tbody>
+    </table>
+    <p class="small"><b>A breaking change is a new tool name with a <code>_v2</code> suffix</b>,
+      running alongside the original for the full window. The model has no upgrade schedule.</p>
+  </div>
+</div>
+
+<div class="cols avoid">
+  <div class="card">
+    <h3>Deprecation, in order</h3>
+    <ol style="margin-bottom:0">
+      <li><b>Announce</b> — <code>lifecycle: deprecated</code> + <code>{since, sunset, successor, migrationNote}</code>. Minimum 90 days or one reporting cycle.</li>
+      <li><b>Stop new grants</b> — no longer offered to audiences that do not already have it.</li>
+      <li><b>Warn out of band</b> — a notice in the result's <code>_meta</code>. <b>Do not change the description</b>: it costs tokens every turn, and a model told a tool is deprecated behaves unpredictably rather than migrating.</li>
+      <li><b>Measure</b> — track by audience, contact each remaining consumer.</li>
+      <li><b>Retire</b> — <code>NOT_SUPPORTED</code> naming the successor for 90 days, then withdraw. <b>The name is never reused.</b></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Evaluation thresholds</h3>
+    <table style="margin-bottom:1.5mm">
+      <tbody>
+        <tr><td style="width:52%">Selection accuracy</td><td>≥95% (T1), ≥98% (T3)</td></tr>
+        <tr><td>Refusal accuracy</td><td>≥95%, ≥99% (T3)</td></tr>
+        <tr><td>Argument accuracy</td><td>≥98%</td></tr>
+        <tr><td>Interpretation accuracy</td><td>≥98%; 100% on domain conventions</td></tr>
+      </tbody>
+    </table>
+    <p class="small" style="margin-bottom:0">Every suite carries: nearest-neighbor confusions ·
+      convention traps (short position, option contracts, unsettled cash, retirement account,
+      partial fill, rejection) · empty and degraded results · refusals · injection.
+      <b>Re-run on every change, including a change to nothing but the prose.</b></p>
+  </div>
+</div>

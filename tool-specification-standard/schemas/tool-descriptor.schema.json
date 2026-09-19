@@ -83,7 +83,7 @@
                    "recordKeeping", "rateLimit"],
       "properties": {
         "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$", "description": "TS-VER-01. Semantic version of the contract." },
-        "lifecycle": { "enum": ["draft", "active", "deprecated", "retired"], "description": "Catalogue state." },
+        "lifecycle": { "enum": ["draft", "active", "deprecated", "retired"], "description": "Catalog state." },
         "conformanceLevel": { "enum": ["L0", "L1", "L2", "L3"], "description": "§1.3. Asserted by the owner, verified at certification." },
         "riskTier": { "type": "integer", "minimum": 0, "maximum": 3, "description": "§9.3. Drives approval, monitoring, and evidence requirements." },
         "owner": {

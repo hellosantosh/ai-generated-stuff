@@ -16,7 +16,7 @@
     <tr><td><b>Transport or protocol failure</b><br><span class="small">the tool never ran</span></td>
         <td>Tool name not found · malformed invocation · gateway unreachable · authentication
             to the gateway failed</td>
-        <td>Handled by the runtime. The model may never see it. Not modelled by this
+        <td>Handled by the runtime. The model may never see it. Not modeled by this
             standard.</td></tr>
     <tr><td><b>Execution error</b><br><span class="small">the tool ran and could not do the job</span></td>
         <td>Account not found · not entitled · insufficient buying power · market closed ·
@@ -69,7 +69,7 @@
             on.</td></tr>
     <tr><td><code>domainCode</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
         <td>A specific, stable, registered code from Appendix C. This is what a customer-facing
-            surface localises and what analytics group by.</td></tr>
+            surface localizes and what analytics group by.</td></tr>
     <tr><td><code>message</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>One or two sentences a person could read. States what happened, including the
             numbers that make it concrete. Contains no internal identifiers, no stack, no
@@ -129,7 +129,7 @@
             market closed, options level too low, instrument halted. <b>The request was fine;
             the world declined.</b> Explain it to the customer rather than retrying.</td></tr>
     <tr><td><code>RATE_LIMITED</code></td><td>Yes, after wait</td>
-        <td>Quota exhausted. Honour <code>retryAfterSeconds</code>. If it recurs, the agent is
+        <td>Quota exhausted. Honor <code>retryAfterSeconds</code>. If it recurs, the agent is
             looping and should stop.</td></tr>
     <tr><td><code>TIMEOUT</code></td><td>If idempotent</td>
         <td>The operation did not complete in budget. <b>Retry only if
@@ -138,7 +138,7 @@
     <tr><td><code>UPSTREAM_UNAVAILABLE</code></td><td>Yes, with backoff</td>
         <td>A system of record is down or degraded. <code>details.system</code> names which,
             so the agent can tell the customer what is unavailable rather than
-            apologising vaguely.</td></tr>
+            apologizing vaguely.</td></tr>
     <tr><td><code>DATA_INCOMPLETE</code></td><td>Yes, with backoff</td>
         <td>The answer could be computed only partially and the tool refused to return a
             misleading figure (§8.6). Distinct from <code>UPSTREAM_UNAVAILABLE</code> because
@@ -208,7 +208,7 @@
             guessing loop.</td></tr>
     <tr><td><code>TS-ERR-04</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>Where a retry is futile, <code>remediation</code> <b>MUST</b> say so explicitly —
-            "do not retry". Models are biased towards retrying, and an explicit prohibition is
+            "do not retry". Models are biased toward retrying, and an explicit prohibition is
             markedly more effective than <code>retryable: false</code> alone.</td></tr>
     <tr><td><code>TS-ERR-05</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>Validation failures <b>MUST</b> enumerate every violation, not just the first.
@@ -279,7 +279,7 @@
 <div class="rule must">
   <p><span class="rid">TS-ERR-06</span>
   <span class="lvl lvl-must">MUST</span> Every upstream failure mode <b>MUST</b> have an
-  explicit mapping with a test. A default branch that maps everything unrecognised to
+  explicit mapping with a test. A default branch that maps everything unrecognized to
   <code>INTERNAL_ERROR</code> is permitted and <b>MUST</b> raise an alert when it fires: an
   unmapped upstream failure is a contract change nobody was told about.</p>
 </div>

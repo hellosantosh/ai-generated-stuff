@@ -15,8 +15,8 @@
 
 <p class="lede">
   Paste from here rather than reinventing. A concept defined in this file means the same thing
-  in every tool in the catalogue, which is what <code>TS-INP-04</code> requires and what makes
-  a catalogue navigable by a caller that reads it fresh every time.
+  in every tool in the catalog, which is what <code>TS-INP-04</code> requires and what makes
+  a catalog navigable by a caller that reads it fresh every time.
 </p>
 
 <!--JSONFILE:schemas/common-types.schema.json-->
@@ -26,7 +26,7 @@
 
 <p class="lede">
   Domain codes are registered centrally so that analytics can group them, customer-facing
-  surfaces can localise them, and two teams cannot ship two spellings of the same failure.
+  surfaces can localize them, and two teams cannot ship two spellings of the same failure.
   Adding a code is a pull request against this registry.
 </p>
 
@@ -55,7 +55,7 @@
     <tr><td><code>ACCOUNT_RESTRICTED</code></td><td><code>CONFLICT</code></td>
         <td>Account may be read but not traded. Must state that reading still works.</td></tr>
     <tr><td><code>ORDER_ALREADY_TERMINAL</code></td><td><code>CONFLICT</code></td>
-        <td>Cancel or replace on an order that has already filled, cancelled, or expired. Must
+        <td>Cancel or replace on an order that has already filled, canceled, or expired. Must
             state the terminal status and tell the caller to re-read the order.</td></tr>
     <tr><td><code>ORDER_OUTCOME_UNKNOWN</code></td><td><code>TIMEOUT</code></td>
         <td>Placement timed out; the order may be live. Must forbid reporting failure and
@@ -100,6 +100,18 @@
   (<code>TS-INP-09</code>).
 </p>
 
+<div class="note">
+  <span class="lbl">On <code>CANCELLED</code></span>
+  <p>
+    This document is written in US English, in which the prose spelling is "canceled". The
+    enumeration member keeps the double <i>l</i> because it is the token the order management
+    system and the firm's REST estate already emit, and §17.1 classifies changing an
+    enumeration member as a breaking change. The rule that enumerations match the systems of
+    record outranks the rule that prose matches the style guide — which is the general
+    principle whenever the two collide.
+  </p>
+</div>
+
 <table class="long">
   <thead><tr><th style="width:22%">Enumeration</th><th>Members</th></tr></thead>
   <tbody>
@@ -131,7 +143,7 @@
             <code>PENDING_REPLACE</code> · <code>SUSPENDED</code><br>
             <b>Terminal:</b> <code>FILLED</code> · <code>CANCELLED</code> ·
             <code>REJECTED</code> · <code>EXPIRED</code> · <code>REPLACED</code><br>
-            <b>New members may be added.</b> Unrecognised means working
+            <b>New members may be added.</b> Unrecognized means working
             (<code>TS-VER-02</code>).</td></tr>
     <tr><td><code>orderStatusFilter</code><br><span class="small">input only</span></td>
         <td><code>WORKING</code> · <code>FILLED</code> · <code>CANCELLED</code> ·
@@ -164,9 +176,9 @@
   <li><b>TS-NAM-02</b> &nbsp;Name is globally unique and has never been used before</li>
   <li><b>TS-NAM-07</b> &nbsp;Title is human-readable, 60 characters or fewer, and names the consequence for tier 3</li>
   <li><b>TS-DSC-01</b> &nbsp;Description contains purpose, "use when", "do not use", result orientation, and effects</li>
-  <li><b>TS-DSC-05</b> &nbsp;Every nearest-neighbour tool is named by exact wire name in an exclusion</li>
+  <li><b>TS-DSC-05</b> &nbsp;Every nearest-neighbor tool is named by exact wire name in an exclusion</li>
   <li>TS-DSC-02 &nbsp;Description is within 2,000 characters and 180 words</li>
-  <li><b>TS-DSC-06</b> &nbsp;No instructions about agent behaviour outside this tool</li>
+  <li><b>TS-DSC-06</b> &nbsp;No instructions about agent behavior outside this tool</li>
   <li><b>TS-DSC-07</b> &nbsp;Description is static, reviewed, and not templated at runtime</li>
   <li>§18.3 &nbsp;Every domain convention that could produce a wrong answer is stated somewhere</li>
 </ul>
@@ -180,7 +192,7 @@
   <li><b>TS-INP-14</b> &nbsp;Every parameter has a description that says more than its type</li>
   <li>TS-INP-12 &nbsp;Defaults are the conservative choice</li>
   <li><b>TS-INP-17</b> &nbsp;No identity, credential, pass-through query, operation discriminator, or safety-defeating flag</li>
-  <li>TS-INP-16 &nbsp;No parameter the tool cannot honour</li>
+  <li>TS-INP-16 &nbsp;No parameter the tool cannot honor</li>
   <li><b>TS-OUT-01</b> &nbsp;Output schema declared; both <code>content</code> and <code>structuredContent</code> returned on every path</li>
   <li><b>TS-OUT-03</b> &nbsp;<code>asOf</code> and <code>basis</code> present on every figure that can change</li>
   <li><b>TS-OUT-07</b> &nbsp;<code>completeness</code> present; truncation stated in the text rendering</li>
@@ -198,7 +210,7 @@
   <li><b>TS-SEC-02</b> &nbsp;No identity is accepted from the caller</li>
   <li><b>TS-SEC-08</b> &nbsp;Resource-level authorization demonstrated by a negative test</li>
   <li><b>TS-SEC-10</b> &nbsp;No token is passed through to a downstream system</li>
-  <li><b>TS-SEC-11</b> &nbsp;Externally-sourced free text is neutralised and labelled</li>
+  <li><b>TS-SEC-11</b> &nbsp;Externally-sourced free text is neutralized and labeled</li>
   <li><b>TS-SEC-12</b> &nbsp;Kill switch exists for tier 2 and above, and has been tested</li>
 </ul>
 
@@ -216,20 +228,20 @@
 <ul class="check">
   <li><b>TS-GOV-01</b> &nbsp;Named owning team with a paging escalation path</li>
   <li><b>TS-GOV-02</b> &nbsp;Minimum necessary data returned; classification and PII fields mapped</li>
-  <li><b>TS-GOV-03</b> &nbsp;Entitlements enforced at catalogue, gateway, and implementation</li>
+  <li><b>TS-GOV-03</b> &nbsp;Entitlements enforced at catalog, gateway, and implementation</li>
   <li><b>TS-GOV-04</b> &nbsp;Per-principal rate limit declared</li>
   <li><b>TS-OBS-01</b> &nbsp;Audit record emitted on every path, including the descriptor hash</li>
   <li><b>TS-VER-04</b> &nbsp;Evaluation suite exists and has run against this version</li>
   <li>§27.3 &nbsp;Selection, refusal, argument, and interpretation thresholds met</li>
-  <li><b>TS-SEC-09</b> &nbsp;Descriptor hash registered with the catalogue</li>
+  <li><b>TS-SEC-09</b> &nbsp;Descriptor hash registered with the catalog</li>
   <li>TS-CAT-05 &nbsp;Every exception recorded with a compensating control and an expiry</li>
 </ul>
 
-<h2 id="e6"><span class="num">E.6</span>Catalogue fit</h2>
+<h2 id="e6"><span class="num">E.6</span>Catalog fit</h2>
 <ul class="check">
   <li>TS-CAT-01 &nbsp;The tool answers one question a user actually asks</li>
-  <li>TS-CAT-02 &nbsp;The agent's catalogue stays within 25 tools</li>
-  <li>§12.5 &nbsp;One sentence distinguishes this tool from its nearest neighbour, and it is in both descriptions</li>
+  <li>TS-CAT-02 &nbsp;The agent's catalog stays within 25 tools</li>
+  <li>§12.5 &nbsp;One sentence distinguishes this tool from its nearest neighbor, and it is in both descriptions</li>
   <li>§12.3 &nbsp;No common question needs three or more calls plus a domain convention the model must know</li>
 </ul>
 
@@ -240,10 +252,10 @@
   <thead><tr><th style="width:26%">Term</th><th>Meaning in this standard</th></tr></thead>
   <tbody>
     <tr><td><b>Agent</b></td><td>A system that uses a model to decide which tools to invoke and in what order, on behalf of a principal.</td></tr>
-    <tr><td><b>Annotation</b></td><td>One of four boolean behavioural hints in the descriptor. Advisory to a runtime; never a security control (§9.2).</td></tr>
-    <tr><td><b>Audience</b></td><td>A set of principals to whom a scoped view of the catalogue is served.</td></tr>
+    <tr><td><b>Annotation</b></td><td>One of four boolean behavioral hints in the descriptor. Advisory to a runtime; never a security control (§9.2).</td></tr>
+    <tr><td><b>Audience</b></td><td>A set of principals to whom a scoped view of the catalog is served.</td></tr>
     <tr><td><b>Basis</b></td><td>The convention under which a figure was computed — settled versus trade-date cash, real-time versus delayed price.</td></tr>
-    <tr><td><b>Catalogue</b></td><td>The system of record for descriptors: versions, hashes, owners, tiers, audiences, lifecycle.</td></tr>
+    <tr><td><b>Catalog</b></td><td>The system of record for descriptors: versions, hashes, owners, tiers, audiences, lifecycle.</td></tr>
     <tr><td><b>Composite tool</b></td><td>A tool that joins several sources or applies domain rules server-side, so the caller does not have to (§12.3).</td></tr>
     <tr><td><b>Confirmation token</b></td><td>A single-use, short-lived capability issued by a preview tool and required by its execute counterpart (§14.2).</td></tr>
     <tr><td><b>Descriptor</b></td><td>The eight-field document that defines a tool (§4).</td></tr>
@@ -264,7 +276,7 @@
 <p class="small" style="margin-top:8mm">
   <b>EA-STD-TOOL-001 · Tool Specification Standard · version 1.0.0-rc1</b><br>
   Enterprise Architecture — Agent Platform. Comments and exception requests through the
-  catalogue. The machine-readable artifacts accompanying this document —
+  catalog. The machine-readable artifacts accompanying this document —
   <code>schemas/tool-descriptor.schema.json</code>,
   <code>schemas/common-types.schema.json</code>, the seven reference descriptors in
   <code>catalog/</code>, and the conformance linter in

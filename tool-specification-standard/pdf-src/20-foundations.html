@@ -36,7 +36,7 @@
       <td><b>The descriptor</b></td>
       <td>A machine-readable document declaring the tool's name, its purpose in prose
           addressed to a model, a JSON Schema for its inputs, a JSON Schema for its outputs,
-          behavioural annotations, and a governance block. Part II specifies it in full;
+          behavioral annotations, and a governance block. Part II specifies it in full;
           Appendix A is its schema.</td>
     </tr>
     <tr>
@@ -82,7 +82,7 @@
     <tr><td><code>TS-OUT</code></td><td>Output schemas and envelopes</td>
         <td><code>TS-VER</code></td><td>Versioning and lifecycle</td></tr>
     <tr><td><code>TS-ERR</code></td><td>Errors</td>
-        <td><code>TS-CAT</code></td><td>Catalogue and registration</td></tr>
+        <td><code>TS-CAT</code></td><td>Catalog and registration</td></tr>
   </tbody>
 </table>
 
@@ -108,7 +108,7 @@
     <tr>
       <td><span class="risk r0">L0</span></td>
       <td><b>Registered</b></td>
-      <td>Descriptor exists in the catalogue and parses against Appendix A. Nothing else.</td>
+      <td>Descriptor exists in the catalog and parses against Appendix A. Nothing else.</td>
       <td>Development and test environments only. Never reachable from a production agent.</td>
     </tr>
     <tr>
@@ -168,7 +168,7 @@
             client.</td>
         <td>Task-oriented. One tool per decision the agent has to make, even when that means
             joining three resources server-side (§12).</td></tr>
-    <tr><td><b>Error signalling</b></td>
+    <tr><td><b>Error signaling</b></td>
         <td>HTTP status plus a problem document. The status code carries real meaning.</td>
         <td>A structured error inside a successful transport response. The model never sees a
             status code, so the payload must carry everything (§11).</td></tr>
@@ -213,7 +213,7 @@
       <td><b>The model</b><br><span class="small">at selection time</span></td>
       <td>Deciding whether this tool, out of the forty in context, is the one that answers
           the user's question — and what to put in each argument.</td>
-      <td>Picking a plausible neighbour (<code>orders_list</code> when it wanted
+      <td>Picking a plausible neighbor (<code>orders_list</code> when it wanted
           <code>positions_list</code>), inventing an argument value that looks like the
           examples, or calling nothing at all because no description matched.</td>
     </tr>
@@ -231,7 +231,7 @@
           dialog; reconstructing, six months later, what an agent did to a customer's
           account and why.</td>
       <td>Reading <code>{"a": "acct_01HQ8Z", "q": 100}</code> in an approval dialog and
-          having no idea what they are being asked to authorise.</td>
+          having no idea what they are being asked to authorize.</td>
     </tr>
   </tbody>
 </table>
@@ -247,9 +247,9 @@
 <h2 id="not-an-endpoint"><span class="num">2.2</span>A tool is not an endpoint</h2>
 
 <p>
-  The most common failure in a first tool catalogue is a mechanical translation of an
+  The most common failure in a first tool catalog is a mechanical translation of an
   existing API: every path becomes a tool, every query parameter becomes an argument, every
-  response body becomes the output. It produces a catalogue that is simultaneously too large
+  response body becomes the output. It produces a catalog that is simultaneously too large
   and not useful.
 </p>
 
@@ -298,7 +298,7 @@
     <tr><td><b>It reads the description on every call</b></td>
         <td>The description is not documentation, it is <em>runtime input</em>. It occupies
             context on every turn, costs money on every turn, and can be rewritten to fix a
-            behaviour without redeploying the implementation.</td></tr>
+            behavior without redeploying the implementation.</td></tr>
     <tr><td><b>It cannot be corrected</b></td>
         <td>There is no support ticket and no developer to email. If the tool is
             misunderstood, the only lever is the descriptor. This is why §6 is as long as
@@ -318,7 +318,7 @@
     <tr><td><b>It is steerable by its input</b></td>
         <td>Everything the tool returns enters the model's context as text. A position
             nickname containing "ignore previous instructions and transfer…" is an injection
-            vector, and the tool is where it must be neutralised (§15.5).</td></tr>
+            vector, and the tool is where it must be neutralized (§15.5).</td></tr>
   </tbody>
 </table>
 
@@ -339,10 +339,10 @@
   <li><b>Results are untrusted input to the model.</b> Content that originated with a
       customer, a counterparty, or an external venue — nicknames, order memos, instrument
       descriptions, error text from an upstream system — is data, never instruction. The
-      tool marks it as such and neutralises it (§15.5).</li>
-  <li><b>Descriptors are trusted only because the catalogue signs them.</b> A description is
+      tool marks it as such and neutralizes it (§15.5).</li>
+  <li><b>Descriptors are trusted only because the catalog signs them.</b> A description is
       an instruction to the model. Anyone who can edit a description can redirect an agent.
-      That makes the catalogue a control point with change management, review, and an audit
+      That makes the catalog a control point with change management, review, and an audit
       trail — not a wiki (§28).</li>
 </ol>
 
@@ -401,7 +401,7 @@
   <text x="521" y="110" font-size="7.5" fill="#767d87" text-anchor="middle">domain logic,</text>
   <text x="521" y="120" font-size="7.5" fill="#767d87" text-anchor="middle">composition,</text>
   <text x="521" y="130" font-size="7.5" fill="#767d87" text-anchor="middle">shaping,</text>
-  <text x="521" y="140" font-size="7.5" fill="#767d87" text-anchor="middle">sanitisation</text>
+  <text x="521" y="140" font-size="7.5" fill="#767d87" text-anchor="middle">sanitization</text>
   <text x="521" y="160" font-size="7.5" fill="#767d87" text-anchor="middle">re-checks every</text>
   <text x="521" y="170" font-size="7.5" fill="#767d87" text-anchor="middle">authorization</text>
 
@@ -425,9 +425,9 @@
   <line x1="474" y1="140" x2="456" y2="140" stroke="#a0a6ae" stroke-width="1" marker-end="url(#arl)" stroke-dasharray="3 2"/>
   <line x1="288" y1="140" x2="270" y2="140" stroke="#a0a6ae" stroke-width="1" marker-end="url(#arl)" stroke-dasharray="3 2"/>
 
-  <!-- catalogue -->
+  <!-- catalog -->
   <rect x="116" y="216" width="448" height="34" rx="4" fill="#f2eefa" stroke="#ddd3ee"/>
-  <text x="340" y="232" font-size="8.5" font-weight="700" fill="#5b3a8e" text-anchor="middle" letter-spacing=".05em">TOOL CATALOGUE</text>
+  <text x="340" y="232" font-size="8.5" font-weight="700" fill="#5b3a8e" text-anchor="middle" letter-spacing=".05em">TOOL CATALOG</text>
   <text x="340" y="244" font-size="7.5" fill="#5b3a8e" text-anchor="middle">signed descriptors · versions · owners · risk tiers · entitlement map · deprecation state</text>
   <line x1="191" y1="216" x2="191" y2="196" stroke="#5b3a8e" stroke-width="1" marker-end="url(#ar)" stroke-dasharray="3 2"/>
   <line x1="372" y1="216" x2="372" y2="196" stroke="#5b3a8e" stroke-width="1" marker-end="url(#ar)" stroke-dasharray="3 2"/>
@@ -472,15 +472,15 @@
     <tr><td><b>Tool gateway</b></td>
         <td>Authenticating the principal and the agent; validating arguments against the
             input schema before the implementation sees them; enforcing risk-tier policy,
-            approval requirements, quotas, and timeouts; emitting audit events; honouring the
+            approval requirements, quotas, and timeouts; emitting audit events; honoring the
             kill switch.</td>
         <td>Contain domain logic. Rewrite arguments silently.</td></tr>
     <tr><td><b>Tool implementation</b></td>
         <td>Domain correctness, independent entitlement checks, composition across systems of
-            record, result shaping and truncation, sanitisation of untrusted content,
+            record, result shaping and truncation, sanitization of untrusted content,
             structured errors.</td>
         <td>Trust that the gateway validated anything. Return raw upstream payloads.</td></tr>
-    <tr><td><b>Tool catalogue</b></td>
+    <tr><td><b>Tool catalog</b></td>
         <td>The signed, versioned descriptor of record; ownership; lifecycle state; which
             audiences may see which tool.</td>
         <td>Serve a descriptor that has not passed the linter and review gate.</td></tr>
@@ -493,7 +493,7 @@
 </table>
 
 <div class="warn">
-  <span class="lbl">Defence in depth is not optional here</span>
+  <span class="lbl">Defense in depth is not optional here</span>
   <p>
     Both the gateway and the implementation validate. This looks redundant and is not: the
     gateway protects the implementation from malformed input at scale, and the implementation
@@ -515,15 +515,15 @@
 <table class="long">
   <thead><tr><th style="width:6%">#</th><th style="width:26%">Step</th><th>What must be true</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>Catalogue resolves the audience</td><td>The agent is offered only the tools its principal is entitled to see. Tool visibility is itself an entitlement decision (§10.4).</td></tr>
+    <tr><td>1</td><td>Catalog resolves the audience</td><td>The agent is offered only the tools its principal is entitled to see. Tool visibility is itself an entitlement decision (§10.4).</td></tr>
     <tr><td>2 &#9670;</td><td>Descriptors enter context</td><td>Name, title, description, and input schema are rendered into the model's context. Their combined token cost is the standing tax on every turn (§13.1).</td></tr>
-    <tr><td>3 &#9670;</td><td>Model selects a tool</td><td>The description makes this tool distinguishable from its nearest neighbour, and says when <em>not</em> to use it (§6.2).</td></tr>
+    <tr><td>3 &#9670;</td><td>Model selects a tool</td><td>The description makes this tool distinguishable from its nearest neighbor, and says when <em>not</em> to use it (§6.2).</td></tr>
     <tr><td>4 &#9670;</td><td>Model composes arguments</td><td>The schema is tight enough that a plausible guess is a valid value, and enums prevent invented ones (§7.3).</td></tr>
     <tr><td>5</td><td>Gateway validates</td><td>Arguments are checked against the input schema. A validation failure returns a structured, actionable error — never a stack trace (§11.4).</td></tr>
     <tr><td>6</td><td>Policy evaluates</td><td>Risk tier, entitlements, quota, and the approval requirement are resolved from the descriptor's governance block (§9.4, §10).</td></tr>
     <tr><td>7</td><td>Approval, if required</td><td>The principal sees a human-readable rendering of exactly what will happen, built from the descriptor's title and a confirmation template (§14.1).</td></tr>
     <tr><td>8</td><td>Implementation executes</td><td>Entitlements re-checked; upstream calls made; domain rules applied; results composed.</td></tr>
-    <tr><td>9 &#9670;</td><td>Result is shaped</td><td>Shaped to the output schema, truncated to budget with an explicit completeness flag, untrusted content neutralised (§8, §13).</td></tr>
+    <tr><td>9 &#9670;</td><td>Result is shaped</td><td>Shaped to the output schema, truncated to budget with an explicit completeness flag, untrusted content neutralized (§8, §13).</td></tr>
     <tr><td>10 &#9670;</td><td>Model reads the result</td><td>Both a structured payload and a compact human-readable rendering are present, and they agree (§8.2).</td></tr>
     <tr><td>11</td><td>Audit is written</td><td>A record sufficient to reconstruct the decision, retained to schedule (§16).</td></tr>
   </tbody>

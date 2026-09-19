@@ -1,0 +1,200 @@
+<h1><span class="n">6</span>Annotations, risk tiers, approval</h1>
+
+<div class="key">
+  <span class="lbl">Annotations are advisory — never a control</span>
+  <p>
+    An annotation is an assertion by whoever wrote the descriptor. For a third-party tool it
+    is self-certification. <b>No security control may depend on one.</b> Controls derive from
+    the <b>risk tier</b>, which the firm sets, reviews, records, and signs. Where the two
+    disagree, the linter fails the build and a human decides which was wrong.
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>The four hints — defaults are pessimistic</h3>
+    <table>
+      <thead><tr><th style="width:40%">Annotation</th><th style="width:18%">Default</th><th>True means</th></tr></thead>
+      <tbody>
+        <tr><td><code>readOnlyHint</code></td><td><code>false</code></td>
+            <td>Changes nothing anywhere — caches, counters, search history included.</td></tr>
+        <tr><td><code>destructiveHint</code></td><td><code>true</code></td>
+            <td>May be irreversible or overwrite state. Only meaningful when not read-only.</td></tr>
+        <tr><td><code>idempotentHint</code></td><td><code>false</code></td>
+            <td>Repeating the identical call has no additional effect. <b>This is what tells a runtime a timeout is safe to retry.</b></td></tr>
+        <tr><td><code>openWorldHint</code></td><td><code>true</code></td>
+            <td>Reaches outside the firm's controlled domain.</td></tr>
+      </tbody>
+    </table>
+    <p class="small">All four stated explicitly, even at their defaults — an omission means the
+      reviewer cannot tell whether the author decided or forgot.</p>
+  </div>
+  <div>
+    <h3>Quick classification</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:56%">Reads only, closed domain</td><td><span class="risk r0">T0</span>/<span class="risk r1">T1</span></td></tr>
+        <tr><td>Touches customer or position data</td><td><span class="risk r1">T1</span></td></tr>
+        <tr><td>Reversible, non-financial write</td><td><span class="risk r2">T2</span></td></tr>
+        <tr><td>Moves money or creates exposure</td><td><span class="risk r3">T3</span></td></tr>
+        <tr><td><b>Cancels a live order</b></td><td><span class="risk r3">T3</span></td></tr>
+        <tr><td>Disputed at review</td><td>the higher tier</td></tr>
+      </tbody>
+    </table>
+    <div class="key" style="margin-bottom:0">
+      <span class="lbl">Cancellation is tier 3</span>
+      <p>It feels like undoing something. It is not: an order that does not fill in a moving
+        market is a realized economic difference, and you cannot un-cancel.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Risk tiers and their baseline controls</h2>
+
+<table class="long">
+  <thead><tr><th style="width:8%">Tier</th><th style="width:26%">Scope &amp; brokerage examples</th><th style="width:20%">Approval</th><th>Baseline controls</th></tr></thead>
+  <tbody>
+    <tr><td><span class="risk r0">T0</span><br><span class="small">Reference</span></td>
+        <td>Public or firm-wide reference. No customer, position, or money.<br>
+            <span class="small">Market calendar · symbol lookup · contract specs · fee schedule</span></td>
+        <td><code>none</code></td>
+        <td>Audit event. Authentication only. Freely available to autonomous agents.</td></tr>
+    <tr><td><span class="risk r1">T1</span><br><span class="small">Customer read</span></td>
+        <td>Reads customer-identifying or position data. Changes nothing.<br>
+            <span class="small"><b>Accounts · positions · balances · order status</b> · transactions</span></td>
+        <td><code>none</code></td>
+        <td>Entitlements at all three points. Full argument-and-result audit. Per-principal rate limit. L2 conformance.</td></tr>
+    <tr><td><span class="risk r2">T2</span><br><span class="small">Reversible change</span></td>
+        <td>Changes state, reversibly, not financially material.<br>
+            <span class="small">Nickname · price alert · statement request · watchlist</span></td>
+        <td><code>notify</code></td>
+        <td>T1 + idempotency key + explicit notification + a documented reversal path.</td></tr>
+    <tr><td><span class="risk r3">T3</span><br><span class="small">Material</span></td>
+        <td>Moves money, creates exposure, or is irreversible.<br>
+            <span class="small"><b>Place, replace, cancel an order</b> · transfer funds · change beneficiaries</span></td>
+        <td><code>confirm</code></td>
+        <td>T2 + confirmation bound to an argument hash + two-step preview/execute +
+            <code>reason</code> captured + dedicated kill switch + heightened monitoring +
+            independent security review.</td></tr>
+  </tbody>
+</table>
+
+<h2>Approval modes</h2>
+
+<table>
+  <thead><tr><th style="width:18%">Mode</th><th style="width:14%">Default for</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>none</code></td><td>T0, T1</td><td>Invoked without interruption. Audited.</td></tr>
+    <tr><td><code>notify</code></td><td>T2</td><td>Executed immediately; the principal is told, with the reversal path.</td></tr>
+    <tr><td><code>confirm</code></td><td>T3</td><td>The principal sees exactly what will happen and approves before execution.</td></tr>
+    <tr><td><code>dualControl</code></td><td>exception</td><td>Two humans, neither the requesting agent's principal.</td></tr>
+    <tr><td><code>humanExecution</code></td><td>exception</td><td>The agent may only prepare; a human executes elsewhere.</td></tr>
+  </tbody>
+</table>
+
+<h2>What a confirmation must show</h2>
+
+<div class="cols avoid">
+  <div class="no">
+    <span class="lbl">A rubber stamp</span>
+    <pre class="bad" style="margin-bottom:0;font-size:6.6pt"><code>Allow brokerage_order_place?
+
+{"accountId":"acct_01HQ8Z4M2X9K3P7R",
+ "symbol":"AAPL","side":"BUY",
+ "quantity":100,"orderType":"MARKET"}
+
+      [ Allow ]   [ Deny ]</code></pre>
+  </div>
+  <div class="yes">
+    <span class="lbl">An approval</span>
+    <pre class="good" style="margin-bottom:0;font-size:6.6pt"><code>Place a real order — this trades money
+
+  Buy 100 shares of AAPL (Apple Inc.)
+  Account ••••4471 · Roth IRA
+  Market order, good for today
+  Estimated cost      24,875.00 USD
+  Buying power after  59,485.20 USD
+
+  Fills immediately and cannot be undone.
+
+      [ Place order ]   [ Cancel ]</code></pre>
+  </div>
+</div>
+
+<ul class="tight">
+  <li>Rendered from the descriptor's <code>confirmationTemplate</code> with validated arguments —
+      the action, the account in customer terms, the instrument in words, quantity and money,
+      reversibility, and the material consequence.</li>
+  <li><b>Bound to a hash of the exact arguments shown.</b> If anything differs at execution, refuse.</li>
+  <li>Expires — 120 s default — and is single use.</li>
+  <li>A tool can never lower its own approval requirement through an argument, a description,
+      or a returned instruction.</li>
+</ul>
+
+<h1><span class="n">7</span>Governance block</h1>
+
+<p>
+  Lives in <code>_meta</code> under a namespaced key, so it never competes for the model's
+  context. Required members in <b>bold</b>.
+</p>
+
+<div class="cols avoid">
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b><code>version</code></b></td><td>Semantic. §17.2</td></tr>
+        <tr><td><b><code>lifecycle</code></b></td><td><code>draft</code> | <code>active</code> | <code>deprecated</code> | <code>retired</code></td></tr>
+        <tr><td><b><code>conformanceLevel</code></b></td><td><code>L0</code>–<code>L3</code></td></tr>
+        <tr><td><b><code>riskTier</code></b></td><td><code>0</code>–<code>3</code></td></tr>
+        <tr><td><b><code>owner</code></b></td><td><code>{team, contact, escalation}</code>. A distribution list is not an owner</td></tr>
+        <tr><td><b><code>dataClassification</code></b></td><td>Highest the tool can return</td></tr>
+        <tr><td><b><code>containsPii</code></b>, <code>piiFields</code></td><td>JSON Pointers, for mechanical masking</td></tr>
+        <tr><td><b><code>entitlements</code></b></td><td><code>domain:resource:action</code>. Empty is a positive assertion, scrutinized at review</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b><code>approval</code></b></td><td><code>{mode, confirmationTemplate, expiresInSeconds}</code></td></tr>
+        <tr><td><b><code>recordKeeping</code></b></td><td><code>{auditEvent, retention, regulatoryBasis}</code>. ISO 8601 duration</td></tr>
+        <tr><td><b><code>rateLimit</code></b></td><td><code>perPrincipalPerMinute</code> at minimum</td></tr>
+        <tr><td><code>cost</code></td><td><code>{class, p95LatencyMs, unitCost}</code></td></tr>
+        <tr><td><code>dependencies</code></td><td>Systems of record, by business-capability name</td></tr>
+        <tr><td><code>availability</code></td><td><code>{slo, killSwitch, degradedMode}</code></td></tr>
+        <tr><td><code>evaluation</code></td><td><b>Required at L2</b>. <code>{suite, lastRunAt, selectionAccuracy, refusalAccuracy}</code></td></tr>
+        <tr><td><code>deprecation</code></td><td><code>{since, sunset, successor, migrationNote}</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Classification</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:46%"><code>public</code></td><td>No restriction</td></tr>
+        <tr><td><code>internal</code></td><td>Employee agents only</td></tr>
+        <tr><td><code>customer-confidential</code></td><td><b>Accounts, positions, balances, orders.</b> Entitlement-gated, excluded from training and vendor retention</td></tr>
+        <tr><td><code>restricted</code></td><td><b>Must not be returned by a tool.</b> Masked to last four; unmasked needs a separate T3 dual-control tool</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Latency class</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:26%"><code>low</code></td><td>&lt; 500 ms</td><td>Freely composable</td></tr>
+        <tr><td><code>medium</code></td><td>&lt; 2 s</td><td>Avoid fan-out</td></tr>
+        <tr><td><code>high</code></td><td>&lt; 10 s</td><td>Warn in the description</td></tr>
+        <tr><td><code>async</code></td><td>&gt; 10 s</td><td><b>Must</b> use the job pattern</td></tr>
+      </tbody>
+    </table>
+    <h3>Entitlements are enforced three times</h3>
+    <p class="small"><b>(a)</b> catalog visibility — an agent is never offered a tool its
+      principal cannot use; <b>(b)</b> the gateway, before invocation; <b>(c)</b> the
+      implementation, against the specific resource in the arguments. <b>(c) is the one that
+      stops cross-customer access and the one most often skipped.</b></p>
+  </div>
+</div>

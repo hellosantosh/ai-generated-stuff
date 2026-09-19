@@ -1,0 +1,183 @@
+<h1><span class="n">2</span>Naming &amp; the operation vocabulary</h1>
+
+<div class="cols avoid">
+  <div>
+    <pre style="margin-bottom:2.5mm"><code><span class="c-com">// wire name — invocation, context, audit</span>
+brokerage_positions_list
+    │         │         └─ operation, from the
+    │         │            closed vocabulary
+    │         └─────────── entity: singular = one,
+    │                      plural = many
+    └───────────────────── business domain, never a
+                           team, system, or vendor
+
+<span class="c-com">// catalog id — registry, policy, docs only</span>
+brokerage.positions.list
+<span class="c-com">// dots NEVER cross the wire: several runtimes
+// reject or mangle them.</span></code></pre>
+  </div>
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:26%"><b>Grammar</b></td><td><code>^[a-z][a-z0-9_]{2,63}$</code>, 2–4 segments</td></tr>
+        <tr><td><b>Target length</b></td><td>≤ 40 chars <span class="lvl lvl-should">SHOULD</span></td></tr>
+        <tr><td><b>Uniqueness</b></td><td>Firm-wide, case-insensitive, underscores ignored</td></tr>
+        <tr><td><b>Stability</b></td><td>Permanent. A rename is a new tool plus deprecation</td></tr>
+        <tr><td><b>Never contains</b></td><td>Environment, region, tenant, vendor, version <span class="small">(except a deliberate <code>_v2</code> successor)</span></td></tr>
+      </tbody>
+    </table>
+    <div class="no" style="margin-bottom:0">
+      <span class="lbl">Rejected final segments</span>
+      <p><code>do</code> <code>run</code> <code>execute</code> <code>process</code>
+         <code>handle</code> <code>manage</code> <code>perform</code> <code>fetch</code>
+         <code>query</code> <code>call</code>, and any noun used as a verb.</p>
+    </div>
+  </div>
+</div>
+
+<h2>The closed operation vocabulary</h2>
+
+<table class="long">
+  <thead><tr><th style="width:14%">Verb</th><th style="width:28%">Means</th><th style="width:22%">Annotations</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>get</code></td><td>Retrieve one identified entity</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>One object, or <code>NOT_FOUND</code></td></tr>
+    <tr><td><code>list</code></td><td>Bounded, filterable collection</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Array + <code>completeness</code>. Empty is success</td></tr>
+    <tr><td><code>search</code></td><td>Rank by relevance when the filter cannot be structural</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Ranked array with scores</td></tr>
+    <tr><td><code>summarize</code></td><td>Derived aggregate instead of the records</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>One aggregate, basis stated</td></tr>
+    <tr><td><code>check</code></td><td>Evaluate a condition — the "can I?" tool</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Verdict + reasons + the numbers</td></tr>
+    <tr><td><code>preview</code></td><td>Compute the effect without applying it</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Projected outcome + <code>confirmationToken</code></td></tr>
+    <tr><td><code>create</code>, <code>place</code></td><td>Bring a new entity into existence</td>
+        <td><span class="pill no">writes</span><span class="pill no">needs key</span></td>
+        <td>The entity and its identifier</td></tr>
+    <tr><td><code>update</code>, <code>replace</code></td><td>Modify an existing entity</td>
+        <td><span class="pill no">destructive</span><span class="pill no">needs key</span></td>
+        <td>The updated entity and what changed</td></tr>
+    <tr><td><code>cancel</code></td><td>Stop something in flight; the record survives</td>
+        <td><span class="pill no">destructive</span><span class="pill">idempotent</span></td>
+        <td>The entity's new state</td></tr>
+    <tr><td><code>delete</code></td><td>Remove an entity — rare and always suspicious</td>
+        <td><span class="pill no">destructive</span><span class="pill">idempotent</span></td>
+        <td>Confirmation and what was removed</td></tr>
+    <tr><td><code>export</code></td><td>Produce a document for a human</td>
+        <td><span class="pill ro">read-only</span><span class="pill no">not idempotent</span></td>
+        <td>A reference, media type, size — never bytes</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">Why the vocabulary is closed</span>
+  <p>
+    It lets the linter check annotations against the name, lets policy be written against a
+    name rather than an argument, and lets a reviewer infer a tool's shape before reading a
+    word of prose. Extensions go to the ARB and are granted for new <i>shapes</i>, never for
+    synonyms.
+  </p>
+</div>
+
+<h2>Titles</h2>
+
+<div class="cols avoid">
+  <div class="yes">
+    <span class="lbl">Yes</span>
+    <p>"Get order status"<br>
+       "List the holdings in an account"<br>
+       "<b>Place a real order — trades money</b>"<br>
+       <span class="small">Sentence case · ≤60 chars · no trailing period · tier 3 names the
+       consequence, not the operation.</span></p>
+  </div>
+  <div class="no">
+    <span class="lbl">No</span>
+    <p>"OMS order status retrieval (v2)"<br>
+       "Order cancellation"<br>
+       "View order" <span class="small">on a tool that cancels</span><br>
+       <span class="small">A title that misstates the operation is a control failure, not a
+       typo.</span></p>
+  </div>
+</div>
+
+<h1><span class="n">3</span>The description</h1>
+
+<p>
+  The model sees <b>only</b> name, title, description, and the input schema — including every
+  property description. Nothing else. It reads them on every turn.
+</p>
+
+<h2>The seven parts</h2>
+
+<table class="long">
+  <thead><tr><th style="width:5%">#</th><th style="width:22%">Part</th><th style="width:38%">Write</th><th>Test</th></tr></thead>
+  <tbody>
+    <tr><td><b>1</b></td><td><b>Purpose</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>One sentence, active voice, starts with the verb.</td>
+        <td>Could a domain reader say what comes back?</td></tr>
+    <tr><td><b>2</b></td><td><b>Use when</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>The questions this answers, phrased the way a customer phrases them.</td>
+        <td>At least two real user phrasings?</td></tr>
+    <tr><td><b>3</b></td><td><b>Do not use</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>Nearest neighbors, by <b>exact wire name</b>, with the distinction.</td>
+        <td>Is every tool a confused reader might pick named here?</td></tr>
+    <tr><td><b>4</b></td><td><b>Argument semantics</b></td>
+        <td>Provenance of identifiers, units, cross-field rules.</td>
+        <td>Could a careful caller still supply a well-formed but wrong value?</td></tr>
+    <tr><td><b>5</b></td><td><b>Result orientation</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>Shape in a sentence, domain conventions, <b>what empty means</b>.</td>
+        <td>Can the reader compute the right answer from the payload alone?</td></tr>
+    <tr><td><b>6</b></td><td><b>Effects, freshness, cost</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>State change, money, staleness, rate limits.</td>
+        <td>Would a compliance reviewer be surprised by an omission?</td></tr>
+    <tr><td><b>7</b></td><td><b>Failure guidance</b></td>
+        <td>The failures a caller can act on, and what to do.</td>
+        <td>For each code: retry, change an argument, or stop?</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Budgets</h3>
+    <table>
+      <thead><tr><th>Item</th><th style="width:26%">Target</th><th style="width:26%">Hard</th></tr></thead>
+      <tbody>
+        <tr><td>Description</td><td>80–180 words</td><td>2,000 chars</td></tr>
+        <tr><td>Per-parameter</td><td>1–2 sentences</td><td>240 chars</td></tr>
+        <tr><td>Whole descriptor</td><td>≤ 700 tokens</td><td>1,200 tokens</td></tr>
+        <tr><td>Tools per agent</td><td>≤ 25</td><td>40</td></tr>
+        <tr><td>Catalog share of context</td><td>≤ 10%</td><td>15%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Cut first &nbsp;/&nbsp; keep always</h3>
+    <div class="no" style="margin-bottom:2.5mm">
+      <p>"This tool allows you to…" · restating the schema · which service or vendor ·
+         exhaustive error lists · how to talk to the customer · legal disclaimers</p>
+    </div>
+    <div class="yes" style="margin-bottom:0">
+      <p>Every convention that makes a number mean something other than its face value ·
+         every exclusion naming a sibling · what an empty result means · any staleness the
+         customer would be misled by</p>
+    </div>
+  </div>
+</div>
+
+<div class="key">
+  <span class="lbl">Descriptions are attack surface</span>
+  <p>
+    A description is an instruction injected into an agent's context. It is static, reviewed,
+    signed, and hash-pinned — never generated at runtime, never templated with request data
+    <span class="small">(<code>TS-DSC-07</code>, <code>TS-SEC-09</code>)</span>. It never
+    instructs the agent about anything but itself
+    <span class="small">(<code>TS-DSC-06</code>, <code>TS-DSC-10</code>)</span>.
+  </p>
+</div>

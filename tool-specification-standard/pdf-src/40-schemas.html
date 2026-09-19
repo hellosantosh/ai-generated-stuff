@@ -34,7 +34,7 @@
             <code>"type": ["string", "null"]</code>.</td></tr>
     <tr><td><code>description</code></td><td>Required on every property (§7.5).</td></tr>
     <tr><td><code>enum</code>, <code>const</code></td><td>The most valuable keywords in the profile (§7.3).</td></tr>
-    <tr><td><code>default</code></td><td>Permitted, but the behaviour on omission <b>MUST</b> also be stated in prose (§7.4).</td></tr>
+    <tr><td><code>default</code></td><td>Permitted, but the behavior on omission <b>MUST</b> also be stated in prose (§7.4).</td></tr>
     <tr><td><code>examples</code></td><td>One or two realistic values. Worth more than a sentence of description.</td></tr>
     <tr><td><code>minimum</code>, <code>maximum</code>, <code>exclusiveMinimum</code>, <code>exclusiveMaximum</code>, <code>multipleOf</code></td>
         <td>Numeric bounds. Always bound a number that reaches a system of record.</td></tr>
@@ -103,7 +103,7 @@
             domain's own vocabulary — <code>accountId</code>, <code>timeInForce</code>,
             <code>limitPrice</code> — not invented synonyms.</td></tr>
     <tr><td><code>TS-INP-04</code></td><td><span class="lvl lvl-must">MUST</span></td>
-        <td>A property name <b>MUST</b> mean the same thing in every tool in the catalogue.
+        <td>A property name <b>MUST</b> mean the same thing in every tool in the catalog.
             <code>quantity</code> cannot be shares in one tool and contracts in another. Where
             a concept recurs, take it from the shared type library (Appendix B) rather than
             redefining it.</td></tr>
@@ -129,7 +129,7 @@
 <h2 id="illegal-states"><span class="num">7.3</span>Making illegal states unrepresentable</h2>
 
 <p>
-  The model will supply a value that looks like the values it has seen. Your defence is to
+  The model will supply a value that looks like the values it has seen. Your defense is to
   make the set of values that look right identical to the set that are right.
 </p>
 
@@ -226,7 +226,7 @@
             without it. Marking a parameter required to force the model to "think about it"
             causes the model to invent a value instead.</td></tr>
     <tr><td><code>TS-INP-11</code></td><td><span class="lvl lvl-must">MUST</span></td>
-        <td>Every optional parameter's omission behaviour <b>MUST</b> be stated in its
+        <td>Every optional parameter's omission behavior <b>MUST</b> be stated in its
             <code>description</code> in prose, not only in <code>default</code>. Models read
             prose far more reliably than they read schema annotations.</td></tr>
     <tr><td><code>TS-INP-12</code></td><td><span class="lvl lvl-must">MUST</span></td>
@@ -299,7 +299,7 @@
             and gaps against a moving book, which is exactly what a positions or orders
             collection is.</td></tr>
     <tr><td><code>asOf</code></td><td>string, date-time</td>
-        <td>Point-in-time read. Omitted means now. A tool that cannot honour a historical
+        <td>Point-in-time read. Omitted means now. A tool that cannot honor a historical
             <code>asOf</code> must not accept the parameter at all.</td></tr>
     <tr><td><code>fromDate</code>, <code>toDate</code></td><td>string, date</td>
         <td>Inclusive date window in the account's reporting time zone. Declare the maximum
@@ -323,7 +323,7 @@
 <div class="rule must">
   <p><span class="rid">TS-INP-16</span>
   <span class="lvl lvl-must">MUST</span> A tool <b>MUST NOT</b> accept a parameter it cannot
-  honour. Offering an <code>asOf</code> on a tool with no history, or a <code>currency</code>
+  honor. Offering an <code>asOf</code> on a tool with no history, or a <code>currency</code>
   on a tool that only reports in the account's base currency, is worse than omitting it: the
   model will supply the parameter and silently receive an answer that does not match what it
   asked for.</p>
@@ -418,7 +418,7 @@
             system computes from, it computes from here.</td></tr>
     <tr><td><code>isError</code></td>
         <td>Boolean. <code>true</code> means the tool ran and could not do its job (§11.1).
-            Transport and protocol failures are <em>not</em> signalled here — they never reach
+            Transport and protocol failures are <em>not</em> signaled here — they never reach
             the tool.</td></tr>
   </tbody>
 </table>
@@ -516,7 +516,7 @@
 
 <p>
   A model is a poor paginator. It will follow a cursor once, sometimes twice, and then
-  summarise what it has as though it were everything. Design for that rather than against it.
+  summarize what it has as though it were everything. Design for that rather than against it.
 </p>
 
 <table class="long rules">
@@ -537,7 +537,7 @@
             fourteen calls and an abandoned loop.</td></tr>
     <tr><td><code>TS-OUT-09</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
         <td>Where a caller is likely to want the whole collection only in order to compute an
-            aggregate, the catalogue <b>SHOULD</b> offer a <code>summarize</code> tool that
+            aggregate, the catalog <b>SHOULD</b> offer a <code>summarize</code> tool that
             computes it server-side. Totals computed by a model over a paginated collection
             are wrong often enough to matter.</td></tr>
   </tbody>
@@ -571,7 +571,7 @@
 <h2 id="empty-partial"><span class="num">8.6</span>Empty, partial, and stale results</h2>
 
 <table class="long">
-  <thead><tr><th style="width:18%">Situation</th><th>Required behaviour</th></tr></thead>
+  <thead><tr><th style="width:18%">Situation</th><th>Required behavior</th></tr></thead>
   <tbody>
     <tr><td><b>Empty</b></td>
         <td><code>isError: false</code>, an empty array, and a text rendering that says what

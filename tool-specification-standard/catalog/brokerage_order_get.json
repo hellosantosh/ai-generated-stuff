@@ -1,7 +1,7 @@
 {
   "name": "brokerage_order_get",
   "title": "Get the status of one order",
-  "description": "Returns the current status, fill progress, and executions of one specific order. Use when the customer asks about a particular order they have already placed — whether it filled, at what price, how much is still working, or why it was rejected. Do not use to find orders: call brokerage_orders_list first to search by account, symbol, date, or status, then call this tool with the orderId it returns. Do not use for positions; a filled order becomes a position and only brokerage_positions_list knows the current holding. isTerminal tells you whether the order can still change: when it is true the order will never change again and must not be polled. When it is false, nextPollAfterSeconds says how long to wait before checking again, and that interval must be honoured rather than polling in a loop. An order may be partially filled and still working: filledQuantity, remainingQuantity, and averageFillPrice together are the accurate account of what has happened so far. Executions are the individual fills that make up the order and may be at different prices. Reads only; never modifies an order.",
+  "description": "Returns the current status, fill progress, and executions of one specific order. Use when the customer asks about a particular order they have already placed — whether it filled, at what price, how much is still working, or why it was rejected. Do not use to find orders: call brokerage_orders_list first to search by account, symbol, date, or status, then call this tool with the orderId it returns. Do not use for positions; a filled order becomes a position and only brokerage_positions_list knows the current holding. isTerminal tells you whether the order can still change: when it is true the order will never change again and must not be polled. When it is false, nextPollAfterSeconds says how long to wait before checking again, and that interval must be honored rather than polling in a loop. An order may be partially filled and still working: filledQuantity, remainingQuantity, and averageFillPrice together are the accurate account of what has happened so far. Executions are the individual fills that make up the order and may be at different prices. Reads only; never modifies an order.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -58,7 +58,7 @@
           "null"
         ],
         "minimum": 1,
-        "description": "Seconds to wait before checking again. Null when the order is terminal. Honour this interval; do not poll in a loop."
+        "description": "Seconds to wait before checking again. Null when the order is terminal. Honor this interval; do not poll in a loop."
       },
       "order": {
         "type": "object",
@@ -76,7 +76,7 @@
           "status": {
             "type": "string",
             "maxLength": 32,
-            "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognised value as still working."
+            "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognized value as still working."
           },
           "statusExplanation": {
             "type": "string",
@@ -194,9 +194,9 @@
             "format": "date-time",
             "description": "When it completed, if it did."
           },
-          "cancellable": {
+          "cancelable": {
             "type": "boolean",
-            "description": "Whether this order can be cancelled right now. Branch on this rather than on the status string."
+            "description": "Whether this order can be canceled right now. Branch on this rather than on the status string."
           },
           "rejectReason": {
             "type": [
@@ -285,7 +285,7 @@
           "currency",
           "createdAt",
           "updatedAt",
-          "cancellable"
+          "cancelable"
         ],
         "additionalProperties": false,
         "description": "The order and its current state."

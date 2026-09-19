@@ -231,7 +231,7 @@
 
   <!-- footnote box -->
   <rect x="6" y="198" width="648" height="52" rx="4" fill="#fdf3e0" stroke="#f0e0c0"/>
-  <text x="20" y="216" font-size="8.6" font-weight="700" fill="#8a5a00">A status you do not recognise belongs on the LEFT.</text>
+  <text x="20" y="216" font-size="8.6" font-weight="700" fill="#8a5a00">A status you do not recognize belongs on the LEFT.</text>
   <text x="20" y="230" font-size="8" fill="#8a5a00">New lifecycle states are added over time. Treating an unknown status as terminal tells a customer their live order is dead —</text>
   <text x="20" y="242" font-size="8" fill="#8a5a00">so the contract is the isTerminal boolean, computed by the tool, never a comparison against a list of status strings.</text>
 </svg>
@@ -367,8 +367,8 @@
         <td>Turns "poll sensibly" from a hope into an instruction. Two seconds for a
             marketable order, thirty for a resting limit, null when terminal. Without it the
             agent either polls in a tight loop or asks the customer to check back later.</td></tr>
-    <tr><td><code>cancellable</code></td>
-        <td>The server knows whether this order can be cancelled right now — including the
+    <tr><td><code>cancelable</code></td>
+        <td>The server knows whether this order can be canceled right now — including the
             cases the status string does not express, such as an order in
             <code>PENDING_CANCEL</code> or one at a venue that has gone dark. Offering a
             cancellation that then fails is a worse customer experience than not offering

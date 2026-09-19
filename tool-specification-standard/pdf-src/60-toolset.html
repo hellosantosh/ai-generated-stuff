@@ -5,11 +5,11 @@
   <p class="pdesc">
     Part II governs one tool. This part governs the collection — how many there should be,
     where the boundaries fall, what they cost to keep in context, how they interact with a
-    human, and how they are secured, observed, and retired. Most of the value a catalogue
+    human, and how they are secured, observed, and retired. Most of the value a catalog
     delivers or destroys is decided here rather than inside any single descriptor.
   </p>
   <ul>
-    <li>12 &nbsp; Granularity and catalogue design</li>
+    <li>12 &nbsp; Granularity and catalog design</li>
     <li>13 &nbsp; Payload economics</li>
     <li>14 &nbsp; Interaction patterns</li>
     <li>15 &nbsp; Security and trust</li>
@@ -19,10 +19,10 @@
 </section>
 
 <!-- ==================== 12. GRANULARITY ==================== -->
-<h1 id="granularity"><span class="num">12</span>Granularity and catalogue design</h1>
+<h1 id="granularity"><span class="num">12</span>Granularity and catalog design</h1>
 
 <p class="lede">
-  The most consequential decision in a tool catalogue is where one tool ends and the next
+  The most consequential decision in a tool catalog is where one tool ends and the next
   begins. Get it wrong and no amount of descriptor quality recovers it: the model will be
   choosing between the wrong options, carefully.
 </p>
@@ -61,7 +61,7 @@
 
 <ol>
   <li><b>Collect the utterances.</b> Twenty to fifty real things users say, taken from
-      transcripts, contact-centre logs, or search queries — not invented by the design team.
+      transcripts, contact-center logs, or search queries — not invented by the design team.
       "Do I own any Tesla?" "Did my order go through?" "How much can I spend?" "What's my
       account worth?"</li>
   <li><b>Cluster by the answer, not the words.</b> "What do I own", "how much Apple do I
@@ -76,7 +76,7 @@
       distinguishes them. If you cannot, merge them or re-scope. Every sentence you write goes
       into both descriptions as an exclusion (§6.2, part 3).</li>
   <li><b>Count.</b> If the result exceeds 25 tools for one agent, go back to step 2 — you have
-      almost certainly modelled resources rather than questions.</li>
+      almost certainly modeled resources rather than questions.</li>
   <li><b>Classify.</b> Assign risk tiers before writing any code; the tier changes what the
       tool is allowed to be.</li>
 </ol>
@@ -98,7 +98,7 @@
             day-change, aggregated across accounts, with the netting rules applied once,
             correctly, server-side.</td></tr>
     <tr><td><b>Decision tool</b><br><span class="small">answers "can I?"</span></td>
-        <td>The user's question is a judgement the firm already knows how to make, and the
+        <td>The user's question is a judgment the firm already knows how to make, and the
             model would otherwise reconstruct it badly from raw numbers.</td>
         <td><code>brokerage_order_check</code> — "can this account buy 100 AAPL?" returns a
             verdict, the binding constraint, and the maximum permissible quantity.</td></tr>
@@ -120,10 +120,10 @@
   </p>
 </div>
 
-<h2 id="catalogue-size"><span class="num">12.4</span>Catalogue size and audience scoping</h2>
+<h2 id="catalog-size"><span class="num">12.4</span>Catalog size and audience scoping</h2>
 
 <p>
-  Tool selection accuracy degrades as the catalogue grows, and it degrades fastest among tools
+  Tool selection accuracy degrades as the catalog grows, and it degrades fastest among tools
   that resemble each other. The mitigation is not a better model; it is a smaller, better
   separated menu.
 </p>
@@ -135,7 +135,7 @@
         <td>An agent <b>SHOULD</b> be offered no more than 25 tools, and <b>MUST NOT</b> be
             offered more than 40 without a documented exception.</td></tr>
     <tr><td><code>TS-CAT-03</code></td><td><span class="lvl lvl-must">MUST</span></td>
-        <td>The catalogue <b>MUST</b> support audience-scoped views, so that a customer-facing
+        <td>The catalog <b>MUST</b> support audience-scoped views, so that a customer-facing
             assistant, an adviser's copilot, and an operations agent each see only their own
             set. Audience scoping is an entitlement decision (§10.4), not a UI preference.</td></tr>
     <tr><td><code>TS-CAT-04</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
@@ -147,9 +147,9 @@
 </table>
 
 <div class="warn">
-  <span class="lbl">On "just let the agent search the catalogue"</span>
+  <span class="lbl">On "just let the agent search the catalog"</span>
   <p>
-    A meta-tool that searches a large catalogue and returns candidate tools is a legitimate
+    A meta-tool that searches a large catalog and returns candidate tools is a legitimate
     pattern for estates in the hundreds, and it has two costs worth stating before anyone
     adopts it. It adds a round trip and a failure mode to <em>every</em> task, and it moves
     tool selection from a mechanism you can evaluate offline into one you can only evaluate
@@ -161,7 +161,7 @@
 <h2 id="confusability"><span class="num">12.5</span>Confusability</h2>
 
 <p>
-  The nearest-neighbour pairs in a brokerage catalogue are predictable, and each one needs an
+  The nearest-neighbor pairs in a brokerage catalog are predictable, and each one needs an
   explicit exclusion in <em>both</em> descriptions:
 </p>
 
@@ -203,7 +203,7 @@
 </p>
 
 <table>
-  <thead><tr><th style="width:44%">Quantity</th><th style="width:26%">Modest catalogue</th><th>Sprawling catalogue</th></tr></thead>
+  <thead><tr><th style="width:44%">Quantity</th><th style="width:26%">Modest catalog</th><th>Sprawling catalog</th></tr></thead>
   <tbody>
     <tr><td>Tools offered</td><td>20</td><td>60</td></tr>
     <tr><td>Rendered tokens per descriptor</td><td>350</td><td>600</td></tr>
@@ -214,7 +214,7 @@
 </table>
 
 <p>
-  The difference is not a rounding error on a cloud bill, and the sprawling catalogue also
+  The difference is not a rounding error on a cloud bill, and the sprawling catalog also
   selects worse. Both problems have the same fix.
 </p>
 
@@ -265,7 +265,7 @@
   <tbody>
     <tr><td><code>SUMMARY</code></td><td>Identity, the one or two numbers that answer the common question</td><td>"Do I own any Tesla?"</td></tr>
     <tr><td><code>STANDARD</code> <span class="small">(default)</span></td><td>The fields a customer would see on a holdings screen</td><td>"Show me my positions."</td></tr>
-    <tr><td><code>FULL</code></td><td>Cost basis detail, lot method, realised profit and loss, option greeks</td><td>"Explain my tax position in Apple."</td></tr>
+    <tr><td><code>FULL</code></td><td>Cost basis detail, lot method, realized profit and loss, option greeks</td><td>"Explain my tax position in Apple."</td></tr>
   </tbody>
 </table>
 
@@ -346,7 +346,7 @@
             value or at the envelope level. Never assume USD.</td></tr>
     <tr><td><code>TS-OUT-15</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>Structured values <b>MUST NOT</b> carry locale formatting — no thousands
-            separators, no currency symbols, no parenthesised negatives. Formatting belongs in
+            separators, no currency symbols, no parenthesized negatives. Formatting belongs in
             the text rendering, where <code>(2,110.00)</code> is spelled
             <code>-2,110.00 USD</code> because parentheses for negatives are a convention a
             model will misread.</td></tr>
@@ -361,7 +361,7 @@
 <h1 id="interaction"><span class="num">14</span>Interaction patterns</h1>
 
 <p class="lede">
-  Four situations recur in every tool catalogue: the action needs a human's consent, the
+  Four situations recur in every tool catalog: the action needs a human's consent, the
   action needs information the agent does not have, the action might be executed twice, and
   the action takes longer than a conversation can wait. Each has one sanctioned pattern.
 </p>
@@ -411,7 +411,7 @@ brokerage_order_place    ←  { …order details…, confirmationToken: "cnf_…
     Two tools give you two accurate annotation sets, two risk tiers, two audit identities, and
     a preview an agent may call freely without any approval friction — which means it will
     call it, which means the customer sees the cost before the question is asked. One tool
-    with a flag gives you a descriptor that is honest about neither of its two behaviours, and
+    with a flag gives you a descriptor that is honest about neither of its two behaviors, and
     a control model where the difference between simulated and real is one token in a JSON
     object the model generated.
   </p>
@@ -482,7 +482,7 @@ brokerage_order_place    ←  { …order details…, confirmationToken: "cnf_…
     <tr><td>Minutes – hours</td>
         <td>Job pattern plus an out-of-band notification to the principal. The agent
             <b>MUST NOT</b> poll in a loop; the description says so, and the status tool
-            returns a <code>nextPollAfterSeconds</code> the agent is told to honour.</td></tr>
+            returns a <code>nextPollAfterSeconds</code> the agent is told to honor.</td></tr>
   </tbody>
 </table>
 

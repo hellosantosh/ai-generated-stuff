@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.example.com/tooling/common-types/1",
   "title": "Shared tool types (EA-STD-TOOL-001, Appendix B)",
-  "description": "Paste from here rather than reinventing. A concept defined in this file means the same thing in every tool in the catalogue (TS-INP-04).",
+  "description": "Paste from here rather than reinventing. A concept defined in this file means the same thing in every tool in the catalog (TS-INP-04).",
   "$defs": {
     "decimal": {
       "type": "string",

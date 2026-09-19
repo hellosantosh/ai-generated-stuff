@@ -1,7 +1,7 @@
 {
   "name": "brokerage_order_preview",
   "title": "Preview an order before placing it",
-  "description": "Computes exactly what would happen if an equity order were placed — estimated cost, commission, resulting buying power, and any warnings — without placing anything. Use when the customer is considering an order, asks what something would cost, asks whether they can afford it, or has asked to trade and must see and approve the terms first. Every call to brokerage_order_place must be preceded by this tool, because it issues the confirmationToken that authorises the order. Do not use to report an existing order — call brokerage_orders_list. This changes nothing and may be called freely, including several times while the customer adjusts quantity or price. Read canPlace first: false means the order would be rejected and blockers says why, so tell the customer rather than proceeding. The confirmationToken is valid for 120 seconds and for this exact order only; if the customer changes anything, preview again. estimatedCost for a market order is an estimate based on the current quote and the fill may differ, materially so in a fast market — say so when presenting it.",
+  "description": "Computes exactly what would happen if an equity order were placed — estimated cost, commission, resulting buying power, and any warnings — without placing anything. Use when the customer is considering an order, asks what something would cost, asks whether they can afford it, or has asked to trade and must see and approve the terms first. Every call to brokerage_order_place must be preceded by this tool, because it issues the confirmationToken that authorizes the order. Do not use to report an existing order — call brokerage_orders_list. This changes nothing and may be called freely, including several times while the customer adjusts quantity or price. Read canPlace first: false means the order would be rejected and blockers says why, so tell the customer rather than proceeding. The confirmationToken is valid for 120 seconds and for this exact order only; if the customer changes anything, preview again. estimatedCost for a market order is an estimate based on the current quote and the fill may differ, materially so in a fast market — say so when presenting it.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -62,7 +62,7 @@
         "required": ["referencePrice", "estimatedPrincipal", "commission", "estimatedCost", "buyingPowerBefore", "buyingPowerAfter", "currency", "isEstimate"],
         "additionalProperties": false
       },
-      "confirmationToken": { "type": ["string", "null"], "maxLength": 512, "description": "Single-use token authorising brokerage_order_place for this exact order. Null when canPlace is false." },
+      "confirmationToken": { "type": ["string", "null"], "maxLength": 512, "description": "Single-use token authorizing brokerage_order_place for this exact order. Null when canPlace is false." },
       "expiresAt": { "type": ["string", "null"], "format": "date-time", "description": "When the token stops being valid (UTC). Preview again rather than placing an expired order." },
       "summary": { "type": "string", "maxLength": 240, "description": "One-line description of the proposed order, suitable for reading back to the customer before they approve." }
     },

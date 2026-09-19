@@ -55,7 +55,7 @@
   Note the title: <b>"Place a real order — trades money"</b>. It appears in the approval
   dialog and in every audit export. Titles for tier 3 tools name the consequence, not the
   operation (<code>TS-NAM-09</code>), because the person reading it at speed is deciding
-  whether to authorise something real.
+  whether to authorize something real.
 </p>
 
 <h3><span class="num">23.2.1</span>Input schema</h3>
@@ -71,7 +71,7 @@
   required: placing the same order twice with the same key places one order. Without the key
   this would be <code>false</code>, and the runtime would be unable to retry a timeout safely.
   <code>openWorldHint</code> is <code>true</code> because the order reaches a market venue
-  outside the firm's control, whose behaviour is not enumerable.
+  outside the firm's control, whose behavior is not enumerable.
 </p>
 
 <!--CATALOG:brokerage_order_place:governance-->
@@ -112,7 +112,7 @@
 <pre><code>{ <span class="c-key">"error"</span>: {
     <span class="c-key">"code"</span>: <span class="c-str">"TIMEOUT"</span>,
     <span class="c-key">"domainCode"</span>: <span class="c-str">"ORDER_OUTCOME_UNKNOWN"</span>,
-    <span class="c-key">"message"</span>: <span class="c-str">"The order was sent but no acknowledgement was received within 5 seconds. It may or may not have been placed."</span>,
+    <span class="c-key">"message"</span>: <span class="c-str">"The order was sent but no acknowledgment was received within 5 seconds. It may or may not have been placed."</span>,
     <span class="c-key">"retryable"</span>: <span class="c-key">true</span>,
     <span class="c-key">"remediation"</span>: <span class="c-str">"Do not tell the customer the order failed. Either retry brokerage_order_place with the SAME idempotencyKey, which will return the original result if the order was placed, or call brokerage_orders_list to check. Never place a second order with a new key."</span>,
     <span class="c-key">"details"</span>: { <span class="c-key">"idempotencyKey"</span>: <span class="c-str">"3f2b1c88-9a41-4e2d-8b77-5c1e9d4a6f20"</span> },
@@ -130,10 +130,10 @@
 </div>
 
 <!-- ==================== 24. COMPOSITION ==================== -->
-<h1 id="composition"><span class="num">24</span>Composition: five questions, one catalogue</h1>
+<h1 id="composition"><span class="num">24</span>Composition: five questions, one catalog</h1>
 
 <p class="lede">
-  The test of a catalogue is not whether each tool is good but whether the set answers real
+  The test of a catalog is not whether each tool is good but whether the set answers real
   questions without the model needing to know anything the firm has not told it. Five
   questions, traced.
 </p>
@@ -169,7 +169,7 @@ which is the single most common misroute in this domain. <code>filledQuantity</c
                       borrow, so margin buying power does not apply."</code></pre>
 
 <p><b>What the descriptors did:</b> everything. Four figures were available and the tool named
-the right one and said why. A catalogue without <code>applicable</code> would have required
+the right one and said why. A catalog without <code>applicable</code> would have required
 the model to know that a Roth IRA cannot borrow — which it might, most of the time, which is
 the worst possible reliability profile for a number the customer will act on.</p>
 
@@ -227,11 +227,11 @@ that produced the prose the model read.</p>
 </p>
 
 <!-- ==================== 25. ANTI-PATTERNS ==================== -->
-<h1 id="antipatterns"><span class="num">25</span>The anti-pattern catalogue</h1>
+<h1 id="antipatterns"><span class="num">25</span>The anti-pattern catalog</h1>
 
 <p class="lede">
-  Twelve failures seen repeatedly in first-generation tool catalogues, each with the rule it
-  breaks. A reviewer who memorises this section will catch most of what arrives at an
+  Twelve failures seen repeatedly in first-generation tool catalogs, each with the rule it
+  breaks. A reviewer who memorizes this section will catch most of what arrives at an
   architecture board.
 </p>
 
@@ -239,7 +239,7 @@ that produced the prose the model read.</p>
 
 <div class="dd">
   <div>
-    <p class="lang b">One tool, four behaviours</p>
+    <p class="lang b">One tool, four behaviors</p>
     <pre class="bad"><code>{
   <span class="c-key">"name"</span>: <span class="c-str">"brokerage_orders_manage"</span>,
   <span class="c-key">"inputSchema"</span>: { <span class="c-key">"properties"</span>: {
@@ -273,7 +273,7 @@ brokerage_order_cancel   T3  confirm
   written against a tool whose risk depends on an argument the model chose.
 </p>
 
-<h2 id="ap-rest"><span class="num">25.2</span>The rest of the catalogue</h2>
+<h2 id="ap-rest"><span class="num">25.2</span>The rest of the catalog</h2>
 
 <table class="long">
   <thead><tr><th style="width:22%">Anti-pattern</th><th style="width:34%">What goes wrong</th><th>Rule</th></tr></thead>
@@ -320,7 +320,7 @@ brokerage_order_cancel   T3  confirm
         <td><code>TS-DSC-06</code></td></tr>
     <tr><td><b>The unowned tool</b></td>
         <td>Still returning customer data to agents two years after the team that built it was
-            reorganised. Works perfectly; accountable to no one.</td>
+            reorganized. Works perfectly; accountable to no one.</td>
         <td><code>TS-GOV-01</code></td></tr>
     <tr><td><b>The rename</b></td>
         <td>Six years of audit records silently change meaning. In a regulated firm this is a
@@ -332,7 +332,7 @@ brokerage_order_cancel   T3  confirm
 <div class="tip">
   <span class="lbl">The pattern behind the patterns</span>
   <p>
-    Eleven of these twelve are the same mistake: <b>optimising for the convenience of the team
+    Eleven of these twelve are the same mistake: <b>optimizing for the convenience of the team
     building the tool rather than the reliability of the caller consuming it.</b> One tool is
     easier to ship than four. Passing the upstream payload through is easier than shaping it.
     A generic error is easier than a mapped taxonomy. Each shortcut moves work from a place

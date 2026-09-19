@@ -4,13 +4,13 @@
   <h1>Governance and adoption</h1>
   <p class="pdesc">
     A standard nobody enforces is a document. This part specifies the gate, the evidence, the
-    catalogue, and the path from where the firm is today to a governed estate — including what
+    catalog, and the path from where the firm is today to a governed estate — including what
     to do about the tools that already exist.
   </p>
   <ul>
     <li>26 &nbsp; Conformance and review</li>
     <li>27 &nbsp; Testing and certification</li>
-    <li>28 &nbsp; The catalogue and the onboarding process</li>
+    <li>28 &nbsp; The catalog and the onboarding process</li>
     <li>29 &nbsp; Adoption roadmap</li>
   </ul>
 </section>
@@ -34,7 +34,7 @@
         <td>§15 is satisfied, with resource-level authorization demonstrated by a negative
             test rather than asserted.</td></tr>
     <tr><td><b>Data review</b><br><span class="small">before L2</span></td><td>Data owner, privacy</td>
-        <td>Classification, PII mapping, minimisation, retention, and — for L3 — egress
+        <td>Classification, PII mapping, minimization, retention, and — for L3 — egress
             assessed.</td></tr>
     <tr><td><b>Evaluation</b><br><span class="small">before release and on every change</span></td><td>Owning team</td>
         <td>Selection, refusal, argument, and interpretation thresholds met (§27.3).</td></tr>
@@ -55,7 +55,7 @@
   <li><b>"Read me the description."</b> If it is unreadable aloud, or takes ninety seconds, or
       contains no sentence beginning "Do not use", the tool is not ready.</li>
   <li><b>"What is the nearest tool to this one, and what sentence tells them apart?"</b> If the
-      answer is a pause, the catalogue has a confusability problem (§12.5).</li>
+      answer is a pause, the catalog has a confusability problem (§12.5).</li>
   <li><b>"What does the customer see if this tool is wrong?"</b> The answer should be a
       specific wrong sentence, not "an error".</li>
   <li><b>"Show me the negative test where the customer asks for someone else's account."</b>
@@ -71,7 +71,7 @@
 <div class="rule must">
   <p><span class="rid">TS-CAT-05</span>
   <span class="lvl lvl-must">MUST</span> An exception to a <b>MUST</b> rule <b>MUST</b> be
-  recorded in the catalogue against the tool, with the rule identifier, the rationale, the
+  recorded in the catalog against the tool, with the rule identifier, the rationale, the
   compensating control, the approver, and an expiry of no more than twelve months. An
   exception without an expiry is a silent amendment to the standard.</p>
 </div>
@@ -100,7 +100,7 @@
     <tr><td>Idempotency replay</td><td>The same key twice returns the original result with <code>replayed: true</code> and places one order. The same key with different arguments returns <code>CONFLICT</code>.</td></tr>
     <tr><td><b>Authorization negatives</b></td><td>A principal entitled to account A requesting account B receives <code>NOT_FOUND</code> — identical to a genuinely absent account, timing included. <b>The single most important test in the suite.</b></td></tr>
     <tr><td>Redaction</td><td>No stack trace, hostname, upstream error string, or unmasked identifier appears in any error path. Asserted by pattern, over fixtures drawn from real upstream failures.</td></tr>
-    <tr><td>Injection neutralisation</td><td>A position in an account whose nickname contains an instruction is returned delimited, labelled, and truncated (<code>TS-SEC-11</code>).</td></tr>
+    <tr><td>Injection neutralization</td><td>A position in an account whose nickname contains an instruction is returned delimited, labeled, and truncated (<code>TS-SEC-11</code>).</td></tr>
     <tr><td>Budget</td><td>The rendered descriptor and a typical result are within the budgets of §6.3 and §13.2, asserted in CI so that a field added next quarter fails the build rather than the context window.</td></tr>
   </tbody>
 </table>
@@ -114,7 +114,7 @@ validate catalog/*.json  against schemas/tool-descriptor.schema.json
 validate examples/*.json against each tool's own outputSchema
 check     rendered descriptor size &lt;= 1200 tokens
 check     no descriptor name changed since the last release
-register  descriptor content hashes with the catalogue     <span class="c-com"># TS-SEC-09</span>
+register  descriptor content hashes with the catalog     <span class="c-com"># TS-SEC-09</span>
 run       evaluation suite; fail below threshold           <span class="c-com"># §27.3</span></code></pre>
 
 <h2 id="evals"><span class="num">27.3</span>Evaluation suites</h2>
@@ -138,7 +138,7 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
 <h4>The cases that must be in every suite</h4>
 
 <ul>
-  <li><b>Nearest-neighbour confusions.</b> "Did my Apple order go through?" must reach orders,
+  <li><b>Nearest-neighbor confusions.</b> "Did my Apple order go through?" must reach orders,
       not positions. Every pair in §12.5 appears in both suites.</li>
   <li><b>Convention traps.</b> A short position, an option position, an account with unsettled
       cash, a retirement account, a partially filled order, a rejected order. Score the
@@ -187,7 +187,7 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
 
 <h2 id="evidence"><span class="num">27.5</span>The certification pack</h2>
 
-<p>What an owner presents for L2, and what the catalogue stores against the version:</p>
+<p>What an owner presents for L2, and what the catalog stores against the version:</p>
 
 <ul class="check">
   <li><b>1</b> &nbsp;The descriptor, its content hash, and the linter output</li>
@@ -199,10 +199,10 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
   <li><b>7</b> &nbsp;Any exceptions, with compensating controls and expiry dates</li>
 </ul>
 
-<!-- ==================== 28. CATALOGUE ==================== -->
-<h1 id="catalogue"><span class="num">28</span>The catalogue and the onboarding process</h1>
+<!-- ==================== 28. CATALOG ==================== -->
+<h1 id="catalog"><span class="num">28</span>The catalog and the onboarding process</h1>
 
-<h2 id="cat-reqs"><span class="num">28.1</span>What the catalogue must do</h2>
+<h2 id="cat-reqs"><span class="num">28.1</span>What the catalog must do</h2>
 
 <table class="long rules">
   <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
@@ -269,7 +269,7 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
     <tr><td><b>1</b></td><td>Inventoried</td><td>Every tool is registered with an owner and a risk tier. Still inconsistent, but now visible — and visibility is what makes everything else possible.</td></tr>
     <tr><td><b>2</b></td><td>Conformant</td><td>New tools meet this standard and CI enforces it. Legacy tools are scheduled.</td></tr>
     <tr><td><b>3</b></td><td>Certified</td><td>Every customer-facing tool is L2 with evidence. Approval, audit, and kill switches work and have been exercised.</td></tr>
-    <tr><td><b>4</b></td><td>Supervised</td><td>Selection accuracy and silent wrongness are measured continuously. Descriptors are improved from production evidence. The catalogue is the inventory a regulator is shown.</td></tr>
+    <tr><td><b>4</b></td><td>Supervised</td><td>Selection accuracy and silent wrongness are measured continuously. Descriptors are improved from production evidence. The catalog is the inventory a regulator is shown.</td></tr>
   </tbody>
 </table>
 
@@ -279,7 +279,7 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
   <thead><tr><th style="width:16%">Horizon</th><th>Do</th><th style="width:24%">Done when</th></tr></thead>
   <tbody>
     <tr><td><b>Days 1–90</b></td>
-        <td>Ratify this standard. Stand up the catalogue with names, owners, risk tiers, and
+        <td>Ratify this standard. Stand up the catalog with names, owners, risk tiers, and
             hashes. Run the linter over every existing descriptor and publish the findings
             without blame. Pick one domain — brokerage read tools are the right first choice —
             and bring it to L2 as the worked example.</td>
@@ -310,7 +310,7 @@ run       evaluation suite; fail below threshold           <span class="c-com">#
             next change — except for the security and ownership rules (<code>TS-SEC-02</code>,
             <code>TS-SEC-08</code>, <code>TS-GOV-01</code>), which apply now. Perfect coverage
             later beats no coverage forever.</td></tr>
-    <tr><td><b>It is run as an API programme</b></td>
+    <tr><td><b>It is run as an API program</b></td>
         <td>The novel work is the prose, the evaluation, and the supervision — none of which
             an API governance function has ever had to do. Staff it with people who will read
             conversations, not only specifications.</td></tr>

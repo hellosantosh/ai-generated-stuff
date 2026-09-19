@@ -1,0 +1,147 @@
+<h1><span class="n">11</span>The brokerage reference catalog</h1>
+
+<p class="small">
+  Generated from <code>catalog/*.json</code> at build time, so this card is the catalog rather
+  than a description of it. Full treatment in Part IV of the standard.
+</p>
+
+<!--TOOLCARDS-->
+
+<h2>Conventions the model must be told</h2>
+
+<p class="small">
+  Every row is a fact that turns a correct payload into an incorrect customer answer if the
+  reader does not know it. Discharge each one in the description, in the payload, or by moving
+  the work into the tool.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:28%">Convention</th><th style="width:30%">Wrong answer if unknown</th><th>Discharged by</th></tr></thead>
+  <tbody>
+    <tr><td>Quantity is signed; negative is short</td><td>"You own 400 Tesla" when the customer is short 400</td><td>Description + explicit <code>side</code> + SHORT in the text rendering</td></tr>
+    <tr><td>Option quantity is in contracts</td><td>Exposure understated by 100×</td><td><code>sharesEquivalent</code> computed server-side</td></tr>
+    <tr><td>Settled cash ≠ total cash</td><td>"You have $12,000 available" → good-faith violation</td><td>Separate fields + <code>buyingPower.applicable</code></td></tr>
+    <tr><td>Four different buying-power figures</td><td>A retirement account told it has 2× margin buying power</td><td><code>applicable</code> + <code>applicableReason</code>, computed by the tool</td></tr>
+    <tr><td>Retirement accounts cannot borrow</td><td>Margin advice given to an IRA</td><td><code>registration</code> in the result; <code>margin: null</code></td></tr>
+    <tr><td>An order can be partially filled and still working</td><td>"Your order filled" when 40% filled</td><td><code>filledQuantity</code> / <code>remainingQuantity</code> / <code>isTerminal</code></td></tr>
+    <tr><td>Status values may be added</td><td>An unknown status read as terminal — a live order reported dead</td><td><code>isTerminal</code> boolean, computed by the tool</td></tr>
+    <tr><td>Marks may be 15 minutes delayed</td><td>A stale price quoted as live in a fast market</td><td><code>asOf</code> + <code>basis</code> + a disclosure</td></tr>
+    <tr><td>The account identifier is not the account number</td><td>An internal identifier read aloud to a customer</td><td>Two fields, each described with its audience</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Confusable pairs — put the distinguishing sentence in both descriptions</h3>
+    <table style="margin-bottom:0">
+      <tbody>
+        <tr><td style="width:40%"><code>positions_list</code> ↔ <code>orders_list</code></td>
+            <td>An order becomes a position only when it fills. "Did my trade go through" is orders; "what do I own" is positions.</td></tr>
+        <tr><td><code>balances_get</code> ↔ <code>positions_list</code></td>
+            <td>Balances are cash and buying power; positions are holdings.</td></tr>
+        <tr><td><code>balances_get</code> ↔ <code>transactions_list</code></td>
+            <td>A balance is a state; a transaction is an event. "Why did my cash drop" is transactions.</td></tr>
+        <tr><td><code>orders_list</code> ↔ <code>executions_list</code></td>
+            <td>One order, many executions at different prices. "What price did I get" may need executions.</td></tr>
+        <tr><td><code>order_check</code> ↔ <code>order_preview</code> ↔ <code>order_place</code></td>
+            <td>"Can I?" / "What exactly would happen?" (and a token) / does it. Only the third trades.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Order lifecycle — branch on the boolean, never the string</h3>
+    <table style="margin-bottom:1.5mm">
+      <thead><tr><th style="width:50%">Working · <code>isTerminal: false</code></th><th>Terminal · <code>isTerminal: true</code></th></tr></thead>
+      <tbody>
+        <tr><td><code>PENDING_NEW</code> <code>NEW</code></td><td><code>FILLED</code> <code>CANCELLED</code></td></tr>
+        <tr><td><code>PARTIALLY_FILLED</code></td><td><code>REJECTED</code> <code>EXPIRED</code></td></tr>
+        <tr><td><code>PENDING_CANCEL</code> <code>PENDING_REPLACE</code></td><td><code>REPLACED</code></td></tr>
+        <tr><td><code>SUSPENDED</code></td><td></td></tr>
+        <tr><td colspan="2" class="small">Poll after <code>nextPollAfterSeconds</code> / never poll, never offer to cancel</td></tr>
+      </tbody>
+    </table>
+    <div class="key" style="margin-bottom:0">
+      <span class="lbl">A status you do not recognize belongs on the left</span>
+      <p>New lifecycle states get added. Treating an unknown status as terminal tells a customer
+        their live order is dead.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Two-step state change</h2>
+
+<pre style="margin-bottom:2mm"><code>brokerage_order_preview  →  { canPlace, estimate{estimatedCost, buyingPowerAfter, isEstimate},
+                              blockers[{code, message, maxPermissibleQuantity}], warnings[],
+                              confirmationToken: "cnf_…", expiresAt }   <span class="c-com">// T1, read-only, call freely</span>
+
+   confirmation rendered from confirmationTemplate · principal approves · arguments hashed
+
+brokerage_order_place    ←  { …order…, confirmationToken, idempotencyKey, reason }
+                         →  { orderId, status, isTerminal, statusExplanation, replayed }
+                            PRECONDITION_FAILED if the token expired or the order differs</code></pre>
+
+<div class="key">
+  <span class="lbl">The timeout remediation, verbatim — three sentences, three prevented incidents</span>
+  <p>
+    "Do not tell the customer the order failed. Either retry <code>brokerage_order_place</code>
+    with the <b>same</b> <code>idempotencyKey</code>, which will return the original result if
+    the order was placed, or call <code>brokerage_orders_list</code> to check. Never place a
+    second order with a new key."
+  </p>
+</div>
+
+<h1><span class="n">12</span>Anti-patterns</h1>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Anti-pattern</th><th>What goes wrong</th><th style="width:14%">Rule</th></tr></thead>
+  <tbody>
+    <tr><td><b>The kitchen-sink tool</b><br><span class="small">one tool, an <code>action</code> enum</span></td>
+        <td>Annotations, risk tier, approval policy, and the audit record all become wrong at once. The audit says <code>orders_manage</code> when what happened was a cancellation.</td>
+        <td><code>TS-NAM-06</code></td></tr>
+    <tr><td><b>The <code>dryRun</code> flag</b></td>
+        <td>One token in a model-generated object is the only thing between a simulation and a real trade.</td>
+        <td><code>TS-INP-13</code></td></tr>
+    <tr><td><b>The API mirror</b><br><span class="small">one tool per endpoint</span></td>
+        <td>Forty tools, none answering a question anyone asks; selection accuracy collapses and every answer needs four hops.</td>
+        <td><code>TS-CAT-01</code></td></tr>
+    <tr><td><b>The free-text filter</b></td>
+        <td>Unvalidatable, unauditable, injection surface. If the query space is genuinely open, the tool is a database connection in a costume.</td>
+        <td><code>TS-INP-17</code></td></tr>
+    <tr><td><b>The identity parameter</b></td>
+        <td>Access control delegated to a language model.</td>
+        <td><code>TS-SEC-02</code></td></tr>
+    <tr><td><b>Silent truncation</b></td>
+        <td>"Your portfolio is worth $310,000" when 25 of 340 positions came back. Nothing errors; the number is simply wrong.</td>
+        <td><code>TS-OUT-07</code></td></tr>
+    <tr><td><b>Empty as error</b></td>
+        <td>An account with no positions reported as an outage. Support ticket, no logs, nothing to find.</td>
+        <td>§8.6</td></tr>
+    <tr><td><b>The raw upstream payload</b></td>
+        <td>200,000 tokens, a production hostname, an ETL batch id, and six fields the customer must never see.</td>
+        <td><code>TS-GOV-02</code></td></tr>
+    <tr><td><b>The apologetic error</b></td>
+        <td>The agent retries a doomed call three times, then tells the customer nothing useful.</td>
+        <td><code>TS-ERR-02</code></td></tr>
+    <tr><td><b>Description as documentation</b></td>
+        <td>600 words restating the schema and omitting every convention that matters.</td>
+        <td><code>TS-DSC-01</code></td></tr>
+    <tr><td><b>Description as system prompt</b></td>
+        <td>"Always greet the customer warmly and suggest our premium tier." A tool reaching into a surface it cannot see.</td>
+        <td><code>TS-DSC-06</code></td></tr>
+    <tr><td><b>The unowned tool</b></td>
+        <td>Still returning customer data two years after the team was reorganized. Works perfectly; accountable to no one.</td>
+        <td><code>TS-GOV-01</code></td></tr>
+    <tr><td><b>The rename</b></td>
+        <td>Six years of audit records silently change meaning. A record-keeping defect, not a refactor.</td>
+        <td><code>TS-NAM-11</code></td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">The pattern behind the patterns</span>
+  <p>
+    Twelve of the thirteen are the same mistake: <b>optimizing for the convenience of the team
+    building the tool rather than the reliability of the caller consuming it.</b> Each shortcut
+    moves work from a place where it can be tested to a place where it can only be hoped for.
+  </p>
+</div>

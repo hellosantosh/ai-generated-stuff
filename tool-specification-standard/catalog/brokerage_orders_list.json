@@ -1,7 +1,7 @@
 {
   "name": "brokerage_orders_list",
   "title": "Find orders on an account",
-  "description": "Returns orders on one account, filtered by lifecycle state, symbol, or date, most recent first. Use when the customer asks whether a trade went through, what orders are still working, what they traded recently, or why something was rejected — and use it first whenever you need an orderId for another tool. Do not use for holdings — call brokerage_positions_list, because an order becomes a position only once it fills and a filled order is not the same as a current holding. Do not use for cash movements — call brokerage_transactions_list. status WORKING covers every non-terminal state and is what the customer means by open orders. Terminal states are FILLED, CANCELLED, REJECTED, EXPIRED, and REPLACED; an order in a terminal state will never change again and must not be polled. New status values may be added over time: treat any status you do not recognise as still working, never as terminal. filledQuantity and remainingQuantity together describe a partial fill, which is a common and non-obvious state — an order can be both working and partly filled. Rejected orders carry a rejectReason with a machine-readable code. An empty array means no orders matched the filter, which is a successful answer. Reads only.",
+  "description": "Returns orders on one account, filtered by lifecycle state, symbol, or date, most recent first. Use when the customer asks whether a trade went through, what orders are still working, what they traded recently, or why something was rejected — and use it first whenever you need an orderId for another tool. Do not use for holdings — call brokerage_positions_list, because an order becomes a position only once it fills and a filled order is not the same as a current holding. Do not use for cash movements — call brokerage_transactions_list. status WORKING covers every non-terminal state and is what the customer means by open orders. Terminal states are FILLED, CANCELLED, REJECTED, EXPIRED, and REPLACED; an order in a terminal state will never change again and must not be polled. New status values may be added over time: treat any status you do not recognize as still working, never as terminal. filledQuantity and remainingQuantity together describe a partial fill, which is a common and non-obvious state — an order can be both working and partly filled. Rejected orders carry a rejectReason with a machine-readable code. An empty array means no orders matched the filter, which is a successful answer. Reads only.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -96,7 +96,7 @@
             },
             "status": {
               "type": "string",
-              "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognised value as still working."
+              "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognized value as still working."
             },
             "isTerminal": {
               "type": "boolean",

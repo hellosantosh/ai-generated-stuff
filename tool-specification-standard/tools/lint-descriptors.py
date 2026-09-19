@@ -217,7 +217,7 @@ def lint(doc: dict, source: str, r: Report) -> None:
             r.must(name, "TS-INP-01", f"parameter '{ptr}' uses format '{fmt}', which is outside the profile")
         if key not in (ins.get("required") or []) and depth == 0 and "default" not in sub:
             if not re.search(r"\bomit|omitted|by default|defaults? to\b", d, re.I):
-                r.should(name, "TS-INP-11", f"optional parameter '{ptr}' does not state its omission behaviour")
+                r.should(name, "TS-INP-11", f"optional parameter '{ptr}' does not state its omission behavior")
 
     # --- output schema ---------------------------------------------------
     outs = doc.get("outputSchema", {})

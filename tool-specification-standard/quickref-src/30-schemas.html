@@ -1,0 +1,212 @@
+<h1><span class="n">4</span>Input schema</h1>
+
+<div class="cols avoid">
+  <div class="yes">
+    <span class="lbl">Permitted keywords</span>
+    <p><code>type</code> <code>properties</code> <code>required</code>
+       <code>description</code> <code>enum</code> <code>const</code> <code>default</code>
+       <code>examples</code> <code>minimum</code> <code>maximum</code>
+       <code>exclusiveMinimum</code> <code>exclusiveMaximum</code> <code>multipleOf</code>
+       <code>minLength</code> <code>maxLength</code> <code>pattern</code>
+       <code>items</code> <code>minItems</code> <code>maxItems</code>
+       <code>uniqueItems</code> <code>$ref</code> <code>$defs</code>
+       <code>oneOf</code> <span class="small">(discriminated, ≤3 branches)</span><br>
+       <code>format</code>: only <code>date</code> <code>date-time</code>
+       <code>duration</code> <code>uuid</code> <code>uri</code></p>
+  </div>
+  <div class="no">
+    <span class="lbl">Prohibited constructs</span>
+    <p><code>if</code>/<code>then</code>/<code>else</code> <code>dependentSchemas</code>
+       <code>dependentRequired</code> — model accuracy collapses on conditional structure<br>
+       <code>not</code> <code>anyOf</code> <code>allOf</code> — unreadable as instruction<br>
+       <code>patternProperties</code> <code>propertyNames</code>
+       <code>additionalProperties: true</code> — unvalidatable open maps<br>
+       <code>$dynamicRef</code>, recursive <code>$ref</code> — unbounded<br>
+       <code>nullable</code> — not a JSON Schema keyword; use <code>["string","null"]</code><br>
+       Remote <code>$ref</code> at invocation time</p>
+  </div>
+</div>
+
+<h2>Shape rules</h2>
+
+<table>
+  <tbody>
+    <tr><td style="width:22%"><b>Root</b></td>
+        <td><code>{"type":"object"}</code> + explicit <code>properties</code> + explicit
+            <code>required</code> + <code>"additionalProperties": false</code>. A no-argument
+            tool still declares all four.</td></tr>
+    <tr><td><b>Size</b></td><td>≤ 12 top-level properties, ≤ 2 levels deep
+            <span class="lvl lvl-should">SHOULD</span>. Beyond that the tool is doing two jobs.</td></tr>
+    <tr><td><b>Names</b></td><td><code>lowerCamelCase</code>, domain vocabulary, and the same
+            name means the same thing in every tool in the catalog.</td></tr>
+    <tr><td><b>Booleans</b></td><td>Named positively, defaulting to the conservative value:
+            <code>includeClosed: false</code>, never <code>excludeClosed: false</code>.</td></tr>
+    <tr><td><b>Identifiers</b></td><td>Opaque, prefixed, pattern-constrained —
+            <code>acct_</code>, <code>ord_</code>, <code>inst_</code>.</td></tr>
+    <tr><td><b>Bounds</b></td><td>Every array declares <code>maxItems</code>; every free-text
+            string declares <code>maxLength</code>.</td></tr>
+    <tr><td><b>Required</b></td><td>Only if the tool cannot proceed without it. Marking a field
+            required to make the model "think about it" makes it invent a value.</td></tr>
+    <tr><td><b>Defaults</b></td><td>The narrow, least-surprising choice — and stated
+            <b>in prose</b>, not only in <code>default</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2>Make illegal states unrepresentable</h2>
+
+<div class="cols avoid">
+  <div>
+    <pre class="bad" style="margin-bottom:0"><code><span class="c-key">"status"</span>:   { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"symbol"</span>:   { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"quantity"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"number"</span> },
+<span class="c-key">"since"</span>:    { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"limit"</span>:    { <span class="c-key">"type"</span>: <span class="c-str">"integer"</span> }
+
+<span class="c-com">// "open" "OPEN" "working" "aapl"
+// "AAPL " 100.5 "last week" 10000</span></code></pre>
+  </div>
+  <div>
+    <pre class="good" style="margin-bottom:0"><code><span class="c-key">"status"</span>:   { <span class="c-key">"enum"</span>: [<span class="c-str">"WORKING"</span>, <span class="c-str">"FILLED"</span>, …] },
+<span class="c-key">"symbol"</span>:   { <span class="c-key">"pattern"</span>: <span class="c-str">"^[A-Z]{1,5}$"</span> },
+<span class="c-key">"quantity"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"integer"</span>,
+              <span class="c-key">"minimum"</span>: <span class="c-num">1</span>, <span class="c-key">"maximum"</span>: <span class="c-num">100000</span> },
+<span class="c-key">"fromDate"</span>: { <span class="c-key">"format"</span>: <span class="c-str">"date"</span> },
+<span class="c-key">"pageSize"</span>: { <span class="c-key">"minimum"</span>: <span class="c-num">1</span>, <span class="c-key">"maximum"</span>: <span class="c-num">100</span> }
+
+<span class="c-com">// one way to be right</span></code></pre>
+  </div>
+</div>
+
+<p class="small">
+  Enumerated values are <code>SCREAMING_SNAKE_CASE</code> and match Appendix D of the standard
+  exactly. Where an enumeration is long or grows often, use a <code>pattern</code> plus a prose
+  pointer to the tool that enumerates valid values. Where it is short and consequential —
+  status, side, time in force, account type — spell it out. When two shapes genuinely differ,
+  the answer is <b>two tools</b>, not a union.
+</p>
+
+<h2>Reserved parameter names</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Parameter</th><th style="width:24%">Shape</th><th>Semantics</th></tr></thead>
+  <tbody>
+    <tr><td><code>pageSize</code></td><td>integer 1–100, default 25</td>
+        <td>Never <code>limit</code>, <code>count</code>, or <code>top</code>.</td></tr>
+    <tr><td><code>cursor</code></td><td>string ≤512</td>
+        <td>Opaque forward token. <b>Offset and page numbers are prohibited</b> against a moving book.</td></tr>
+    <tr><td><code>asOf</code></td><td>date-time</td>
+        <td>Point-in-time read; omitted means now. A tool that cannot honor history must not accept it.</td></tr>
+    <tr><td><code>fromDate</code>, <code>toDate</code></td><td>date</td>
+        <td>Inclusive window in the account's reporting time zone; declare the max span.</td></tr>
+    <tr><td><code>detail</code></td><td><code>SUMMARY</code>|<code>STANDARD</code>|<code>FULL</code></td>
+        <td>Verbosity. Preferred over a caller-supplied field list.</td></tr>
+    <tr><td><code>idempotencyKey</code></td><td>uuid</td>
+        <td><b>Required</b> on every non-idempotent state change. Dedupe ≥24h; replay returns the original result.</td></tr>
+    <tr><td><code>confirmationToken</code></td><td>string ≤512</td>
+        <td>From the matching <code>preview</code>. Single use, ≤120 s, bound to the arguments.</td></tr>
+    <tr><td><code>reason</code></td><td>string ≤280</td>
+        <td>Why the action is being taken. Captured verbatim into the audit record. Required at tier 3.</td></tr>
+  </tbody>
+</table>
+
+<h2>Prohibited input patterns</h2>
+
+<table class="long">
+  <thead><tr><th style="width:30%">Never accept</th><th>Because</th></tr></thead>
+  <tbody>
+    <tr><td><b>Identity</b> <code>userId</code> <code>customerId</code> <code>onBehalfOf</code> <code>role</code> <code>tenantId</code></td>
+        <td>Access control delegated to a language model. It will be talked into acting as someone else.</td></tr>
+    <tr><td><b>Credentials</b> <code>apiKey</code> <code>token</code> <code>password</code></td>
+        <td>Secrets must never enter a context window — logged, retained, possibly forwarded.</td></tr>
+    <tr><td><b>Query languages</b> <code>sql</code> <code>filterExpression</code> <code>graphqlQuery</code> <code>jsonPath</code></td>
+        <td>Unvalidatable, unauditable, injection surface with the model as injector.</td></tr>
+    <tr><td><b>Discriminators</b> <code>action</code> <code>operation</code> <code>mode</code> <code>command</code></td>
+        <td>Collapses several risk profiles into one descriptor. Annotations, tier, approval, and audit all become wrong at once.</td></tr>
+    <tr><td><b>Safety flags</b> <code>force</code> <code>skipValidation</code> <code>dryRun</code> <code>override</code></td>
+        <td>A flag that changes whether a tool is dangerous means the annotations describe one of two tools. Split them.</td></tr>
+    <tr><td><b>Caller-supplied URLs or paths</b></td>
+        <td>Server-side request forgery primitive. Allow-list in configuration, never in an argument.</td></tr>
+    <tr><td><b>Unbounded arrays and blobs</b></td><td>Cost, latency, and denial-of-service vector.</td></tr>
+    <tr><td><b>Routing hints</b> <code>env</code> <code>region</code> <code>useCache</code> <code>debug</code></td>
+        <td>Deployment facts the model must not be able to reason about or influence.</td></tr>
+    <tr><td><b>Anything the tool cannot honor</b></td>
+        <td>The model will use it and silently receive an answer that does not match the request.</td></tr>
+  </tbody>
+</table>
+
+<h1><span class="n">5</span>Output &amp; the result envelope</h1>
+
+<pre class="long"><code>{
+  <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>: <span class="c-str">"3 positions in ••••8820 as of 14:32:05Z …"</span> }],
+                            <span class="c-com">// MUST ≥1 text block · generated FROM structuredContent, never hand-kept</span>
+                            <span class="c-com">// MUST carry as-of, currency, sign, and any truncation · keep it compact</span>
+  <span class="c-key">"structuredContent"</span>: {   <span class="c-com">// MUST validate against outputSchema · the authoritative payload</span>
+    <span class="c-key">"asOf"</span>:  <span class="c-str">"2026-09-19T14:32:05Z"</span>,        <span class="c-com">// MUST on anything that can change</span>
+    <span class="c-key">"basis"</span>: <span class="c-str">"DELAYED_15M"</span>,                 <span class="c-com">// MUST on any computed or convention-dependent figure</span>
+    <span class="c-key">"completeness"</span>: { <span class="c-key">"returned"</span>: <span class="c-num">25</span>, <span class="c-key">"totalMatching"</span>: <span class="c-num">340</span>,
+                      <span class="c-key">"truncated"</span>: <span class="c-key">true</span>,      <span class="c-com">// MUST on every collection; never null</span>
+                      <span class="c-key">"nextCursor"</span>: <span class="c-str">"eyJvIjoyNX0"</span>,
+                      <span class="c-key">"narrowingHint"</span>: <span class="c-str">"Filter by symbol rather than paging."</span> },
+    <span class="c-key">"disclosures"</span>: [<span class="c-str">"Prices are delayed up to 15 minutes …"</span>]   <span class="c-com">// compliance text lives here,</span>
+  },                                                             <span class="c-com">// not in the description</span>
+  <span class="c-key">"isError"</span>: <span class="c-key">false</span>       <span class="c-com">// true = the tool ran and could not do its job. Transport failures never reach it.</span>
+}</code></pre>
+
+<div class="cols avoid">
+  <div>
+    <h3>Result budgets</h3>
+    <table>
+      <thead><tr><th>Result</th><th style="width:24%">Target</th><th style="width:20%">Hard</th></tr></thead>
+      <tbody>
+        <tr><td>Single entity</td><td>&lt; 500 tok</td><td>2,000</td></tr>
+        <tr><td>Collection page</td><td>&lt; 1,500 tok</td><td>5,000</td></tr>
+        <tr><td>Aggregate</td><td>&lt; 800 tok</td><td>2,000</td></tr>
+        <tr><td>Error</td><td>&lt; 200 tok</td><td>500</td></tr>
+        <tr><td>Binary / &gt;100 KB</td><td colspan="2">By reference only</td></tr>
+      </tbody>
+    </table>
+    <h3>Cut from every payload</h3>
+    <p class="small">Nulls · internal identifiers · hypermedia links · derivations the model
+      can safely redo · per-row repetition of <code>accountId</code>, <code>currency</code>,
+      <code>asOf</code> · pre-formatted display strings.</p>
+  </div>
+  <div>
+    <h3>Numbers</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:34%"><b>Money, quantities</b></td>
+            <td>Decimal <b>strings</b> — <code>"62137.50"</code>. Never IEEE-754.</td></tr>
+        <tr><td><b>Currency</b></td><td>ISO 4217, at the value or the envelope.</td></tr>
+        <tr><td><b>Formatting</b></td><td>None in <code>structuredContent</code>. No separators, symbols, or parenthesized negatives.</td></tr>
+        <tr><td><b>Timestamps</b></td><td>RFC 3339 with explicit UTC offset. Dates that are dates name their time zone.</td></tr>
+        <tr><td><b>Signs</b></td><td>Explicit in the text rendering: <code>-98,240.00 USD</code>, <code>SHORT 400</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2>Empty, partial, stale, truncated</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Situation</th><th>Required behavior</th></tr></thead>
+  <tbody>
+    <tr><td><b>Empty</b></td><td><code>isError: false</code>, empty array, and prose saying what
+        the emptiness means. A model shown a bare <code>[]</code> reports an outage about half
+        the time.</td></tr>
+    <tr><td><b>Not found</b></td><td><code>NOT_FOUND</code> for a <code>get</code>; an empty
+        collection for a <code>list</code>. "That order does not exist" and "you have no orders"
+        are different customer answers.</td></tr>
+    <tr><td><b>Truncated</b></td><td><code>truncated: true</code> <b>and</b> words in the text:
+        "showing 25 of 340". Tell the reader how to <b>narrow</b>, not how to page — a model
+        follows a cursor once, maybe twice, then summarizes what it has as if it were
+        everything.</td></tr>
+    <tr><td><b>Partial</b></td><td>Only where the missing part is separable and disclosed. Name
+        what is missing, in the text.</td></tr>
+    <tr><td><b>Partial, and the number gates a decision</b></td>
+        <td><b>Fail instead.</b> Balances, buying power, anything a trade depends on, must never
+        be returned partially computed <span class="small">(<code>TS-OUT-11</code>)</span>.</td></tr>
+    <tr><td><b>Stale</b></td><td>Return it with an honest <code>asOf</code> and
+        <code>basis</code>, plus <code>stale: true</code> past the freshness target. Let the
+        reader decide; do not decide by hiding it.</td></tr>
+  </tbody>
+</table>

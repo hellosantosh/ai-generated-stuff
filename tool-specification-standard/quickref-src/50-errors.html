@@ -1,0 +1,161 @@
+<h1><span class="n">8</span>Errors</h1>
+
+<p>
+  Domain and business failures are <b>execution errors</b>: a successful transport response with
+  <code>isError: true</code>. Never raised as transport or protocol errors — those get retried
+  blindly, are often invisible to the model, and reach the customer as "something went wrong".
+</p>
+
+<pre class="long"><code>{ <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>: <span class="c-str">"Cannot place this order: the account has 84,360.20 USD of stock buying power and the order requires 123,750.00 USD. Reduce the quantity to 68 shares or fewer, or choose a different account."</span> }],
+  <span class="c-key">"structuredContent"</span>: { <span class="c-key">"error"</span>: {
+    <span class="c-key">"code"</span>:        <span class="c-str">"BUSINESS_RULE_VIOLATION"</span>,      <span class="c-com">// MUST  closed taxonomy · the only field safe to branch on</span>
+    <span class="c-key">"domainCode"</span>:  <span class="c-str">"INSUFFICIENT_BUYING_POWER"</span>,    <span class="c-com">// SHOULD registered · what analytics group by</span>
+    <span class="c-key">"message"</span>:     <span class="c-str">"Order requires 123,750.00 USD …"</span>, <span class="c-com">// MUST  1–2 sentences, with the numbers</span>
+    <span class="c-key">"retryable"</span>:   <span class="c-key">false</span>,                         <span class="c-com">// MUST  explicit boolean, never inferred from prose</span>
+    <span class="c-key">"retryAfterSeconds"</span>: <span class="c-key">null</span>,                  <span class="c-com">//       when retryable</span>
+    <span class="c-key">"remediation"</span>: <span class="c-str">"Reduce quantity to 68 shares or fewer … Do not retry this order unchanged."</span>,
+    <span class="c-key">"details"</span>:     { <span class="c-key">"required"</span>: {…}, <span class="c-key">"available"</span>: {…}, <span class="c-key">"maxQuantity"</span>: <span class="c-num">68</span> },
+    <span class="c-key">"traceId"</span>:     <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span>     <span class="c-com">// MUST  the only internal identifier allowed out</span>
+  } },
+  <span class="c-key">"isError"</span>: <span class="c-key">true</span> }</code></pre>
+
+<h2>The fifteen codes</h2>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Code</th><th style="width:16%">Retry</th><th>Means &amp; what the caller does</th></tr></thead>
+  <tbody>
+    <tr><td><code>INVALID_ARGUMENT</code></td><td>No</td>
+        <td>Malformed or schema-violating. <b>Fix the argument</b>; <code>details.violations</code> names it by JSON Pointer.</td></tr>
+    <tr><td><code>NOT_FOUND</code></td><td>No</td>
+        <td>Absent <b>or</b> outside the grant — deliberately indistinguishable, so the tool cannot enumerate identifiers. List first; do not guess another id.</td></tr>
+    <tr><td><code>AUTHENTICATION_REQUIRED</code></td><td>After re-auth</td>
+        <td>Absent, expired, or revoked credentials. The agent cannot fix this.</td></tr>
+    <tr><td><code>ENTITLEMENT_DENIED</code></td><td>No</td>
+        <td>Authenticated, not permitted. <b>Ask the customer to grant access; never retry.</b></td></tr>
+    <tr><td><code>APPROVAL_REQUIRED</code></td><td>After approval</td>
+        <td>Present the confirmation, re-invoke with the token.</td></tr>
+    <tr><td><code>APPROVAL_DENIED</code></td><td>No</td>
+        <td>A human declined. <b>Stop.</b> Rephrasing and retrying turns one declined trade into three.</td></tr>
+    <tr><td><code>PRECONDITION_FAILED</code></td><td>Sometimes</td>
+        <td>Stale confirmation token, missing idempotency key, version mismatch. <code>details</code> names it.</td></tr>
+    <tr><td><code>CONFLICT</code></td><td>No</td>
+        <td>State does not permit it — already filled, account closed. <b>Re-read the entity first.</b></td></tr>
+    <tr><td><code>BUSINESS_RULE_VIOLATION</code></td><td>No</td>
+        <td>Well-formed, permitted, and the domain said no. <b>The request was fine; the world declined.</b> Explain, do not retry.</td></tr>
+    <tr><td><code>RATE_LIMITED</code></td><td>After the wait</td>
+        <td>Honor <code>retryAfterSeconds</code>. Recurrence means the agent is looping.</td></tr>
+    <tr><td><code>TIMEOUT</code></td><td>If idempotent</td>
+        <td>Retry only with an idempotency key or a true <code>idempotentHint</code>; otherwise <b>re-read state to find out whether it happened</b>.</td></tr>
+    <tr><td><code>UPSTREAM_UNAVAILABLE</code></td><td>With backoff</td>
+        <td><code>details.system</code> names which, so the agent can say what is unavailable rather than apologizing vaguely.</td></tr>
+    <tr><td><code>DATA_INCOMPLETE</code></td><td>With backoff</td>
+        <td>Computable only partially, and the tool refused to return a misleading figure. Distinct from upstream failure: the tool <i>did</i> reach its sources.</td></tr>
+    <tr><td><code>NOT_SUPPORTED</code></td><td>No</td>
+        <td>Well-formed request for something this tool does not do. <code>remediation</code> names the tool that does.</td></tr>
+    <tr><td><code>INTERNAL_ERROR</code></td><td>Once</td>
+        <td><code>traceId</code> and nothing else of substance. Common occurrence means errors are being mapped lazily.</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">The distinction that matters most</span>
+  <p>
+    <code>INVALID_ARGUMENT</code> = <b>the caller is wrong</b>; change the argument and it works.
+    <code>BUSINESS_RULE_VIOLATION</code> = <b>the caller is fine and reality declined</b> —
+    insufficient buying power, market closed, instrument halted. A tool that conflates them
+    makes every agent built on it worse: it retries a doomed order, then tells the customer
+    "invalid request" when the honest answer was "the market is closed".
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Remediation rules</h3>
+    <ul class="tight">
+      <li>An <b>instruction in the imperative</b>, naming the argument to change or the tool to
+          call instead. Apologies are not remediation.</li>
+      <li>State the permissible bound — the max quantity, the valid window, the required level.
+          "Too large" without "how large" forces a guessing loop.</li>
+      <li>Where a retry is futile, say <b>"do not retry"</b> explicitly. Models are biased
+          toward retrying; <code>retryable: false</code> alone is markedly weaker.</li>
+      <li>Enumerate <b>every</b> validation violation, not just the first.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Never in an error payload</h3>
+    <ul class="tight">
+      <li>Stack traces, exception classes, line numbers → <code>INTERNAL_ERROR</code> + <code>traceId</code></li>
+      <li>Raw upstream text, vendor codes, SQL → a mapped taxonomy code</li>
+      <li>Hostnames, queue names, topology → <code>details.system</code> as a business name</li>
+      <li>Full account numbers, government ids, dates of birth → the masked form</li>
+      <li>Any data about another principal → nothing; return <code>NOT_FOUND</code></li>
+      <li>Whether an id exists but is not permitted → <code>NOT_FOUND</code>, uniformly</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Mapping upstream failures</h2>
+
+<table>
+  <thead><tr><th style="width:14%">Upstream</th><th style="width:30%">Maps to</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>INVALID_ARGUMENT</code></td><td>If the gateway validated and upstream still says 400, the schema has drifted — alert.</td></tr>
+    <tr><td><code>401</code> / <code>403</code></td><td><code>AUTHENTICATION_REQUIRED</code> / <code>ENTITLEMENT_DENIED</code></td><td>Refresh once, then surface / never retried.</td></tr>
+    <tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Uniform for "absent" and "not yours".</td></tr>
+    <tr><td><code>409</code> / <code>412</code>, <code>428</code></td><td><code>CONFLICT</code> / <code>PRECONDITION_FAILED</code></td><td>Re-read before acting / name the missing precondition.</td></tr>
+    <tr><td><code>422</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td><td><b>The mapping most often collapsed into <code>INVALID_ARGUMENT</code>.</b></td></tr>
+    <tr><td><code>429</code></td><td><code>RATE_LIMITED</code></td><td>Propagate <code>Retry-After</code>.</td></tr>
+    <tr><td><code>5xx</code>, timeouts</td><td><code>UPSTREAM_UNAVAILABLE</code> / <code>TIMEOUT</code></td>
+        <td>Distinguish them: a timeout on a non-idempotent write means the outcome is <b>unknown</b>.</td></tr>
+    <tr><td>Unmapped</td><td><code>INTERNAL_ERROR</code> <b>+ alert</b></td><td>An unmapped upstream failure is a contract change nobody was told about.</td></tr>
+  </tbody>
+</table>
+
+<h1><span class="n">9</span>Decisions you will make repeatedly</h1>
+
+<h2>One tool or two?</h2>
+
+<table>
+  <thead><tr><th style="width:50%">If…</th><th>Then</th></tr></thead>
+  <tbody>
+    <tr><td>Stating the user question takes two sentences with an "or" in the middle</td><td><b>Two tools</b></td></tr>
+    <tr><td>One argument value makes it destructive</td><td><b>Two tools</b> — annotations, tier, approval, and audit cannot all be right at once</td></tr>
+    <tr><td>You are reaching for <code>oneOf</code> with more than three branches</td><td><b>Two tools</b></td></tr>
+    <tr><td>The two candidates differ only in cardinality (one vs many)</td><td><b>One tool</b> — a <code>list</code> that returns everything a <code>get</code> would</td></tr>
+    <tr><td>A common question needs ≥3 calls plus a domain convention the model must know</td><td><b>One composite</b> — move the knowledge into the tool where it can be tested</td></tr>
+    <tr><td>You cannot write the one sentence that distinguishes two tools</td><td><b>Merge or re-scope</b>, and put that sentence in both descriptions</td></tr>
+  </tbody>
+</table>
+
+<h2>Does it need an idempotency key?</h2>
+
+<p class="small">
+  <code>create</code> · <code>place</code> · <code>update</code> · <code>replace</code> →
+  <b>yes, required</b>, deduped ≥24 h, replay returns the original result,
+  same key + different arguments → <code>CONFLICT</code>. &nbsp;·&nbsp;
+  <code>cancel</code> · <code>delete</code> → naturally idempotent. &nbsp;·&nbsp;
+  Read tools → no. &nbsp;·&nbsp; Say it in the description too: models supply a key far more
+  reliably when told what it is for than when it merely appears in the schema.
+</p>
+
+<h2>How long will it take?</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Duration</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>&lt; 10 s</td><td>Synchronous. Declare the latency class.</td></tr>
+    <tr><td>10 s – minutes</td><td>Job pattern: <code>..._start</code> returns a <code>jobId</code>; <code>..._status</code> reports progress. The start tool is not read-only even if the result is.</td></tr>
+    <tr><td>Minutes – hours</td><td>Job pattern + out-of-band notification. The agent must not poll in a loop; return <code>nextPollAfterSeconds</code>.</td></tr>
+    <tr><td>Any timeout</td><td>State explicitly whether the underlying operation may still complete. "May still have been placed" is a different instruction from "was not placed", and the agent cannot work it out.</td></tr>
+  </tbody>
+</table>
+
+<h2>Polling anything with a lifecycle</h2>
+
+<p class="small">
+  Return <code>isTerminal</code> and say in the description that a terminal entity must never be
+  polled again — this one flag removes most wasteful polling. Return
+  <code>nextPollAfterSeconds</code> scaled to the entity (2 s for a market order, 60 s for a
+  transfer). Prefer telling the customer the firm will notify them over having an agent hold a
+  conversation open as a timer.
+</p>

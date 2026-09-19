@@ -71,7 +71,7 @@ brokerage_positions_list — List account positions
             or how much they are up or down on a holding."
             <br><i>Test:</i> does it contain at least two phrasings a real user would use?</td></tr>
     <tr><td><b>3</b></td><td><b>Exclusions</b><br><span class="small">"Do not use for…"</span></td>
-        <td>The nearest neighbouring tools, named by exact wire name, with the distinction
+        <td>The nearest neighboring tools, named by exact wire name, with the distinction
             stated. "Do not use for cash or buying power — call
             <code>brokerage_balances_get</code>."
             <br><i>Test:</i> is every tool a confused reader might reach for instead named
@@ -109,13 +109,13 @@ brokerage_positions_list — List account positions
 <h3><span class="num">6.2.1</span>The template applied</h3>
 
 <p>
-  The same description, with each part labelled. In the real descriptor it is one paragraph of
+  The same description, with each part labeled. In the real descriptor it is one paragraph of
   running prose; the labels are here for reading only.
 </p>
 
 <pre class="long good"><code><span class="c-com">[1 PURPOSE]</span>
 Returns the current holdings in one brokerage account, with quantity, average
-cost, market value, and unrealised profit and loss for each.
+cost, market value, and unrealized profit and loss for each.
 
 <span class="c-com">[2 USE WHEN]</span>
 Use when the customer asks what they own, how many shares or contracts they
@@ -165,7 +165,7 @@ retry once after a short pause.</code></pre>
 
 <p>
   Every word in a description is paid for on every turn of every conversation, by every user.
-  A 200-word description in a catalogue of 30 tools, in a conversation of 20 turns, is not
+  A 200-word description in a catalog of 30 tools, in a conversation of 20 turns, is not
   200 words — it is 120,000 words of billed context. Economy is not stylistic preference; it
   is an operating cost and a distraction cost.
 </p>
@@ -177,7 +177,7 @@ retry once after a short pause.</code></pre>
     <tr><td>Per-parameter description</td><td>1–2 sentences</td><td><b>240 characters</b> (<code>TS-DSC-03</code>)</td></tr>
     <tr><td>Whole descriptor, rendered</td><td>≤ 700 tokens</td><td>1,200 tokens</td></tr>
     <tr><td>Tools offered to one agent</td><td>≤ 25</td><td>40 (§12.4)</td></tr>
-    <tr><td>Catalogue share of the context window</td><td>≤ 10%</td><td>15%</td></tr>
+    <tr><td>Catalog share of the context window</td><td>≤ 10%</td><td>15%</td></tr>
   </tbody>
 </table>
 
@@ -206,7 +206,7 @@ retry once after a short pause.</code></pre>
     <tr><td>Implementation detail — which service, which database, which vendor</td>
         <td>Nothing the model can act on, and it leaks topology into a context window
             (<code>TS-GEN-08</code>).</td></tr>
-    <tr><td>Exhaustive error catalogues</td>
+    <tr><td>Exhaustive error catalogs</td>
         <td>Name the failures a caller can <em>act</em> on. The rest belong in the error
             payload, where they cost nothing until they happen (§11.4).</td></tr>
     <tr><td>Formatting instructions for the final answer</td>
@@ -242,7 +242,7 @@ retry once after a short pause.</code></pre>
     <tr><td>No selection trigger</td>
         <td>The model does not connect "what do I own?", "how's my Apple doing?", or "am I up
             on Tesla?" to this tool. It either asks a clarifying question the customer finds
-            obtuse, or picks a neighbour.</td></tr>
+            obtuse, or picks a neighbor.</td></tr>
     <tr><td>No exclusions</td>
         <td>Called for "did my order fill?" and for "how much cash do I have?". Both produce
             answers that are wrong in a way the customer cannot detect.</td></tr>
@@ -263,7 +263,7 @@ retry once after a short pause.</code></pre>
 
 <p class="lang g">After — 168 words, all seven parts, every defect closed</p>
 <pre class="long good"><code>Returns the current open holdings in one brokerage account: instrument,
-quantity, average cost, last price, market value, and unrealised profit and
+quantity, average cost, last price, market value, and unrealized profit and
 loss for each. Use when the customer asks what they own, how much of something
 they hold, what a holding is worth, or whether they are up or down on it. Do
 not use for cash, settled funds, or buying power — call brokerage_balances_get.
@@ -300,10 +300,10 @@ customer asks what something is worth right now.</code></pre>
         <td>Descriptions <b>MUST NOT</b> contain instructions about how the agent should
             behave outside this tool call — how to address the customer, what to disclose,
             when to escalate, what to do in other conversations. A tool describes itself;
-            agent behaviour is governed by the agent's own configuration.</td></tr>
+            agent behavior is governed by the agent's own configuration.</td></tr>
     <tr><td><code>TS-DSC-07</code></td><td><span class="lvl lvl-never">NEVER</span></td>
         <td>Descriptions <b>MUST NOT</b> be generated at runtime, templated with request data,
-            or personalised per user. A description is a static, reviewed, signed artifact.
+            or personalized per user. A description is a static, reviewed, signed artifact.
             Anything dynamic belongs in the result payload.</td></tr>
     <tr><td><code>TS-DSC-08</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
         <td>Descriptions <b>SHOULD</b> use the domain's own vocabulary — the words that appear
@@ -330,14 +330,14 @@ customer asks what something is worth right now.</code></pre>
   <tbody>
     <tr><td><b>Unreviewed change</b><br><span class="small">someone edits a description to redirect the agent</span></td>
         <td>Descriptors ship through code review and CI like code (<code>TS-GEN-03</code>). The
-            catalogue rejects any descriptor not signed by the owning team's pipeline. A
+            catalog rejects any descriptor not signed by the owning team's pipeline. A
             description change is a production change and is logged as one.</td></tr>
     <tr><td><b>Silent redefinition</b><br><span class="small">a tool behaves differently tomorrow with no version change</span></td>
-        <td>The catalogue stores a content hash of every published descriptor. Agent runtimes
+        <td>The catalog stores a content hash of every published descriptor. Agent runtimes
             pin the hash they were configured with and <b>MUST</b> refuse to invoke a tool
             whose descriptor hash has changed without a version bump (<code>TS-SEC-09</code>).</td></tr>
     <tr><td><b>Cross-tool influence</b><br><span class="small">one provider's description instructs the model about another's tools</span></td>
-        <td>Acute when an agent is given tools from several providers. The catalogue rejects
+        <td>Acute when an agent is given tools from several providers. The catalog rejects
             descriptions that name tools outside the publishing team's own namespace, except
             in an exclusion clause — and those are checked at review
             (<code>TS-DSC-10</code>).</td></tr>

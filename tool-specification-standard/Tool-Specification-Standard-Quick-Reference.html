@@ -1,0 +1,1700 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>Tool Specification Standard — Quick Reference</title>
+<style>
+/* ===================================================================
+   Quick reference stylesheet. US Letter via headless Chrome.
+   Denser than the standard's own stylesheet on purpose: this document
+   is scanned, not read. Regenerate with tools/build-quickref.sh
+   =================================================================== */
+
+@page { size: letter; margin: 14mm 13mm 13mm 13mm; }
+
+:root {
+  --ink:       #16181d;
+  --ink-soft:  #4a5058;
+  --ink-faint: #767d87;
+  --rule:      #d9dde3;
+  --rule-soft: #eaedf1;
+  --accent:    #1f4f8f;
+  --accent-bg: #eef3fa;
+  --green:     #1d6b45;
+  --green-bg:  #e9f5ee;
+  --amber:     #8a5a00;
+  --amber-bg:  #fdf3e0;
+  --red:       #a32a2a;
+  --red-bg:    #fbeeee;
+  --purple:    #5b3a8e;
+  --purple-bg: #f2eefa;
+  --code-bg:   #f6f7f9;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  font-family: var(--sans);
+  font-size: 8.6pt;
+  line-height: 1.45;
+  color: var(--ink);
+  margin: 0;
+}
+
+p { margin: 0 0 2.4mm; }
+a { color: var(--accent); text-decoration: none; }
+strong, b { font-weight: 650; }
+
+/* --- masthead ---------------------------------------------------- */
+
+.mast {
+  background: linear-gradient(120deg, #101c30 0%, #1f4f8f 62%, #2f7cc4 100%);
+  color: #fff;
+  border-radius: 4px;
+  padding: 7mm 8mm 6mm;
+  margin-bottom: 5mm;
+}
+.mast .eyebrow {
+  font-size: 7.6pt; letter-spacing: .2em; text-transform: uppercase;
+  opacity: .74; margin-bottom: 3mm;
+}
+.mast h1 {
+  font-size: 22pt; font-weight: 650; letter-spacing: -0.02em;
+  margin: 0 0 2.5mm; border: 0; padding: 0; color: #fff;
+  background: none; border-radius: 0;
+  page-break-before: avoid; break-before: avoid;
+}
+.mast .sub { font-size: 10pt; opacity: .92; margin: 0 0 4mm; max-width: 150mm; }
+.mast .meta {
+  font-size: 7.8pt; opacity: .8; border-top: 1px solid rgba(255,255,255,.28); padding-top: 3mm;
+}
+
+/* --- headings ---------------------------------------------------- */
+
+h1 {
+  font-size: 13pt;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0 0 3.5mm;
+  padding: 1.6mm 3mm;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 3px;
+  page-break-after: avoid;
+  break-after: avoid;
+  margin-top: 7mm;
+}
+h1.newpage { page-break-before: always; break-before: page; }
+h1 .n { opacity: .62; margin-right: 2.5mm; font-variant-numeric: tabular-nums; }
+
+h2 {
+  font-size: 9.6pt;
+  font-weight: 650;
+  margin: 5mm 0 2mm;
+  padding-bottom: 1mm;
+  border-bottom: 1.5px solid var(--accent);
+  color: var(--accent);
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+h3 {
+  font-size: 8.2pt; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--ink-soft); margin: 3.5mm 0 1.4mm;
+  page-break-after: avoid; break-after: avoid;
+}
+
+/* --- tables ------------------------------------------------------ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7.5pt;
+  margin: 0 0 3.5mm;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+table.long { page-break-inside: auto; break-inside: auto; }
+th {
+  text-align: left; font-weight: 700; font-size: 6.8pt;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft);
+  border-bottom: 1.2px solid var(--ink-soft);
+  padding: 1.3mm 2mm 1mm 0; vertical-align: bottom;
+}
+td {
+  border-bottom: 0.5px solid var(--rule-soft);
+  padding: 1.2mm 2mm 1.2mm 0; vertical-align: top;
+}
+td:last-child, th:last-child { padding-right: 0; }
+tbody tr:last-child td { border-bottom: 0.75px solid var(--rule); }
+td code { font-size: 7.2pt; }
+tr { page-break-inside: avoid; break-inside: avoid; }
+
+table.ruleindex td:nth-child(1) { white-space: nowrap; width: 20mm; }
+table.ruleindex td:nth-child(2) { width: 15mm; }
+table.ruleindex td.sec { width: 11mm; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+table.ruleindex tr.grp td {
+  background: var(--accent-bg); color: var(--accent);
+  font-weight: 700; font-size: 7pt; letter-spacing: .08em; text-transform: uppercase;
+  padding: 1.4mm 2mm; border-bottom: 0;
+}
+
+/* --- code -------------------------------------------------------- */
+
+code {
+  font-family: var(--mono); font-size: 0.9em;
+  background: var(--code-bg); padding: 0.3mm 0.9mm;
+  border-radius: 2px; border: 0.5px solid var(--rule-soft);
+  white-space: nowrap;
+}
+
+pre {
+  font-family: var(--mono);
+  font-size: 7pt;
+  line-height: 1.42;
+  background: var(--code-bg);
+  border: 0.75px solid var(--rule);
+  border-left: 2.5px solid var(--accent);
+  border-radius: 3px;
+  /* Generous left padding: with a small one, Chrome lays the continuation of a
+     soft-wrapped pre line at the border edge and long strings spill out. */
+  padding: 2.4mm 3mm 2.4mm 6mm;
+  margin: 0 0 3.5mm;
+  white-space: pre-wrap;
+  word-break: break-word;
+  hyphens: none;
+  -webkit-hyphens: none;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+pre code { background: none; border: 0; padding: 0; font-size: inherit; white-space: inherit; }
+pre.long { page-break-inside: auto; break-inside: auto; }
+pre.good { border-left-color: var(--green); }
+pre.bad  { border-left-color: var(--red); }
+
+.c-key { color: var(--purple); }
+.c-str { color: var(--green); }
+.c-num { color: var(--red); }
+.c-com { color: var(--ink-faint); font-style: italic; }
+
+/* --- pills and levels -------------------------------------------- */
+
+.lvl {
+  font-size: 6.4pt; font-weight: 700; letter-spacing: .08em;
+  padding: 0.3mm 1.1mm; border-radius: 2px; white-space: nowrap;
+}
+.lvl-must   { background: var(--red-bg);    color: var(--red); }
+.lvl-should { background: var(--amber-bg);  color: var(--amber); }
+.lvl-may    { background: var(--accent-bg); color: var(--accent); }
+.lvl-never  { background: #2c2f36;          color: #fff; }
+
+.risk {
+  display: inline-block; font-size: 6.6pt; font-weight: 700; letter-spacing: .05em;
+  padding: 0.4mm 1.3mm; border-radius: 2px; color: #fff; white-space: nowrap;
+}
+.r0 { background: #3f7a5a; } .r1 { background: #1f4f8f; }
+.r2 { background: #8a5a00; } .r3 { background: #a32a2a; }
+
+td .pill, td .risk { margin-bottom: 0.6mm; }
+td.pills { line-height: 1.75; }
+.pill {
+  display: inline-block; font-size: 6.6pt; font-weight: 650; line-height: 1.3;
+  padding: 0.4mm 1.3mm; border-radius: 2px; margin: 0 1mm 0.8mm 0;
+  background: var(--accent-bg); color: var(--accent); white-space: nowrap;
+}
+.pill.ro { background: var(--green-bg); color: var(--green); }
+.pill.no { background: var(--red-bg);   color: var(--red); }
+.pill.sc { background: var(--purple-bg); color: var(--purple); font-family: var(--mono); }
+
+/* --- cards and columns ------------------------------------------- */
+
+.cols { display: flex; gap: 5mm; margin-bottom: 3.5mm; }
+.cols > * { flex: 1; min-width: 0; }
+.cols.avoid { page-break-inside: avoid; break-inside: avoid; }
+
+.card {
+  border: 0.75px solid var(--rule); border-radius: 3px;
+  padding: 2.4mm 3mm; background: #fcfcfd;
+  page-break-inside: avoid; break-inside: avoid;
+  margin-bottom: 3.5mm;
+}
+.card h3 { margin-top: 0; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+
+.yes, .no {
+  border-left: 2.5px solid; border-radius: 0 3px 3px 0;
+  padding: 2mm 2.6mm; margin: 0 0 3mm; font-size: 7.6pt;
+  page-break-inside: avoid; break-inside: avoid;
+}
+.yes { border-color: var(--green); background: var(--green-bg); }
+.no  { border-color: var(--red);   background: var(--red-bg); }
+.yes .lbl, .no .lbl {
+  font-size: 6.6pt; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  display: block; margin-bottom: 0.8mm;
+}
+.yes .lbl { color: var(--green); } .no .lbl { color: var(--red); }
+.yes p:last-child, .no p:last-child { margin-bottom: 0; }
+
+.key {
+  border-left: 2.5px solid var(--amber); background: var(--amber-bg);
+  border-radius: 0 3px 3px 0; padding: 2mm 2.6mm; margin: 0 0 3.5mm; font-size: 7.8pt;
+  page-break-inside: avoid; break-inside: avoid;
+}
+.key .lbl {
+  font-size: 6.6pt; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--amber); display: block; margin-bottom: 0.8mm;
+}
+.key p:last-child { margin-bottom: 0; }
+
+/* --- lists ------------------------------------------------------- */
+
+ul, ol { margin: 0 0 2.8mm; padding-left: 4.6mm; }
+li { margin-bottom: 0.9mm; }
+
+ul.tight { list-style: none; padding-left: 0; }
+ul.tight li { padding-left: 3.6mm; position: relative; margin-bottom: 1mm; }
+ul.tight li::before {
+  content: "▸"; position: absolute; left: 0; color: var(--accent); font-size: 7pt;
+}
+
+ul.check { list-style: none; padding-left: 0; font-size: 7.6pt; }
+ul.check li { padding-left: 5mm; position: relative; margin-bottom: 1.1mm; }
+ul.check li::before {
+  content: ""; position: absolute; left: 0; top: 0.5mm;
+  width: 2.8mm; height: 2.8mm; border: 0.75px solid var(--ink-soft); border-radius: 1px;
+}
+ul.check li b { font-family: var(--mono); font-size: 7pt; color: var(--accent); font-weight: 700; }
+
+.small { font-size: 7.2pt; color: var(--ink-soft); }
+hr { border: 0; border-top: 0.5px solid var(--rule); margin: 4mm 0; }
+.avoid { page-break-inside: avoid; break-inside: avoid; }
+</style>
+</head>
+<body>
+<section class="mast">
+  <div class="eyebrow">EA-STD-TOOL-001 &middot; Quick Reference</div>
+  <h1>Tool Specification Standard</h1>
+  <p class="sub">
+    Everything the standard requires, on the fewest pages that can carry it. Written to be
+    kept open while you work — not to be read first.
+  </p>
+  <div class="meta">
+    <b>Companion to</b> Enterprise Tool Specification Standard, v1.0.0-rc1 &nbsp;·&nbsp;
+    <b>Read that first.</b> Section references here (§7.3) point into it.<br>
+    <b>Owner</b> Enterprise Architecture — Agent Platform &nbsp;·&nbsp;
+    <b>Classification</b> Internal &nbsp;·&nbsp; 113 normative rules, all indexed in section 13.
+  </div>
+</section>
+
+<div class="cols avoid">
+  <div class="card">
+    <h3>Use this for</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Writing a descriptor with the rules in front of you</li>
+      <li>Reviewing someone else's in twenty minutes</li>
+      <li>Settling an argument by rule number</li>
+      <li>Remembering which of the fifteen error codes applies</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Do not use this for</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Learning the model — the reasoning lives in the book</li>
+      <li>Deciding tool boundaries — that is §12, and it needs the prose</li>
+      <li>Quoting to a regulator — cite the standard, not the card</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Conformance levels</h2>
+
+<table>
+  <thead><tr><th style="width:9%">Level</th><th style="width:16%">Name</th><th>Requires</th><th style="width:26%">Permitted exposure</th></tr></thead>
+  <tbody>
+    <tr><td><span class="risk r0">L0</span></td><td><b>Registered</b></td>
+        <td>Parses against the descriptor schema.</td><td>Dev and test only.</td></tr>
+    <tr><td><span class="risk r1">L1</span></td><td><b>Conformant</b></td>
+        <td>Every MUST satisfied; linter clean; named owner; structured errors; audit events.</td>
+        <td>Internal agents, non-customer data, tier 0–1.</td></tr>
+    <tr><td><span class="risk r2">L2</span></td><td><b>Certified</b></td>
+        <td>L1 + security review + evaluation evidence + entitlement sign-off + SLO + kill switch + retention.</td>
+        <td><b>Mandatory</b> for customer data, money, or positions.</td></tr>
+    <tr><td><span class="risk r3">L3</span></td><td><b>Externally exposed</b></td>
+        <td>L2 + egress assessment + contractual controls + tenant isolation proof + annual red team.</td>
+        <td>Agents the firm does not operate.</td></tr>
+  </tbody>
+</table>
+
+<h2>Reading a rule</h2>
+
+<div class="cols avoid">
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:24%"><span class="lvl lvl-must">MUST</span></td>
+            <td>Gating. Fails the build and the review.</td></tr>
+        <tr><td><span class="lvl lvl-should">SHOULD</span></td>
+            <td>Departure needs a recorded reason.</td></tr>
+        <tr><td><span class="lvl lvl-may">MAY</span></td><td>Permitted, no expectation.</td></tr>
+        <tr><td><span class="lvl lvl-never">NEVER</span></td>
+            <td>MUST NOT, with no exception path.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <pre style="margin-bottom:0"><code>TS-INP-09
+   │   │   └─ number, permanent, never reused
+   │   └───── area: GEN NAM DSC INP OUT ERR
+   │          ANN GOV SEC OBS VER CAT
+   └───────── the standard
+
+<span class="c-com">$ tools/lint-descriptors.py catalog/
+FAIL  brokerage_x  TS-INP-09  …</span></code></pre>
+  </div>
+</div>
+
+<h1><span class="n">1</span>The descriptor</h1>
+
+<p>
+  Eight top-level fields. No others — extensions go inside <code>_meta</code> under a
+  namespaced key <span class="small">(<code>TS-GEN-02</code>)</span>.
+</p>
+
+<pre class="long"><code>{
+  <span class="c-key">"name"</span>:        <span class="c-str">"brokerage_positions_list"</span>,       <span class="c-com">// MUST  ^[a-z][a-z0-9_]{2,63}$ · permanent · §5</span>
+  <span class="c-key">"title"</span>:       <span class="c-str">"List the holdings in an account"</span>, <span class="c-com">// MUST  ≤60 chars · for humans approving/auditing · §5.4</span>
+  <span class="c-key">"description"</span>: <span class="c-str">"Returns the current open holdings …"</span>, <span class="c-com">// MUST  7 parts · ≤2,000 chars · §6</span>
+
+  <span class="c-key">"inputSchema"</span>: {                             <span class="c-com">// MUST  closed object schema · §7</span>
+    <span class="c-key">"type"</span>: <span class="c-str">"object"</span>,
+    <span class="c-key">"properties"</span>: { <span class="c-com">/* every one described */</span> },
+    <span class="c-key">"required"</span>: [<span class="c-str">"accountId"</span>],                 <span class="c-com">//       explicit, even when empty</span>
+    <span class="c-key">"additionalProperties"</span>: <span class="c-key">false</span>              <span class="c-com">//       always false</span>
+  },
+
+  <span class="c-key">"outputSchema"</span>: { <span class="c-com">/* … */</span> },                  <span class="c-com">// MUST  required by this standard · §8</span>
+
+  <span class="c-key">"annotations"</span>: {                             <span class="c-com">// MUST  all four, explicitly · §9</span>
+    <span class="c-key">"readOnlyHint"</span>:    <span class="c-key">true</span>,                    <span class="c-com">//       changes nothing, anywhere</span>
+    <span class="c-key">"destructiveHint"</span>: <span class="c-key">false</span>,                   <span class="c-com">//       may be irreversible</span>
+    <span class="c-key">"idempotentHint"</span>:  <span class="c-key">true</span>,                    <span class="c-com">//       repeat call has no extra effect</span>
+    <span class="c-key">"openWorldHint"</span>:   <span class="c-key">false</span>                    <span class="c-com">//       reaches outside the firm</span>
+  },
+
+  <span class="c-key">"icons"</span>: [ <span class="c-com">/* … */</span> ],                        <span class="c-com">// MAY   decorative only, never semantic</span>
+
+  <span class="c-key">"_meta"</span>: {                                   <span class="c-com">// MUST  never enters the model's context · §10</span>
+    <span class="c-key">"com.example.tooling/governance"</span>: { <span class="c-com">/* version, lifecycle, riskTier, owner,
+        conformanceLevel, dataClassification, containsPii, piiFields, entitlements,
+        approval, recordKeeping, cost, rateLimit, dependencies, availability,
+        evaluation, deprecation */</span> }
+  }
+}</code></pre>
+
+<div class="key">
+  <span class="lbl">The ratio test</span>
+  <p>
+    About half the document is prose addressed to a model and a quarter is metadata addressed
+    to a governance process. If yours inverts that, it is an API endpoint wearing a costume.
+  </p>
+</div>
+<h1><span class="n">2</span>Naming &amp; the operation vocabulary</h1>
+
+<div class="cols avoid">
+  <div>
+    <pre style="margin-bottom:2.5mm"><code><span class="c-com">// wire name — invocation, context, audit</span>
+brokerage_positions_list
+    │         │         └─ operation, from the
+    │         │            closed vocabulary
+    │         └─────────── entity: singular = one,
+    │                      plural = many
+    └───────────────────── business domain, never a
+                           team, system, or vendor
+
+<span class="c-com">// catalog id — registry, policy, docs only</span>
+brokerage.positions.list
+<span class="c-com">// dots NEVER cross the wire: several runtimes
+// reject or mangle them.</span></code></pre>
+  </div>
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:26%"><b>Grammar</b></td><td><code>^[a-z][a-z0-9_]{2,63}$</code>, 2–4 segments</td></tr>
+        <tr><td><b>Target length</b></td><td>≤ 40 chars <span class="lvl lvl-should">SHOULD</span></td></tr>
+        <tr><td><b>Uniqueness</b></td><td>Firm-wide, case-insensitive, underscores ignored</td></tr>
+        <tr><td><b>Stability</b></td><td>Permanent. A rename is a new tool plus deprecation</td></tr>
+        <tr><td><b>Never contains</b></td><td>Environment, region, tenant, vendor, version <span class="small">(except a deliberate <code>_v2</code> successor)</span></td></tr>
+      </tbody>
+    </table>
+    <div class="no" style="margin-bottom:0">
+      <span class="lbl">Rejected final segments</span>
+      <p><code>do</code> <code>run</code> <code>execute</code> <code>process</code>
+         <code>handle</code> <code>manage</code> <code>perform</code> <code>fetch</code>
+         <code>query</code> <code>call</code>, and any noun used as a verb.</p>
+    </div>
+  </div>
+</div>
+
+<h2>The closed operation vocabulary</h2>
+
+<table class="long">
+  <thead><tr><th style="width:14%">Verb</th><th style="width:28%">Means</th><th style="width:22%">Annotations</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>get</code></td><td>Retrieve one identified entity</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>One object, or <code>NOT_FOUND</code></td></tr>
+    <tr><td><code>list</code></td><td>Bounded, filterable collection</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Array + <code>completeness</code>. Empty is success</td></tr>
+    <tr><td><code>search</code></td><td>Rank by relevance when the filter cannot be structural</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Ranked array with scores</td></tr>
+    <tr><td><code>summarize</code></td><td>Derived aggregate instead of the records</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>One aggregate, basis stated</td></tr>
+    <tr><td><code>check</code></td><td>Evaluate a condition — the "can I?" tool</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Verdict + reasons + the numbers</td></tr>
+    <tr><td><code>preview</code></td><td>Compute the effect without applying it</td>
+        <td><span class="pill ro">read-only</span><span class="pill">idempotent</span></td>
+        <td>Projected outcome + <code>confirmationToken</code></td></tr>
+    <tr><td><code>create</code>, <code>place</code></td><td>Bring a new entity into existence</td>
+        <td><span class="pill no">writes</span><span class="pill no">needs key</span></td>
+        <td>The entity and its identifier</td></tr>
+    <tr><td><code>update</code>, <code>replace</code></td><td>Modify an existing entity</td>
+        <td><span class="pill no">destructive</span><span class="pill no">needs key</span></td>
+        <td>The updated entity and what changed</td></tr>
+    <tr><td><code>cancel</code></td><td>Stop something in flight; the record survives</td>
+        <td><span class="pill no">destructive</span><span class="pill">idempotent</span></td>
+        <td>The entity's new state</td></tr>
+    <tr><td><code>delete</code></td><td>Remove an entity — rare and always suspicious</td>
+        <td><span class="pill no">destructive</span><span class="pill">idempotent</span></td>
+        <td>Confirmation and what was removed</td></tr>
+    <tr><td><code>export</code></td><td>Produce a document for a human</td>
+        <td><span class="pill ro">read-only</span><span class="pill no">not idempotent</span></td>
+        <td>A reference, media type, size — never bytes</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">Why the vocabulary is closed</span>
+  <p>
+    It lets the linter check annotations against the name, lets policy be written against a
+    name rather than an argument, and lets a reviewer infer a tool's shape before reading a
+    word of prose. Extensions go to the ARB and are granted for new <i>shapes</i>, never for
+    synonyms.
+  </p>
+</div>
+
+<h2>Titles</h2>
+
+<div class="cols avoid">
+  <div class="yes">
+    <span class="lbl">Yes</span>
+    <p>"Get order status"<br>
+       "List the holdings in an account"<br>
+       "<b>Place a real order — trades money</b>"<br>
+       <span class="small">Sentence case · ≤60 chars · no trailing period · tier 3 names the
+       consequence, not the operation.</span></p>
+  </div>
+  <div class="no">
+    <span class="lbl">No</span>
+    <p>"OMS order status retrieval (v2)"<br>
+       "Order cancellation"<br>
+       "View order" <span class="small">on a tool that cancels</span><br>
+       <span class="small">A title that misstates the operation is a control failure, not a
+       typo.</span></p>
+  </div>
+</div>
+
+<h1><span class="n">3</span>The description</h1>
+
+<p>
+  The model sees <b>only</b> name, title, description, and the input schema — including every
+  property description. Nothing else. It reads them on every turn.
+</p>
+
+<h2>The seven parts</h2>
+
+<table class="long">
+  <thead><tr><th style="width:5%">#</th><th style="width:22%">Part</th><th style="width:38%">Write</th><th>Test</th></tr></thead>
+  <tbody>
+    <tr><td><b>1</b></td><td><b>Purpose</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>One sentence, active voice, starts with the verb.</td>
+        <td>Could a domain reader say what comes back?</td></tr>
+    <tr><td><b>2</b></td><td><b>Use when</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>The questions this answers, phrased the way a customer phrases them.</td>
+        <td>At least two real user phrasings?</td></tr>
+    <tr><td><b>3</b></td><td><b>Do not use</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>Nearest neighbors, by <b>exact wire name</b>, with the distinction.</td>
+        <td>Is every tool a confused reader might pick named here?</td></tr>
+    <tr><td><b>4</b></td><td><b>Argument semantics</b></td>
+        <td>Provenance of identifiers, units, cross-field rules.</td>
+        <td>Could a careful caller still supply a well-formed but wrong value?</td></tr>
+    <tr><td><b>5</b></td><td><b>Result orientation</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>Shape in a sentence, domain conventions, <b>what empty means</b>.</td>
+        <td>Can the reader compute the right answer from the payload alone?</td></tr>
+    <tr><td><b>6</b></td><td><b>Effects, freshness, cost</b> <span class="lvl lvl-must">MUST</span></td>
+        <td>State change, money, staleness, rate limits.</td>
+        <td>Would a compliance reviewer be surprised by an omission?</td></tr>
+    <tr><td><b>7</b></td><td><b>Failure guidance</b></td>
+        <td>The failures a caller can act on, and what to do.</td>
+        <td>For each code: retry, change an argument, or stop?</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Budgets</h3>
+    <table>
+      <thead><tr><th>Item</th><th style="width:26%">Target</th><th style="width:26%">Hard</th></tr></thead>
+      <tbody>
+        <tr><td>Description</td><td>80–180 words</td><td>2,000 chars</td></tr>
+        <tr><td>Per-parameter</td><td>1–2 sentences</td><td>240 chars</td></tr>
+        <tr><td>Whole descriptor</td><td>≤ 700 tokens</td><td>1,200 tokens</td></tr>
+        <tr><td>Tools per agent</td><td>≤ 25</td><td>40</td></tr>
+        <tr><td>Catalog share of context</td><td>≤ 10%</td><td>15%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Cut first &nbsp;/&nbsp; keep always</h3>
+    <div class="no" style="margin-bottom:2.5mm">
+      <p>"This tool allows you to…" · restating the schema · which service or vendor ·
+         exhaustive error lists · how to talk to the customer · legal disclaimers</p>
+    </div>
+    <div class="yes" style="margin-bottom:0">
+      <p>Every convention that makes a number mean something other than its face value ·
+         every exclusion naming a sibling · what an empty result means · any staleness the
+         customer would be misled by</p>
+    </div>
+  </div>
+</div>
+
+<div class="key">
+  <span class="lbl">Descriptions are attack surface</span>
+  <p>
+    A description is an instruction injected into an agent's context. It is static, reviewed,
+    signed, and hash-pinned — never generated at runtime, never templated with request data
+    <span class="small">(<code>TS-DSC-07</code>, <code>TS-SEC-09</code>)</span>. It never
+    instructs the agent about anything but itself
+    <span class="small">(<code>TS-DSC-06</code>, <code>TS-DSC-10</code>)</span>.
+  </p>
+</div>
+<h1><span class="n">4</span>Input schema</h1>
+
+<div class="cols avoid">
+  <div class="yes">
+    <span class="lbl">Permitted keywords</span>
+    <p><code>type</code> <code>properties</code> <code>required</code>
+       <code>description</code> <code>enum</code> <code>const</code> <code>default</code>
+       <code>examples</code> <code>minimum</code> <code>maximum</code>
+       <code>exclusiveMinimum</code> <code>exclusiveMaximum</code> <code>multipleOf</code>
+       <code>minLength</code> <code>maxLength</code> <code>pattern</code>
+       <code>items</code> <code>minItems</code> <code>maxItems</code>
+       <code>uniqueItems</code> <code>$ref</code> <code>$defs</code>
+       <code>oneOf</code> <span class="small">(discriminated, ≤3 branches)</span><br>
+       <code>format</code>: only <code>date</code> <code>date-time</code>
+       <code>duration</code> <code>uuid</code> <code>uri</code></p>
+  </div>
+  <div class="no">
+    <span class="lbl">Prohibited constructs</span>
+    <p><code>if</code>/<code>then</code>/<code>else</code> <code>dependentSchemas</code>
+       <code>dependentRequired</code> — model accuracy collapses on conditional structure<br>
+       <code>not</code> <code>anyOf</code> <code>allOf</code> — unreadable as instruction<br>
+       <code>patternProperties</code> <code>propertyNames</code>
+       <code>additionalProperties: true</code> — unvalidatable open maps<br>
+       <code>$dynamicRef</code>, recursive <code>$ref</code> — unbounded<br>
+       <code>nullable</code> — not a JSON Schema keyword; use <code>["string","null"]</code><br>
+       Remote <code>$ref</code> at invocation time</p>
+  </div>
+</div>
+
+<h2>Shape rules</h2>
+
+<table>
+  <tbody>
+    <tr><td style="width:22%"><b>Root</b></td>
+        <td><code>{"type":"object"}</code> + explicit <code>properties</code> + explicit
+            <code>required</code> + <code>"additionalProperties": false</code>. A no-argument
+            tool still declares all four.</td></tr>
+    <tr><td><b>Size</b></td><td>≤ 12 top-level properties, ≤ 2 levels deep
+            <span class="lvl lvl-should">SHOULD</span>. Beyond that the tool is doing two jobs.</td></tr>
+    <tr><td><b>Names</b></td><td><code>lowerCamelCase</code>, domain vocabulary, and the same
+            name means the same thing in every tool in the catalog.</td></tr>
+    <tr><td><b>Booleans</b></td><td>Named positively, defaulting to the conservative value:
+            <code>includeClosed: false</code>, never <code>excludeClosed: false</code>.</td></tr>
+    <tr><td><b>Identifiers</b></td><td>Opaque, prefixed, pattern-constrained —
+            <code>acct_</code>, <code>ord_</code>, <code>inst_</code>.</td></tr>
+    <tr><td><b>Bounds</b></td><td>Every array declares <code>maxItems</code>; every free-text
+            string declares <code>maxLength</code>.</td></tr>
+    <tr><td><b>Required</b></td><td>Only if the tool cannot proceed without it. Marking a field
+            required to make the model "think about it" makes it invent a value.</td></tr>
+    <tr><td><b>Defaults</b></td><td>The narrow, least-surprising choice — and stated
+            <b>in prose</b>, not only in <code>default</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2>Make illegal states unrepresentable</h2>
+
+<div class="cols avoid">
+  <div>
+    <pre class="bad" style="margin-bottom:0"><code><span class="c-key">"status"</span>:   { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"symbol"</span>:   { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"quantity"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"number"</span> },
+<span class="c-key">"since"</span>:    { <span class="c-key">"type"</span>: <span class="c-str">"string"</span> },
+<span class="c-key">"limit"</span>:    { <span class="c-key">"type"</span>: <span class="c-str">"integer"</span> }
+
+<span class="c-com">// "open" "OPEN" "working" "aapl"
+// "AAPL " 100.5 "last week" 10000</span></code></pre>
+  </div>
+  <div>
+    <pre class="good" style="margin-bottom:0"><code><span class="c-key">"status"</span>:   { <span class="c-key">"enum"</span>: [<span class="c-str">"WORKING"</span>, <span class="c-str">"FILLED"</span>, …] },
+<span class="c-key">"symbol"</span>:   { <span class="c-key">"pattern"</span>: <span class="c-str">"^[A-Z]{1,5}$"</span> },
+<span class="c-key">"quantity"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"integer"</span>,
+              <span class="c-key">"minimum"</span>: <span class="c-num">1</span>, <span class="c-key">"maximum"</span>: <span class="c-num">100000</span> },
+<span class="c-key">"fromDate"</span>: { <span class="c-key">"format"</span>: <span class="c-str">"date"</span> },
+<span class="c-key">"pageSize"</span>: { <span class="c-key">"minimum"</span>: <span class="c-num">1</span>, <span class="c-key">"maximum"</span>: <span class="c-num">100</span> }
+
+<span class="c-com">// one way to be right</span></code></pre>
+  </div>
+</div>
+
+<p class="small">
+  Enumerated values are <code>SCREAMING_SNAKE_CASE</code> and match Appendix D of the standard
+  exactly. Where an enumeration is long or grows often, use a <code>pattern</code> plus a prose
+  pointer to the tool that enumerates valid values. Where it is short and consequential —
+  status, side, time in force, account type — spell it out. When two shapes genuinely differ,
+  the answer is <b>two tools</b>, not a union.
+</p>
+
+<h2>Reserved parameter names</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Parameter</th><th style="width:24%">Shape</th><th>Semantics</th></tr></thead>
+  <tbody>
+    <tr><td><code>pageSize</code></td><td>integer 1–100, default 25</td>
+        <td>Never <code>limit</code>, <code>count</code>, or <code>top</code>.</td></tr>
+    <tr><td><code>cursor</code></td><td>string ≤512</td>
+        <td>Opaque forward token. <b>Offset and page numbers are prohibited</b> against a moving book.</td></tr>
+    <tr><td><code>asOf</code></td><td>date-time</td>
+        <td>Point-in-time read; omitted means now. A tool that cannot honor history must not accept it.</td></tr>
+    <tr><td><code>fromDate</code>, <code>toDate</code></td><td>date</td>
+        <td>Inclusive window in the account's reporting time zone; declare the max span.</td></tr>
+    <tr><td><code>detail</code></td><td><code>SUMMARY</code>|<code>STANDARD</code>|<code>FULL</code></td>
+        <td>Verbosity. Preferred over a caller-supplied field list.</td></tr>
+    <tr><td><code>idempotencyKey</code></td><td>uuid</td>
+        <td><b>Required</b> on every non-idempotent state change. Dedupe ≥24h; replay returns the original result.</td></tr>
+    <tr><td><code>confirmationToken</code></td><td>string ≤512</td>
+        <td>From the matching <code>preview</code>. Single use, ≤120 s, bound to the arguments.</td></tr>
+    <tr><td><code>reason</code></td><td>string ≤280</td>
+        <td>Why the action is being taken. Captured verbatim into the audit record. Required at tier 3.</td></tr>
+  </tbody>
+</table>
+
+<h2>Prohibited input patterns</h2>
+
+<table class="long">
+  <thead><tr><th style="width:30%">Never accept</th><th>Because</th></tr></thead>
+  <tbody>
+    <tr><td><b>Identity</b> <code>userId</code> <code>customerId</code> <code>onBehalfOf</code> <code>role</code> <code>tenantId</code></td>
+        <td>Access control delegated to a language model. It will be talked into acting as someone else.</td></tr>
+    <tr><td><b>Credentials</b> <code>apiKey</code> <code>token</code> <code>password</code></td>
+        <td>Secrets must never enter a context window — logged, retained, possibly forwarded.</td></tr>
+    <tr><td><b>Query languages</b> <code>sql</code> <code>filterExpression</code> <code>graphqlQuery</code> <code>jsonPath</code></td>
+        <td>Unvalidatable, unauditable, injection surface with the model as injector.</td></tr>
+    <tr><td><b>Discriminators</b> <code>action</code> <code>operation</code> <code>mode</code> <code>command</code></td>
+        <td>Collapses several risk profiles into one descriptor. Annotations, tier, approval, and audit all become wrong at once.</td></tr>
+    <tr><td><b>Safety flags</b> <code>force</code> <code>skipValidation</code> <code>dryRun</code> <code>override</code></td>
+        <td>A flag that changes whether a tool is dangerous means the annotations describe one of two tools. Split them.</td></tr>
+    <tr><td><b>Caller-supplied URLs or paths</b></td>
+        <td>Server-side request forgery primitive. Allow-list in configuration, never in an argument.</td></tr>
+    <tr><td><b>Unbounded arrays and blobs</b></td><td>Cost, latency, and denial-of-service vector.</td></tr>
+    <tr><td><b>Routing hints</b> <code>env</code> <code>region</code> <code>useCache</code> <code>debug</code></td>
+        <td>Deployment facts the model must not be able to reason about or influence.</td></tr>
+    <tr><td><b>Anything the tool cannot honor</b></td>
+        <td>The model will use it and silently receive an answer that does not match the request.</td></tr>
+  </tbody>
+</table>
+
+<h1><span class="n">5</span>Output &amp; the result envelope</h1>
+
+<pre class="long"><code>{
+  <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>: <span class="c-str">"3 positions in ••••8820 as of 14:32:05Z …"</span> }],
+                            <span class="c-com">// MUST ≥1 text block · generated FROM structuredContent, never hand-kept</span>
+                            <span class="c-com">// MUST carry as-of, currency, sign, and any truncation · keep it compact</span>
+  <span class="c-key">"structuredContent"</span>: {   <span class="c-com">// MUST validate against outputSchema · the authoritative payload</span>
+    <span class="c-key">"asOf"</span>:  <span class="c-str">"2026-09-19T14:32:05Z"</span>,        <span class="c-com">// MUST on anything that can change</span>
+    <span class="c-key">"basis"</span>: <span class="c-str">"DELAYED_15M"</span>,                 <span class="c-com">// MUST on any computed or convention-dependent figure</span>
+    <span class="c-key">"completeness"</span>: { <span class="c-key">"returned"</span>: <span class="c-num">25</span>, <span class="c-key">"totalMatching"</span>: <span class="c-num">340</span>,
+                      <span class="c-key">"truncated"</span>: <span class="c-key">true</span>,      <span class="c-com">// MUST on every collection; never null</span>
+                      <span class="c-key">"nextCursor"</span>: <span class="c-str">"eyJvIjoyNX0"</span>,
+                      <span class="c-key">"narrowingHint"</span>: <span class="c-str">"Filter by symbol rather than paging."</span> },
+    <span class="c-key">"disclosures"</span>: [<span class="c-str">"Prices are delayed up to 15 minutes …"</span>]   <span class="c-com">// compliance text lives here,</span>
+  },                                                             <span class="c-com">// not in the description</span>
+  <span class="c-key">"isError"</span>: <span class="c-key">false</span>       <span class="c-com">// true = the tool ran and could not do its job. Transport failures never reach it.</span>
+}</code></pre>
+
+<div class="cols avoid">
+  <div>
+    <h3>Result budgets</h3>
+    <table>
+      <thead><tr><th>Result</th><th style="width:24%">Target</th><th style="width:20%">Hard</th></tr></thead>
+      <tbody>
+        <tr><td>Single entity</td><td>&lt; 500 tok</td><td>2,000</td></tr>
+        <tr><td>Collection page</td><td>&lt; 1,500 tok</td><td>5,000</td></tr>
+        <tr><td>Aggregate</td><td>&lt; 800 tok</td><td>2,000</td></tr>
+        <tr><td>Error</td><td>&lt; 200 tok</td><td>500</td></tr>
+        <tr><td>Binary / &gt;100 KB</td><td colspan="2">By reference only</td></tr>
+      </tbody>
+    </table>
+    <h3>Cut from every payload</h3>
+    <p class="small">Nulls · internal identifiers · hypermedia links · derivations the model
+      can safely redo · per-row repetition of <code>accountId</code>, <code>currency</code>,
+      <code>asOf</code> · pre-formatted display strings.</p>
+  </div>
+  <div>
+    <h3>Numbers</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:34%"><b>Money, quantities</b></td>
+            <td>Decimal <b>strings</b> — <code>"62137.50"</code>. Never IEEE-754.</td></tr>
+        <tr><td><b>Currency</b></td><td>ISO 4217, at the value or the envelope.</td></tr>
+        <tr><td><b>Formatting</b></td><td>None in <code>structuredContent</code>. No separators, symbols, or parenthesized negatives.</td></tr>
+        <tr><td><b>Timestamps</b></td><td>RFC 3339 with explicit UTC offset. Dates that are dates name their time zone.</td></tr>
+        <tr><td><b>Signs</b></td><td>Explicit in the text rendering: <code>-98,240.00 USD</code>, <code>SHORT 400</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2>Empty, partial, stale, truncated</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Situation</th><th>Required behavior</th></tr></thead>
+  <tbody>
+    <tr><td><b>Empty</b></td><td><code>isError: false</code>, empty array, and prose saying what
+        the emptiness means. A model shown a bare <code>[]</code> reports an outage about half
+        the time.</td></tr>
+    <tr><td><b>Not found</b></td><td><code>NOT_FOUND</code> for a <code>get</code>; an empty
+        collection for a <code>list</code>. "That order does not exist" and "you have no orders"
+        are different customer answers.</td></tr>
+    <tr><td><b>Truncated</b></td><td><code>truncated: true</code> <b>and</b> words in the text:
+        "showing 25 of 340". Tell the reader how to <b>narrow</b>, not how to page — a model
+        follows a cursor once, maybe twice, then summarizes what it has as if it were
+        everything.</td></tr>
+    <tr><td><b>Partial</b></td><td>Only where the missing part is separable and disclosed. Name
+        what is missing, in the text.</td></tr>
+    <tr><td><b>Partial, and the number gates a decision</b></td>
+        <td><b>Fail instead.</b> Balances, buying power, anything a trade depends on, must never
+        be returned partially computed <span class="small">(<code>TS-OUT-11</code>)</span>.</td></tr>
+    <tr><td><b>Stale</b></td><td>Return it with an honest <code>asOf</code> and
+        <code>basis</code>, plus <code>stale: true</code> past the freshness target. Let the
+        reader decide; do not decide by hiding it.</td></tr>
+  </tbody>
+</table>
+<h1><span class="n">6</span>Annotations, risk tiers, approval</h1>
+
+<div class="key">
+  <span class="lbl">Annotations are advisory — never a control</span>
+  <p>
+    An annotation is an assertion by whoever wrote the descriptor. For a third-party tool it
+    is self-certification. <b>No security control may depend on one.</b> Controls derive from
+    the <b>risk tier</b>, which the firm sets, reviews, records, and signs. Where the two
+    disagree, the linter fails the build and a human decides which was wrong.
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>The four hints — defaults are pessimistic</h3>
+    <table>
+      <thead><tr><th style="width:40%">Annotation</th><th style="width:18%">Default</th><th>True means</th></tr></thead>
+      <tbody>
+        <tr><td><code>readOnlyHint</code></td><td><code>false</code></td>
+            <td>Changes nothing anywhere — caches, counters, search history included.</td></tr>
+        <tr><td><code>destructiveHint</code></td><td><code>true</code></td>
+            <td>May be irreversible or overwrite state. Only meaningful when not read-only.</td></tr>
+        <tr><td><code>idempotentHint</code></td><td><code>false</code></td>
+            <td>Repeating the identical call has no additional effect. <b>This is what tells a runtime a timeout is safe to retry.</b></td></tr>
+        <tr><td><code>openWorldHint</code></td><td><code>true</code></td>
+            <td>Reaches outside the firm's controlled domain.</td></tr>
+      </tbody>
+    </table>
+    <p class="small">All four stated explicitly, even at their defaults — an omission means the
+      reviewer cannot tell whether the author decided or forgot.</p>
+  </div>
+  <div>
+    <h3>Quick classification</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:56%">Reads only, closed domain</td><td><span class="risk r0">T0</span>/<span class="risk r1">T1</span></td></tr>
+        <tr><td>Touches customer or position data</td><td><span class="risk r1">T1</span></td></tr>
+        <tr><td>Reversible, non-financial write</td><td><span class="risk r2">T2</span></td></tr>
+        <tr><td>Moves money or creates exposure</td><td><span class="risk r3">T3</span></td></tr>
+        <tr><td><b>Cancels a live order</b></td><td><span class="risk r3">T3</span></td></tr>
+        <tr><td>Disputed at review</td><td>the higher tier</td></tr>
+      </tbody>
+    </table>
+    <div class="key" style="margin-bottom:0">
+      <span class="lbl">Cancellation is tier 3</span>
+      <p>It feels like undoing something. It is not: an order that does not fill in a moving
+        market is a realized economic difference, and you cannot un-cancel.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Risk tiers and their baseline controls</h2>
+
+<table class="long">
+  <thead><tr><th style="width:8%">Tier</th><th style="width:26%">Scope &amp; brokerage examples</th><th style="width:20%">Approval</th><th>Baseline controls</th></tr></thead>
+  <tbody>
+    <tr><td><span class="risk r0">T0</span><br><span class="small">Reference</span></td>
+        <td>Public or firm-wide reference. No customer, position, or money.<br>
+            <span class="small">Market calendar · symbol lookup · contract specs · fee schedule</span></td>
+        <td><code>none</code></td>
+        <td>Audit event. Authentication only. Freely available to autonomous agents.</td></tr>
+    <tr><td><span class="risk r1">T1</span><br><span class="small">Customer read</span></td>
+        <td>Reads customer-identifying or position data. Changes nothing.<br>
+            <span class="small"><b>Accounts · positions · balances · order status</b> · transactions</span></td>
+        <td><code>none</code></td>
+        <td>Entitlements at all three points. Full argument-and-result audit. Per-principal rate limit. L2 conformance.</td></tr>
+    <tr><td><span class="risk r2">T2</span><br><span class="small">Reversible change</span></td>
+        <td>Changes state, reversibly, not financially material.<br>
+            <span class="small">Nickname · price alert · statement request · watchlist</span></td>
+        <td><code>notify</code></td>
+        <td>T1 + idempotency key + explicit notification + a documented reversal path.</td></tr>
+    <tr><td><span class="risk r3">T3</span><br><span class="small">Material</span></td>
+        <td>Moves money, creates exposure, or is irreversible.<br>
+            <span class="small"><b>Place, replace, cancel an order</b> · transfer funds · change beneficiaries</span></td>
+        <td><code>confirm</code></td>
+        <td>T2 + confirmation bound to an argument hash + two-step preview/execute +
+            <code>reason</code> captured + dedicated kill switch + heightened monitoring +
+            independent security review.</td></tr>
+  </tbody>
+</table>
+
+<h2>Approval modes</h2>
+
+<table>
+  <thead><tr><th style="width:18%">Mode</th><th style="width:14%">Default for</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>none</code></td><td>T0, T1</td><td>Invoked without interruption. Audited.</td></tr>
+    <tr><td><code>notify</code></td><td>T2</td><td>Executed immediately; the principal is told, with the reversal path.</td></tr>
+    <tr><td><code>confirm</code></td><td>T3</td><td>The principal sees exactly what will happen and approves before execution.</td></tr>
+    <tr><td><code>dualControl</code></td><td>exception</td><td>Two humans, neither the requesting agent's principal.</td></tr>
+    <tr><td><code>humanExecution</code></td><td>exception</td><td>The agent may only prepare; a human executes elsewhere.</td></tr>
+  </tbody>
+</table>
+
+<h2>What a confirmation must show</h2>
+
+<div class="cols avoid">
+  <div class="no">
+    <span class="lbl">A rubber stamp</span>
+    <pre class="bad" style="margin-bottom:0;font-size:6.6pt"><code>Allow brokerage_order_place?
+
+{"accountId":"acct_01HQ8Z4M2X9K3P7R",
+ "symbol":"AAPL","side":"BUY",
+ "quantity":100,"orderType":"MARKET"}
+
+      [ Allow ]   [ Deny ]</code></pre>
+  </div>
+  <div class="yes">
+    <span class="lbl">An approval</span>
+    <pre class="good" style="margin-bottom:0;font-size:6.6pt"><code>Place a real order — this trades money
+
+  Buy 100 shares of AAPL (Apple Inc.)
+  Account ••••4471 · Roth IRA
+  Market order, good for today
+  Estimated cost      24,875.00 USD
+  Buying power after  59,485.20 USD
+
+  Fills immediately and cannot be undone.
+
+      [ Place order ]   [ Cancel ]</code></pre>
+  </div>
+</div>
+
+<ul class="tight">
+  <li>Rendered from the descriptor's <code>confirmationTemplate</code> with validated arguments —
+      the action, the account in customer terms, the instrument in words, quantity and money,
+      reversibility, and the material consequence.</li>
+  <li><b>Bound to a hash of the exact arguments shown.</b> If anything differs at execution, refuse.</li>
+  <li>Expires — 120 s default — and is single use.</li>
+  <li>A tool can never lower its own approval requirement through an argument, a description,
+      or a returned instruction.</li>
+</ul>
+
+<h1><span class="n">7</span>Governance block</h1>
+
+<p>
+  Lives in <code>_meta</code> under a namespaced key, so it never competes for the model's
+  context. Required members in <b>bold</b>.
+</p>
+
+<div class="cols avoid">
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b><code>version</code></b></td><td>Semantic. §17.2</td></tr>
+        <tr><td><b><code>lifecycle</code></b></td><td><code>draft</code> | <code>active</code> | <code>deprecated</code> | <code>retired</code></td></tr>
+        <tr><td><b><code>conformanceLevel</code></b></td><td><code>L0</code>–<code>L3</code></td></tr>
+        <tr><td><b><code>riskTier</code></b></td><td><code>0</code>–<code>3</code></td></tr>
+        <tr><td><b><code>owner</code></b></td><td><code>{team, contact, escalation}</code>. A distribution list is not an owner</td></tr>
+        <tr><td><b><code>dataClassification</code></b></td><td>Highest the tool can return</td></tr>
+        <tr><td><b><code>containsPii</code></b>, <code>piiFields</code></td><td>JSON Pointers, for mechanical masking</td></tr>
+        <tr><td><b><code>entitlements</code></b></td><td><code>domain:resource:action</code>. Empty is a positive assertion, scrutinized at review</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b><code>approval</code></b></td><td><code>{mode, confirmationTemplate, expiresInSeconds}</code></td></tr>
+        <tr><td><b><code>recordKeeping</code></b></td><td><code>{auditEvent, retention, regulatoryBasis}</code>. ISO 8601 duration</td></tr>
+        <tr><td><b><code>rateLimit</code></b></td><td><code>perPrincipalPerMinute</code> at minimum</td></tr>
+        <tr><td><code>cost</code></td><td><code>{class, p95LatencyMs, unitCost}</code></td></tr>
+        <tr><td><code>dependencies</code></td><td>Systems of record, by business-capability name</td></tr>
+        <tr><td><code>availability</code></td><td><code>{slo, killSwitch, degradedMode}</code></td></tr>
+        <tr><td><code>evaluation</code></td><td><b>Required at L2</b>. <code>{suite, lastRunAt, selectionAccuracy, refusalAccuracy}</code></td></tr>
+        <tr><td><code>deprecation</code></td><td><code>{since, sunset, successor, migrationNote}</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Classification</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:46%"><code>public</code></td><td>No restriction</td></tr>
+        <tr><td><code>internal</code></td><td>Employee agents only</td></tr>
+        <tr><td><code>customer-confidential</code></td><td><b>Accounts, positions, balances, orders.</b> Entitlement-gated, excluded from training and vendor retention</td></tr>
+        <tr><td><code>restricted</code></td><td><b>Must not be returned by a tool.</b> Masked to last four; unmasked needs a separate T3 dual-control tool</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Latency class</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:26%"><code>low</code></td><td>&lt; 500 ms</td><td>Freely composable</td></tr>
+        <tr><td><code>medium</code></td><td>&lt; 2 s</td><td>Avoid fan-out</td></tr>
+        <tr><td><code>high</code></td><td>&lt; 10 s</td><td>Warn in the description</td></tr>
+        <tr><td><code>async</code></td><td>&gt; 10 s</td><td><b>Must</b> use the job pattern</td></tr>
+      </tbody>
+    </table>
+    <h3>Entitlements are enforced three times</h3>
+    <p class="small"><b>(a)</b> catalog visibility — an agent is never offered a tool its
+      principal cannot use; <b>(b)</b> the gateway, before invocation; <b>(c)</b> the
+      implementation, against the specific resource in the arguments. <b>(c) is the one that
+      stops cross-customer access and the one most often skipped.</b></p>
+  </div>
+</div>
+<h1><span class="n">8</span>Errors</h1>
+
+<p>
+  Domain and business failures are <b>execution errors</b>: a successful transport response with
+  <code>isError: true</code>. Never raised as transport or protocol errors — those get retried
+  blindly, are often invisible to the model, and reach the customer as "something went wrong".
+</p>
+
+<pre class="long"><code>{ <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>: <span class="c-str">"Cannot place this order: the account has 84,360.20 USD of stock buying power and the order requires 123,750.00 USD. Reduce the quantity to 68 shares or fewer, or choose a different account."</span> }],
+  <span class="c-key">"structuredContent"</span>: { <span class="c-key">"error"</span>: {
+    <span class="c-key">"code"</span>:        <span class="c-str">"BUSINESS_RULE_VIOLATION"</span>,      <span class="c-com">// MUST  closed taxonomy · the only field safe to branch on</span>
+    <span class="c-key">"domainCode"</span>:  <span class="c-str">"INSUFFICIENT_BUYING_POWER"</span>,    <span class="c-com">// SHOULD registered · what analytics group by</span>
+    <span class="c-key">"message"</span>:     <span class="c-str">"Order requires 123,750.00 USD …"</span>, <span class="c-com">// MUST  1–2 sentences, with the numbers</span>
+    <span class="c-key">"retryable"</span>:   <span class="c-key">false</span>,                         <span class="c-com">// MUST  explicit boolean, never inferred from prose</span>
+    <span class="c-key">"retryAfterSeconds"</span>: <span class="c-key">null</span>,                  <span class="c-com">//       when retryable</span>
+    <span class="c-key">"remediation"</span>: <span class="c-str">"Reduce quantity to 68 shares or fewer … Do not retry this order unchanged."</span>,
+    <span class="c-key">"details"</span>:     { <span class="c-key">"required"</span>: {…}, <span class="c-key">"available"</span>: {…}, <span class="c-key">"maxQuantity"</span>: <span class="c-num">68</span> },
+    <span class="c-key">"traceId"</span>:     <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span>     <span class="c-com">// MUST  the only internal identifier allowed out</span>
+  } },
+  <span class="c-key">"isError"</span>: <span class="c-key">true</span> }</code></pre>
+
+<h2>The fifteen codes</h2>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Code</th><th style="width:16%">Retry</th><th>Means &amp; what the caller does</th></tr></thead>
+  <tbody>
+    <tr><td><code>INVALID_ARGUMENT</code></td><td>No</td>
+        <td>Malformed or schema-violating. <b>Fix the argument</b>; <code>details.violations</code> names it by JSON Pointer.</td></tr>
+    <tr><td><code>NOT_FOUND</code></td><td>No</td>
+        <td>Absent <b>or</b> outside the grant — deliberately indistinguishable, so the tool cannot enumerate identifiers. List first; do not guess another id.</td></tr>
+    <tr><td><code>AUTHENTICATION_REQUIRED</code></td><td>After re-auth</td>
+        <td>Absent, expired, or revoked credentials. The agent cannot fix this.</td></tr>
+    <tr><td><code>ENTITLEMENT_DENIED</code></td><td>No</td>
+        <td>Authenticated, not permitted. <b>Ask the customer to grant access; never retry.</b></td></tr>
+    <tr><td><code>APPROVAL_REQUIRED</code></td><td>After approval</td>
+        <td>Present the confirmation, re-invoke with the token.</td></tr>
+    <tr><td><code>APPROVAL_DENIED</code></td><td>No</td>
+        <td>A human declined. <b>Stop.</b> Rephrasing and retrying turns one declined trade into three.</td></tr>
+    <tr><td><code>PRECONDITION_FAILED</code></td><td>Sometimes</td>
+        <td>Stale confirmation token, missing idempotency key, version mismatch. <code>details</code> names it.</td></tr>
+    <tr><td><code>CONFLICT</code></td><td>No</td>
+        <td>State does not permit it — already filled, account closed. <b>Re-read the entity first.</b></td></tr>
+    <tr><td><code>BUSINESS_RULE_VIOLATION</code></td><td>No</td>
+        <td>Well-formed, permitted, and the domain said no. <b>The request was fine; the world declined.</b> Explain, do not retry.</td></tr>
+    <tr><td><code>RATE_LIMITED</code></td><td>After the wait</td>
+        <td>Honor <code>retryAfterSeconds</code>. Recurrence means the agent is looping.</td></tr>
+    <tr><td><code>TIMEOUT</code></td><td>If idempotent</td>
+        <td>Retry only with an idempotency key or a true <code>idempotentHint</code>; otherwise <b>re-read state to find out whether it happened</b>.</td></tr>
+    <tr><td><code>UPSTREAM_UNAVAILABLE</code></td><td>With backoff</td>
+        <td><code>details.system</code> names which, so the agent can say what is unavailable rather than apologizing vaguely.</td></tr>
+    <tr><td><code>DATA_INCOMPLETE</code></td><td>With backoff</td>
+        <td>Computable only partially, and the tool refused to return a misleading figure. Distinct from upstream failure: the tool <i>did</i> reach its sources.</td></tr>
+    <tr><td><code>NOT_SUPPORTED</code></td><td>No</td>
+        <td>Well-formed request for something this tool does not do. <code>remediation</code> names the tool that does.</td></tr>
+    <tr><td><code>INTERNAL_ERROR</code></td><td>Once</td>
+        <td><code>traceId</code> and nothing else of substance. Common occurrence means errors are being mapped lazily.</td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">The distinction that matters most</span>
+  <p>
+    <code>INVALID_ARGUMENT</code> = <b>the caller is wrong</b>; change the argument and it works.
+    <code>BUSINESS_RULE_VIOLATION</code> = <b>the caller is fine and reality declined</b> —
+    insufficient buying power, market closed, instrument halted. A tool that conflates them
+    makes every agent built on it worse: it retries a doomed order, then tells the customer
+    "invalid request" when the honest answer was "the market is closed".
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Remediation rules</h3>
+    <ul class="tight">
+      <li>An <b>instruction in the imperative</b>, naming the argument to change or the tool to
+          call instead. Apologies are not remediation.</li>
+      <li>State the permissible bound — the max quantity, the valid window, the required level.
+          "Too large" without "how large" forces a guessing loop.</li>
+      <li>Where a retry is futile, say <b>"do not retry"</b> explicitly. Models are biased
+          toward retrying; <code>retryable: false</code> alone is markedly weaker.</li>
+      <li>Enumerate <b>every</b> validation violation, not just the first.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Never in an error payload</h3>
+    <ul class="tight">
+      <li>Stack traces, exception classes, line numbers → <code>INTERNAL_ERROR</code> + <code>traceId</code></li>
+      <li>Raw upstream text, vendor codes, SQL → a mapped taxonomy code</li>
+      <li>Hostnames, queue names, topology → <code>details.system</code> as a business name</li>
+      <li>Full account numbers, government ids, dates of birth → the masked form</li>
+      <li>Any data about another principal → nothing; return <code>NOT_FOUND</code></li>
+      <li>Whether an id exists but is not permitted → <code>NOT_FOUND</code>, uniformly</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Mapping upstream failures</h2>
+
+<table>
+  <thead><tr><th style="width:14%">Upstream</th><th style="width:30%">Maps to</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>INVALID_ARGUMENT</code></td><td>If the gateway validated and upstream still says 400, the schema has drifted — alert.</td></tr>
+    <tr><td><code>401</code> / <code>403</code></td><td><code>AUTHENTICATION_REQUIRED</code> / <code>ENTITLEMENT_DENIED</code></td><td>Refresh once, then surface / never retried.</td></tr>
+    <tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Uniform for "absent" and "not yours".</td></tr>
+    <tr><td><code>409</code> / <code>412</code>, <code>428</code></td><td><code>CONFLICT</code> / <code>PRECONDITION_FAILED</code></td><td>Re-read before acting / name the missing precondition.</td></tr>
+    <tr><td><code>422</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td><td><b>The mapping most often collapsed into <code>INVALID_ARGUMENT</code>.</b></td></tr>
+    <tr><td><code>429</code></td><td><code>RATE_LIMITED</code></td><td>Propagate <code>Retry-After</code>.</td></tr>
+    <tr><td><code>5xx</code>, timeouts</td><td><code>UPSTREAM_UNAVAILABLE</code> / <code>TIMEOUT</code></td>
+        <td>Distinguish them: a timeout on a non-idempotent write means the outcome is <b>unknown</b>.</td></tr>
+    <tr><td>Unmapped</td><td><code>INTERNAL_ERROR</code> <b>+ alert</b></td><td>An unmapped upstream failure is a contract change nobody was told about.</td></tr>
+  </tbody>
+</table>
+
+<h1><span class="n">9</span>Decisions you will make repeatedly</h1>
+
+<h2>One tool or two?</h2>
+
+<table>
+  <thead><tr><th style="width:50%">If…</th><th>Then</th></tr></thead>
+  <tbody>
+    <tr><td>Stating the user question takes two sentences with an "or" in the middle</td><td><b>Two tools</b></td></tr>
+    <tr><td>One argument value makes it destructive</td><td><b>Two tools</b> — annotations, tier, approval, and audit cannot all be right at once</td></tr>
+    <tr><td>You are reaching for <code>oneOf</code> with more than three branches</td><td><b>Two tools</b></td></tr>
+    <tr><td>The two candidates differ only in cardinality (one vs many)</td><td><b>One tool</b> — a <code>list</code> that returns everything a <code>get</code> would</td></tr>
+    <tr><td>A common question needs ≥3 calls plus a domain convention the model must know</td><td><b>One composite</b> — move the knowledge into the tool where it can be tested</td></tr>
+    <tr><td>You cannot write the one sentence that distinguishes two tools</td><td><b>Merge or re-scope</b>, and put that sentence in both descriptions</td></tr>
+  </tbody>
+</table>
+
+<h2>Does it need an idempotency key?</h2>
+
+<p class="small">
+  <code>create</code> · <code>place</code> · <code>update</code> · <code>replace</code> →
+  <b>yes, required</b>, deduped ≥24 h, replay returns the original result,
+  same key + different arguments → <code>CONFLICT</code>. &nbsp;·&nbsp;
+  <code>cancel</code> · <code>delete</code> → naturally idempotent. &nbsp;·&nbsp;
+  Read tools → no. &nbsp;·&nbsp; Say it in the description too: models supply a key far more
+  reliably when told what it is for than when it merely appears in the schema.
+</p>
+
+<h2>How long will it take?</h2>
+
+<table>
+  <thead><tr><th style="width:22%">Duration</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>&lt; 10 s</td><td>Synchronous. Declare the latency class.</td></tr>
+    <tr><td>10 s – minutes</td><td>Job pattern: <code>..._start</code> returns a <code>jobId</code>; <code>..._status</code> reports progress. The start tool is not read-only even if the result is.</td></tr>
+    <tr><td>Minutes – hours</td><td>Job pattern + out-of-band notification. The agent must not poll in a loop; return <code>nextPollAfterSeconds</code>.</td></tr>
+    <tr><td>Any timeout</td><td>State explicitly whether the underlying operation may still complete. "May still have been placed" is a different instruction from "was not placed", and the agent cannot work it out.</td></tr>
+  </tbody>
+</table>
+
+<h2>Polling anything with a lifecycle</h2>
+
+<p class="small">
+  Return <code>isTerminal</code> and say in the description that a terminal entity must never be
+  polled again — this one flag removes most wasteful polling. Return
+  <code>nextPollAfterSeconds</code> scaled to the entity (2 s for a market order, 60 s for a
+  transfer). Prefer telling the customer the firm will notify them over having an agent hold a
+  conversation open as a timer.
+</p>
+<h1><span class="n">10</span>Security, audit, versioning</h1>
+
+<h2>The five security principles</h2>
+
+<table>
+  <tbody>
+    <tr><td style="width:32%"><b>The agent has no authority of its own</b></td>
+        <td>Every action runs as a principal, with that principal's scopes. There is no service account "the assistant" uses to read customer accounts — that account is a standing breach waiting for a prompt.</td></tr>
+    <tr><td><b>Least privilege, per invocation</b></td>
+        <td>Scopes declared per tool, checked per invocation, against the specific resource — not once per session.</td></tr>
+    <tr><td><b>Model output is untrusted input</b></td>
+        <td>Validate and authorize arguments as though they came from an anonymous internet client, because in the relevant sense they did.</td></tr>
+    <tr><td><b>Tool output is untrusted input to the model</b></td>
+        <td>Customer- and counterparty-supplied strings are data, never instruction.</td></tr>
+    <tr><td><b>Controls live where they cannot be talked out of</b></td>
+        <td>The gateway and the implementation. Not the description, not the annotations, not the system prompt — all three are inputs to a system that can be persuaded.</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Non-negotiables</h3>
+    <ul class="tight">
+      <li>No argument asserts identity, role, or tenancy <span class="small">(<code>TS-SEC-02</code>)</span></li>
+      <li>Authorize the <b>specific resource</b> in the arguments, every call <span class="small">(<code>TS-SEC-08</code>)</span></li>
+      <li>Never forward an inbound token downstream — exchange it for one audienced to that system <span class="small">(<code>TS-SEC-10</code>)</span></li>
+      <li>No credentials in arguments, results, errors, or descriptions <span class="small">(<code>TS-SEC-03</code>)</span></li>
+      <li>Confirmation tokens: bound to principal + tool + argument hash, ≤120 s, single use <span class="small">(<code>TS-SEC-01</code>)</span></li>
+      <li>Kill switch for every T2+ tool, ≤60 s, no deployment <span class="small">(<code>TS-SEC-12</code>)</span></li>
+      <li>Descriptor hashes pinned; a changed hash is refused, not tolerated <span class="small">(<code>TS-SEC-09</code>)</span></li>
+      <li>Never ask for credentials or one-time codes through a tool's request for input <span class="small">(<code>TS-SEC-05</code>)</span></li>
+    </ul>
+  </div>
+  <div>
+    <h3>Untrusted text in this domain</h3>
+    <p class="small">Account nickname · order memo and client order id · instrument name and
+      description · transfer memo and beneficiary name · corporate action notes · upstream
+      error text.</p>
+    <p class="small">Length-cap it, strip control characters and markup, <b>delimit and label it
+      as untrusted in the text rendering</b>, and never interpolate it into a sentence that
+      reads as narration by the tool <span class="small">(<code>TS-SEC-11</code>)</span>.</p>
+    <h3>Alert on these</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Identical invocation repeated 3× in a conversation</li>
+      <li>Repeated <code>ENTITLEMENT_DENIED</code> or <code>NOT_FOUND</code> — the signature of enumeration</li>
+      <li><b>Approval denied, then retried with altered arguments</b> — the highest-signal event in the estate; block the conversation</li>
+      <li>Descriptor hash mismatch at a runtime</li>
+    </ul>
+  </div>
+</div>
+
+<h2>The audit record — one per invocation, every path</h2>
+
+<p class="small">
+  <code>traceId</code> · <code>conversationId</code> · <code>turnId</code> ·
+  <code>principal</code> and how the identity was established · <code>agent</code> and version ·
+  <code>toolName</code> · <code>toolVersion</code> · <b><code>descriptorHash</code></b> ·
+  validated <code>arguments</code> with <code>piiFields</code> masked · <code>outcome</code>
+  (success, or <code>code</code> + <code>domainCode</code>, or the policy decision) ·
+  <code>resultDigest</code> with size and record count · <code>approval</code> (mode, who, when,
+  the argument hash they approved, or the decline) · <code>entitlements</code> presented and the
+  decision · <code>latencyMs</code> · <code>upstreamCalls</code>.
+</p>
+
+<div class="key">
+  <span class="lbl">The descriptor hash is not optional</span>
+  <p>
+    Without it you cannot reconstruct what the model was told when it made the call — the first
+    question asked in any investigation. For tier 3, the record must also carry the confirmation
+    exactly as the principal saw it and their response. "The agent placed an order" is a summary
+    of a record, not a record.
+  </p>
+</div>
+
+<div class="cols avoid">
+  <div>
+    <h3>Metrics worth the instrumentation</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:44%"><b>Selection accuracy</b></td><td>Was this the right tool for the question? Sampled and human-labeled. The most valuable metric in the estate</td></tr>
+        <tr><td><b>Refusal accuracy</b></td><td>Correctly left alone when it should not answer</td></tr>
+        <tr><td><b>Repeat-call rate</b></td><td>&gt;15% = descriptor defect. Fix the prose, not the agent</td></tr>
+        <tr><td><b>Truncation rate</b></td><td>High = wrong granularity</td></tr>
+        <tr><td><b>Post-call correction</b></td><td>User corrects the agent right after this tool returns</td></tr>
+        <tr><td><b>Error rate by <code>code</code></b></td><td>A rise in <code>BUSINESS_RULE_VIOLATION</code> is a market condition; a rise in <code>INVALID_ARGUMENT</code> is a descriptor defect</td></tr>
+        <tr><td><b>Approval decline rate</b></td><td>Near zero means the confirmation is being rubber-stamped</td></tr>
+        <tr><td><b>Silent wrongness</b></td><td>Succeeded, valid data, wrong answer. Only measurable by reading conversations. Budget for it</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Breaking vs compatible</h3>
+    <table>
+      <tbody>
+        <tr><td style="width:62%">Optional input parameter with a safe default</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>New output field</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>New member of an <b>output</b> enum</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>Relaxing a constraint</td><td><span class="pill ro">ok</span></td></tr>
+        <tr><td>Clarifying prose</td><td><span class="pill ro">encouraged</span></td></tr>
+        <tr><td>Optional → required</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>Removing or renaming any field</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>New member of an <b>input</b> enum</td><td><span class="pill no">breaking in effect</span></td></tr>
+        <tr><td>Tightening a constraint</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td><b>Changing a unit, convention, or sign</b></td><td><span class="pill no">breaking &amp; dangerous</span></td></tr>
+        <tr><td>Changing omission behavior</td><td><span class="pill no">breaking</span></td></tr>
+        <tr><td>Raising the risk tier</td><td><span class="pill">announce it</span></td></tr>
+      </tbody>
+    </table>
+    <p class="small"><b>A breaking change is a new tool name with a <code>_v2</code> suffix</b>,
+      running alongside the original for the full window. The model has no upgrade schedule.</p>
+  </div>
+</div>
+
+<div class="cols avoid">
+  <div class="card">
+    <h3>Deprecation, in order</h3>
+    <ol style="margin-bottom:0">
+      <li><b>Announce</b> — <code>lifecycle: deprecated</code> + <code>{since, sunset, successor, migrationNote}</code>. Minimum 90 days or one reporting cycle.</li>
+      <li><b>Stop new grants</b> — no longer offered to audiences that do not already have it.</li>
+      <li><b>Warn out of band</b> — a notice in the result's <code>_meta</code>. <b>Do not change the description</b>: it costs tokens every turn, and a model told a tool is deprecated behaves unpredictably rather than migrating.</li>
+      <li><b>Measure</b> — track by audience, contact each remaining consumer.</li>
+      <li><b>Retire</b> — <code>NOT_SUPPORTED</code> naming the successor for 90 days, then withdraw. <b>The name is never reused.</b></li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Evaluation thresholds</h3>
+    <table style="margin-bottom:1.5mm">
+      <tbody>
+        <tr><td style="width:52%">Selection accuracy</td><td>≥95% (T1), ≥98% (T3)</td></tr>
+        <tr><td>Refusal accuracy</td><td>≥95%, ≥99% (T3)</td></tr>
+        <tr><td>Argument accuracy</td><td>≥98%</td></tr>
+        <tr><td>Interpretation accuracy</td><td>≥98%; 100% on domain conventions</td></tr>
+      </tbody>
+    </table>
+    <p class="small" style="margin-bottom:0">Every suite carries: nearest-neighbor confusions ·
+      convention traps (short position, option contracts, unsettled cash, retirement account,
+      partial fill, rejection) · empty and degraded results · refusals · injection.
+      <b>Re-run on every change, including a change to nothing but the prose.</b></p>
+  </div>
+</div>
+<h1><span class="n">11</span>The brokerage reference catalog</h1>
+
+<p class="small">
+  Generated from <code>catalog/*.json</code> at build time, so this card is the catalog rather
+  than a description of it. Full treatment in Part IV of the standard.
+</p>
+
+<table class="long"><thead><tr><th style="width:26%">Tool</th><th style="width:9%">Tier</th><th style="width:22%">Contract</th><th>Answers</th></tr></thead><tbody><tr><td><code>brokerage_accounts_list</code><br><span class="small">List the customer&#x27;s brokerage accounts</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><br><span class="pill sc">brokerage:accounts:read</span></td><td>Returns every brokerage account the customer has granted access to, with its type, registration, status, base currency, and options approval level.</td></tr><tr><td><code>brokerage_balances_get</code><br><span class="small">Get cash, buying power, and margin for an account</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><br><span class="pill sc">brokerage:balances:read</span></td><td>Returns the money in one brokerage account: cash and settled cash, buying power broken out by what it can be used for, margin detail, and the account&#x27;s total value.</td></tr><tr><td><code>brokerage_order_get</code><br><span class="small">Get the status of one order</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><br><span class="pill sc">brokerage:orders:read</span></td><td>Returns the current status, fill progress, and executions of one specific order.</td></tr><tr><td><code>brokerage_order_preview</code><br><span class="small">Preview an order before placing it</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><span class="pill">open world</span><br><span class="pill sc">brokerage:orders:write</span></td><td>Computes exactly what would happen if an equity order were placed — estimated cost, commission, resulting buying power, and any warnings — without placing anything.</td></tr><tr><td><code>brokerage_orders_list</code><br><span class="small">Find orders on an account</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><br><span class="pill sc">brokerage:orders:read</span></td><td>Returns orders on one account, filtered by lifecycle state, symbol, or date, most recent first.</td></tr><tr><td><code>brokerage_positions_list</code><br><span class="small">List the holdings in an account</span></td><td><span class="risk r1">T1</span><br><span class="small">none</span></td><td><span class="pill ro">read-only</span><span class="pill">idempotent</span><br><span class="pill sc">brokerage:positions:read</span></td><td>Returns the current open holdings in one brokerage account: instrument, quantity, average cost, last price, market value, and unrealized profit and loss for each.</td></tr><tr><td><code>brokerage_order_place</code><br><span class="small">Place a real order — trades money</span></td><td><span class="risk r3">T3</span><br><span class="small">confirm</span></td><td><span class="pill no">writes</span><span class="pill no">destructive</span><span class="pill">idempotent</span><span class="pill">open world</span><br><span class="pill sc">brokerage:orders:write</span></td><td>Places a live equity order in the market using a confirmation token obtained from brokerage_order_preview.</td></tr></tbody></table>
+
+<h2>Conventions the model must be told</h2>
+
+<p class="small">
+  Every row is a fact that turns a correct payload into an incorrect customer answer if the
+  reader does not know it. Discharge each one in the description, in the payload, or by moving
+  the work into the tool.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:28%">Convention</th><th style="width:30%">Wrong answer if unknown</th><th>Discharged by</th></tr></thead>
+  <tbody>
+    <tr><td>Quantity is signed; negative is short</td><td>"You own 400 Tesla" when the customer is short 400</td><td>Description + explicit <code>side</code> + SHORT in the text rendering</td></tr>
+    <tr><td>Option quantity is in contracts</td><td>Exposure understated by 100×</td><td><code>sharesEquivalent</code> computed server-side</td></tr>
+    <tr><td>Settled cash ≠ total cash</td><td>"You have $12,000 available" → good-faith violation</td><td>Separate fields + <code>buyingPower.applicable</code></td></tr>
+    <tr><td>Four different buying-power figures</td><td>A retirement account told it has 2× margin buying power</td><td><code>applicable</code> + <code>applicableReason</code>, computed by the tool</td></tr>
+    <tr><td>Retirement accounts cannot borrow</td><td>Margin advice given to an IRA</td><td><code>registration</code> in the result; <code>margin: null</code></td></tr>
+    <tr><td>An order can be partially filled and still working</td><td>"Your order filled" when 40% filled</td><td><code>filledQuantity</code> / <code>remainingQuantity</code> / <code>isTerminal</code></td></tr>
+    <tr><td>Status values may be added</td><td>An unknown status read as terminal — a live order reported dead</td><td><code>isTerminal</code> boolean, computed by the tool</td></tr>
+    <tr><td>Marks may be 15 minutes delayed</td><td>A stale price quoted as live in a fast market</td><td><code>asOf</code> + <code>basis</code> + a disclosure</td></tr>
+    <tr><td>The account identifier is not the account number</td><td>An internal identifier read aloud to a customer</td><td>Two fields, each described with its audience</td></tr>
+  </tbody>
+</table>
+
+<div class="cols avoid">
+  <div>
+    <h3>Confusable pairs — put the distinguishing sentence in both descriptions</h3>
+    <table style="margin-bottom:0">
+      <tbody>
+        <tr><td style="width:40%"><code>positions_list</code> ↔ <code>orders_list</code></td>
+            <td>An order becomes a position only when it fills. "Did my trade go through" is orders; "what do I own" is positions.</td></tr>
+        <tr><td><code>balances_get</code> ↔ <code>positions_list</code></td>
+            <td>Balances are cash and buying power; positions are holdings.</td></tr>
+        <tr><td><code>balances_get</code> ↔ <code>transactions_list</code></td>
+            <td>A balance is a state; a transaction is an event. "Why did my cash drop" is transactions.</td></tr>
+        <tr><td><code>orders_list</code> ↔ <code>executions_list</code></td>
+            <td>One order, many executions at different prices. "What price did I get" may need executions.</td></tr>
+        <tr><td><code>order_check</code> ↔ <code>order_preview</code> ↔ <code>order_place</code></td>
+            <td>"Can I?" / "What exactly would happen?" (and a token) / does it. Only the third trades.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <h3>Order lifecycle — branch on the boolean, never the string</h3>
+    <table style="margin-bottom:1.5mm">
+      <thead><tr><th style="width:50%">Working · <code>isTerminal: false</code></th><th>Terminal · <code>isTerminal: true</code></th></tr></thead>
+      <tbody>
+        <tr><td><code>PENDING_NEW</code> <code>NEW</code></td><td><code>FILLED</code> <code>CANCELLED</code></td></tr>
+        <tr><td><code>PARTIALLY_FILLED</code></td><td><code>REJECTED</code> <code>EXPIRED</code></td></tr>
+        <tr><td><code>PENDING_CANCEL</code> <code>PENDING_REPLACE</code></td><td><code>REPLACED</code></td></tr>
+        <tr><td><code>SUSPENDED</code></td><td></td></tr>
+        <tr><td colspan="2" class="small">Poll after <code>nextPollAfterSeconds</code> / never poll, never offer to cancel</td></tr>
+      </tbody>
+    </table>
+    <div class="key" style="margin-bottom:0">
+      <span class="lbl">A status you do not recognize belongs on the left</span>
+      <p>New lifecycle states get added. Treating an unknown status as terminal tells a customer
+        their live order is dead.</p>
+    </div>
+  </div>
+</div>
+
+<h2>Two-step state change</h2>
+
+<pre style="margin-bottom:2mm"><code>brokerage_order_preview  →  { canPlace, estimate{estimatedCost, buyingPowerAfter, isEstimate},
+                              blockers[{code, message, maxPermissibleQuantity}], warnings[],
+                              confirmationToken: "cnf_…", expiresAt }   <span class="c-com">// T1, read-only, call freely</span>
+
+   confirmation rendered from confirmationTemplate · principal approves · arguments hashed
+
+brokerage_order_place    ←  { …order…, confirmationToken, idempotencyKey, reason }
+                         →  { orderId, status, isTerminal, statusExplanation, replayed }
+                            PRECONDITION_FAILED if the token expired or the order differs</code></pre>
+
+<div class="key">
+  <span class="lbl">The timeout remediation, verbatim — three sentences, three prevented incidents</span>
+  <p>
+    "Do not tell the customer the order failed. Either retry <code>brokerage_order_place</code>
+    with the <b>same</b> <code>idempotencyKey</code>, which will return the original result if
+    the order was placed, or call <code>brokerage_orders_list</code> to check. Never place a
+    second order with a new key."
+  </p>
+</div>
+
+<h1><span class="n">12</span>Anti-patterns</h1>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Anti-pattern</th><th>What goes wrong</th><th style="width:14%">Rule</th></tr></thead>
+  <tbody>
+    <tr><td><b>The kitchen-sink tool</b><br><span class="small">one tool, an <code>action</code> enum</span></td>
+        <td>Annotations, risk tier, approval policy, and the audit record all become wrong at once. The audit says <code>orders_manage</code> when what happened was a cancellation.</td>
+        <td><code>TS-NAM-06</code></td></tr>
+    <tr><td><b>The <code>dryRun</code> flag</b></td>
+        <td>One token in a model-generated object is the only thing between a simulation and a real trade.</td>
+        <td><code>TS-INP-13</code></td></tr>
+    <tr><td><b>The API mirror</b><br><span class="small">one tool per endpoint</span></td>
+        <td>Forty tools, none answering a question anyone asks; selection accuracy collapses and every answer needs four hops.</td>
+        <td><code>TS-CAT-01</code></td></tr>
+    <tr><td><b>The free-text filter</b></td>
+        <td>Unvalidatable, unauditable, injection surface. If the query space is genuinely open, the tool is a database connection in a costume.</td>
+        <td><code>TS-INP-17</code></td></tr>
+    <tr><td><b>The identity parameter</b></td>
+        <td>Access control delegated to a language model.</td>
+        <td><code>TS-SEC-02</code></td></tr>
+    <tr><td><b>Silent truncation</b></td>
+        <td>"Your portfolio is worth $310,000" when 25 of 340 positions came back. Nothing errors; the number is simply wrong.</td>
+        <td><code>TS-OUT-07</code></td></tr>
+    <tr><td><b>Empty as error</b></td>
+        <td>An account with no positions reported as an outage. Support ticket, no logs, nothing to find.</td>
+        <td>§8.6</td></tr>
+    <tr><td><b>The raw upstream payload</b></td>
+        <td>200,000 tokens, a production hostname, an ETL batch id, and six fields the customer must never see.</td>
+        <td><code>TS-GOV-02</code></td></tr>
+    <tr><td><b>The apologetic error</b></td>
+        <td>The agent retries a doomed call three times, then tells the customer nothing useful.</td>
+        <td><code>TS-ERR-02</code></td></tr>
+    <tr><td><b>Description as documentation</b></td>
+        <td>600 words restating the schema and omitting every convention that matters.</td>
+        <td><code>TS-DSC-01</code></td></tr>
+    <tr><td><b>Description as system prompt</b></td>
+        <td>"Always greet the customer warmly and suggest our premium tier." A tool reaching into a surface it cannot see.</td>
+        <td><code>TS-DSC-06</code></td></tr>
+    <tr><td><b>The unowned tool</b></td>
+        <td>Still returning customer data two years after the team was reorganized. Works perfectly; accountable to no one.</td>
+        <td><code>TS-GOV-01</code></td></tr>
+    <tr><td><b>The rename</b></td>
+        <td>Six years of audit records silently change meaning. A record-keeping defect, not a refactor.</td>
+        <td><code>TS-NAM-11</code></td></tr>
+  </tbody>
+</table>
+
+<div class="key">
+  <span class="lbl">The pattern behind the patterns</span>
+  <p>
+    Twelve of the thirteen are the same mistake: <b>optimizing for the convenience of the team
+    building the tool rather than the reliability of the caller consuming it.</b> Each shortcut
+    moves work from a place where it can be tested to a place where it can only be hoped for.
+  </p>
+</div>
+<h1 class="newpage"><span class="n">13</span>Complete rule index</h1>
+
+<p class="small">
+  All 113 normative rules, generated from the standard's source so it cannot drift. The § column
+  points into the standard; the linter reports findings by these identifiers. Rule numbers are
+  permanent: a withdrawn rule is marked withdrawn and its number is never reused.
+</p>
+
+<table class="long ruleindex">
+<thead><tr><th>Rule</th><th>Level</th><th>§</th><th>Requirement</th></tr></thead>
+<tbody>
+<tr class="grp"><td colspan="4">TS-GEN &nbsp;·&nbsp; General and descriptor structure</td></tr>
+<tr><td><code>TS-GEN-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">1.3</td><td>Every tool reachable from a production agent MUST hold at least Level 1. Every tool that reads customer data, moves money, changes an order, or writes to a system of record MUST hold Level 2.</td></tr>
+<tr><td><code>TS-GEN-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">4.1</td><td>A descriptor MUST NOT carry top-level fields other than the eight above. Extensions go inside _meta under a namespaced key. A runtime that encounters an unknown top-level field MUST reject the descriptor rather than ignore it: silent tolerance is…</td></tr>
+<tr><td><code>TS-GEN-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">4.3</td><td>The descriptor is the source of truth and MUST be version-controlled in the owning team&#x27;s repository, published to the catalog by an automated pipeline, and never edited in the catalog&#x27;s user interface.</td></tr>
+<tr><td><code>TS-GEN-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">4.3</td><td>Descriptor, implementation, and tests MUST version and deploy together. A descriptor describing behavior that is not yet deployed is a defect of the same severity as a wrong answer.</td></tr>
+<tr><td><code>TS-GEN-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">4.3</td><td>Descriptors MUST be generated or validated by the conformance linter in CI. A build that emits a non-conformant descriptor fails.</td></tr>
+<tr><td><code>TS-GEN-06</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">4.3</td><td>Schemas SHOULD be derived from the implementation&#x27;s types rather than hand-written alongside them, so that drift is impossible rather than merely discouraged. Prose fields are hand-written; shapes are generated.</td></tr>
+<tr><td><code>TS-GEN-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">4.3</td><td>A descriptor MUST be self-contained: every $ref resolves either within the document or to a schema the catalog publishes and pins by immutable version. No unresolvable references, no network-dependent resolution at invocation time.</td></tr>
+<tr><td><code>TS-GEN-08</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">4.3</td><td>A descriptor MUST NOT embed credentials, internal hostnames, connection strings, or system topology. It is read by a model and may be logged in full.</td></tr>
+<tr class="grp"><td colspan="4">TS-NAM &nbsp;·&nbsp; Naming and identity</td></tr>
+<tr><td><code>TS-NAM-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.1</td><td>A tool name MUST match ^[a-z][a-z0-9_]{2,63}$ — lowercase ASCII letters, digits, and underscore; starting with a letter; between 3 and 64 characters.</td></tr>
+<tr><td><code>TS-NAM-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.1.1</td><td>Names MUST be globally unique across the firm&#x27;s catalog, compared case-insensitively and with underscores ignored. orders_list and ordersList collide.</td></tr>
+<tr><td><code>TS-NAM-03</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">5.1.1</td><td>Names SHOULD be 40 characters or fewer. Long names crowd every prompt and get truncated in audit and approval surfaces.</td></tr>
+<tr><td><code>TS-NAM-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.1.1</td><td>The name MUST NOT encode a version (_v2) unless the tool is a deliberate breaking successor published under §17.3, in which case it MUST.</td></tr>
+<tr><td><code>TS-NAM-05</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">5.1.1</td><td>Names MUST NOT contain an environment, region, tenant, or vendor (_uat, _emea, _fiserv). Those are deployment facts; a model that can see them will eventually reason about them.</td></tr>
+<tr><td><code>TS-NAM-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.3</td><td>The final segment MUST come from the vocabulary above. Proposals to extend it go to the Architecture Review Board and are granted for genuinely new shapes of operation, not for synonyms.</td></tr>
+<tr><td><code>TS-NAM-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.4</td><td>Every descriptor MUST carry a title: sentence case, no trailing punctuation, 60 characters or fewer, understandable to someone who does not know the system — &quot;Get order status&quot;, not &quot;OMS order status retrieval (v2)&quot;.</td></tr>
+<tr><td><code>TS-NAM-08</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.4</td><td>The title MUST describe the same operation as the name. A title that says &quot;View&quot; on a tool that cancels is a control failure, not a typo.</td></tr>
+<tr><td><code>TS-NAM-09</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">5.4</td><td>Titles of state-changing tools SHOULD lead with the verb and name the consequence: &quot;Cancel a working order&quot;, not &quot;Order cancellation&quot;.</td></tr>
+<tr><td><code>TS-NAM-10</code></td><td><span class="lvl lvl-may">MAY</span></td><td class="sec">5.4</td><td>Icons MAY be supplied for catalog and approval surfaces. Provide SVG with a light and a dark variant. Icons are decoration: no control, policy, or model behavior may depend on one.</td></tr>
+<tr><td><code>TS-NAM-11</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">5.5</td><td>A published tool name is permanent. It MUST NOT be reused for a different capability, and a capability MUST NOT be renamed. A name change is modeled as a new tool plus deprecation of the old one under §17.4.</td></tr>
+<tr class="grp"><td colspan="4">TS-DSC &nbsp;·&nbsp; Descriptions</td></tr>
+<tr><td><code>TS-DSC-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.2</td><td>Every description MUST contain parts 1, 2, 3, 5, and 6 below. Parts 4 and 7 are where they apply — which, for anything in a financial domain, is nearly always.</td></tr>
+<tr><td><code>TS-DSC-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.3</td><td>A tool description MUST NOT exceed 2,000 characters. A description at the limit is usually a tool that should have been two.</td></tr>
+<tr><td><code>TS-DSC-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.3</td><td>A parameter description MUST NOT exceed 240 characters. Anything longer belongs in the tool description, where it is read once rather than per parameter.</td></tr>
+<tr><td><code>TS-DSC-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.5</td><td>Descriptions MUST be plain prose in the active voice, present tense, starting with a verb. No markdown headings, no bullet syntax, no code fences — runtimes render descriptions inconsistently and structure is lost or corrupted.</td></tr>
+<tr><td><code>TS-DSC-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.5</td><td>Sibling tools referenced in exclusions MUST be named by their exact wire name. &quot;Use the balances tool&quot; is not actionable; brokerage_balances_get is.</td></tr>
+<tr><td><code>TS-DSC-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.5</td><td>Descriptions MUST NOT contain instructions about how the agent should behave outside this tool call — how to address the customer, what to disclose, when to escalate, what to do in other conversations. A tool describes itself;</td></tr>
+<tr><td><code>TS-DSC-07</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">6.5</td><td>Descriptions MUST NOT be generated at runtime, templated with request data, or personalized per user. A description is a static, reviewed, signed artifact. Anything dynamic belongs in the result payload.</td></tr>
+<tr><td><code>TS-DSC-08</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">6.5</td><td>Descriptions SHOULD use the domain&#x27;s own vocabulary — the words that appear on the customer&#x27;s statement and in the firm&#x27;s procedures. Inventing a synonym for a term of art makes the tool harder to select and its audit trail harder to read.</td></tr>
+<tr><td><code>TS-DSC-09</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">6.5</td><td>Where an enumerated value has consequences, the description SHOULD state them once — &quot;RESTRICTED accounts can be read but not traded&quot; — rather than leaving the model to infer meaning from a token.</td></tr>
+<tr><td><code>TS-DSC-10</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">6.6</td><td>A description MUST NOT reference a tool outside its own domain namespace except to exclude it, and MUST NOT contain imperative instructions addressed to the agent about tools other than itself. Descriptions that do are rejected at publish time.</td></tr>
+<tr class="grp"><td colspan="4">TS-INP &nbsp;·&nbsp; Input schemas</td></tr>
+<tr><td><code>TS-INP-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.1</td><td>inputSchema MUST be a JSON Schema 2020-12 document whose root is {&quot;type&quot;: &quot;object&quot;} with an explicit properties map, an explicit required array (possibly empty), and &quot;additionalProperties&quot;: false.</td></tr>
+<tr><td><code>TS-INP-02</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">7.1.2</td><td>An input schema SHOULD declare no more than 12 top-level properties and SHOULD NOT nest more than two levels deep. Beyond that, argument-composition accuracy degrades sharply and the tool is usually doing two jobs.</td></tr>
+<tr><td><code>TS-INP-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.2</td><td>Property names MUST be lowerCamelCase and MUST use the domain&#x27;s own vocabulary — accountId, timeInForce, limitPrice — not invented synonyms.</td></tr>
+<tr><td><code>TS-INP-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.2</td><td>A property name MUST mean the same thing in every tool in the catalog. quantity cannot be shares in one tool and contracts in another. Where a concept recurs, take it from the shared type library (Appendix B) rather than redefining it.</td></tr>
+<tr><td><code>TS-INP-05</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">7.2</td><td>Boolean parameters SHOULD be named positively and default to the conservative value: includeClosed defaulting to false, never excludeClosed defaulting to false. Double negatives are reliably mis-set.</td></tr>
+<tr><td><code>TS-INP-06</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">7.2</td><td>Inputs SHOULD be flat. Nesting that exists only to mirror an upstream request body is noise; flatten it and let the implementation rebuild the shape.</td></tr>
+<tr><td><code>TS-INP-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.2</td><td>Identifiers MUST be opaque, prefixed, and pattern-constrained (acct_, ord_, inst_). The prefix tells the model which identifier goes in which slot, and the pattern stops a well-formed-looking hallucination before it reaches a system of record.</td></tr>
+<tr><td><code>TS-INP-08</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.2</td><td>Every array parameter MUST declare maxItems, and every string parameter MUST declare maxLength.</td></tr>
+<tr><td><code>TS-INP-09</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.3.1</td><td>Any parameter whose valid values are a known finite set MUST be an enum. Enumerated values MUST be SCREAMING_SNAKE_CASE and MUST match the domain enumerations in Appendix D exactly — the same tokens the systems of record and the customer statement…</td></tr>
+<tr><td><code>TS-INP-10</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.4</td><td>A parameter is required only if the tool genuinely cannot proceed without it. Marking a parameter required to force the model to &quot;think about it&quot; causes the model to invent a value instead.</td></tr>
+<tr><td><code>TS-INP-11</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.4</td><td>Every optional parameter&#x27;s omission behavior MUST be stated in its description in prose, not only in default. Models read prose far more reliably than they read schema annotations.</td></tr>
+<tr><td><code>TS-INP-12</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.4</td><td>Defaults MUST be the narrow, conservative, least-surprising choice: the smallest page, the current account only, the shortest date window, exclusions on. A default that widens scope is a defect even when it is convenient.</td></tr>
+<tr><td><code>TS-INP-13</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">7.4</td><td>A parameter that changes the tool&#x27;s safety characteristics — whether a change is simulated or real, whether validation is skipped, whether a confirmation is required — MUST NOT exist. Those are separate tools with separate annotations (§9.1, §25.2).</td></tr>
+<tr><td><code>TS-INP-14</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.5</td><td>Every property in an input schema MUST carry a description. A property description MUST NOT restate the type, and MUST state, where applicable: where the value comes from, its unit or convention, and what happens if it is omitted.</td></tr>
+<tr><td><code>TS-INP-15</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.6</td><td>Where a tool needs one of the reserved parameter concepts, it MUST use the standard name and shape rather than inventing an equivalent.</td></tr>
+<tr><td><code>TS-INP-16</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.6</td><td>A tool MUST NOT accept a parameter it cannot honor. Offering an asOf on a tool with no history, or a currency on a tool that only reports in the account&#x27;s base currency, is worse than omitting it: the model will supply the parameter and silently…</td></tr>
+<tr><td><code>TS-INP-17</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">7.7</td><td>An input schema MUST NOT contain any of the patterns below. Each is rejected at review and by the linter; the right-hand column is the reason, not a mitigation.</td></tr>
+<tr class="grp"><td colspan="4">TS-OUT &nbsp;·&nbsp; Output and envelopes</td></tr>
+<tr><td><code>TS-OUT-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.1</td><td>Every tool MUST declare an outputSchema and MUST return both content and structuredContent on every invocation, including error invocations. Runtimes differ in which one they surface to the model;</td></tr>
+<tr><td><code>TS-OUT-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.2</td><td>The text rendering MUST be derived from structuredContent by the implementation — generated, not hand-maintained — so the two cannot disagree.</td></tr>
+<tr><td><code>TS-OUT-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.2</td><td>The text rendering MUST NOT contain any fact absent from structuredContent, and MUST carry the facts a reader could be materially misled by omitting: the as-of time, the currency, the sign of a position, and any truncation.</td></tr>
+<tr><td><code>TS-OUT-04</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">8.2</td><td>The text rendering SHOULD be compact — a few hundred characters for a typical result — and SHOULD NOT be a pretty-printed dump of the structured payload. Duplicating the whole payload as text doubles the token cost of every call for no gain.</td></tr>
+<tr><td><code>TS-OUT-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.2</td><td>Monetary and quantity values in the text rendering MUST carry their currency and their sign explicitly. &quot;−98,240.00 USD&quot; and &quot;SHORT 400&quot; are unambiguous; &quot;98240&quot; is a defect waiting for a customer complaint.</td></tr>
+<tr><td><code>TS-OUT-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.4</td><td>Collections MUST use opaque forward cursors. Offset and page-number pagination MUST NOT be used against a mutable collection.</td></tr>
+<tr><td><code>TS-OUT-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.4</td><td>When a result is truncated, completeness.truncated MUST be true and the text rendering MUST say so in words: &quot;showing 25 of 340 positions&quot;. Silent truncation causes the model to state a partial total as a complete one.</td></tr>
+<tr><td><code>TS-OUT-08</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">8.4</td><td>A truncated result SHOULD tell the reader how to narrow rather than how to continue: &quot;filter by assetClass or symbol to see fewer than 340&quot;. Narrowing produces a correct answer in one more call; paging produces fourteen calls and an abandoned loop.</td></tr>
+<tr><td><code>TS-OUT-09</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">8.4</td><td>Where a caller is likely to want the whole collection only in order to compute an aggregate, the catalog SHOULD offer a summarize tool that computes it server-side.</td></tr>
+<tr><td><code>TS-OUT-10</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.5</td><td>Binary content and any text payload over 100 KB MUST be returned by reference rather than inline. Reference URIs MUST be short-lived and MUST require the principal&#x27;s own authority to dereference — a link that anyone holding the URI can fetch has…</td></tr>
+<tr><td><code>TS-OUT-11</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">8.6</td><td>Balances, buying power, and anything that gates a trading decision MUST NOT be returned partially computed; the tool fails instead.</td></tr>
+<tr><td><code>TS-OUT-12</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">13.2</td><td>Every tool MUST enforce a result size ceiling in code and MUST truncate with disclosure (TS-OUT-07) rather than returning an unbounded payload. &quot;The customer has 340 positions&quot; is not an excuse; it is the case the ceiling exists for.</td></tr>
+<tr><td><code>TS-OUT-13</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">13.5</td><td>Monetary amounts and quantities MUST be decimal strings — &quot;62137.50&quot; — never IEEE-754 numbers. Binary floating point cannot represent a cent, and the error is silent, compounding, and eventually a reconciliation break.</td></tr>
+<tr><td><code>TS-OUT-14</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">13.5</td><td>Every monetary value MUST be accompanied by an ISO 4217 currency, at the value or at the envelope level. Never assume USD.</td></tr>
+<tr><td><code>TS-OUT-15</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">13.5</td><td>Structured values MUST NOT carry locale formatting — no thousands separators, no currency symbols, no parenthesized negatives. Formatting belongs in the text rendering, where (2,110.00) is spelled -2,110.00 USD because parentheses for negatives are…</td></tr>
+<tr><td><code>TS-OUT-16</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">13.5</td><td>Timestamps MUST be RFC 3339 with an explicit UTC offset. Dates that are genuinely dates — settlement date, expiry — are YYYY-MM-DD, and the description MUST name the time zone they are interpreted in.</td></tr>
+<tr class="grp"><td colspan="4">TS-ERR &nbsp;·&nbsp; Errors</td></tr>
+<tr><td><code>TS-ERR-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.1</td><td>Domain and business failures MUST be returned as execution errors inside the envelope, never raised as transport or protocol errors.</td></tr>
+<tr><td><code>TS-ERR-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.4</td><td>remediation MUST be an instruction in the imperative, naming the argument to change or the tool to call instead. Apologies are not remediation.</td></tr>
+<tr><td><code>TS-ERR-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.4</td><td>Where a constraint was violated, the error MUST state the permissible value or bound — the maximum quantity, the valid window, the required approval level. An error that says &quot;too large&quot; without saying how large is permitted forces a guessing loop.</td></tr>
+<tr><td><code>TS-ERR-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.4</td><td>Where a retry is futile, remediation MUST say so explicitly — &quot;do not retry&quot;. Models are biased toward retrying, and an explicit prohibition is markedly more effective than retryable: false alone.</td></tr>
+<tr><td><code>TS-ERR-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.4</td><td>Validation failures MUST enumerate every violation, not just the first. One round trip per invalid field is a conversation the customer watches.</td></tr>
+<tr><td><code>TS-ERR-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">11.6</td><td>Every upstream failure mode MUST have an explicit mapping with a test. A default branch that maps everything unrecognized to INTERNAL_ERROR is permitted and MUST raise an alert when it fires: an unmapped upstream failure is a contract change nobody…</td></tr>
+<tr class="grp"><td colspan="4">TS-ANN &nbsp;·&nbsp; Annotations and risk tiers</td></tr>
+<tr><td><code>TS-ANN-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.1</td><td>All four annotations MUST be stated explicitly, even where the value equals the default. The defaults are deliberately pessimistic so that an omission fails safe;</td></tr>
+<tr><td><code>TS-ANN-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.1</td><td>Annotations MUST be consistent with the operation verb in the tool&#x27;s name (§5.3). A tool named ..._list with readOnlyHint: false fails the linter, and a tool named ..._place with readOnlyHint: true fails it harder.</td></tr>
+<tr><td><code>TS-ANN-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.3</td><td>Every descriptor MUST declare a riskTier. A tool whose tier is disputed at review defaults to the higher tier until the dispute is resolved in writing.</td></tr>
+<tr><td><code>TS-ANN-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.4.1</td><td>Tier 3 tools MUST supply a confirmationTemplate that renders, in the principal&#x27;s language: the action, the identified account in customer-facing terms, the instrument in words, the quantity and the money, the reversibility, and the material…</td></tr>
+<tr><td><code>TS-ANN-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.4.1</td><td>Approval MUST be bound to the exact argument set that was displayed. The runtime MUST hash the validated arguments, present them, and refuse execution if anything differs.</td></tr>
+<tr><td><code>TS-ANN-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">9.4.1</td><td>Approvals MUST expire — 120 seconds is the default for trading actions — and MUST NOT be reusable for a second invocation.</td></tr>
+<tr><td><code>TS-ANN-07</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">9.4.1</td><td>A tool MUST NOT be able to lower its own approval requirement through an argument, a description, or a returned instruction. Approval policy is resolved from the catalog, before the implementation is reached.</td></tr>
+<tr class="grp"><td colspan="4">TS-GOV &nbsp;·&nbsp; Governance metadata</td></tr>
+<tr><td><code>TS-GOV-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">10.2</td><td>Every tool MUST name an owning team with a paging escalation path. The catalog MUST re-verify ownership quarterly and automatically move a tool whose owner cannot be confirmed to deprecated, then retired ninety days later.</td></tr>
+<tr><td><code>TS-GOV-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">10.3</td><td>A tool MUST return the minimum data that answers its question. Returning an entire upstream record because it was convenient is a data-minimization failure, and in an agent context the data does not merely sit in a response object — it enters a…</td></tr>
+<tr><td><code>TS-GOV-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">10.4</td><td>Entitlements MUST be enforced at three points: (a) catalog visibility — an agent is not offered a tool its principal cannot use; (b) the gateway, before invocation; (c) the implementation, against the specific resource named in the arguments.</td></tr>
+<tr><td><code>TS-GOV-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">10.5</td><td>Every tool MUST declare a rate limit per principal. Where a tool is expensive in money or in upstream capacity, the description SHOULD say so plainly — a model told that a tool is slow and expensive will use it more sparingly, which is a cheaper…</td></tr>
+<tr><td><code>TS-GOV-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">14.5</td><td>A tool MUST NOT block for longer than its declared timeout, and MUST return TIMEOUT with an explicit statement of whether the underlying operation may still complete.</td></tr>
+<tr class="grp"><td colspan="4">TS-SEC &nbsp;·&nbsp; Security and trust</td></tr>
+<tr><td><code>TS-SEC-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">14.2</td><td>A confirmation token MUST be bound to the principal, the tool, and a hash of the previewed arguments; MUST expire within 120 seconds by default; and MUST be single-use. It is a capability, not a receipt.</td></tr>
+<tr><td><code>TS-SEC-02</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">15.2</td><td>A tool MUST NOT accept an argument that asserts identity, role, tenancy, or entitlement. Identity arrives out of band, from the identity plane. A tool with an onBehalfOf parameter has delegated its access control to a language model.</td></tr>
+<tr><td><code>TS-SEC-03</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">15.2</td><td>Credentials of any kind MUST NOT appear in arguments, results, errors, or descriptions. Anything in those four places will be logged, retained in conversation history, and may be transmitted to a model provider.</td></tr>
+<tr><td><code>TS-SEC-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">14.3</td><td>A request for input MUST be expressed as a schema of primitive fields — string, number, boolean, or enum — with a clear prompt, and MUST be declinable. An agent that cannot obtain the value returns to the user; it does not substitute a default.</td></tr>
+<tr><td><code>TS-SEC-05</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">14.3</td><td>Input requests MUST NOT be used to collect credentials, card numbers, government identifiers, or one-time passcodes. Authentication happens in the identity plane, on a surface the customer can verify — never inside a tool&#x27;s request for arguments,…</td></tr>
+<tr><td><code>TS-SEC-06</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">14.3</td><td>Prefer disambiguating in the schema over asking at runtime. A tool that returns INVALID_ARGUMENT naming the three eligible accounts is usually a better experience than a modal dialog, and always a simpler control.</td></tr>
+<tr><td><code>TS-SEC-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">14.4</td><td>Every tool that is not naturally idempotent MUST require an idempotencyKey, MUST deduplicate on it for at least 24 hours, and MUST return the original result — not an error — when a key is replayed with identical arguments.</td></tr>
+<tr><td><code>TS-SEC-08</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.2</td><td>The implementation MUST authorize the principal against the specific resource named in the arguments, on every invocation. Holding brokerage:positions:read authorizes reading your positions, not a position identifier you were able to produce.</td></tr>
+<tr><td><code>TS-SEC-09</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.7</td><td>Every descriptor&#x27;s content hash MUST be recorded at approval. Runtimes MUST pin the approved hash and MUST refuse to present or invoke a tool whose descriptor has changed without a new approval — for internal tools too, but decisively for external…</td></tr>
+<tr><td><code>TS-SEC-10</code></td><td><span class="lvl lvl-never">NEVER</span></td><td class="sec">15.2</td><td>A token presented to the gateway MUST NOT be forwarded verbatim to a downstream system. Exchange it for a token whose audience is that system, scoped to this operation.</td></tr>
+<tr><td><code>TS-SEC-11</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.3</td><td>Free-text content that did not originate in a system the firm controls MUST be neutralized before it is returned: length-capped, stripped of control characters and markup, and MUST be delimited and labeled as customer-supplied or externally-supplied…</td></tr>
+<tr><td><code>TS-SEC-12</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.6</td><td>Every tier 2 and tier 3 tool MUST be disableable within 60 seconds, by capability, by audience, and globally, without a deployment.</td></tr>
+<tr><td><code>TS-SEC-13</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.7</td><td>Third-party tools MUST be reviewed against this standard before admission, MUST be re-reviewed on every descriptor change, and MUST be assumed to have mis-stated their annotations — the firm assigns the risk tier independently, from observed…</td></tr>
+<tr><td><code>TS-SEC-14</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">15.7</td><td>A third-party tool MUST NOT be presented to an agent in the same context as a firm tier 3 tool unless the combination has been explicitly assessed. The risk is not either tool; it is that one tool&#x27;s output can steer the other&#x27;s invocation.</td></tr>
+<tr class="grp"><td colspan="4">TS-OBS &nbsp;·&nbsp; Observability and audit</td></tr>
+<tr><td><code>TS-OBS-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">16.1</td><td>Every invocation — successful, failed, denied, or refused at policy — MUST emit exactly one audit record containing the fields below, retained for the period named in the tool&#x27;s recordKeeping.retention.</td></tr>
+<tr><td><code>TS-OBS-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">16.1</td><td>For tier 3 tools the audit record MUST be sufficient to reconstruct the decision: the arguments, the confirmation exactly as the principal saw it, their response, the result, and the descriptor version that produced the prose the model read.</td></tr>
+<tr><td><code>TS-OBS-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">27.4</td><td>Tier 3 tools and every L3 exposure MUST be red-teamed before release and at least annually thereafter, by a team that did not build them.</td></tr>
+<tr class="grp"><td colspan="4">TS-VER &nbsp;·&nbsp; Versioning and lifecycle</td></tr>
+<tr><td><code>TS-VER-01</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">17.2</td><td>governance.version MUST be semantic. Patch for prose and non-behavioral fixes; minor for compatible additions; major only alongside a new tool name (TS-VER-03).</td></tr>
+<tr><td><code>TS-VER-02</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">17.2</td><td>Output enumerations MUST be documented as open: the description states that new members may appear and how to treat one. Order status is the canonical case — an unrecognized status means working, never terminal, and getting that default backwards…</td></tr>
+<tr><td><code>TS-VER-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">17.2</td><td>A breaking change MUST be published as a new tool name with a _v2 suffix, running alongside the original. The two coexist for the full deprecation window.</td></tr>
+<tr><td><code>TS-VER-04</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">17.2</td><td>Any change to prose, schema, or behavior MUST re-run the tool&#x27;s evaluation suite before publication (§27.3). A description edit is a behavior change: it is the input that determines whether the tool is selected at all.</td></tr>
+<tr><td><code>TS-VER-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">17.4</td><td>The platform team MUST maintain a register of the constraints imposed by every runtime the firm publishes to, MUST enforce the intersection of those constraints in the linter, and MUST re-validate the entire catalog whenever a runtime&#x27;s constraints…</td></tr>
+<tr class="grp"><td colspan="4">TS-CAT &nbsp;·&nbsp; Catalog and registration</td></tr>
+<tr><td><code>TS-CAT-01</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">12.1</td><td>One tool SHOULD correspond to one decision the agent has to make, expressed as one question a user would ask — not to one resource, one endpoint, or one database table.</td></tr>
+<tr><td><code>TS-CAT-02</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">12.4</td><td>An agent SHOULD be offered no more than 25 tools, and MUST NOT be offered more than 40 without a documented exception.</td></tr>
+<tr><td><code>TS-CAT-03</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">12.4</td><td>The catalog MUST support audience-scoped views, so that a customer-facing assistant, an adviser&#x27;s copilot, and an operations agent each see only their own set. Audience scoping is an entitlement decision (§10.4), not a UI preference.</td></tr>
+<tr><td><code>TS-CAT-04</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">12.4</td><td>Where an estate genuinely exceeds what one agent can hold, the platform SHOULD scope by task phase — a small core set always present, with a task-specific set attached when the conversation enters that task — rather than presenting everything and…</td></tr>
+<tr><td><code>TS-CAT-05</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">26.3</td><td>An exception to a MUST rule MUST be recorded in the catalog against the tool, with the rule identifier, the rationale, the compensating control, the approver, and an expiry of no more than twelve months.</td></tr>
+<tr><td><code>TS-CAT-06</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">28.1</td><td>Be the single system of record for descriptors, serving them by name and version, with content hashes, to every runtime in the firm.</td></tr>
+<tr><td><code>TS-CAT-07</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">28.1</td><td>Accept descriptors only from an authenticated publishing pipeline, never from a user interface, and MUST reject any that fail the linter or the meta-schema (TS-GEN-03, TS-GEN-05).</td></tr>
+<tr><td><code>TS-CAT-08</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">28.1</td><td>Enforce global name uniqueness at publish time and refuse to reuse a retired name (TS-NAM-02, TS-NAM-11).</td></tr>
+<tr><td><code>TS-CAT-09</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">28.1</td><td>Serve audience-scoped views resolved against the principal&#x27;s entitlements, so a tool a principal cannot use is never placed in an agent&#x27;s context (TS-GOV-03).</td></tr>
+<tr><td><code>TS-CAT-10</code></td><td><span class="lvl lvl-must">MUST</span></td><td class="sec">28.1</td><td>Retain every published version indefinitely. An audit record naming a tool version is meaningless if that version cannot be retrieved.</td></tr>
+<tr><td><code>TS-CAT-11</code></td><td><span class="lvl lvl-should">SHOULD</span></td><td class="sec">28.1</td><td>Expose ownership, risk tier, lifecycle, dependencies, invocation volume, and evaluation results as a browsable inventory — the artifact a regulator asks for when they ask what the firm&#x27;s agents can do.</td></tr>
+</tbody></table>
+
+<h1 class="newpage"><span class="n">14</span>Review checklist</h1>
+
+<p class="small">
+  The working document for a review meeting. Items in <b>bold</b> are gating: a failure means
+  the tool does not ship. Full version with commentary is Appendix E of the standard.
+</p>
+
+<div class="cols">
+  <div>
+    <h2>Identity &amp; description</h2>
+    <ul class="check">
+      <li><b>TS-NAM-01</b> Name matches the grammar; domain segment present; final segment in the vocabulary</li>
+      <li><b>TS-NAM-02</b> Globally unique; never used before</li>
+      <li><b>TS-NAM-07</b> Title ≤60 chars, human-readable, names the consequence at tier 3</li>
+      <li><b>TS-DSC-01</b> Purpose, "use when", "do not use", result orientation, effects</li>
+      <li><b>TS-DSC-05</b> Nearest neighbors named by exact wire name</li>
+      <li>TS-DSC-02 ≤2,000 characters</li>
+      <li><b>TS-DSC-06</b> No instructions about agent behavior outside this tool</li>
+      <li><b>TS-DSC-07</b> Static, reviewed, not templated at runtime</li>
+      <li>§18.3 Every domain convention that could produce a wrong answer is stated</li>
+    </ul>
+
+    <h2>Schemas</h2>
+    <ul class="check">
+      <li><b>TS-INP-01</b> Closed object; explicit <code>required</code>; <code>additionalProperties: false</code></li>
+      <li><b>TS-INP-09</b> Every finite-valued parameter is an enum from Appendix D</li>
+      <li><b>TS-INP-07</b> Identifiers prefixed and pattern-constrained</li>
+      <li><b>TS-INP-08</b> <code>maxItems</code> on arrays, <code>maxLength</code> on free text</li>
+      <li><b>TS-INP-14</b> Every parameter description says more than its type</li>
+      <li>TS-INP-12 Defaults are the conservative choice</li>
+      <li><b>TS-INP-17</b> No identity, credential, query language, discriminator, or safety flag</li>
+      <li>TS-INP-16 No parameter the tool cannot honor</li>
+      <li><b>TS-OUT-01</b> Output schema declared; both <code>content</code> and <code>structuredContent</code> on every path</li>
+      <li><b>TS-OUT-03</b> <code>asOf</code> and <code>basis</code> on every figure that can change</li>
+      <li><b>TS-OUT-07</b> <code>completeness</code> present; truncation stated in the text</li>
+      <li><b>TS-OUT-13</b> Money and quantities are decimal strings with a currency</li>
+      <li>§8.6 Empty is success; partial is disclosed or refused</li>
+    </ul>
+
+    <h2>Errors</h2>
+    <ul class="check">
+      <li><b>TS-ERR-01</b> Domain failures are execution errors, not transport errors</li>
+      <li><b>TS-ERR-02</b> Imperative remediation naming the next action</li>
+      <li><b>TS-ERR-03</b> Constraint violations state the permissible bound</li>
+      <li><b>TS-ERR-06</b> Every upstream failure mapped and tested; default branch alerts</li>
+      <li><b>§11.5</b> No stack traces, hostnames, upstream prose, or unmasked identifiers</li>
+      <li>§11.3 <code>INVALID_ARGUMENT</code> and <code>BUSINESS_RULE_VIOLATION</code> not conflated</li>
+    </ul>
+  </div>
+  <div>
+    <h2>Classification &amp; control</h2>
+    <ul class="check">
+      <li><b>TS-ANN-01</b> All four annotations, consistent with the operation verb</li>
+      <li><b>TS-ANN-03</b> Risk tier declared and defensible; state-changing ⇒ tier 2+</li>
+      <li><b>TS-ANN-04</b> Tier 3 has a confirmation template a human can act on</li>
+      <li><b>TS-ANN-05</b> Approval bound to an argument hash, and expires</li>
+      <li><b>TS-SEC-07</b> Non-idempotent tools require a key; dedupe 24 h</li>
+      <li><b>TS-SEC-02</b> No identity accepted from the caller</li>
+      <li><b>TS-SEC-08</b> Resource-level authorization shown by a negative test</li>
+      <li><b>TS-SEC-10</b> No token passed through downstream</li>
+      <li><b>TS-SEC-11</b> Externally-sourced free text neutralized and labeled</li>
+      <li><b>TS-SEC-12</b> Kill switch for tier 2+, tested</li>
+    </ul>
+
+    <h2>Governance &amp; evidence</h2>
+    <ul class="check">
+      <li><b>TS-GOV-01</b> Named owning team with a paging escalation path</li>
+      <li><b>TS-GOV-02</b> Minimum necessary data; classification and PII mapped</li>
+      <li><b>TS-GOV-03</b> Entitlements at catalog, gateway, and implementation</li>
+      <li><b>TS-GOV-04</b> Per-principal rate limit declared</li>
+      <li><b>TS-OBS-01</b> Audit record on every path, including the descriptor hash</li>
+      <li><b>TS-VER-04</b> Evaluation suite exists and has run against this version</li>
+      <li>§27.3 Selection, refusal, argument, interpretation thresholds met</li>
+      <li><b>TS-SEC-09</b> Descriptor hash registered with the catalog</li>
+      <li>TS-CAT-05 Exceptions recorded with a compensating control and an expiry</li>
+    </ul>
+
+    <h2>Catalog fit</h2>
+    <ul class="check">
+      <li>TS-CAT-01 Answers one question a user actually asks</li>
+      <li>TS-CAT-02 The agent's catalog stays within 25 tools</li>
+      <li>§12.5 One sentence distinguishes it from its nearest neighbor — in both descriptions</li>
+      <li>§12.3 No common question needs ≥3 calls plus a convention the model must know</li>
+    </ul>
+
+    <div class="card" style="margin-top:4mm">
+      <h3>Six questions to ask out loud</h3>
+      <ol style="margin-bottom:0">
+        <li><b>"Read me the description."</b> Unreadable aloud, or ninety seconds long, or no
+            sentence starting "Do not use" — not ready.</li>
+        <li><b>"What is the nearest tool, and what sentence tells them apart?"</b> A pause is a
+            confusability problem.</li>
+        <li><b>"What does the customer see if this is wrong?"</b> A specific wrong sentence, not
+            "an error".</li>
+        <li><b>"Show me the negative test"</b> where the customer asks for someone else's
+            account. Not the code — the test.</li>
+        <li><b>"Who is paged at 2am, and what do they turn off?"</b></li>
+        <li><b>"What did the evaluation say about the cases where it should refuse?"</b>
+            Selection accuracy is easy to score well on. Refusal accuracy is where the risk
+            lives.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<p class="small">
+  <b>EA-STD-TOOL-001 · Tool Specification Standard — Quick Reference · v1.0.0-rc1</b><br>
+  Companion to the full standard; where the two differ, the standard governs. Enterprise
+  Architecture — Agent Platform. Generated from the same sources as the standard: the rule
+  index from <code>pdf-src/</code>, the catalog card from <code>catalog/</code>.
+</p>
+</body>
+</html>

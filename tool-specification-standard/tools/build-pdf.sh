@@ -43,15 +43,15 @@ if (( ${#fragments[@]} == 0 )); then
   exit 1
 fi
 
-echo "Linting the reference catalogue..."
+echo "Linting the reference catalog..."
 python3 "$ROOT/tools/lint-descriptors.py" "$ROOT/catalog"
 
 echo "Assembling ${#fragments[@]} fragments..."
 cat "${fragments[@]}" > "$WORK/raw.html"
 
-# Catalogue markers are expanded from catalog/*.json, so the descriptors printed
+# Catalog markers are expanded from catalog/*.json, so the descriptors printed
 # in the book are by construction the descriptors that pass the linter.
-echo "Embedding the catalogue..."
+echo "Embedding the catalog..."
 python3 "$ROOT/tools/embed-catalog.py" < "$WORK/raw.html" > "$WORK/standard.html"
 
 echo "Rendering with $(basename "$CHROME")..."

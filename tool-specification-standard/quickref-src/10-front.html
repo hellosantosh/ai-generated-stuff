@@ -1,0 +1,127 @@
+<section class="mast">
+  <div class="eyebrow">EA-STD-TOOL-001 &middot; Quick Reference</div>
+  <h1>Tool Specification Standard</h1>
+  <p class="sub">
+    Everything the standard requires, on the fewest pages that can carry it. Written to be
+    kept open while you work — not to be read first.
+  </p>
+  <div class="meta">
+    <b>Companion to</b> Enterprise Tool Specification Standard, v1.0.0-rc1 &nbsp;·&nbsp;
+    <b>Read that first.</b> Section references here (§7.3) point into it.<br>
+    <b>Owner</b> Enterprise Architecture — Agent Platform &nbsp;·&nbsp;
+    <b>Classification</b> Internal &nbsp;·&nbsp; 113 normative rules, all indexed in section 13.
+  </div>
+</section>
+
+<div class="cols avoid">
+  <div class="card">
+    <h3>Use this for</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Writing a descriptor with the rules in front of you</li>
+      <li>Reviewing someone else's in twenty minutes</li>
+      <li>Settling an argument by rule number</li>
+      <li>Remembering which of the fifteen error codes applies</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Do not use this for</h3>
+    <ul class="tight" style="margin-bottom:0">
+      <li>Learning the model — the reasoning lives in the book</li>
+      <li>Deciding tool boundaries — that is §12, and it needs the prose</li>
+      <li>Quoting to a regulator — cite the standard, not the card</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Conformance levels</h2>
+
+<table>
+  <thead><tr><th style="width:9%">Level</th><th style="width:16%">Name</th><th>Requires</th><th style="width:26%">Permitted exposure</th></tr></thead>
+  <tbody>
+    <tr><td><span class="risk r0">L0</span></td><td><b>Registered</b></td>
+        <td>Parses against the descriptor schema.</td><td>Dev and test only.</td></tr>
+    <tr><td><span class="risk r1">L1</span></td><td><b>Conformant</b></td>
+        <td>Every MUST satisfied; linter clean; named owner; structured errors; audit events.</td>
+        <td>Internal agents, non-customer data, tier 0–1.</td></tr>
+    <tr><td><span class="risk r2">L2</span></td><td><b>Certified</b></td>
+        <td>L1 + security review + evaluation evidence + entitlement sign-off + SLO + kill switch + retention.</td>
+        <td><b>Mandatory</b> for customer data, money, or positions.</td></tr>
+    <tr><td><span class="risk r3">L3</span></td><td><b>Externally exposed</b></td>
+        <td>L2 + egress assessment + contractual controls + tenant isolation proof + annual red team.</td>
+        <td>Agents the firm does not operate.</td></tr>
+  </tbody>
+</table>
+
+<h2>Reading a rule</h2>
+
+<div class="cols avoid">
+  <div>
+    <table>
+      <tbody>
+        <tr><td style="width:24%"><span class="lvl lvl-must">MUST</span></td>
+            <td>Gating. Fails the build and the review.</td></tr>
+        <tr><td><span class="lvl lvl-should">SHOULD</span></td>
+            <td>Departure needs a recorded reason.</td></tr>
+        <tr><td><span class="lvl lvl-may">MAY</span></td><td>Permitted, no expectation.</td></tr>
+        <tr><td><span class="lvl lvl-never">NEVER</span></td>
+            <td>MUST NOT, with no exception path.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <pre style="margin-bottom:0"><code>TS-INP-09
+   │   │   └─ number, permanent, never reused
+   │   └───── area: GEN NAM DSC INP OUT ERR
+   │          ANN GOV SEC OBS VER CAT
+   └───────── the standard
+
+<span class="c-com">$ tools/lint-descriptors.py catalog/
+FAIL  brokerage_x  TS-INP-09  …</span></code></pre>
+  </div>
+</div>
+
+<h1><span class="n">1</span>The descriptor</h1>
+
+<p>
+  Eight top-level fields. No others — extensions go inside <code>_meta</code> under a
+  namespaced key <span class="small">(<code>TS-GEN-02</code>)</span>.
+</p>
+
+<pre class="long"><code>{
+  <span class="c-key">"name"</span>:        <span class="c-str">"brokerage_positions_list"</span>,       <span class="c-com">// MUST  ^[a-z][a-z0-9_]{2,63}$ · permanent · §5</span>
+  <span class="c-key">"title"</span>:       <span class="c-str">"List the holdings in an account"</span>, <span class="c-com">// MUST  ≤60 chars · for humans approving/auditing · §5.4</span>
+  <span class="c-key">"description"</span>: <span class="c-str">"Returns the current open holdings …"</span>, <span class="c-com">// MUST  7 parts · ≤2,000 chars · §6</span>
+
+  <span class="c-key">"inputSchema"</span>: {                             <span class="c-com">// MUST  closed object schema · §7</span>
+    <span class="c-key">"type"</span>: <span class="c-str">"object"</span>,
+    <span class="c-key">"properties"</span>: { <span class="c-com">/* every one described */</span> },
+    <span class="c-key">"required"</span>: [<span class="c-str">"accountId"</span>],                 <span class="c-com">//       explicit, even when empty</span>
+    <span class="c-key">"additionalProperties"</span>: <span class="c-key">false</span>              <span class="c-com">//       always false</span>
+  },
+
+  <span class="c-key">"outputSchema"</span>: { <span class="c-com">/* … */</span> },                  <span class="c-com">// MUST  required by this standard · §8</span>
+
+  <span class="c-key">"annotations"</span>: {                             <span class="c-com">// MUST  all four, explicitly · §9</span>
+    <span class="c-key">"readOnlyHint"</span>:    <span class="c-key">true</span>,                    <span class="c-com">//       changes nothing, anywhere</span>
+    <span class="c-key">"destructiveHint"</span>: <span class="c-key">false</span>,                   <span class="c-com">//       may be irreversible</span>
+    <span class="c-key">"idempotentHint"</span>:  <span class="c-key">true</span>,                    <span class="c-com">//       repeat call has no extra effect</span>
+    <span class="c-key">"openWorldHint"</span>:   <span class="c-key">false</span>                    <span class="c-com">//       reaches outside the firm</span>
+  },
+
+  <span class="c-key">"icons"</span>: [ <span class="c-com">/* … */</span> ],                        <span class="c-com">// MAY   decorative only, never semantic</span>
+
+  <span class="c-key">"_meta"</span>: {                                   <span class="c-com">// MUST  never enters the model's context · §10</span>
+    <span class="c-key">"com.example.tooling/governance"</span>: { <span class="c-com">/* version, lifecycle, riskTier, owner,
+        conformanceLevel, dataClassification, containsPii, piiFields, entitlements,
+        approval, recordKeeping, cost, rateLimit, dependencies, availability,
+        evaluation, deprecation */</span> }
+  }
+}</code></pre>
+
+<div class="key">
+  <span class="lbl">The ratio test</span>
+  <p>
+    About half the document is prose addressed to a model and a quarter is metadata addressed
+    to a governance process. If yours inverts that, it is an API endpoint wearing a costume.
+  </p>
+</div>

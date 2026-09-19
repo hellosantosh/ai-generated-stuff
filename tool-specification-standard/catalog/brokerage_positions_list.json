@@ -1,7 +1,7 @@
 {
   "name": "brokerage_positions_list",
   "title": "List the holdings in an account",
-  "description": "Returns the current open holdings in one brokerage account: instrument, quantity, average cost, last price, market value, and unrealised profit and loss for each. Use when the customer asks what they own, how many shares or contracts they hold, what a holding is worth, or whether they are up or down on something. Do not use for cash, settled funds, or buying power — call brokerage_balances_get. Do not use to check whether a trade went through — call brokerage_orders_list, because an order becomes a position only once it fills. This returns open positions as of now and has no history. accountId comes from brokerage_accounts_list and must never be guessed. Quantity is signed: a negative quantity is a SHORT position and must never be described as something the customer owns. Option quantities are in contracts; sharesEquivalent gives the share-equivalent exposure and is what matters for sizing. An empty positions array means the account holds nothing, which is a successful answer, not a failure. Reads only. Prices may be delayed up to 15 minutes; quote the asOf timestamp whenever the customer asks what a holding is worth right now.",
+  "description": "Returns the current open holdings in one brokerage account: instrument, quantity, average cost, last price, market value, and unrealized profit and loss for each. Use when the customer asks what they own, how many shares or contracts they hold, what a holding is worth, or whether they are up or down on something. Do not use for cash, settled funds, or buying power — call brokerage_balances_get. Do not use to check whether a trade went through — call brokerage_orders_list, because an order becomes a position only once it fills. This returns open positions as of now and has no history. accountId comes from brokerage_accounts_list and must never be guessed. Quantity is signed: a negative quantity is a SHORT position and must never be described as something the customer owns. Option quantities are in contracts; sharesEquivalent gives the share-equivalent exposure and is what matters for sizing. An empty positions array means the account holds nothing, which is a successful answer, not a failure. Reads only. Prices may be delayed up to 15 minutes; quote the asOf timestamp whenever the customer asks what a holding is worth right now.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -34,7 +34,7 @@
           "FULL"
         ],
         "default": "STANDARD",
-        "description": "SUMMARY returns symbol, quantity, and market value only. STANDARD adds cost basis and unrealised profit and loss. FULL adds lot detail and option contract terms. Omitted means STANDARD."
+        "description": "SUMMARY returns symbol, quantity, and market value only. STANDARD adds cost basis and unrealized profit and loss. FULL adds lot detail and option contract terms. Omitted means STANDARD."
       },
       "pageSize": {
         "type": "integer",
@@ -86,7 +86,7 @@
           "DELAYED_15M",
           "PRIOR_CLOSE"
         ],
-        "description": "Price basis for lastPrice, marketValue, and unrealised profit and loss. DELAYED_15M means the customer is not subscribed to real-time data for these symbols."
+        "description": "Price basis for lastPrice, marketValue, and unrealized profit and loss. DELAYED_15M means the customer is not subscribed to real-time data for these symbols."
       },
       "currency": {
         "type": "string",
@@ -159,11 +159,11 @@
             },
             "unrealizedPnl": {
               "$ref": "#/$defs/decimal",
-              "description": "Unrealised profit or loss in the account's currency. Negative is a loss."
+              "description": "Unrealized profit or loss in the account's currency. Negative is a loss."
             },
             "unrealizedPnlPercent": {
               "$ref": "#/$defs/decimal",
-              "description": "Unrealised profit or loss as a percentage of cost basis."
+              "description": "Unrealized profit or loss as a percentage of cost basis."
             },
             "optionDetail": {
               "type": [
@@ -235,7 +235,7 @@
           },
           "unrealizedPnl": {
             "$ref": "#/$defs/decimal",
-            "description": "Net unrealised profit or loss across all matching positions."
+            "description": "Net unrealized profit or loss across all matching positions."
           }
         },
         "required": [

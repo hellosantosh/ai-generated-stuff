@@ -1,0 +1,113 @@
+<h1 class="newpage"><span class="n">14</span>Review checklist</h1>
+
+<p class="small">
+  The working document for a review meeting. Items in <b>bold</b> are gating: a failure means
+  the tool does not ship. Full version with commentary is Appendix E of the standard.
+</p>
+
+<div class="cols">
+  <div>
+    <h2>Identity &amp; description</h2>
+    <ul class="check">
+      <li><b>TS-NAM-01</b> Name matches the grammar; domain segment present; final segment in the vocabulary</li>
+      <li><b>TS-NAM-02</b> Globally unique; never used before</li>
+      <li><b>TS-NAM-07</b> Title ≤60 chars, human-readable, names the consequence at tier 3</li>
+      <li><b>TS-DSC-01</b> Purpose, "use when", "do not use", result orientation, effects</li>
+      <li><b>TS-DSC-05</b> Nearest neighbors named by exact wire name</li>
+      <li>TS-DSC-02 ≤2,000 characters</li>
+      <li><b>TS-DSC-06</b> No instructions about agent behavior outside this tool</li>
+      <li><b>TS-DSC-07</b> Static, reviewed, not templated at runtime</li>
+      <li>§18.3 Every domain convention that could produce a wrong answer is stated</li>
+    </ul>
+
+    <h2>Schemas</h2>
+    <ul class="check">
+      <li><b>TS-INP-01</b> Closed object; explicit <code>required</code>; <code>additionalProperties: false</code></li>
+      <li><b>TS-INP-09</b> Every finite-valued parameter is an enum from Appendix D</li>
+      <li><b>TS-INP-07</b> Identifiers prefixed and pattern-constrained</li>
+      <li><b>TS-INP-08</b> <code>maxItems</code> on arrays, <code>maxLength</code> on free text</li>
+      <li><b>TS-INP-14</b> Every parameter description says more than its type</li>
+      <li>TS-INP-12 Defaults are the conservative choice</li>
+      <li><b>TS-INP-17</b> No identity, credential, query language, discriminator, or safety flag</li>
+      <li>TS-INP-16 No parameter the tool cannot honor</li>
+      <li><b>TS-OUT-01</b> Output schema declared; both <code>content</code> and <code>structuredContent</code> on every path</li>
+      <li><b>TS-OUT-03</b> <code>asOf</code> and <code>basis</code> on every figure that can change</li>
+      <li><b>TS-OUT-07</b> <code>completeness</code> present; truncation stated in the text</li>
+      <li><b>TS-OUT-13</b> Money and quantities are decimal strings with a currency</li>
+      <li>§8.6 Empty is success; partial is disclosed or refused</li>
+    </ul>
+
+    <h2>Errors</h2>
+    <ul class="check">
+      <li><b>TS-ERR-01</b> Domain failures are execution errors, not transport errors</li>
+      <li><b>TS-ERR-02</b> Imperative remediation naming the next action</li>
+      <li><b>TS-ERR-03</b> Constraint violations state the permissible bound</li>
+      <li><b>TS-ERR-06</b> Every upstream failure mapped and tested; default branch alerts</li>
+      <li><b>§11.5</b> No stack traces, hostnames, upstream prose, or unmasked identifiers</li>
+      <li>§11.3 <code>INVALID_ARGUMENT</code> and <code>BUSINESS_RULE_VIOLATION</code> not conflated</li>
+    </ul>
+  </div>
+  <div>
+    <h2>Classification &amp; control</h2>
+    <ul class="check">
+      <li><b>TS-ANN-01</b> All four annotations, consistent with the operation verb</li>
+      <li><b>TS-ANN-03</b> Risk tier declared and defensible; state-changing ⇒ tier 2+</li>
+      <li><b>TS-ANN-04</b> Tier 3 has a confirmation template a human can act on</li>
+      <li><b>TS-ANN-05</b> Approval bound to an argument hash, and expires</li>
+      <li><b>TS-SEC-07</b> Non-idempotent tools require a key; dedupe 24 h</li>
+      <li><b>TS-SEC-02</b> No identity accepted from the caller</li>
+      <li><b>TS-SEC-08</b> Resource-level authorization shown by a negative test</li>
+      <li><b>TS-SEC-10</b> No token passed through downstream</li>
+      <li><b>TS-SEC-11</b> Externally-sourced free text neutralized and labeled</li>
+      <li><b>TS-SEC-12</b> Kill switch for tier 2+, tested</li>
+    </ul>
+
+    <h2>Governance &amp; evidence</h2>
+    <ul class="check">
+      <li><b>TS-GOV-01</b> Named owning team with a paging escalation path</li>
+      <li><b>TS-GOV-02</b> Minimum necessary data; classification and PII mapped</li>
+      <li><b>TS-GOV-03</b> Entitlements at catalog, gateway, and implementation</li>
+      <li><b>TS-GOV-04</b> Per-principal rate limit declared</li>
+      <li><b>TS-OBS-01</b> Audit record on every path, including the descriptor hash</li>
+      <li><b>TS-VER-04</b> Evaluation suite exists and has run against this version</li>
+      <li>§27.3 Selection, refusal, argument, interpretation thresholds met</li>
+      <li><b>TS-SEC-09</b> Descriptor hash registered with the catalog</li>
+      <li>TS-CAT-05 Exceptions recorded with a compensating control and an expiry</li>
+    </ul>
+
+    <h2>Catalog fit</h2>
+    <ul class="check">
+      <li>TS-CAT-01 Answers one question a user actually asks</li>
+      <li>TS-CAT-02 The agent's catalog stays within 25 tools</li>
+      <li>§12.5 One sentence distinguishes it from its nearest neighbor — in both descriptions</li>
+      <li>§12.3 No common question needs ≥3 calls plus a convention the model must know</li>
+    </ul>
+
+    <div class="card" style="margin-top:4mm">
+      <h3>Six questions to ask out loud</h3>
+      <ol style="margin-bottom:0">
+        <li><b>"Read me the description."</b> Unreadable aloud, or ninety seconds long, or no
+            sentence starting "Do not use" — not ready.</li>
+        <li><b>"What is the nearest tool, and what sentence tells them apart?"</b> A pause is a
+            confusability problem.</li>
+        <li><b>"What does the customer see if this is wrong?"</b> A specific wrong sentence, not
+            "an error".</li>
+        <li><b>"Show me the negative test"</b> where the customer asks for someone else's
+            account. Not the code — the test.</li>
+        <li><b>"Who is paged at 2am, and what do they turn off?"</b></li>
+        <li><b>"What did the evaluation say about the cases where it should refuse?"</b>
+            Selection accuracy is easy to score well on. Refusal accuracy is where the risk
+            lives.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<p class="small">
+  <b>EA-STD-TOOL-001 · Tool Specification Standard — Quick Reference · v1.0.0-rc1</b><br>
+  Companion to the full standard; where the two differ, the standard governs. Enterprise
+  Architecture — Agent Platform. Generated from the same sources as the standard: the rule
+  index from <code>pdf-src/</code>, the catalog card from <code>catalog/</code>.
+</p>

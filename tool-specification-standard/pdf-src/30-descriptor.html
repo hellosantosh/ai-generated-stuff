@@ -14,7 +14,7 @@
     <li>6 &nbsp; The description: the model-facing contract</li>
     <li>7 &nbsp; Input schema</li>
     <li>8 &nbsp; Output schema and the result envelope</li>
-    <li>9 &nbsp; Behavioural annotations and risk tiers</li>
+    <li>9 &nbsp; Behavioral annotations and risk tiers</li>
     <li>10 &nbsp; Governance metadata</li>
     <li>11 &nbsp; Errors</li>
   </ul>
@@ -35,9 +35,9 @@
   <tbody>
     <tr><td><code>name</code></td><td><span class="lvl lvl-must">MUST</span></td><td>model, runtime</td>
         <td>The stable, globally unique, machine-readable identifier used to invoke the tool.
-            Also the primary key in the catalogue and in every audit record (§5.1).</td></tr>
+            Also the primary key in the catalog and in every audit record (§5.1).</td></tr>
     <tr><td><code>title</code></td><td><span class="lvl lvl-must">MUST</span></td><td>human</td>
-        <td>A short human-readable label for approval dialogs, audit views, and catalogue
+        <td>A short human-readable label for approval dialogs, audit views, and catalog
             listings. Never a substitute for the description (§5.4).</td></tr>
     <tr><td><code>description</code></td><td><span class="lvl lvl-must">MUST</span></td><td>model</td>
         <td>The prose contract that tells the model what this tool does, when to reach for
@@ -49,10 +49,10 @@
         <td>A JSON Schema 2020-12 object schema describing the structured payload the tool
             returns. Optional in most runtimes; <b>required by this standard</b> (§8).</td></tr>
     <tr><td><code>annotations</code></td><td><span class="lvl lvl-must">MUST</span></td><td>runtime, human</td>
-        <td>Four boolean behavioural hints — read-only, destructive, idempotent, open-world —
+        <td>Four boolean behavioral hints — read-only, destructive, idempotent, open-world —
             that let a runtime reason about a tool it has never seen (§9).</td></tr>
     <tr><td><code>icons</code></td><td><span class="lvl lvl-may">MAY</span></td><td>human</td>
-        <td>Display icons for catalogue and approval surfaces. Cosmetic, never semantic.</td></tr>
+        <td>Display icons for catalog and approval surfaces. Cosmetic, never semantic.</td></tr>
     <tr><td><code>_meta</code></td><td><span class="lvl lvl-must">MUST</span></td><td>runtime, human</td>
         <td>Namespaced out-of-band metadata. This standard requires one member — the
             governance block — and permits others (§10). The leading underscore marks the
@@ -115,7 +115,7 @@
     <span class="c-key">"additionalProperties"</span>: <span class="c-key">false</span>
   },
 
-  <span class="c-com">// Behavioural hints for the runtime. §9.</span>
+  <span class="c-com">// Behavioral hints for the runtime. §9.</span>
   <span class="c-key">"annotations"</span>: {
     <span class="c-key">"readOnlyHint"</span>:    <span class="c-key">true</span>,
     <span class="c-key">"destructiveHint"</span>: <span class="c-key">false</span>,
@@ -162,11 +162,11 @@
   <tbody>
     <tr><td><code>TS-GEN-03</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>The descriptor is the source of truth and <b>MUST</b> be version-controlled in the
-            owning team's repository, published to the catalogue by an automated pipeline, and
-            never edited in the catalogue's user interface.</td></tr>
+            owning team's repository, published to the catalog by an automated pipeline, and
+            never edited in the catalog's user interface.</td></tr>
     <tr><td><code>TS-GEN-04</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>Descriptor, implementation, and tests <b>MUST</b> version and deploy together. A
-            descriptor describing behaviour that is not yet deployed is a defect of the same
+            descriptor describing behavior that is not yet deployed is a defect of the same
             severity as a wrong answer.</td></tr>
     <tr><td><code>TS-GEN-05</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>Descriptors <b>MUST</b> be generated or validated by the conformance linter in CI.
@@ -177,7 +177,7 @@
             discouraged. Prose fields are hand-written; shapes are generated.</td></tr>
     <tr><td><code>TS-GEN-07</code></td><td><span class="lvl lvl-must">MUST</span></td>
         <td>A descriptor <b>MUST</b> be self-contained: every <code>$ref</code> resolves
-            either within the document or to a schema the catalogue publishes and pins by
+            either within the document or to a schema the catalog publishes and pins by
             immutable version. No unresolvable references, no network-dependent resolution at
             invocation time.</td></tr>
     <tr><td><code>TS-GEN-08</code></td><td><span class="lvl lvl-never">NEVER</span></td>
@@ -191,7 +191,7 @@
 
 <p class="lede">
   The name is the one part of a tool that can never be changed. It is the invocation key, the
-  audit key, the catalogue key, and — because the model reads it before it reads anything
+  audit key, the catalog key, and — because the model reads it before it reads anything
   else — a meaningful part of the description.
 </p>
 
@@ -220,7 +220,7 @@
     A dotted name such as <code>brokerage.positions.list</code> reads beautifully and is
     rejected or silently mangled by several widely-deployed tool-calling interfaces, some of
     which use the dot as a namespace separator of their own. Dotted form is reserved for the
-    <em>catalogue identifier</em> (§5.2), which never crosses the wire.
+    <em>catalog identifier</em> (§5.2), which never crosses the wire.
   </p>
 </div>
 
@@ -238,7 +238,7 @@
     <tr><td><b>domain</b></td>
         <td>A business capability domain from the firm's domain register — <code>brokerage</code>,
             <code>payments</code>, <code>onboarding</code>, <code>research</code>. <b>Never</b> a
-            team name, a system name, a vendor name, or an application name. Teams reorganise
+            team name, a system name, a vendor name, or an application name. Teams reorganize
             and systems get replaced; the business capability outlives both, and the name has
             to outlive both with it.</td></tr>
     <tr><td><b>entity</b></td>
@@ -259,7 +259,7 @@
   <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
   <tbody>
     <tr><td><code>TS-NAM-02</code></td><td><span class="lvl lvl-must">MUST</span></td>
-        <td>Names <b>MUST</b> be globally unique across the firm's catalogue, compared
+        <td>Names <b>MUST</b> be globally unique across the firm's catalog, compared
             case-insensitively and with underscores ignored. <code>orders_list</code> and
             <code>ordersList</code> collide.</td></tr>
     <tr><td><code>TS-NAM-03</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
@@ -277,7 +277,7 @@
   </tbody>
 </table>
 
-<h2 id="catalogue-id"><span class="num">5.2</span>Namespaces and the catalogue identifier</h2>
+<h2 id="catalog-id"><span class="num">5.2</span>Namespaces and the catalog identifier</h2>
 
 <p>
   Each tool carries two identifiers. They are mechanically derivable from one another, which
@@ -289,14 +289,14 @@
   <tbody>
     <tr><td><b>Wire name</b></td><td><code>brokerage_positions_list</code></td>
         <td>Invocation, model context, audit records, metrics labels.</td></tr>
-    <tr><td><b>Catalogue identifier</b></td><td><code>brokerage.positions.list</code></td>
+    <tr><td><b>Catalog identifier</b></td><td><code>brokerage.positions.list</code></td>
         <td>Registry lookup, documentation URLs, policy rules, entitlement mapping, wildcard
             expressions such as <code>brokerage.orders.*</code>.</td></tr>
   </tbody>
 </table>
 
 <p>
-  Policy is expressed against catalogue identifiers because wildcards over dotted namespaces
+  Policy is expressed against catalog identifiers because wildcards over dotted namespaces
   are readable and auditable: <code>allow brokerage.*.list; require-approval
   brokerage.order.place</code>. Trying to express the same thing over underscores produces
   rules nobody can review.
@@ -305,13 +305,13 @@
 <div class="warn">
   <span class="lbl">Collision across providers</span>
   <p>
-    When an agent is given tools from several providers at once — an internal catalogue plus a
+    When an agent is given tools from several providers at once — an internal catalog plus a
     vendor's — names collide, and a collision is not a cosmetic problem: it is an
     <em>authority confusion</em> problem, because the model cannot tell which
     <code>account_get</code> it is calling. Runtimes resolve this by prefixing, and their
-    prefixes are not under our control. The firm's defence is the mandatory
+    prefixes are not under our control. The firm's defense is the mandatory
     <code>&lt;domain&gt;</code> segment, which makes an unqualified collision with an external
-    tool vanishingly unlikely, plus the catalogue's uniqueness check at publish time
+    tool vanishingly unlikely, plus the catalog's uniqueness check at publish time
     (<code>TS-NAM-02</code>).
   </p>
 </div>
@@ -366,7 +366,7 @@
   <span class="lbl">Why <code>manage</code> is banned, specifically</span>
   <p>
     <code>brokerage_orders_manage</code> with an <code>action</code> parameter is the single
-    most common anti-pattern in a first tool catalogue. It looks economical — one tool instead
+    most common anti-pattern in a first tool catalog. It looks economical — one tool instead
     of four — and it is strictly worse in every dimension that matters: the model must choose
     an action from prose rather than from the tool list; the annotations cannot be accurate,
     because one branch is read-only and another cancels a live order; the risk tier cannot be
@@ -399,9 +399,9 @@
         <td>Titles of state-changing tools <b>SHOULD</b> lead with the verb and name the
             consequence: "Cancel a working order", not "Order cancellation".</td></tr>
     <tr><td><code>TS-NAM-10</code></td><td><span class="lvl lvl-may">MAY</span></td>
-        <td>Icons <b>MAY</b> be supplied for catalogue and approval surfaces. Provide SVG with
+        <td>Icons <b>MAY</b> be supplied for catalog and approval surfaces. Provide SVG with
             a light and a dark variant. Icons are decoration: no control, policy, or model
-            behaviour may depend on one.</td></tr>
+            behavior may depend on one.</td></tr>
   </tbody>
 </table>
 
@@ -411,7 +411,7 @@
   <p><span class="rid">TS-NAM-11</span>
   <span class="lvl lvl-must">MUST</span> A published tool name is permanent. It <b>MUST NOT</b>
   be reused for a different capability, and a capability <b>MUST NOT</b> be renamed. A name
-  change is modelled as a new tool plus deprecation of the old one under §17.4.</p>
+  change is modeled as a new tool plus deprecation of the old one under §17.4.</p>
 </div>
 
 <p>
