@@ -1,0 +1,354 @@
+{
+  "name": "brokerage_orders_list",
+  "title": "Find orders on an account",
+  "description": "Returns orders on one account, filtered by lifecycle state, symbol, or date, most recent first. Use when the customer asks whether a trade went through, what orders are still working, what they traded recently, or why something was rejected — and use it first whenever you need an orderId for another tool. Do not use for holdings — call brokerage_positions_list, because an order becomes a position only once it fills and a filled order is not the same as a current holding. Do not use for cash movements — call brokerage_transactions_list. status WORKING covers every non-terminal state and is what the customer means by open orders. Terminal states are FILLED, CANCELLED, REJECTED, EXPIRED, and REPLACED; an order in a terminal state will never change again and must not be polled. New status values may be added over time: treat any status you do not recognise as still working, never as terminal. filledQuantity and remainingQuantity together describe a partial fill, which is a common and non-obvious state — an order can be both working and partly filled. Rejected orders carry a rejectReason with a machine-readable code. An empty array means no orders matched the filter, which is a successful answer. Reads only.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account whose orders to read. Obtain it from brokerage_accounts_list.",
+        "examples": [
+          "acct_01HQ8Z4M2X9K3P7R"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "WORKING",
+          "FILLED",
+          "CANCELLED",
+          "REJECTED",
+          "EXPIRED"
+        ],
+        "description": "Filter to one lifecycle state. WORKING covers every non-terminal state including partially filled. Omitted returns every order in the date window."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}$",
+        "description": "Filter to one underlying ticker, uppercase. Matches the underlying for option orders. Omitted returns every symbol."
+      },
+      "fromDate": {
+        "type": "string",
+        "format": "date",
+        "description": "Earliest order creation date, inclusive, in US Eastern time. Omitted means seven days ago. The window may not exceed 90 days."
+      },
+      "toDate": {
+        "type": "string",
+        "format": "date",
+        "description": "Latest order creation date, inclusive, in US Eastern time. Omitted means today."
+      },
+      "pageSize": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "default": 25,
+        "description": "Maximum orders to return, most recent first. Omitted returns up to 25."
+      },
+      "cursor": {
+        "type": "string",
+        "maxLength": 512,
+        "description": "Continuation token from a previous result's completeness.nextCursor. Omit for the first page."
+      }
+    },
+    "required": [
+      "accountId"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account these orders belong to."
+      },
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant this view of the order book was true (UTC)."
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "description": "ISO 4217 currency for every monetary value in this result."
+      },
+      "orders": {
+        "type": "array",
+        "maxItems": 100,
+        "description": "Matching orders, most recently created first.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+              "description": "Order identifier. Pass to brokerage_order_get for full detail including executions."
+            },
+            "status": {
+              "type": "string",
+              "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognised value as still working."
+            },
+            "isTerminal": {
+              "type": "boolean",
+              "description": "True when the order can never change again. Use this rather than comparing the status string, and never poll a terminal order."
+            },
+            "assetClass": {
+              "type": "string",
+              "enum": [
+                "EQUITY",
+                "OPTION"
+              ],
+              "description": "What was traded."
+            },
+            "side": {
+              "type": "string",
+              "enum": [
+                "BUY",
+                "SELL",
+                "SELL_SHORT",
+                "BUY_TO_COVER",
+                "BUY_TO_OPEN",
+                "BUY_TO_CLOSE",
+                "SELL_TO_OPEN",
+                "SELL_TO_CLOSE"
+              ],
+              "description": "Direction. Option orders use the explicit open and close forms because they drive margin treatment."
+            },
+            "symbol": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Ticker, or the option's underlying ticker."
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Human-readable description of what was ordered, such as AAPL 18 Dec 2026 250 Call."
+            },
+            "quantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "Ordered quantity: shares for equities, contracts for options. Always positive; direction is in side."
+            },
+            "filledQuantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "How much has executed so far. Greater than zero with a non-terminal status means a partial fill."
+            },
+            "remainingQuantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "How much is still working. Zero on a terminal order."
+            },
+            "orderType": {
+              "type": "string",
+              "enum": [
+                "MARKET",
+                "LIMIT",
+                "STOP",
+                "STOP_LIMIT",
+                "TRAILING_STOP",
+                "TRAILING_STOP_LIMIT",
+                "NET_DEBIT",
+                "NET_CREDIT",
+                "NET_EVEN"
+              ],
+              "description": "How the order is priced."
+            },
+            "limitPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Limit price, when the order type has one."
+            },
+            "stopPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Stop trigger price, when the order type has one."
+            },
+            "averageFillPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Volume-weighted average price of the executions so far. This is the price the customer actually got."
+            },
+            "timeInForce": {
+              "type": "string",
+              "enum": [
+                "DAY",
+                "GTC",
+                "GTD",
+                "IOC",
+                "FOK",
+                "OPG",
+                "CLS"
+              ],
+              "description": "How long the order stays live. DAY expires at the close; GTC persists across sessions."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the order was accepted (UTC)."
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When it last changed (UTC)."
+            },
+            "rejectReason": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Present only when status is REJECTED.",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "description": "Stable machine-readable reason, such as INSUFFICIENT_BUYING_POWER or MARKET_CLOSED."
+                },
+                "message": {
+                  "type": "string",
+                  "maxLength": 240,
+                  "description": "Customer-safe explanation of the rejection."
+                }
+              },
+              "required": [
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "orderId",
+            "status",
+            "isTerminal",
+            "assetClass",
+            "side",
+            "symbol",
+            "description",
+            "quantity",
+            "filledQuantity",
+            "remainingQuantity",
+            "orderType",
+            "timeInForce",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "completeness": {
+        "type": "object",
+        "properties": {
+          "returned": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Orders in this result."
+          },
+          "totalMatching": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Total orders matching the filter."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more orders matched than were returned."
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512,
+            "description": "Pass as cursor for the next page. Null on the last page."
+          },
+          "narrowingHint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 240,
+            "description": "How to narrow the query to a complete answer, when truncated."
+          }
+        },
+        "required": [
+          "returned",
+          "truncated",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "How much of the matching set this result contains."
+      }
+    },
+    "required": [
+      "accountId",
+      "asOf",
+      "currency",
+      "orders",
+      "completeness"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "2.3.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 1,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": [
+        "brokerage:orders:read"
+      ],
+      "approval": {
+        "mode": "none"
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.orders.list",
+        "retention": "P6Y",
+        "regulatoryBasis": [
+          "books-and-records",
+          "order-audit-trail"
+        ]
+      },
+      "cost": {
+        "class": "low",
+        "p95LatencyMs": 300
+      },
+      "rateLimit": {
+        "perPrincipalPerMinute": 60
+      },
+      "dependencies": [
+        "order-management-system"
+      ],
+      "availability": {
+        "slo": "99.95",
+        "killSwitch": "tools.brokerage.orders"
+      },
+      "evaluation": {
+        "suite": "evals/brokerage-orders",
+        "lastRunAt": "2026-09-15T08:00:00Z",
+        "selectionAccuracy": 0.95,
+        "refusalAccuracy": 0.97
+      }
+    }
+  }
+}

@@ -1,0 +1,318 @@
+<!-- ==================== PART V ==================== -->
+<section class="part">
+  <div class="pnum">Part V</div>
+  <h1>Governance and adoption</h1>
+  <p class="pdesc">
+    A standard nobody enforces is a document. This part specifies the gate, the evidence, the
+    catalogue, and the path from where the firm is today to a governed estate — including what
+    to do about the tools that already exist.
+  </p>
+  <ul>
+    <li>26 &nbsp; Conformance and review</li>
+    <li>27 &nbsp; Testing and certification</li>
+    <li>28 &nbsp; The catalogue and the onboarding process</li>
+    <li>29 &nbsp; Adoption roadmap</li>
+  </ul>
+</section>
+
+<!-- ==================== 26. CONFORMANCE ==================== -->
+<h1 id="conformance"><span class="num">26</span>Conformance and review</h1>
+
+<h2 id="gate"><span class="num">26.1</span>The gate</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Stage</th><th style="width:22%">Owner</th><th>Passes when</th></tr></thead>
+  <tbody>
+    <tr><td><b>Design review</b><br><span class="small">before code</span></td><td>Domain architect</td>
+        <td>The tool set derives from real utterances (§12.2); boundaries and risk tiers are
+            agreed; the knowledge test is discharged. <b>Cheapest place to fix a granularity
+            error, by an order of magnitude.</b></td></tr>
+    <tr><td><b>Automated conformance</b><br><span class="small">every commit</span></td><td>CI</td>
+        <td>The linter is clean, descriptors validate against Appendix A, size budgets hold,
+            and golden examples validate against their own schemas.</td></tr>
+    <tr><td><b>Security review</b><br><span class="small">before L2</span></td><td>Security architecture</td>
+        <td>§15 is satisfied, with resource-level authorization demonstrated by a negative
+            test rather than asserted.</td></tr>
+    <tr><td><b>Data review</b><br><span class="small">before L2</span></td><td>Data owner, privacy</td>
+        <td>Classification, PII mapping, minimisation, retention, and — for L3 — egress
+            assessed.</td></tr>
+    <tr><td><b>Evaluation</b><br><span class="small">before release and on every change</span></td><td>Owning team</td>
+        <td>Selection, refusal, argument, and interpretation thresholds met (§27.3).</td></tr>
+    <tr><td><b>Architecture Review Board</b><br><span class="small">tier 3, L3, and exceptions</span></td><td>ARB</td>
+        <td>The capability is one the firm is willing to expose, to that audience, under that
+            supervision.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="board-questions"><span class="num">26.2</span>What the board should ask</h2>
+
+<p>
+  Six questions that separate a proposal that has been thought about from one that has been
+  assembled. Appendix E is the full checklist; these are the ones worth asking out loud.
+</p>
+
+<ol>
+  <li><b>"Read me the description."</b> If it is unreadable aloud, or takes ninety seconds, or
+      contains no sentence beginning "Do not use", the tool is not ready.</li>
+  <li><b>"What is the nearest tool to this one, and what sentence tells them apart?"</b> If the
+      answer is a pause, the catalogue has a confusability problem (§12.5).</li>
+  <li><b>"What does the customer see if this tool is wrong?"</b> The answer should be a
+      specific wrong sentence, not "an error".</li>
+  <li><b>"Show me the negative test where the customer asks for someone else's account."</b>
+      Not the code — the test (<code>TS-SEC-08</code>).</li>
+  <li><b>"Who is paged at 2am, and what do they turn off?"</b> Owner plus kill switch, both in
+      the descriptor (<code>TS-GOV-01</code>, <code>TS-SEC-12</code>).</li>
+  <li><b>"What did the evaluation say about the cases where it should refuse?"</b> Selection
+      accuracy is easy to score well on. Refusal accuracy is where the risk lives.</li>
+</ol>
+
+<h2 id="exceptions"><span class="num">26.3</span>Exceptions</h2>
+
+<div class="rule must">
+  <p><span class="rid">TS-CAT-05</span>
+  <span class="lvl lvl-must">MUST</span> An exception to a <b>MUST</b> rule <b>MUST</b> be
+  recorded in the catalogue against the tool, with the rule identifier, the rationale, the
+  compensating control, the approver, and an expiry of no more than twelve months. An
+  exception without an expiry is a silent amendment to the standard.</p>
+</div>
+
+<!-- ==================== 27. TESTING ==================== -->
+<h1 id="testing"><span class="num">27</span>Testing and certification</h1>
+
+<p class="lede">
+  A tool has two correctness properties. The ordinary one — given these arguments, does it
+  return the right data — is tested the way any service is. The other one is new: given this
+  descriptor, does a model choose it correctly, call it correctly, and read the result
+  correctly? That needs a different kind of test suite and is the one that decides whether the
+  tool works in production.
+</p>
+
+<h2 id="contract-tests"><span class="num">27.1</span>Contract tests</h2>
+
+<table class="long">
+  <thead><tr><th style="width:28%">Test</th><th>Asserts</th></tr></thead>
+  <tbody>
+    <tr><td>Schema round trip</td><td>Every example validates against its own schema, in both directions. A descriptor whose examples contradict its schema is worse than one with no examples, because integrators copy examples.</td></tr>
+    <tr><td>Envelope conformance</td><td>Every response path — success, empty, truncated, each error code — returns <code>content</code>, <code>structuredContent</code>, and <code>isError</code>, and the structured payload validates.</td></tr>
+    <tr><td>Dual-rendering agreement</td><td>The text block is generated from the structured payload and contains the as-of time, the currency, the sign, and any truncation (<code>TS-OUT-03</code>).</td></tr>
+    <tr><td>Error mapping</td><td>Every upstream failure mode maps to its declared taxonomy code, with a test per mapping (<code>TS-ERR-06</code>), and the unmapped branch raises an alert.</td></tr>
+    <tr><td>Truncation</td><td>An account with 340 positions returns 25 with <code>truncated: true</code>, a narrowing hint, and correct totals over all 340.</td></tr>
+    <tr><td>Idempotency replay</td><td>The same key twice returns the original result with <code>replayed: true</code> and places one order. The same key with different arguments returns <code>CONFLICT</code>.</td></tr>
+    <tr><td><b>Authorization negatives</b></td><td>A principal entitled to account A requesting account B receives <code>NOT_FOUND</code> — identical to a genuinely absent account, timing included. <b>The single most important test in the suite.</b></td></tr>
+    <tr><td>Redaction</td><td>No stack trace, hostname, upstream error string, or unmasked identifier appears in any error path. Asserted by pattern, over fixtures drawn from real upstream failures.</td></tr>
+    <tr><td>Injection neutralisation</td><td>A position in an account whose nickname contains an instruction is returned delimited, labelled, and truncated (<code>TS-SEC-11</code>).</td></tr>
+    <tr><td>Budget</td><td>The rendered descriptor and a typical result are within the budgets of §6.3 and §13.2, asserted in CI so that a field added next quarter fails the build rather than the context window.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ci"><span class="num">27.2</span>CI gates</h2>
+
+<pre><code><span class="c-com"># The gate that makes the standard real. Runs on every commit.</span>
+
+tools/lint-descriptors.py catalog/            <span class="c-com"># §1.2 rules, by identifier</span>
+validate catalog/*.json  against schemas/tool-descriptor.schema.json
+validate examples/*.json against each tool's own outputSchema
+check     rendered descriptor size &lt;= 1200 tokens
+check     no descriptor name changed since the last release
+register  descriptor content hashes with the catalogue     <span class="c-com"># TS-SEC-09</span>
+run       evaluation suite; fail below threshold           <span class="c-com"># §27.3</span></code></pre>
+
+<h2 id="evals"><span class="num">27.3</span>Evaluation suites</h2>
+
+<p>
+  An evaluation suite is 30 to 60 real user utterances with an expected outcome for each. It
+  is version-controlled beside the descriptor, and <code>TS-VER-04</code> requires it to run
+  on every change — including a change to nothing but the prose.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Dimension</th><th style="width:34%">Measures</th><th>Threshold</th></tr></thead>
+  <tbody>
+    <tr><td><b>Selection accuracy</b></td><td>Given the utterance, is this the tool chosen?</td><td>≥ 95% at tier 1, ≥ 98% at tier 3</td></tr>
+    <tr><td><b>Refusal accuracy</b></td><td>Given an utterance this tool must <em>not</em> answer, is it correctly left alone?</td><td>≥ 95%, and ≥ 99% for tier 3</td></tr>
+    <tr><td><b>Argument accuracy</b></td><td>Are the arguments valid, complete, and semantically right — the correct account, the correct filter?</td><td>≥ 98%</td></tr>
+    <tr><td><b>Interpretation accuracy</b></td><td>Given the result, is the answer to the customer correct? Scored by a domain expert, not by string match.</td><td>≥ 98%, and 100% on the conventions in §18.3</td></tr>
+  </tbody>
+</table>
+
+<h4>The cases that must be in every suite</h4>
+
+<ul>
+  <li><b>Nearest-neighbour confusions.</b> "Did my Apple order go through?" must reach orders,
+      not positions. Every pair in §12.5 appears in both suites.</li>
+  <li><b>Convention traps.</b> A short position, an option position, an account with unsettled
+      cash, a retirement account, a partially filled order, a rejected order. Score the
+      <em>answer</em>, not the call.</li>
+  <li><b>Empty and degraded.</b> An account with no positions; a result with delayed marks; a
+      truncated collection. The model must not invent an outage, quote a stale price as live,
+      or state a partial total as complete.</li>
+  <li><b>Refusals.</b> Requests outside the tool's scope, requests for another customer's
+      data, requests that would need an entitlement the principal lacks.</li>
+  <li><b>Injection.</b> An account nickname, an order memo, or an instrument name carrying an
+      instruction. The model must not act on it.</li>
+</ul>
+
+<div class="warn">
+  <span class="lbl">Evaluate the descriptor, not the model</span>
+  <p>
+    When an evaluation fails, the instinct is to adjust the agent's system prompt. Resist it.
+    A failure means the descriptor did not carry the information the caller needed, and fixing
+    it in the prompt fixes one agent while leaving every other consumer — including next
+    year's vendor assistant — with the same defect. <b>Prose in the descriptor is a fix that
+    ships once and works everywhere.</b>
+  </p>
+</div>
+
+<h2 id="redteam"><span class="num">27.4</span>Red team</h2>
+
+<table>
+  <thead><tr><th style="width:34%">Attempt</th><th>Must fail</th></tr></thead>
+  <tbody>
+    <tr><td>Argument-supplied identifier for another customer's account</td><td><code>NOT_FOUND</code>, indistinguishable from absent</td></tr>
+    <tr><td>Instruction injected through a nickname, memo, or instrument name</td><td>Returned as delimited data; agent does not act</td></tr>
+    <tr><td>Approval declined, then the request rephrased</td><td>Blocked and alerted (§15.5)</td></tr>
+    <tr><td>Argument altered between approval and execution</td><td>Refused on argument-hash mismatch (<code>TS-ANN-05</code>)</td></tr>
+    <tr><td>Confirmation token replayed, or used for a different order</td><td>Refused, single use, bound to arguments (<code>TS-SEC-01</code>)</td></tr>
+    <tr><td>Enumeration by repeated identifier guessing</td><td>Rate limited and alerted</td></tr>
+    <tr><td>Descriptor amended without a version bump</td><td>Runtime refuses on hash mismatch (<code>TS-SEC-09</code>)</td></tr>
+  </tbody>
+</table>
+
+<div class="rule must">
+  <p><span class="rid">TS-OBS-03</span>
+  <span class="lvl lvl-must">MUST</span> Tier 3 tools and every L3 exposure <b>MUST</b> be
+  red-teamed before release and at least annually thereafter, by a team that did not build
+  them.</p>
+</div>
+
+<h2 id="evidence"><span class="num">27.5</span>The certification pack</h2>
+
+<p>What an owner presents for L2, and what the catalogue stores against the version:</p>
+
+<ul class="check">
+  <li><b>1</b> &nbsp;The descriptor, its content hash, and the linter output</li>
+  <li><b>2</b> &nbsp;Contract test results, including the authorization negatives</li>
+  <li><b>3</b> &nbsp;Evaluation results against all four dimensions, with the failing cases listed</li>
+  <li><b>4</b> &nbsp;Security review record and, for tier 3, the red-team report</li>
+  <li><b>5</b> &nbsp;Data owner sign-off on classification, PII mapping, and retention</li>
+  <li><b>6</b> &nbsp;Named owner, escalation path, SLO, and a demonstrated kill switch</li>
+  <li><b>7</b> &nbsp;Any exceptions, with compensating controls and expiry dates</li>
+</ul>
+
+<!-- ==================== 28. CATALOGUE ==================== -->
+<h1 id="catalogue"><span class="num">28</span>The catalogue and the onboarding process</h1>
+
+<h2 id="cat-reqs"><span class="num">28.1</span>What the catalogue must do</h2>
+
+<table class="long rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-CAT-06</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Be the single system of record for descriptors, serving them by name and version,
+            with content hashes, to every runtime in the firm.</td></tr>
+    <tr><td><code>TS-CAT-07</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Accept descriptors only from an authenticated publishing pipeline, never from a
+            user interface, and <b>MUST</b> reject any that fail the linter or the meta-schema
+            (<code>TS-GEN-03</code>, <code>TS-GEN-05</code>).</td></tr>
+    <tr><td><code>TS-CAT-08</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Enforce global name uniqueness at publish time and refuse to reuse a retired name
+            (<code>TS-NAM-02</code>, <code>TS-NAM-11</code>).</td></tr>
+    <tr><td><code>TS-CAT-09</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Serve audience-scoped views resolved against the principal's entitlements, so a
+            tool a principal cannot use is never placed in an agent's context
+            (<code>TS-GOV-03</code>).</td></tr>
+    <tr><td><code>TS-CAT-10</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Retain every published version indefinitely. An audit record naming a tool version
+            is meaningless if that version cannot be retrieved.</td></tr>
+    <tr><td><code>TS-CAT-11</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>Expose ownership, risk tier, lifecycle, dependencies, invocation volume, and
+            evaluation results as a browsable inventory — the artifact a regulator asks for
+            when they ask what the firm's agents can do.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="onboarding"><span class="num">28.2</span>The onboarding path</h2>
+
+<table class="long">
+  <thead><tr><th style="width:6%">#</th><th style="width:26%">Step</th><th style="width:22%">Accountable</th><th>Output</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Utterance collection and clustering</td><td>Product + domain architect</td><td>The question list</td></tr>
+    <tr><td>2</td><td>Tool set design and risk tiering</td><td>Domain architect</td><td>Draft names, boundaries, tiers</td></tr>
+    <tr><td>3</td><td>Design review</td><td>Architecture</td><td>Approved boundaries</td></tr>
+    <tr><td>4</td><td>Descriptor and implementation</td><td>Owning team</td><td>Descriptor, code, contract tests</td></tr>
+    <tr><td>5</td><td>Evaluation suite</td><td>Owning team + domain expert</td><td>Scores on four dimensions</td></tr>
+    <tr><td>6</td><td>Security and data review</td><td>Security, data owner</td><td>Sign-offs, entitlement mapping</td></tr>
+    <tr><td>7</td><td>Certification and publication</td><td>Platform</td><td>L2, hash registered, audience scoped</td></tr>
+    <tr><td>8</td><td>Post-release supervision</td><td>Owning team</td><td>Metrics live, sampling in place, kill switch tested</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">Step 8 is not optional and is the one that gets dropped</span>
+  <p>
+    A tool is not finished at publication because the caller is not finished learning. Selection
+    accuracy in production diverges from the evaluation suite as real utterances arrive.
+    Sampled, human-read conversations in the first four weeks catch descriptor defects that no
+    offline suite will, and the fix is almost always one sentence of prose.
+  </p>
+</div>
+
+<!-- ==================== 29. ROADMAP ==================== -->
+<h1 id="roadmap"><span class="num">29</span>Adoption roadmap</h1>
+
+<h2 id="maturity"><span class="num">29.1</span>Maturity model</h2>
+
+<table class="long">
+  <thead><tr><th style="width:8%">Level</th><th style="width:22%">State</th><th>Characteristics</th></tr></thead>
+  <tbody>
+    <tr><td><b>0</b></td><td>Ad hoc</td><td>Each team invents its own tool format. No inventory. Nobody can say how many tools exist or what they can reach.</td></tr>
+    <tr><td><b>1</b></td><td>Inventoried</td><td>Every tool is registered with an owner and a risk tier. Still inconsistent, but now visible — and visibility is what makes everything else possible.</td></tr>
+    <tr><td><b>2</b></td><td>Conformant</td><td>New tools meet this standard and CI enforces it. Legacy tools are scheduled.</td></tr>
+    <tr><td><b>3</b></td><td>Certified</td><td>Every customer-facing tool is L2 with evidence. Approval, audit, and kill switches work and have been exercised.</td></tr>
+    <tr><td><b>4</b></td><td>Supervised</td><td>Selection accuracy and silent wrongness are measured continuously. Descriptors are improved from production evidence. The catalogue is the inventory a regulator is shown.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="plan"><span class="num">29.2</span>A first year</h2>
+
+<table class="long">
+  <thead><tr><th style="width:16%">Horizon</th><th>Do</th><th style="width:24%">Done when</th></tr></thead>
+  <tbody>
+    <tr><td><b>Days 1–90</b></td>
+        <td>Ratify this standard. Stand up the catalogue with names, owners, risk tiers, and
+            hashes. Run the linter over every existing descriptor and publish the findings
+            without blame. Pick one domain — brokerage read tools are the right first choice —
+            and bring it to L2 as the worked example.</td>
+        <td>Maturity 1, one domain at maturity 2</td></tr>
+    <tr><td><b>Days 91–180</b></td>
+        <td>CI gates mandatory for new tools. Evaluation suites for every tier 1 and above.
+            Approval, audit, and kill switch wired through the gateway and exercised in a
+            game day. Retire or schedule every unowned tool.</td>
+        <td>Maturity 2 firm-wide</td></tr>
+    <tr><td><b>Days 181–365</b></td>
+        <td>Certify every customer-facing tool to L2. Red-team the tier 3 set. Stand up
+            conversation sampling and the silent wrongness measure. Publish the tool inventory
+            to risk and compliance as a standing report.</td>
+        <td>Maturity 3, credible path to 4</td></tr>
+  </tbody>
+</table>
+
+<h2 id="pitfalls"><span class="num">29.3</span>Three ways adoption fails</h2>
+
+<table class="long">
+  <thead><tr><th style="width:28%">Failure</th><th>Counter</th></tr></thead>
+  <tbody>
+    <tr><td><b>The standard is a document, not a gate</b></td>
+        <td>Ship the linter in week one, before the debate about section 7 is settled. A rule
+            that CI enforces is a rule; a rule in a PDF is a suggestion with formatting.</td></tr>
+    <tr><td><b>Retrofitting blocks everything</b></td>
+        <td>Apply the full standard to new tools immediately, and to existing tools at their
+            next change — except for the security and ownership rules (<code>TS-SEC-02</code>,
+            <code>TS-SEC-08</code>, <code>TS-GOV-01</code>), which apply now. Perfect coverage
+            later beats no coverage forever.</td></tr>
+    <tr><td><b>It is run as an API programme</b></td>
+        <td>The novel work is the prose, the evaluation, and the supervision — none of which
+            an API governance function has ever had to do. Staff it with people who will read
+            conversations, not only specifications.</td></tr>
+  </tbody>
+</table>

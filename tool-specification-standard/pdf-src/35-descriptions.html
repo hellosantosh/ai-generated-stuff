@@ -1,0 +1,365 @@
+<!-- ==================== 6. DESCRIPTIONS ==================== -->
+<h1 id="descriptions"><span class="num">6</span>The description: the model-facing contract</h1>
+
+<p class="lede">
+  The description is the highest-leverage field in the descriptor and the one most often
+  written last, in a hurry, by copying a Javadoc comment. It is not documentation. It is
+  runtime input to a decision that will be made hundreds of times a day without human review.
+</p>
+
+<h2 id="what-model-sees"><span class="num">6.1</span>What the model actually sees</h2>
+
+<p>
+  When an agent is deciding what to do, the only things it knows about your tool are its
+  name, its title, its description, and its input schema — including every
+  <code>description</code> inside that schema. It does not have your API reference, your
+  Confluence page, your team's mental model, or the conversation you had with the product
+  owner. It has these four fields, rendered alongside thirty-nine other tools competing for
+  the same attention.
+</p>
+
+<pre><code><span class="c-com">// Everything the model knows about this tool, in full:</span>
+
+brokerage_positions_list — List account positions
+  Returns the current holdings in one account …
+  arguments:
+    accountId  (string, required)  The account to read, from brokerage_accounts_list …
+    assetClass (enum, optional)    Filter to EQUITY or OPTION …
+
+<span class="c-com">// Everything the model does not know about this tool:</span>
+
+  · that "quantity" is negative for shorts
+  · that an option position of 3 contracts means 300 shares of exposure
+  · that this is an end-of-prior-day snapshot for retirement accounts
+  · that an empty array means "no holdings", not "lookup failed"
+  · that intraday trades are already reflected but pending transfers are not
+  · that brokerage_orders_list is the tool for "did my trade go through"
+
+<span class="c-com">// …unless the description says so.</span></code></pre>
+
+<div class="danger">
+  <span class="lbl">The consequence of an omission is a confident wrong answer</span>
+  <p>
+    A model that does not know quantity is signed will report a 400-share short position as a
+    400-share long holding and tell the customer they own it. Nothing crashes, nothing is
+    logged as an error, and no test fails. Undescribed domain semantics do not produce
+    failures — they produce fluent misinformation, which in a brokerage context is a customer
+    complaint and potentially a reportable event.
+  </p>
+</div>
+
+<h2 id="template"><span class="num">6.2</span>The seven-part template</h2>
+
+<div class="rule must">
+  <p><span class="rid">TS-DSC-01</span>
+  <span class="lvl lvl-must">MUST</span> Every description <b>MUST</b> contain parts 1, 2, 3,
+  5, and 6 below. Parts 4 and 7 are <span class="lvl lvl-must">MUST</span> where they apply —
+  which, for anything in a financial domain, is nearly always.</p>
+</div>
+
+<table class="long">
+  <thead><tr><th style="width:6%">#</th><th style="width:22%">Part</th><th>Content and test</th></tr></thead>
+  <tbody>
+    <tr><td><b>1</b></td><td><b>Purpose</b><br><span class="small">one sentence</span></td>
+        <td>What the tool returns or does, in the active voice, starting with the verb.
+            "Returns the current holdings in one brokerage account."
+            <br><i>Test:</i> could a reader who knows the domain but not this system say what
+            comes back?</td></tr>
+    <tr><td><b>2</b></td><td><b>Selection triggers</b><br><span class="small">"Use when…"</span></td>
+        <td>The customer questions this tool answers, phrased the way a customer would phrase
+            them. "Use when the customer asks what they own, how much of it, what it is worth,
+            or how much they are up or down on a holding."
+            <br><i>Test:</i> does it contain at least two phrasings a real user would use?</td></tr>
+    <tr><td><b>3</b></td><td><b>Exclusions</b><br><span class="small">"Do not use for…"</span></td>
+        <td>The nearest neighbouring tools, named by exact wire name, with the distinction
+            stated. "Do not use for cash or buying power — call
+            <code>brokerage_balances_get</code>."
+            <br><i>Test:</i> is every tool a confused reader might reach for instead named
+            here?</td></tr>
+    <tr><td><b>4</b></td><td><b>Argument semantics</b><br><span class="small">what schema cannot say</span></td>
+        <td>Provenance of identifiers, cross-field rules, units, and conventions.
+            "<code>accountId</code> comes from <code>brokerage_accounts_list</code>; never
+            construct one."
+            <br><i>Test:</i> could a careful caller still supply a well-formed but wrong
+            value?</td></tr>
+    <tr><td><b>5</b></td><td><b>Result orientation</b><br><span class="small">how to read it</span></td>
+        <td>The shape in one sentence, the domain conventions that make the numbers
+            meaningful, and what an empty result means. "Quantity is signed: negative is a
+            short position. An empty array means the account holds nothing, not that the
+            lookup failed."
+            <br><i>Test:</i> can the reader compute the right answer from the payload without
+            a second source?</td></tr>
+    <tr><td><b>6</b></td><td><b>Effects, freshness, cost</b></td>
+        <td>Whether state changes; whether money moves; how fresh the data is and as of when;
+            anything expensive or rate-limited. "Reads only. Marks are delayed up to 15
+            minutes for non-subscribed symbols; the result states its own
+            <code>asOf</code>."
+            <br><i>Test:</i> would a compliance reviewer be surprised by anything the tool
+            does that the description omits?</td></tr>
+    <tr><td><b>7</b></td><td><b>Failure guidance</b></td>
+        <td>The failures a caller can do something about, and what to do. "If the account is
+            <code>RESTRICTED</code> the holdings still read normally. If
+            <code>ENTITLEMENT_DENIED</code> is returned, the customer has not granted access
+            to this account — ask them, do not retry."
+            <br><i>Test:</i> for each error code the tool can return, does the reader know
+            whether to retry, change an argument, or stop?</td></tr>
+  </tbody>
+</table>
+
+<h3><span class="num">6.2.1</span>The template applied</h3>
+
+<p>
+  The same description, with each part labelled. In the real descriptor it is one paragraph of
+  running prose; the labels are here for reading only.
+</p>
+
+<pre class="long good"><code><span class="c-com">[1 PURPOSE]</span>
+Returns the current holdings in one brokerage account, with quantity, average
+cost, market value, and unrealised profit and loss for each.
+
+<span class="c-com">[2 USE WHEN]</span>
+Use when the customer asks what they own, how many shares or contracts they
+hold, what a holding is worth now, or whether they are up or down on it.
+
+<span class="c-com">[3 DO NOT USE]</span>
+Do not use for cash, settled funds, or buying power — call
+brokerage_balances_get. Do not use to find out whether a trade went through —
+call brokerage_orders_list; an order only becomes a position once it fills.
+Do not use for historical or closed positions — this returns open holdings
+only, as of now.
+
+<span class="c-com">[4 ARGUMENTS]</span>
+accountId comes from brokerage_accounts_list and must never be guessed or
+constructed. Omitting assetClass returns equities and options together.
+
+<span class="c-com">[5 HOW TO READ THE RESULT]</span>
+Quantity is signed: a negative quantity is a short position, and reporting it
+as a holding the customer owns is wrong. Option quantities are in contracts,
+not shares; multiply by contractMultiplier (usually 100) for share-equivalent
+exposure. An empty positions array means the account holds nothing — that is a
+successful answer, not a failure.
+
+<span class="c-com">[6 EFFECTS AND FRESHNESS]</span>
+Reads only; never changes anything. Marks are delayed up to 15 minutes for
+symbols the customer does not subscribe to in real time, and the result states
+its own asOf timestamp — quote it when the customer asks for a current value.
+
+<span class="c-com">[7 WHEN IT FAILS]</span>
+ENTITLEMENT_DENIED means the customer has not granted access to that account:
+ask them rather than retrying. UPSTREAM_UNAVAILABLE is transient and safe to
+retry once after a short pause.</code></pre>
+
+<div class="tip">
+  <span class="lbl">Part 3 is the one that gets skipped and the one that pays</span>
+  <p>
+    Most misrouted tool calls are not failures of comprehension — they are failures of
+    <em>discrimination</em> between two plausible tools. "Did my Apple trade go through?" is
+    answered by an order tool, but a positions tool that fails to disclaim it is a perfectly
+    plausible candidate, and the model will pick it roughly as often as not. One sentence of
+    exclusion fixes a class of error that no amount of prompt engineering elsewhere reliably
+    fixes.
+  </p>
+</div>
+
+<h2 id="budgets"><span class="num">6.3</span>Budgets and economy</h2>
+
+<p>
+  Every word in a description is paid for on every turn of every conversation, by every user.
+  A 200-word description in a catalogue of 30 tools, in a conversation of 20 turns, is not
+  200 words — it is 120,000 words of billed context. Economy is not stylistic preference; it
+  is an operating cost and a distraction cost.
+</p>
+
+<table>
+  <thead><tr><th style="width:38%">Budget</th><th style="width:20%">Target</th><th>Hard limit</th></tr></thead>
+  <tbody>
+    <tr><td>Tool description</td><td>80–180 words</td><td><b>2,000 characters</b> (<code>TS-DSC-02</code>)</td></tr>
+    <tr><td>Per-parameter description</td><td>1–2 sentences</td><td><b>240 characters</b> (<code>TS-DSC-03</code>)</td></tr>
+    <tr><td>Whole descriptor, rendered</td><td>≤ 700 tokens</td><td>1,200 tokens</td></tr>
+    <tr><td>Tools offered to one agent</td><td>≤ 25</td><td>40 (§12.4)</td></tr>
+    <tr><td>Catalogue share of the context window</td><td>≤ 10%</td><td>15%</td></tr>
+  </tbody>
+</table>
+
+<table class="rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-DSC-02</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>A tool description <b>MUST NOT</b> exceed 2,000 characters. A description at the
+            limit is usually a tool that should have been two.</td></tr>
+    <tr><td><code>TS-DSC-03</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>A parameter description <b>MUST NOT</b> exceed 240 characters. Anything longer
+            belongs in the tool description, where it is read once rather than per
+            parameter.</td></tr>
+  </tbody>
+</table>
+
+<h4>What to cut first</h4>
+
+<table>
+  <thead><tr><th style="width:44%">Cut</th><th>Because</th></tr></thead>
+  <tbody>
+    <tr><td>"This tool allows you to…", "This function is used for…"</td>
+        <td>Pure ceremony. Start with the verb.</td></tr>
+    <tr><td>Restating the schema in prose</td>
+        <td>The model already has the schema. Describe what the schema cannot express.</td></tr>
+    <tr><td>Implementation detail — which service, which database, which vendor</td>
+        <td>Nothing the model can act on, and it leaks topology into a context window
+            (<code>TS-GEN-08</code>).</td></tr>
+    <tr><td>Exhaustive error catalogues</td>
+        <td>Name the failures a caller can <em>act</em> on. The rest belong in the error
+            payload, where they cost nothing until they happen (§11.4).</td></tr>
+    <tr><td>Formatting instructions for the final answer</td>
+        <td>How to talk to the customer is the agent's system prompt's job, not a tool's. A
+            tool that says "always present this as a bulleted list" is overreaching into a
+            surface it cannot see.</td></tr>
+    <tr><td>Legal disclaimers and compliance language</td>
+        <td>They belong in the response surface and in the result payload, not in the
+            selection-time context. A model will not reliably reproduce them anyway.</td></tr>
+  </tbody>
+</table>
+
+<h4>What to keep even when it costs</h4>
+
+<ul>
+  <li>Every domain convention that makes a number mean something other than its face value —
+      signed quantities, contract multipliers, settled versus total cash, gross versus net.</li>
+  <li>Every exclusion naming a sibling tool.</li>
+  <li>The meaning of an empty result.</li>
+  <li>Any staleness the customer would be misled by.</li>
+</ul>
+
+<h2 id="rewrite"><span class="num">6.4</span>A worked rewrite</h2>
+
+<p>The description most teams ship first:</p>
+
+<p class="lang b">Before — 14 words, and six defects</p>
+<pre class="bad"><code>Get positions. Returns a list of positions for the specified account.</code></pre>
+
+<table class="long">
+  <thead><tr><th style="width:30%">Defect</th><th>Failure it causes in production</th></tr></thead>
+  <tbody>
+    <tr><td>No selection trigger</td>
+        <td>The model does not connect "what do I own?", "how's my Apple doing?", or "am I up
+            on Tesla?" to this tool. It either asks a clarifying question the customer finds
+            obtuse, or picks a neighbour.</td></tr>
+    <tr><td>No exclusions</td>
+        <td>Called for "did my order fill?" and for "how much cash do I have?". Both produce
+            answers that are wrong in a way the customer cannot detect.</td></tr>
+    <tr><td>Signed quantity undocumented</td>
+        <td>A short position of −400 shares is reported as owning 400 shares. This is the
+            single highest-severity defect in the list.</td></tr>
+    <tr><td>Contract multiplier undocumented</td>
+        <td>"You hold 3 Apple calls" is read as trivial exposure when it is 300 shares of
+            delta-equivalent risk. The model's arithmetic downstream is then wrong by 100×.</td></tr>
+    <tr><td>Empty result undefined</td>
+        <td>An empty array is reported to the customer as "I couldn't retrieve your
+            positions" — an invented outage.</td></tr>
+    <tr><td>Freshness undefined</td>
+        <td>A 15-minute-delayed mark is quoted as a live price, with no timestamp, during a
+            fast market.</td></tr>
+  </tbody>
+</table>
+
+<p class="lang g">After — 168 words, all seven parts, every defect closed</p>
+<pre class="long good"><code>Returns the current open holdings in one brokerage account: instrument,
+quantity, average cost, last price, market value, and unrealised profit and
+loss for each. Use when the customer asks what they own, how much of something
+they hold, what a holding is worth, or whether they are up or down on it. Do
+not use for cash, settled funds, or buying power — call brokerage_balances_get.
+Do not use to check whether a trade went through — call brokerage_orders_list,
+because an order becomes a position only once it fills. Returns open positions
+as of now; it has no history. accountId comes from brokerage_accounts_list and
+must never be guessed. Quantity is signed and a negative quantity is a SHORT
+position, not a holding. Option quantities are contracts: multiply by
+contractMultiplier (usually 100) for share-equivalent exposure. An empty array
+means the account holds nothing, which is a successful answer. Reads only.
+Marks may be delayed up to 15 minutes; quote the asOf timestamp when the
+customer asks what something is worth right now.</code></pre>
+
+<p>
+  The rewrite costs roughly 210 additional tokens per turn. It removes two classes of
+  systematically wrong customer answers, one of which is a regulatory exposure. That trade is
+  not close.
+</p>
+
+<h2 id="dsc-style"><span class="num">6.5</span>Style rules</h2>
+
+<table class="long rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-DSC-04</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Descriptions <b>MUST</b> be plain prose in the active voice, present tense,
+            starting with a verb. No markdown headings, no bullet syntax, no code fences —
+            runtimes render descriptions inconsistently and structure is lost or corrupted.</td></tr>
+    <tr><td><code>TS-DSC-05</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Sibling tools referenced in exclusions <b>MUST</b> be named by their exact wire
+            name. "Use the balances tool" is not actionable; <code>brokerage_balances_get</code>
+            is.</td></tr>
+    <tr><td><code>TS-DSC-06</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Descriptions <b>MUST NOT</b> contain instructions about how the agent should
+            behave outside this tool call — how to address the customer, what to disclose,
+            when to escalate, what to do in other conversations. A tool describes itself;
+            agent behaviour is governed by the agent's own configuration.</td></tr>
+    <tr><td><code>TS-DSC-07</code></td><td><span class="lvl lvl-never">NEVER</span></td>
+        <td>Descriptions <b>MUST NOT</b> be generated at runtime, templated with request data,
+            or personalised per user. A description is a static, reviewed, signed artifact.
+            Anything dynamic belongs in the result payload.</td></tr>
+    <tr><td><code>TS-DSC-08</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>Descriptions <b>SHOULD</b> use the domain's own vocabulary — the words that appear
+            on the customer's statement and in the firm's procedures. Inventing a synonym for
+            a term of art makes the tool harder to select and its audit trail harder to
+            read.</td></tr>
+    <tr><td><code>TS-DSC-09</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>Where an enumerated value has consequences, the description <b>SHOULD</b> state
+            them once — "<code>RESTRICTED</code> accounts can be read but not traded" — rather
+            than leaving the model to infer meaning from a token.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="attack-surface"><span class="num">6.6</span>Descriptions are attack surface</h2>
+
+<p>
+  A description is, functionally, a set of instructions injected into an agent's context by
+  whoever controls the descriptor. That makes the descriptor a privileged artifact and the
+  publishing path a control, with three consequences that are easy to miss.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Risk</th><th>Control</th></tr></thead>
+  <tbody>
+    <tr><td><b>Unreviewed change</b><br><span class="small">someone edits a description to redirect the agent</span></td>
+        <td>Descriptors ship through code review and CI like code (<code>TS-GEN-03</code>). The
+            catalogue rejects any descriptor not signed by the owning team's pipeline. A
+            description change is a production change and is logged as one.</td></tr>
+    <tr><td><b>Silent redefinition</b><br><span class="small">a tool behaves differently tomorrow with no version change</span></td>
+        <td>The catalogue stores a content hash of every published descriptor. Agent runtimes
+            pin the hash they were configured with and <b>MUST</b> refuse to invoke a tool
+            whose descriptor hash has changed without a version bump (<code>TS-SEC-09</code>).</td></tr>
+    <tr><td><b>Cross-tool influence</b><br><span class="small">one provider's description instructs the model about another's tools</span></td>
+        <td>Acute when an agent is given tools from several providers. The catalogue rejects
+            descriptions that name tools outside the publishing team's own namespace, except
+            in an exclusion clause — and those are checked at review
+            (<code>TS-DSC-10</code>).</td></tr>
+  </tbody>
+</table>
+
+<div class="rule must">
+  <p><span class="rid">TS-DSC-10</span>
+  <span class="lvl lvl-must">MUST</span> A description <b>MUST NOT</b> reference a tool
+  outside its own domain namespace except to exclude it, and <b>MUST NOT</b> contain
+  imperative instructions addressed to the agent about tools other than itself. Descriptions
+  that do are rejected at publish time.</p>
+</div>
+
+<div class="warn">
+  <span class="lbl">This is not hypothetical</span>
+  <p>
+    The published research on tool-description attacks describes exactly this shape: a benign
+    tool is approved and adopted, and its description is later amended to include an
+    instruction that redirects the agent — to call a different tool first, to include extra
+    data in an argument, to suppress a confirmation. The mitigation is not cleverness at
+    invocation time. It is change control at publish time plus hash pinning at configuration
+    time, which is why both are <b>MUST</b> rules in a standard about description prose.
+  </p>
+</div>

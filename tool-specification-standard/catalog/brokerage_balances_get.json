@@ -1,0 +1,367 @@
+{
+  "name": "brokerage_balances_get",
+  "title": "Get cash, buying power, and margin for an account",
+  "description": "Returns the money in one brokerage account: cash and settled cash, buying power broken out by what it can be used for, margin detail, and the account's total value. Use when the customer asks how much cash they have, how much they can spend or invest, what their account is worth, whether they are on margin, or whether they have a margin call. Do not use for holdings — call brokerage_positions_list. Do not use to explain why a balance changed — call brokerage_transactions_list. An account has several different correct answers to how much can I spend, and they can differ by a factor of four: read buyingPower.applicable, which is the figure that actually governs this account given its type and registration, and buyingPower.applicableReason, which says why. Never present buyingPower.dayTrading to a customer who is not a pattern day trader, and never present margin figures for a retirement account, which cannot borrow. Cash that is unsettled cannot fund a purchase in a cash account without a good-faith violation. Figures are computed intraday and restated after the close; asOf and basis state which. Reads only, and never returns a partially computed figure — if the margin engine is unavailable the call fails rather than returning a number that looks complete.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account to read. Obtain it from brokerage_accounts_list; never construct or guess one.",
+        "examples": [
+          "acct_01HQ8Z4M2X9K3P7R"
+        ]
+      },
+      "detail": {
+        "type": "string",
+        "enum": [
+          "SUMMARY",
+          "STANDARD",
+          "FULL"
+        ],
+        "default": "STANDARD",
+        "description": "SUMMARY returns applicable buying power, settled cash, and total value — enough to answer how much can I spend. STANDARD adds the full cash and buying power breakdown. FULL adds margin and day-trade detail. Omitted means STANDARD."
+      }
+    },
+    "required": [
+      "accountId"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account these balances belong to."
+      },
+      "accountNumberMasked": {
+        "type": "string",
+        "maxLength": 24,
+        "description": "Customer-facing masked account number."
+      },
+      "accountType": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "MARGIN"
+        ],
+        "description": "Repeated here so the figures can be interpreted without a second call."
+      },
+      "registration": {
+        "type": "string",
+        "enum": [
+          "INDIVIDUAL",
+          "JOINT",
+          "TRADITIONAL_IRA",
+          "ROTH_IRA",
+          "SEP_IRA",
+          "ROLLOVER_IRA",
+          "TRUST",
+          "CUSTODIAL",
+          "CORPORATE"
+        ],
+        "description": "Any IRA is a retirement account: it cannot borrow and margin figures do not apply."
+      },
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant these figures were computed (UTC)."
+      },
+      "basis": {
+        "type": "string",
+        "enum": [
+          "INTRADAY_ESTIMATE",
+          "TRADE_DATE",
+          "SETTLED"
+        ],
+        "description": "INTRADAY_ESTIMATE is a live estimate that will be restated after the close. TRADE_DATE reflects executed but unsettled activity. SETTLED reflects only settled activity."
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "description": "ISO 4217 currency for every monetary value in this result."
+      },
+      "totalValue": {
+        "type": "object",
+        "description": "What the account is worth.",
+        "properties": {
+          "netLiquidation": {
+            "$ref": "#/$defs/decimal",
+            "description": "Total account value if every position were liquidated at current marks. This is the answer to what is my account worth."
+          },
+          "equity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Net liquidation less any borrowed amount."
+          },
+          "positionsMarketValue": {
+            "$ref": "#/$defs/decimal",
+            "description": "Market value of all holdings."
+          },
+          "dayChange": {
+            "$ref": "#/$defs/decimal",
+            "description": "Change in net liquidation since the prior close."
+          },
+          "dayChangePercent": {
+            "$ref": "#/$defs/decimal",
+            "description": "Day change as a percentage of the prior close."
+          }
+        },
+        "required": [
+          "netLiquidation",
+          "equity",
+          "positionsMarketValue"
+        ],
+        "additionalProperties": false
+      },
+      "cash": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "$ref": "#/$defs/decimal",
+            "description": "All cash in the account, settled or not."
+          },
+          "settled": {
+            "$ref": "#/$defs/decimal",
+            "description": "Cash that has settled and can fund a purchase in a cash account without a good-faith violation."
+          },
+          "unsettled": {
+            "$ref": "#/$defs/decimal",
+            "description": "Proceeds not yet settled. Spending these in a cash account causes a good-faith violation."
+          },
+          "withdrawable": {
+            "$ref": "#/$defs/decimal",
+            "description": "Cash that can be withdrawn today. Usually lower than settled cash because of holds."
+          }
+        },
+        "required": [
+          "total",
+          "settled",
+          "unsettled",
+          "withdrawable"
+        ],
+        "additionalProperties": false,
+        "description": "Cash in the account. Settled and total are different numbers and only settled can fund a purchase in a cash account."
+      },
+      "buyingPower": {
+        "type": "object",
+        "description": "How much can be spent, by use. These figures are not interchangeable.",
+        "properties": {
+          "applicable": {
+            "$ref": "#/$defs/decimal",
+            "description": "The figure that actually governs a normal stock purchase in this account today. This is the number to use when the customer asks how much they can spend."
+          },
+          "applicableReason": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Why that figure applies — for example settled cash because this is a retirement account and cannot borrow. Quote this when explaining the number."
+          },
+          "stock": {
+            "$ref": "#/$defs/decimal",
+            "description": "Buying power for marginable equities. In a margin account typically twice equity; in a cash or retirement account equal to settled cash."
+          },
+          "option": {
+            "$ref": "#/$defs/decimal",
+            "description": "Buying power for options, which are not marginable. Typically lower than stock buying power."
+          },
+          "dayTrading": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Day-trading buying power, typically four times maintenance excess, resetting each session. Null unless the account is flagged as a pattern day trader. Never present this figure to a customer who is not."
+          }
+        },
+        "required": [
+          "applicable",
+          "applicableReason",
+          "stock",
+          "option"
+        ],
+        "additionalProperties": false
+      },
+      "margin": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Margin detail. Null for cash and retirement accounts, which cannot borrow — say so rather than reporting zeros.",
+        "properties": {
+          "marginBalance": {
+            "$ref": "#/$defs/decimal",
+            "description": "Amount currently borrowed. Zero or negative means nothing is borrowed."
+          },
+          "maintenanceRequirement": {
+            "$ref": "#/$defs/decimal",
+            "description": "Equity that must be maintained against current positions."
+          },
+          "excessLiquidity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Equity above the maintenance requirement. Negative means a maintenance call."
+          },
+          "marginCall": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Present only when a call is outstanding. A margin call is material: surface it whenever it exists, even if the customer did not ask.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "FED_CALL",
+                  "MAINTENANCE_CALL",
+                  "DAY_TRADE_CALL",
+                  "CASH_CALL"
+                ],
+                "description": "Which kind of call."
+              },
+              "amount": {
+                "$ref": "#/$defs/decimal",
+                "description": "Amount that must be met."
+              },
+              "dueDate": {
+                "type": "string",
+                "format": "date",
+                "description": "Date by which it must be met."
+              }
+            },
+            "required": [
+              "type",
+              "amount",
+              "dueDate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "marginBalance",
+          "maintenanceRequirement",
+          "excessLiquidity",
+          "marginCall"
+        ],
+        "additionalProperties": false
+      },
+      "dayTrades": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Day-trade counters. Null for accounts where the pattern day trader rule does not apply.",
+        "properties": {
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Day trades used in the rolling five-business-day window."
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Day trades remaining before the pattern day trader rule applies."
+          },
+          "patternDayTrader": {
+            "type": "boolean",
+            "description": "True when the account is flagged, which imposes a 25,000 minimum equity requirement."
+          }
+        },
+        "required": [
+          "used",
+          "remaining",
+          "patternDayTrader"
+        ],
+        "additionalProperties": false
+      },
+      "disclosures": {
+        "type": "array",
+        "maxItems": 5,
+        "description": "Compliance text that must accompany these figures if presented to the customer.",
+        "items": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "required": [
+      "accountId",
+      "accountType",
+      "registration",
+      "asOf",
+      "basis",
+      "currency",
+      "totalValue",
+      "cash",
+      "buyingPower"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "2.7.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 1,
+      "owner": {
+        "team": "margin-and-balances",
+        "contact": "margin-balances@example.com",
+        "escalation": "pagerduty://margin-and-balances"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": true,
+      "piiFields": [
+        "/accountNumberMasked"
+      ],
+      "entitlements": [
+        "brokerage:balances:read"
+      ],
+      "approval": {
+        "mode": "none"
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.balances.read",
+        "retention": "P6Y",
+        "regulatoryBasis": [
+          "books-and-records",
+          "margin-disclosure"
+        ]
+      },
+      "cost": {
+        "class": "medium",
+        "p95LatencyMs": 900
+      },
+      "rateLimit": {
+        "perPrincipalPerMinute": 30
+      },
+      "dependencies": [
+        "cash-ledger",
+        "margin-engine",
+        "market-data"
+      ],
+      "availability": {
+        "slo": "99.95",
+        "killSwitch": "tools.brokerage.balances",
+        "degradedMode": "none — fails closed rather than returning a partial figure"
+      },
+      "evaluation": {
+        "suite": "evals/brokerage-balances",
+        "lastRunAt": "2026-09-15T08:00:00Z",
+        "selectionAccuracy": 0.96,
+        "refusalAccuracy": 0.98
+      }
+    }
+  }
+}

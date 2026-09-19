@@ -1,0 +1,207 @@
+{
+  "name": "brokerage_order_place",
+  "title": "Place a real order — trades money",
+  "description": "Places a live equity order in the market using a confirmation token obtained from brokerage_order_preview. This spends the customer's money and creates market exposure; it cannot be undone once it fills. Use when the customer has seen a preview of this exact order and explicitly told you to place it, and only then: brokerage_order_preview must have returned a confirmationToken for the same order first. Do not use to check whether an order is possible — call brokerage_order_check. Do not use to show the customer what an order would cost — call brokerage_order_preview. Do not re-invoke after a rejection or a declined approval without the customer explicitly asking again. Every call requires an idempotencyKey: a fresh one for a genuinely new order, and the same one when retrying an order whose outcome is unknown, which returns the original result rather than placing a second order. If the call times out, the order may still have been placed: call brokerage_orders_list before doing anything else, and never assume failure. A successful result means the order was accepted, not that it filled — check status and isTerminal, and tell the customer which of the two happened.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account to trade in, from brokerage_accounts_list. Must match the account the preview was run against."
+      },
+      "confirmationToken": {
+        "type": "string",
+        "maxLength": 512,
+        "description": "Token from brokerage_order_preview, valid for 120 seconds and single use. It binds this order to the outcome the customer was shown."
+      },
+      "idempotencyKey": {
+        "type": "string",
+        "format": "uuid",
+        "description": "A UUID identifying this order attempt. Use a new one for a new order; reuse the same one to retry an attempt whose outcome is unknown."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}$",
+        "description": "Ticker to trade, uppercase. Must match the preview."
+      },
+      "side": {
+        "type": "string",
+        "enum": [
+          "BUY",
+          "SELL",
+          "SELL_SHORT",
+          "BUY_TO_COVER"
+        ],
+        "description": "Direction. SELL_SHORT opens a short position and BUY_TO_COVER closes one; they are not interchangeable with SELL and BUY."
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000,
+        "description": "Whole shares. Fractional quantities are not supported. Must match the preview."
+      },
+      "orderType": {
+        "type": "string",
+        "enum": [
+          "MARKET",
+          "LIMIT",
+          "STOP",
+          "STOP_LIMIT"
+        ],
+        "description": "How to price the order. MARKET executes immediately at whatever the market offers, which in a fast market may be materially worse than the last price shown."
+      },
+      "limitPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "Required for LIMIT and STOP_LIMIT. The worst price the customer will accept. Omit for MARKET and STOP orders."
+      },
+      "stopPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "Required for STOP and STOP_LIMIT. The price at which the order activates. Omit for MARKET and LIMIT orders."
+      },
+      "timeInForce": {
+        "type": "string",
+        "enum": [
+          "DAY",
+          "GTC",
+          "IOC",
+          "FOK"
+        ],
+        "default": "DAY",
+        "description": "How long the order stays live. Omitted means DAY, which expires at the close of the current session."
+      },
+      "extendedHours": {
+        "type": "boolean",
+        "default": false,
+        "description": "Allow execution outside regular hours, where spreads are wider and liquidity thinner. Omitted means false. Only valid with LIMIT orders."
+      },
+      "reason": {
+        "type": "string",
+        "maxLength": 280,
+        "description": "Why the customer is placing this order, in their own words where available. Captured verbatim in the audit record. Omitted when the customer has not given a reason; do not invent one."
+      }
+    },
+    "required": [
+      "accountId",
+      "confirmationToken",
+      "idempotencyKey",
+      "symbol",
+      "side",
+      "quantity",
+      "orderType"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "orderId": {
+        "type": "string",
+        "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "Identifier of the order just placed. Pass to brokerage_order_get to follow its progress."
+      },
+      "status": {
+        "type": "string",
+        "maxLength": 32,
+        "description": "Lifecycle state immediately after acceptance. Usually NEW or PARTIALLY_FILLED, occasionally FILLED for a marketable order."
+      },
+      "isTerminal": {
+        "type": "boolean",
+        "description": "True only if the order completed instantly. Usually false: acceptance is not execution."
+      },
+      "statusExplanation": {
+        "type": "string",
+        "maxLength": 240,
+        "description": "One sentence for the customer describing what has and has not happened yet."
+      },
+      "acceptedAt": {
+        "type": "string",
+        "format": "date-time",
+        "description": "When the order was accepted (UTC)."
+      },
+      "replayed": {
+        "type": "boolean",
+        "description": "True when this result was replayed from a previous call with the same idempotencyKey — no new order was placed."
+      },
+      "summary": {
+        "type": "string",
+        "maxLength": 240,
+        "description": "One-line description of the order as placed, suitable for reading back to the customer."
+      }
+    },
+    "required": [
+      "orderId",
+      "status",
+      "isTerminal",
+      "statusExplanation",
+      "acceptedAt",
+      "replayed",
+      "summary"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "4.0.2",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 3,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform-critical"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": [
+        "brokerage:orders:write"
+      ],
+      "approval": {
+        "mode": "confirm",
+        "expiresInSeconds": 120,
+        "confirmationTemplate": "Place a real order — this trades money.\n{{side}} {{quantity}} shares of {{symbol}} ({{instrumentName}})\nAccount {{accountNumberMasked}} · {{registrationLabel}}\n{{orderTypeLabel}}, {{timeInForceLabel}}\nEstimated cost {{estimatedCost}} {{currency}}\nBuying power after {{buyingPowerAfter}} {{currency}}\n{{reversibilityNote}}"
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.order.place",
+        "retention": "P6Y",
+        "regulatoryBasis": [
+          "books-and-records",
+          "order-audit-trail",
+          "suitability"
+        ]
+      },
+      "cost": {
+        "class": "medium",
+        "p95LatencyMs": 1200
+      },
+      "rateLimit": {
+        "perPrincipalPerMinute": 10
+      },
+      "dependencies": [
+        "order-management-system",
+        "risk-engine",
+        "margin-engine"
+      ],
+      "availability": {
+        "slo": "99.99",
+        "killSwitch": "tools.brokerage.trading",
+        "degradedMode": "none — fails closed"
+      },
+      "evaluation": {
+        "suite": "evals/brokerage-trading",
+        "lastRunAt": "2026-09-15T08:00:00Z",
+        "selectionAccuracy": 0.99,
+        "refusalAccuracy": 0.99
+      }
+    }
+  }
+}

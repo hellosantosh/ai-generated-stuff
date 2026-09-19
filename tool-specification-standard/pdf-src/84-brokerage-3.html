@@ -1,0 +1,341 @@
+<!-- ==================== 23. STATE CHANGE ==================== -->
+<h1 id="order-place"><span class="num">23</span>A state-changing tool, for contrast</h1>
+
+<p class="lede">
+  Everything so far has been read-only. This section shows what changes when a tool spends a
+  customer's money — and how little of it is about the code.
+</p>
+
+<h2 id="two-step"><span class="num">23.1</span>The two-step shape</h2>
+
+<table class="long">
+  <thead><tr><th style="width:30%">Tool</th><th style="width:10%">Tier</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><code>brokerage_order_preview</code></td><td><span class="risk r1">T1</span></td>
+        <td>Read-only. Computes cost, commission, resulting buying power, blockers, and
+            warnings. Issues the <code>confirmationToken</code>. May be called freely, which
+            means it <em>is</em> called — the customer sees the numbers before anyone asks
+            them to commit.</td></tr>
+    <tr><td><code>brokerage_order_place</code></td><td><span class="risk r3">T3</span></td>
+        <td>Places the order. Requires the token, an idempotency key, and an explicit human
+            confirmation bound to the exact arguments.</td></tr>
+  </tbody>
+</table>
+
+<pre><code>customer: "buy 100 apple in my roth"
+
+  1. brokerage_accounts_list              → acct_01HQ8Z4M2X9K3P7R (Roth IRA, canTrade: true)
+  2. brokerage_order_preview              → canPlace: true, estimatedCost 24,875.00 USD,
+                                             buyingPowerAfter 59,485.20 USD,
+                                             confirmationToken "cnf_…", expires 14:36:20Z
+  3. agent presents the confirmation      → rendered from confirmationTemplate, not from JSON
+  4. customer approves                    → runtime hashes the arguments and binds the approval
+  5. brokerage_order_place                → orderId ord_…, status NEW, isTerminal false
+  6. brokerage_order_get (after 2 s)      → status PARTIALLY_FILLED, 40 of 100 at 248.61</code></pre>
+
+<h2 id="place-descriptor"><span class="num">23.2</span>The descriptor</h2>
+
+<div class="tool tall">
+  <div class="tool-name">brokerage_order_place<span class="tt">Place a real order — trades money</span></div>
+  <div class="pills">
+    <span class="risk r3">TIER 3</span>
+    <span class="pill dest">DESTRUCTIVE</span>
+    <span class="pill idem">IDEMPOTENT VIA KEY</span>
+    <span class="pill open">OPEN WORLD</span>
+    <span class="pill scope">brokerage:orders:write</span>
+    <span class="pill dest">APPROVAL: CONFIRM</span>
+    <span class="pill">RATE 10/min</span>
+    <span class="pill">KILL SWITCH</span>
+  </div>
+</div>
+
+<!--CATALOG:brokerage_order_place:description-->
+
+<p>
+  Note the title: <b>"Place a real order — trades money"</b>. It appears in the approval
+  dialog and in every audit export. Titles for tier 3 tools name the consequence, not the
+  operation (<code>TS-NAM-09</code>), because the person reading it at speed is deciding
+  whether to authorise something real.
+</p>
+
+<h3><span class="num">23.2.1</span>Input schema</h3>
+
+<!--CATALOG:brokerage_order_place:input-->
+
+<h3><span class="num">23.2.2</span>Annotations and governance</h3>
+
+<!--CATALOG:brokerage_order_place:annotations-->
+
+<p>
+  <code>idempotentHint</code> is <code>true</code> only because <code>idempotencyKey</code> is
+  required: placing the same order twice with the same key places one order. Without the key
+  this would be <code>false</code>, and the runtime would be unable to retry a timeout safely.
+  <code>openWorldHint</code> is <code>true</code> because the order reaches a market venue
+  outside the firm's control, whose behaviour is not enumerable.
+</p>
+
+<!--CATALOG:brokerage_order_place:governance-->
+
+<h2 id="place-conf"><span class="num">23.3</span>The confirmation</h2>
+
+<p>
+  The <code>confirmationTemplate</code> in that governance block renders to this, and the
+  approval is bound to a hash of exactly these arguments (<code>TS-ANN-05</code>):
+</p>
+
+<pre class="good"><code>┌──────────────────────────────────────────────────┐
+│  Place a real order — this trades money          │
+│                                                  │
+│  BUY 100 shares of AAPL (Apple Inc.)             │
+│  Account ••••4471 · Roth IRA                     │
+│  Market order, good for today                    │
+│                                                  │
+│  Estimated cost         24,875.00 USD            │
+│  Buying power after     59,485.20 USD            │
+│                                                  │
+│  A market order fills at whatever the market     │
+│  offers and cannot be undone once it fills.      │
+│                                                  │
+│          [ Place order ]    [ Cancel ]           │
+│                                                  │
+│  Expires in 1:47                                 │
+└──────────────────────────────────────────────────┘</code></pre>
+
+<h2 id="place-failure"><span class="num">23.4</span>The failure that matters most</h2>
+
+<p>
+  A timeout on <code>brokerage_order_place</code> leaves the outcome <em>unknown</em>. The
+  order may be live in the market. The error says so, in the only words that reliably produce
+  the right next action:
+</p>
+
+<pre><code>{ <span class="c-key">"error"</span>: {
+    <span class="c-key">"code"</span>: <span class="c-str">"TIMEOUT"</span>,
+    <span class="c-key">"domainCode"</span>: <span class="c-str">"ORDER_OUTCOME_UNKNOWN"</span>,
+    <span class="c-key">"message"</span>: <span class="c-str">"The order was sent but no acknowledgement was received within 5 seconds. It may or may not have been placed."</span>,
+    <span class="c-key">"retryable"</span>: <span class="c-key">true</span>,
+    <span class="c-key">"remediation"</span>: <span class="c-str">"Do not tell the customer the order failed. Either retry brokerage_order_place with the SAME idempotencyKey, which will return the original result if the order was placed, or call brokerage_orders_list to check. Never place a second order with a new key."</span>,
+    <span class="c-key">"details"</span>: { <span class="c-key">"idempotencyKey"</span>: <span class="c-str">"3f2b1c88-9a41-4e2d-8b77-5c1e9d4a6f20"</span> },
+    <span class="c-key">"traceId"</span>: <span class="c-str">"01HQ9F6Q9S3U7W0Z1C4E6G8J"</span> } }</code></pre>
+
+<div class="danger">
+  <span class="lbl">Three sentences, three prevented incidents</span>
+  <p>
+    "Do not tell the customer the order failed" prevents a false negative the customer acts
+    on. "Retry with the SAME idempotencyKey" prevents a duplicate trade. "Never place a second
+    order with a new key" closes the loophole a model will otherwise find when the retry also
+    times out. This is what <code>TS-ERR-02</code> means by remediation: an instruction, in the
+    imperative, written by someone who has thought about what goes wrong.
+  </p>
+</div>
+
+<!-- ==================== 24. COMPOSITION ==================== -->
+<h1 id="composition"><span class="num">24</span>Composition: five questions, one catalogue</h1>
+
+<p class="lede">
+  The test of a catalogue is not whether each tool is good but whether the set answers real
+  questions without the model needing to know anything the firm has not told it. Five
+  questions, traced.
+</p>
+
+<h2 id="q1"><span class="num">24.1</span>"What do I own?"</h2>
+
+<pre><code>brokerage_accounts_list  {}
+  → 3 accounts; customer says "the Roth"  → acct_01HQ8Z4M2X9K3P7R
+brokerage_positions_list { accountId: "acct_01HQ8Z4M2X9K3P7R" }
+  → 3 positions, totals, asOf, DELAYED_15M</code></pre>
+
+<p><b>What the descriptors did:</b> the accounts description said it is the only source of
+account identifiers, so the model did not invent one. The positions description said quantity
+is signed, so the short position was reported as short. The <code>basis</code> field meant the
+answer was "as of 14:32, prices delayed up to 15 minutes" rather than a bare number.</p>
+
+<h2 id="q2"><span class="num">24.2</span>"Did my Apple order go through?"</h2>
+
+<pre><code>brokerage_orders_list { accountId: "…", symbol: "AAPL", status: "WORKING" }
+  → 1 order, PARTIALLY_FILLED, 200 of 500 at 245.88, isTerminal false</code></pre>
+
+<p><b>What the descriptors did:</b> the positions description's exclusion — "do not use to
+check whether a trade went through" — routed the question to orders rather than positions,
+which is the single most common misroute in this domain. <code>filledQuantity</code> and
+<code>remainingQuantity</code> made "partly, 200 of 500" expressible;
+<code>status</code> alone would not have.</p>
+
+<h2 id="q3"><span class="num">24.3</span>"How much can I spend in my Roth?"</h2>
+
+<pre><code>brokerage_balances_get { accountId: "acct_01HQ8Z4M2X9K3P7R" }
+  → applicable 12,180.00 USD
+    applicableReason "Settled cash. This is a retirement account and cannot
+                      borrow, so margin buying power does not apply."</code></pre>
+
+<p><b>What the descriptors did:</b> everything. Four figures were available and the tool named
+the right one and said why. A catalogue without <code>applicable</code> would have required
+the model to know that a Roth IRA cannot borrow — which it might, most of the time, which is
+the worst possible reliability profile for a number the customer will act on.</p>
+
+<h2 id="q4"><span class="num">24.4</span>"Can I afford 100 Apple in there?"</h2>
+
+<pre><code>brokerage_order_preview { accountId: "…", symbol: "AAPL", side: "BUY",
+                          quantity: 100, orderType: "MARKET" }
+  → canPlace true, estimatedCost 24,875.00, buyingPowerAfter -12,695.00 …
+    blockers [{ code: "INSUFFICIENT_BUYING_POWER",
+                message: "This order needs 24,875.00 USD; 12,180.00 USD is available.",
+                maxPermissibleQuantity: 48 }]
+    canPlace false</code></pre>
+
+<p><b>What the descriptors did:</b> the preview tool refused, in advance, with the largest
+quantity that <em>would</em> work. The customer hears "not quite — that would need $24,875 and
+you have $12,180 settled; 48 shares would fit" instead of watching an order get rejected.
+<code>maxPermissibleQuantity</code> is <code>TS-ERR-03</code> applied inside a success
+payload.</p>
+
+<h2 id="q5"><span class="num">24.5</span>"Fine, buy 48 then."</h2>
+
+<pre><code>brokerage_order_preview { … quantity: 48 }        → canPlace true, cnf_… (120 s)
+   confirmation shown, customer approves, arguments hashed
+brokerage_order_place   { … confirmationToken: "cnf_…",
+                          idempotencyKey: "3f2b1c88-…", reason: "customer requested" }
+   → ord_01HQ9F8R2T5V8X1A, status NEW, isTerminal false,
+     statusExplanation "Your order for 48 shares of AAPL has been accepted and
+                        is working. It has not filled yet."
+brokerage_order_get     { … }  after nextPollAfterSeconds = 2
+   → FILLED, 48 at 248.57, isTerminal true</code></pre>
+
+<p><b>What the descriptors did:</b> <code>statusExplanation</code> stopped "accepted" being
+reported as "bought". <code>isTerminal</code> stopped the polling loop at the right moment.
+The idempotency key meant a retry would have been safe. The audit record carries the
+confirmation the customer saw, their approval, the argument hash, and the descriptor version
+that produced the prose the model read.</p>
+
+<h2 id="q-contrast"><span class="num">24.6</span>The same five questions against a mirrored REST surface</h2>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Question</th><th style="width:34%">What happens</th><th>Root cause</th></tr></thead>
+  <tbody>
+    <tr><td>"What do I own?"</td><td>Short position reported as a holding; option exposure understated 100×</td><td>Conventions never stated (§6.1)</td></tr>
+    <tr><td>"Did my order go through?"</td><td>Answered from positions: "you own 200 Apple", which is true and not the question</td><td>No exclusions (§6.2 part 3)</td></tr>
+    <tr><td>"How much can I spend?"</td><td>Margin buying power quoted for a retirement account</td><td>Ambiguity shipped to the caller (§21.1)</td></tr>
+    <tr><td>"Can I afford it?"</td><td>Model multiplies a delayed price by quantity and compares to total cash; off by the unsettled balance</td><td>No decision tool (§12.3)</td></tr>
+    <tr><td>"Buy 48"</td><td>Order placed twice after a timeout</td><td>No idempotency key (<code>TS-SEC-07</code>)</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Every one of those failures is silent. None throws, none is logged as an error, and none
+  fails a contract test. They are visible only in the conversation, which is why §16.2's
+  silent wrongness rate is the metric this standard is ultimately trying to move.
+</p>
+
+<!-- ==================== 25. ANTI-PATTERNS ==================== -->
+<h1 id="antipatterns"><span class="num">25</span>The anti-pattern catalogue</h1>
+
+<p class="lede">
+  Twelve failures seen repeatedly in first-generation tool catalogues, each with the rule it
+  breaks. A reviewer who memorises this section will catch most of what arrives at an
+  architecture board.
+</p>
+
+<h2 id="ap1"><span class="num">25.1</span>The kitchen-sink tool</h2>
+
+<div class="dd">
+  <div>
+    <p class="lang b">One tool, four behaviours</p>
+    <pre class="bad"><code>{
+  <span class="c-key">"name"</span>: <span class="c-str">"brokerage_orders_manage"</span>,
+  <span class="c-key">"inputSchema"</span>: { <span class="c-key">"properties"</span>: {
+    <span class="c-key">"action"</span>: { <span class="c-key">"enum"</span>: [<span class="c-str">"list"</span>, <span class="c-str">"get"</span>,
+                          <span class="c-str">"place"</span>, <span class="c-str">"cancel"</span>] },
+    <span class="c-key">"params"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"object"</span> }
+  }},
+  <span class="c-key">"annotations"</span>: {
+    <span class="c-key">"readOnlyHint"</span>: <span class="c-key">false</span>,   <span class="c-com">// wrong for 2 of 4</span>
+    <span class="c-key">"destructiveHint"</span>: <span class="c-key">true</span> <span class="c-com">// wrong for 2 of 4</span>
+  }
+}</code></pre>
+  </div>
+  <div>
+    <p class="lang g">Four tools, four accurate contracts</p>
+    <pre class="good"><code>brokerage_orders_list    T1  read-only
+brokerage_order_get      T1  read-only
+brokerage_order_preview  T1  read-only
+brokerage_order_place    T3  confirm + token
+brokerage_order_cancel   T3  confirm
+
+<span class="c-com">// Each has its own description, risk tier,
+// approval policy, rate limit, audit event,
+// kill switch, and evaluation.</span></code></pre>
+  </div>
+</div>
+
+<p>
+  <b>Breaks:</b> <code>TS-NAM-06</code>, <code>TS-ANN-02</code>, <code>TS-INP-01</code> (the
+  open <code>params</code> object), and the entire control model — approval policy cannot be
+  written against a tool whose risk depends on an argument the model chose.
+</p>
+
+<h2 id="ap-rest"><span class="num">25.2</span>The rest of the catalogue</h2>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Anti-pattern</th><th style="width:34%">What goes wrong</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td><b>The <code>dryRun</code> flag</b></td>
+        <td>One token in a model-generated object is the only thing between a simulation and a
+            real trade. Annotations describe one of two tools.</td>
+        <td><code>TS-INP-13</code></td></tr>
+    <tr><td><b>The API mirror</b><br><span class="small">one tool per endpoint</span></td>
+        <td>Forty tools, none of which answers a question anyone asks; selection accuracy
+            collapses and every answer needs four hops.</td>
+        <td><code>TS-CAT-01</code></td></tr>
+    <tr><td><b>The free-text filter</b><br><span class="small"><code>query</code>, <code>sql</code>, <code>filterExpression</code></span></td>
+        <td>Unvalidatable, unauditable, and an injection surface with the model as the
+            injector. Also impossible to rate-limit meaningfully.</td>
+        <td>§7.7</td></tr>
+    <tr><td><b>The identity parameter</b><br><span class="small"><code>customerId</code>, <code>onBehalfOf</code></span></td>
+        <td>Access control delegated to a language model. Will eventually be persuaded.</td>
+        <td><code>TS-SEC-02</code></td></tr>
+    <tr><td><b>Silent truncation</b></td>
+        <td>"Your portfolio is worth $310,000" when 25 of 340 positions were returned. Nothing
+            errors; the number is simply wrong.</td>
+        <td><code>TS-OUT-07</code></td></tr>
+    <tr><td><b>Empty as error</b></td>
+        <td>An account with no positions reported to the customer as an outage. Support ticket,
+            no logs, nothing to find.</td>
+        <td>§8.6</td></tr>
+    <tr><td><b>The raw upstream payload</b></td>
+        <td>200,000 tokens, a production hostname, an ETL batch identifier, and six fields the
+            customer must never see.</td>
+        <td><code>TS-GOV-02</code>, §13.4</td></tr>
+    <tr><td><b>The apologetic error</b><br><span class="small">"Something went wrong, please try later"</span></td>
+        <td>The agent retries a doomed call three times, then tells the customer nothing
+            useful. Every retry costs money and time.</td>
+        <td><code>TS-ERR-02</code></td></tr>
+    <tr><td><b>The description as documentation</b></td>
+        <td>600 words of API reference in the selection context, restating the schema and
+            omitting every domain convention that actually matters.</td>
+        <td><code>TS-DSC-01</code>, <code>TS-DSC-02</code></td></tr>
+    <tr><td><b>The description as system prompt</b></td>
+        <td>"Always greet the customer warmly and suggest our premium tier." A tool reaching
+            into a surface it cannot see, and an instruction the model may follow in unrelated
+            turns.</td>
+        <td><code>TS-DSC-06</code></td></tr>
+    <tr><td><b>The unowned tool</b></td>
+        <td>Still returning customer data to agents two years after the team that built it was
+            reorganised. Works perfectly; accountable to no one.</td>
+        <td><code>TS-GOV-01</code></td></tr>
+    <tr><td><b>The rename</b></td>
+        <td>Six years of audit records silently change meaning. In a regulated firm this is a
+            record-keeping defect, not a refactor.</td>
+        <td><code>TS-NAM-11</code></td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">The pattern behind the patterns</span>
+  <p>
+    Eleven of these twelve are the same mistake: <b>optimising for the convenience of the team
+    building the tool rather than the reliability of the caller consuming it.</b> One tool is
+    easier to ship than four. Passing the upstream payload through is easier than shaping it.
+    A generic error is easier than a mapped taxonomy. Each shortcut moves work from a place
+    where it can be tested to a place where it can only be hoped for.
+  </p>
+</div>

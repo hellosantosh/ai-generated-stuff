@@ -1,0 +1,279 @@
+<!-- ==================== COVER ==================== -->
+<section class="cover">
+  <div class="eyebrow">Enterprise Architecture &middot; Normative Standard</div>
+  <h1>Tool Specification<br>Standard</h1>
+  <p class="sub">
+    How model-invocable tools are defined, described, schema'd, classified,
+    secured, and governed across the firm — with a complete reference catalogue
+    for brokerage accounts, positions, balances, and order status.
+  </p>
+  <div class="cover-rule"></div>
+  <div class="scope">
+    <b>This standard defines</b>
+    Tool identity and naming &middot; the model-facing description contract<br>
+    Input and output schemas &middot; the result envelope &middot; the error taxonomy<br>
+    Behavioural annotations, risk tiers, and approval binding<br>
+    Governance metadata, entitlements, observability, and versioning<br>
+    Conformance levels, the review checklist, and the certification gate
+  </div>
+  <div class="meta">
+    <strong>Status</strong> Draft for Architecture Review Board &nbsp;·&nbsp;
+    <strong>Version</strong> 1.0.0-rc1<br>
+    <strong>Classification</strong> Internal &nbsp;·&nbsp;
+    <strong>Applies to</strong> every tool exposed to an autonomous or assisted agent<br>
+    <strong>Protocol position</strong> transport-neutral — binds to any tool-calling
+    runtime without amendment
+  </div>
+</section>
+
+<!-- ==================== DOCUMENT CONTROL ==================== -->
+<h1 id="control"><span class="num">0</span>Document control</h1>
+
+<p class="lede">
+  This is a normative standard, not a guideline. Sections marked <span class="lvl lvl-must">MUST</span>
+  are gating conditions for production release; a tool that fails one does not ship.
+  Everything else is engineering advice with the firm's reasoning attached.
+</p>
+
+<table class="docctl">
+  <tbody>
+    <tr><th>Title</th><td>Tool Specification Standard</td></tr>
+    <tr><th>Identifier</th><td><code>EA-STD-TOOL-001</code></td></tr>
+    <tr><th>Version</th><td>1.0.0-rc1</td></tr>
+    <tr><th>Status</th><td>Draft for Architecture Review Board ratification</td></tr>
+    <tr><th>Owner</th><td>Enterprise Architecture — Agent Platform</td></tr>
+    <tr><th>Applies to</th><td>
+      Every capability exposed for invocation by a language model, whether reached through an
+      internal agent, a vendor assistant, a copilot embedded in a desktop product, or an
+      autonomous workflow. Applies equally to tools that wrap an existing REST API, a database,
+      a mainframe transaction, or a human workflow queue.
+    </td></tr>
+    <tr><th>Does not apply to</th><td>
+      Human-facing REST and GraphQL APIs (governed by <code>EA-STD-API-002</code>), event
+      schemas, and batch interfaces — except where one of those is being <em>wrapped</em> as a
+      tool, at which point this standard governs the wrapper.
+    </td></tr>
+    <tr><th>Normative dependencies</th><td>
+      JSON Schema 2020-12 · RFC 2119 / RFC 8174 keywords · RFC 3339 timestamps ·
+      ISO 4217 currency codes · ISO 8601 durations · the firm's identity and
+      entitlement standard
+    </td></tr>
+    <tr><th>Review cycle</th><td>Twice yearly, or on any breaking change to a bound runtime</td></tr>
+  </tbody>
+</table>
+
+<h2 id="why"><span class="num">0.1</span>Why the firm needs this</h2>
+
+<p>
+  Three things have happened at once. Business lines are shipping agents. Vendors are
+  shipping assistants that expect to be handed capabilities. And the safest, most valuable
+  capabilities we own — an account's positions, a customer's buying power, the status of a
+  live order — are exactly the ones an agent most wants to reach.
+</p>
+
+<p>
+  In the absence of a standard, each team invents its own answers to the same twelve
+  questions: what the tool is called, how much it should say about itself, what it returns
+  when there is nothing to return, whether the caller may retry, who the caller is, what
+  happens when the upstream system is down, and who signed off on any of it. The result is
+  not merely inconsistent. It is unreviewable: an architecture board cannot assess forty
+  tools that each describe themselves differently, and a model cannot reliably choose
+  between them either.
+</p>
+
+<p>
+  This standard fixes the shape of the contract so that the interesting questions — is this
+  capability safe to expose, to whom, under what supervision — are the only ones left on the
+  table at review time.
+</p>
+
+<h2 id="howtoread"><span class="num">0.2</span>How to read this document</h2>
+
+<table>
+  <thead><tr><th style="width:26%">If you are</th><th>Read</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>An architect</b> assessing a proposal</td>
+      <td>Part I for the model, §9 and §10 for the classification scheme, §15 for the trust
+          argument, and Appendix E — the one-page review checklist you will actually use in
+          the meeting.</td>
+    </tr>
+    <tr>
+      <td><b>A tech lead</b> designing a tool set</td>
+      <td>Part II end to end, then §12 (granularity) and §13 (payload economics). Part IV is
+          a worked catalogue you can copy structurally.</td>
+    </tr>
+    <tr>
+      <td><b>A developer</b> writing one tool</td>
+      <td>§4 for the anatomy, §6 for the description, §7–§8 for schemas, §11 for errors, and
+          the nearest analogue in Part IV. Appendix B is a type library you should paste from
+          rather than reinvent.</td>
+    </tr>
+    <tr>
+      <td><b>A risk, audit, or compliance reviewer</b></td>
+      <td>§9 (risk tiers), §10 (governance metadata), §15 (security), §16 (audit and
+          supervision), §17 (lifecycle), §27 (certification evidence).</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">On protocol neutrality</span>
+  <p>
+    This standard deliberately specifies a <em>contract</em>, not a wire protocol. Field
+    names, schema dialect, envelope shape, and annotation semantics are chosen to map
+    one-to-one onto the tool-calling interfaces in current use, so a conformant descriptor
+    can be published over any of them by a thin adapter that renames nothing. Where a
+    runtime imposes a stricter limit than this standard — a shorter name budget, a smaller
+    payload ceiling — the stricter limit wins and §17.5 explains how to record that.
+  </p>
+</div>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+<section class="toc">
+<h1 id="toc">Contents</h1>
+
+<div class="part-head">Part I — Foundations</div>
+<ol>
+  <li><span class="tnum">1</span>Scope, audience, and conformance
+    <ol>
+      <li><span class="tnum">1.1</span>What a conformant tool is</li>
+      <li><span class="tnum">1.2</span>Conformance language and rule identifiers</li>
+      <li><span class="tnum">1.3</span>Conformance levels</li>
+      <li><span class="tnum">1.4</span>Relationship to the firm's API standard</li>
+    </ol>
+  </li>
+  <li><span class="tnum">2</span>What a tool is
+    <ol>
+      <li><span class="tnum">2.1</span>One artifact, three audiences</li>
+      <li><span class="tnum">2.2</span>A tool is not an endpoint</li>
+      <li><span class="tnum">2.3</span>Designing for a non-deterministic caller</li>
+      <li><span class="tnum">2.4</span>The trust boundary</li>
+    </ol>
+  </li>
+  <li><span class="tnum">3</span>Reference architecture
+    <ol>
+      <li><span class="tnum">3.1</span>Components and responsibilities</li>
+      <li><span class="tnum">3.2</span>Anatomy of an invocation</li>
+      <li><span class="tnum">3.3</span>Where this standard binds</li>
+    </ol>
+  </li>
+</ol>
+
+<div class="part-head">Part II — The tool descriptor</div>
+<ol start="4">
+  <li><span class="tnum">4</span>Descriptor anatomy
+    <ol>
+      <li><span class="tnum">4.1</span>The eight fields</li>
+      <li><span class="tnum">4.2</span>A complete descriptor, annotated</li>
+      <li><span class="tnum">4.3</span>Descriptor rules</li>
+    </ol>
+  </li>
+  <li><span class="tnum">5</span>Identity and naming
+    <ol>
+      <li><span class="tnum">5.1</span>The wire name grammar</li>
+      <li><span class="tnum">5.2</span>Namespaces and the catalogue identifier</li>
+      <li><span class="tnum">5.3</span>The operation vocabulary</li>
+      <li><span class="tnum">5.4</span>Titles, icons, and display</li>
+      <li><span class="tnum">5.5</span>Name stability</li>
+    </ol>
+  </li>
+  <li><span class="tnum">6</span>The description: the model-facing contract
+    <ol>
+      <li><span class="tnum">6.1</span>What the model actually sees</li>
+      <li><span class="tnum">6.2</span>The seven-part template</li>
+      <li><span class="tnum">6.3</span>Budgets and economy</li>
+      <li><span class="tnum">6.4</span>A worked rewrite</li>
+      <li><span class="tnum">6.5</span>Descriptions are attack surface</li>
+    </ol>
+  </li>
+  <li><span class="tnum">7</span>Input schema
+    <ol>
+      <li><span class="tnum">7.1</span>The schema profile</li>
+      <li><span class="tnum">7.2</span>Parameter naming and shape</li>
+      <li><span class="tnum">7.3</span>Making illegal states unrepresentable</li>
+      <li><span class="tnum">7.4</span>Required, optional, and default</li>
+      <li><span class="tnum">7.5</span>Per-parameter descriptions</li>
+      <li><span class="tnum">7.6</span>Standard parameter patterns</li>
+      <li><span class="tnum">7.7</span>Prohibited input patterns</li>
+    </ol>
+  </li>
+  <li><span class="tnum">8</span>Output schema and the result envelope
+    <ol>
+      <li><span class="tnum">8.1</span>The envelope</li>
+      <li><span class="tnum">8.2</span>The dual-rendering rule</li>
+      <li><span class="tnum">8.3</span>Provenance, as-of, and completeness</li>
+      <li><span class="tnum">8.4</span>Pagination and truncation</li>
+      <li><span class="tnum">8.5</span>References instead of payloads</li>
+      <li><span class="tnum">8.6</span>Empty, partial, and stale results</li>
+    </ol>
+  </li>
+  <li><span class="tnum">9</span>Behavioural annotations and risk tiers
+    <ol>
+      <li><span class="tnum">9.1</span>The four behavioural hints</li>
+      <li><span class="tnum">9.2</span>Hints are advisory, never enforcement</li>
+      <li><span class="tnum">9.3</span>The risk tier</li>
+      <li><span class="tnum">9.4</span>Binding approval policy to the tier</li>
+    </ol>
+  </li>
+  <li><span class="tnum">10</span>Governance metadata
+    <ol>
+      <li><span class="tnum">10.1</span>The governance block</li>
+      <li><span class="tnum">10.2</span>Ownership and lifecycle</li>
+      <li><span class="tnum">10.3</span>Data classification</li>
+      <li><span class="tnum">10.4</span>Entitlements</li>
+      <li><span class="tnum">10.5</span>Cost, latency, and rate class</li>
+    </ol>
+  </li>
+  <li><span class="tnum">11</span>Errors
+    <ol>
+      <li><span class="tnum">11.1</span>Two kinds of failure</li>
+      <li><span class="tnum">11.2</span>The error envelope</li>
+      <li><span class="tnum">11.3</span>The taxonomy</li>
+      <li><span class="tnum">11.4</span>Remediation the model can act on</li>
+      <li><span class="tnum">11.5</span>Redaction</li>
+      <li><span class="tnum">11.6</span>Mapping upstream failures</li>
+    </ol>
+  </li>
+</ol>
+
+<div class="part-head">Part III — Designing a tool set</div>
+<ol start="12">
+  <li><span class="tnum">12</span>Granularity and catalogue design</li>
+  <li><span class="tnum">13</span>Payload economics</li>
+  <li><span class="tnum">14</span>Interaction patterns</li>
+  <li><span class="tnum">15</span>Security and trust</li>
+  <li><span class="tnum">16</span>Observability, audit, and supervision</li>
+  <li><span class="tnum">17</span>Versioning and lifecycle</li>
+</ol>
+
+<div class="part-head">Part IV — Brokerage reference catalogue</div>
+<ol start="18">
+  <li><span class="tnum">18</span>Reference domain and shared types</li>
+  <li><span class="tnum">19</span>Accounts — <code>brokerage_accounts_list</code>, <code>brokerage_account_get</code></li>
+  <li><span class="tnum">20</span>Positions — <code>brokerage_positions_list</code></li>
+  <li><span class="tnum">21</span>Balances — <code>brokerage_balances_get</code></li>
+  <li><span class="tnum">22</span>Order status — <code>brokerage_orders_list</code>, <code>brokerage_order_get</code></li>
+  <li><span class="tnum">23</span>A state-changing tool, for contrast — <code>brokerage_order_place</code></li>
+  <li><span class="tnum">24</span>Composition: five questions, one catalogue</li>
+  <li><span class="tnum">25</span>The anti-pattern catalogue</li>
+</ol>
+
+<div class="part-head">Part V — Governance and adoption</div>
+<ol start="26">
+  <li><span class="tnum">26</span>Conformance and review</li>
+  <li><span class="tnum">27</span>Testing and certification</li>
+  <li><span class="tnum">28</span>The catalogue and the onboarding process</li>
+  <li><span class="tnum">29</span>Adoption roadmap</li>
+</ol>
+
+<div class="part-head">Appendices</div>
+<ol>
+  <li><span class="tnum">A</span>Normative descriptor schema</li>
+  <li><span class="tnum">B</span>Shared type library</li>
+  <li><span class="tnum">C</span>Error code registry</li>
+  <li><span class="tnum">D</span>Reserved enumerations</li>
+  <li><span class="tnum">E</span>Architecture review checklist</li>
+  <li><span class="tnum">F</span>Glossary</li>
+</ol>
+</section>

@@ -1,0 +1,377 @@
+<!-- ==================== 21. BALANCES ==================== -->
+<h1 id="balances"><span class="num">21</span>Balances</h1>
+
+<div class="tool tall">
+  <div class="tool-name">brokerage_balances_get<span class="tt">Get cash, buying power, and margin for an account</span></div>
+  <div class="pills">
+    <span class="risk r1">TIER 1</span>
+    <span class="pill ro">READ-ONLY</span>
+    <span class="pill idem">IDEMPOTENT</span>
+    <span class="pill cls">CLOSED WORLD</span>
+    <span class="pill scope">brokerage:balances:read</span>
+    <span class="pill">APPROVAL: NONE</span>
+    <span class="pill">p95 900 ms</span>
+    <span class="pill dest">FAILS CLOSED</span>
+  </div>
+  <p class="small" style="margin:0">
+    The tool where the gap between "returning the data" and "answering the question" is
+    widest. A customer asking how much they can spend has one question; the account has four
+    defensible answers, and three of them are wrong for any given account.
+  </p>
+</div>
+
+<h2 id="bal-problem"><span class="num">21.1</span>The problem this tool solves</h2>
+
+<p>
+  Consider the same customer, the same instant, four figures:
+</p>
+
+<table>
+  <thead><tr><th style="width:34%">Figure</th><th style="width:20%">Value</th><th>True for</th></tr></thead>
+  <tbody>
+    <tr><td><code>cash.total</code></td><td>18,420.00 USD</td><td>Nothing directly — it includes unsettled proceeds.</td></tr>
+    <tr><td><code>cash.settled</code></td><td>12,180.00 USD</td><td>What a cash or retirement account can actually spend today.</td></tr>
+    <tr><td><code>buyingPower.stock</code></td><td>36,840.00 USD</td><td>A margin account buying marginable equities.</td></tr>
+    <tr><td><code>buyingPower.dayTrading</code></td><td>73,680.00 USD</td><td>A pattern day trader, intraday only, resetting each session.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  A tool that returns all four and stops has discharged its duty to the data and abandoned its
+  duty to the question. The model must then know that a Roth IRA cannot borrow, that
+  unsettled proceeds cannot fund a purchase in a cash account without a good-faith violation,
+  and that day-trading buying power must never be quoted to someone who is not flagged. Those
+  are three domain rules, each of which the firm already encodes correctly in its margin
+  engine.
+</p>
+
+<div class="tip">
+  <span class="lbl">The fix, and the general principle</span>
+  <p>
+    The tool returns <code>buyingPower.applicable</code> — the figure that actually governs
+    this account today — alongside <code>applicableReason</code>, a sentence explaining why.
+    The four underlying figures remain available for a customer who asks for the breakdown.
+    <b>When the server knows which of several correct answers is the right one, it must say
+    so rather than shipping the ambiguity to a caller that cannot resolve it.</b>
+  </p>
+</div>
+
+<h2 id="bal-description"><span class="num">21.2</span>The description</h2>
+
+<!--CATALOG:brokerage_balances_get:description-->
+
+<h2 id="bal-input"><span class="num">21.3</span>Input schema</h2>
+
+<!--CATALOG:brokerage_balances_get:input-->
+
+<h2 id="bal-output"><span class="num">21.4</span>Output schema</h2>
+
+<!--CATALOG:brokerage_balances_get:output-->
+
+<h2 id="bal-result"><span class="num">21.5</span>Two results, same customer</h2>
+
+<p class="lang g">The Roth IRA — cannot borrow, so the applicable figure is settled cash</p>
+<pre class="long"><code>{
+  <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>:
+    <span class="c-str">"Account ••••4471 (Roth IRA, cash) as of 2026-09-19 14:32:11 UTC, intraday estimate. Available to invest: 12,180.00 USD — settled cash, because a retirement account cannot borrow. Total cash 18,420.00 USD, of which 6,240.00 USD is unsettled and cannot fund a purchase yet. Account value 84,317.40 USD, up 612.30 USD (+0.73%) today. No margin: retirement accounts cannot borrow."</span> }],
+  <span class="c-key">"structuredContent"</span>: {
+    <span class="c-key">"accountId"</span>: <span class="c-str">"acct_01HQ8Z4M2X9K3P7R"</span>, <span class="c-key">"accountNumberMasked"</span>: <span class="c-str">"••••4471"</span>,
+    <span class="c-key">"accountType"</span>: <span class="c-str">"CASH"</span>, <span class="c-key">"registration"</span>: <span class="c-str">"ROTH_IRA"</span>,
+    <span class="c-key">"asOf"</span>: <span class="c-str">"2026-09-19T14:32:11Z"</span>, <span class="c-key">"basis"</span>: <span class="c-str">"INTRADAY_ESTIMATE"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+    <span class="c-key">"totalValue"</span>: { <span class="c-key">"netLiquidation"</span>: <span class="c-str">"84317.40"</span>, <span class="c-key">"equity"</span>: <span class="c-str">"84317.40"</span>,
+                    <span class="c-key">"positionsMarketValue"</span>: <span class="c-str">"65897.40"</span>,
+                    <span class="c-key">"dayChange"</span>: <span class="c-str">"612.30"</span>, <span class="c-key">"dayChangePercent"</span>: <span class="c-str">"0.73"</span> },
+    <span class="c-key">"cash"</span>: { <span class="c-key">"total"</span>: <span class="c-str">"18420.00"</span>, <span class="c-key">"settled"</span>: <span class="c-str">"12180.00"</span>,
+              <span class="c-key">"unsettled"</span>: <span class="c-str">"6240.00"</span>, <span class="c-key">"withdrawable"</span>: <span class="c-str">"12180.00"</span> },
+    <span class="c-key">"buyingPower"</span>: {
+      <span class="c-key">"applicable"</span>: <span class="c-str">"12180.00"</span>,
+      <span class="c-key">"applicableReason"</span>: <span class="c-str">"Settled cash. This is a retirement account and cannot borrow, so margin buying power does not apply."</span>,
+      <span class="c-key">"stock"</span>: <span class="c-str">"12180.00"</span>, <span class="c-key">"option"</span>: <span class="c-str">"12180.00"</span>, <span class="c-key">"dayTrading"</span>: <span class="c-key">null</span> },
+    <span class="c-key">"margin"</span>: <span class="c-key">null</span>,
+    <span class="c-key">"dayTrades"</span>: <span class="c-key">null</span>,
+    <span class="c-key">"disclosures"</span>: [
+      <span class="c-str">"Intraday figures are estimates and are restated after the close."</span>,
+      <span class="c-str">"Spending unsettled proceeds in a cash account may cause a good-faith violation."</span>
+    ]
+  },
+  <span class="c-key">"isError"</span>: <span class="c-key">false</span>
+}</code></pre>
+
+<p class="lang g">The margin account — same customer, a different correct answer, and a margin call</p>
+<pre class="long"><code>{
+  <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>:
+    <span class="c-str">"Account ••••8820 (Individual, margin) as of 2026-09-19 14:32:12 UTC, intraday estimate. Available to invest: 36,840.00 USD — margin buying power, roughly twice equity. Settled cash 12,180.00 USD. Account value 118,455.00 USD. Borrowed 24,310.00 USD. MAINTENANCE CALL: 4,120.00 USD due 2026-09-23. Day trades used 2 of 4 in the rolling five-day window."</span> }],
+  <span class="c-key">"structuredContent"</span>: {
+    <span class="c-key">"accountId"</span>: <span class="c-str">"acct_01HQ8Z5N3Y8L4Q9S"</span>, <span class="c-key">"accountNumberMasked"</span>: <span class="c-str">"••••8820"</span>,
+    <span class="c-key">"accountType"</span>: <span class="c-str">"MARGIN"</span>, <span class="c-key">"registration"</span>: <span class="c-str">"INDIVIDUAL"</span>,
+    <span class="c-key">"asOf"</span>: <span class="c-str">"2026-09-19T14:32:12Z"</span>, <span class="c-key">"basis"</span>: <span class="c-str">"INTRADAY_ESTIMATE"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+    <span class="c-key">"buyingPower"</span>: {
+      <span class="c-key">"applicable"</span>: <span class="c-str">"36840.00"</span>,
+      <span class="c-key">"applicableReason"</span>: <span class="c-str">"Margin buying power for marginable equities, approximately twice equity. A maintenance call is outstanding; meeting it takes priority."</span>,
+      <span class="c-key">"stock"</span>: <span class="c-str">"36840.00"</span>, <span class="c-key">"option"</span>: <span class="c-str">"18420.00"</span>, <span class="c-key">"dayTrading"</span>: <span class="c-key">null</span> },
+    <span class="c-key">"margin"</span>: {
+      <span class="c-key">"marginBalance"</span>: <span class="c-str">"24310.00"</span>, <span class="c-key">"maintenanceRequirement"</span>: <span class="c-str">"31200.00"</span>,
+      <span class="c-key">"excessLiquidity"</span>: <span class="c-str">"-4120.00"</span>,
+      <span class="c-key">"marginCall"</span>: { <span class="c-key">"type"</span>: <span class="c-str">"MAINTENANCE_CALL"</span>, <span class="c-key">"amount"</span>: <span class="c-str">"4120.00"</span>,
+                        <span class="c-key">"dueDate"</span>: <span class="c-str">"2026-09-23"</span> } },
+    <span class="c-key">"dayTrades"</span>: { <span class="c-key">"used"</span>: <span class="c-num">2</span>, <span class="c-key">"remaining"</span>: <span class="c-num">2</span>, <span class="c-key">"patternDayTrader"</span>: <span class="c-key">false</span> },
+    <span class="c-key">"disclosures"</span>: [
+      <span class="c-str">"Intraday figures are estimates and are restated after the close."</span>,
+      <span class="c-str">"Margin borrowing involves interest costs and the risk of forced liquidation."</span>
+    ]
+  },
+  <span class="c-key">"isError"</span>: <span class="c-key">false</span>
+}</code></pre>
+
+<div class="danger">
+  <span class="lbl">The margin call is in the text rendering whether or not it was asked about</span>
+  <p>
+    The customer asked how much cash they had. The tool told them, and also told them they
+    owe 4,120.00 USD by Tuesday. Material adverse facts about an account belong in the primary
+    rendering, not buried three levels into a structured payload the model may or may not
+    traverse. This is a design rule worth writing into every tool that touches an account's
+    financial state: <b>if a human adviser would have to mention it, the text block mentions
+    it.</b>
+  </p>
+</div>
+
+<h2 id="bal-fails-closed"><span class="num">21.6</span>Why this tool fails closed</h2>
+
+<p>
+  <code>brokerage_balances_get</code> declares <code>degradedMode: "none — fails closed
+  rather than returning a partial figure"</code>, which is unusual in a read tool and is
+  required by <code>TS-OUT-11</code>.
+</p>
+
+<p>
+  If the margin engine does not respond, the cash ledger alone can still produce numbers. They
+  would be well-formed, plausible, and wrong — understating or overstating buying power by
+  whatever the margin component contributes. A customer told they have 12,180.00 USD available
+  when the real figure is 36,840.00 USD makes a worse decision; told the reverse, they place an
+  order that is rejected, or worse, accepted against an incorrect assessment. The tool
+  therefore returns <code>DATA_INCOMPLETE</code> and names the unavailable component:
+</p>
+
+<pre><code>{ <span class="c-key">"error"</span>: {
+    <span class="c-key">"code"</span>: <span class="c-str">"DATA_INCOMPLETE"</span>,
+    <span class="c-key">"domainCode"</span>: <span class="c-str">"MARGIN_ENGINE_UNAVAILABLE"</span>,
+    <span class="c-key">"message"</span>: <span class="c-str">"Buying power cannot be computed right now because the margin calculation is unavailable. Cash figures alone would be misleading for this account."</span>,
+    <span class="c-key">"retryable"</span>: <span class="c-key">true</span>, <span class="c-key">"retryAfterSeconds"</span>: <span class="c-num">30</span>,
+    <span class="c-key">"remediation"</span>: <span class="c-str">"Retry once after 30 seconds. Do not quote any cash figure as available to invest, and do not tell the customer their buying power is zero."</span>,
+    <span class="c-key">"details"</span>: { <span class="c-key">"system"</span>: <span class="c-str">"margin engine"</span>, <span class="c-key">"availableComponents"</span>: [<span class="c-str">"cash"</span>, <span class="c-str">"positions"</span>] },
+    <span class="c-key">"traceId"</span>: <span class="c-str">"01HQ9D5P8R2T6V9Y0B3D5F7H"</span> } }</code></pre>
+
+<p>
+  The last clause of the remediation exists because of an observed failure: told only that
+  buying power was unavailable, a model reported buying power of zero and advised the customer
+  they could not trade. The error text now forbids both interpretations explicitly.
+</p>
+
+<!-- ==================== 22. ORDER STATUS ==================== -->
+<h1 id="order-status"><span class="num">22</span>Order status</h1>
+
+<p class="lede">
+  Two tools: one to find orders, one to read a specific order in full. The split follows the
+  shape of the question — "did my trade go through?" is a search, "what price did I get on
+  that one?" is a lookup — and it keeps the payload of the common case small.
+</p>
+
+<h2 id="lifecycle"><span class="num">22.1</span>The lifecycle, and the only field to branch on</h2>
+
+<figure>
+<svg viewBox="0 0 660 258" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="#4a5058"/>
+    </marker>
+  </defs>
+
+  <!-- working panel -->
+  <rect x="6" y="30" width="286" height="150" rx="5" fill="#eef3fa" stroke="#1f4f8f" stroke-width="1.1"/>
+  <text x="149" y="49" font-size="9.5" font-weight="700" fill="#1f4f8f" text-anchor="middle" letter-spacing=".06em">WORKING</text>
+  <text x="149" y="62" font-size="8" fill="#1f4f8f" text-anchor="middle">isTerminal: false — may still change</text>
+
+  <rect x="18" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_NEW</text>
+  <rect x="155" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">NEW</text>
+  <rect x="18" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PARTIALLY_FILLED</text>
+  <rect x="155" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">SUSPENDED</text>
+  <rect x="18" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_CANCEL</text>
+  <rect x="155" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_REPLACE</text>
+
+  <text x="149" y="169" font-size="7.8" fill="#1f4f8f" text-anchor="middle">poll again after nextPollAfterSeconds</text>
+
+  <!-- arrow -->
+  <line x1="296" y1="105" x2="362" y2="105" stroke="#4a5058" stroke-width="1.3" marker-end="url(#ar2)"/>
+  <text x="329" y="98" font-size="8" fill="#4a5058" text-anchor="middle">one way</text>
+  <text x="329" y="119" font-size="7.5" fill="#767d87" text-anchor="middle">never returns</text>
+
+  <!-- terminal panel -->
+  <rect x="368" y="30" width="286" height="150" rx="5" fill="#f6f7f9" stroke="#767d87" stroke-width="1.1"/>
+  <text x="511" y="49" font-size="9.5" font-weight="700" fill="#4a5058" text-anchor="middle" letter-spacing=".06em">TERMINAL</text>
+  <text x="511" y="62" font-size="8" fill="#4a5058" text-anchor="middle">isTerminal: true — will never change again</text>
+
+  <rect x="380" y="72" width="125" height="22" rx="3" fill="#e9f5ee" stroke="#cfe6d9"/>
+  <text x="442" y="87" font-size="8.2" fill="#1d6b45" text-anchor="middle" font-family="Menlo, monospace">FILLED</text>
+  <rect x="517" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="579" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">CANCELLED</text>
+  <rect x="380" y="100" width="125" height="22" rx="3" fill="#fbeeee" stroke="#f0d7d7"/>
+  <text x="442" y="115" font-size="8.2" fill="#a32a2a" text-anchor="middle" font-family="Menlo, monospace">REJECTED</text>
+  <rect x="517" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="579" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">EXPIRED</text>
+  <rect x="380" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="442" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">REPLACED</text>
+
+  <text x="511" y="169" font-size="7.8" fill="#4a5058" text-anchor="middle">do not poll · do not offer to cancel</text>
+
+  <!-- footnote box -->
+  <rect x="6" y="198" width="648" height="52" rx="4" fill="#fdf3e0" stroke="#f0e0c0"/>
+  <text x="20" y="216" font-size="8.6" font-weight="700" fill="#8a5a00">A status you do not recognise belongs on the LEFT.</text>
+  <text x="20" y="230" font-size="8" fill="#8a5a00">New lifecycle states are added over time. Treating an unknown status as terminal tells a customer their live order is dead —</text>
+  <text x="20" y="242" font-size="8" fill="#8a5a00">so the contract is the isTerminal boolean, computed by the tool, never a comparison against a list of status strings.</text>
+</svg>
+<figcaption>
+  <b>Figure 22.1 — Working versus terminal.</b> The state machine inside the left panel is
+  real and it is the order management system's business. What a tool exposes is the boundary,
+  because the boundary is what every caller actually needs and it is the only part that is
+  safe against a future state being added.
+</figcaption>
+</figure>
+
+<h2 id="orders-list"><span class="num">22.2</span>Finding orders</h2>
+
+<div class="tool tall">
+  <div class="tool-name">brokerage_orders_list<span class="tt">Find orders on an account</span></div>
+  <div class="pills">
+    <span class="risk r1">TIER 1</span>
+    <span class="pill ro">READ-ONLY</span>
+    <span class="pill idem">IDEMPOTENT</span>
+    <span class="pill cls">CLOSED WORLD</span>
+    <span class="pill scope">brokerage:orders:read</span>
+    <span class="pill">p95 300 ms</span>
+  </div>
+</div>
+
+<!--CATALOG:brokerage_orders_list:description-->
+
+<h3><span class="num">22.2.1</span>Input schema</h3>
+
+<!--CATALOG:brokerage_orders_list:input-->
+
+<p>
+  The <code>status</code> enumeration is deliberately <em>not</em> the lifecycle enumeration.
+  A customer filtering for open orders does not mean "<code>NEW</code> or
+  <code>PARTIALLY_FILLED</code> or <code>PENDING_CANCEL</code> or
+  <code>PENDING_REPLACE</code> or <code>SUSPENDED</code>"; they mean <code>WORKING</code>. The
+  filter vocabulary matches the question; the result vocabulary matches the domain. Using one
+  enumeration for both would force the model to reconstruct the set, and it would get it wrong
+  the first time a state was added.
+</p>
+
+<h3><span class="num">22.2.2</span>Output schema</h3>
+
+<!--CATALOG:brokerage_orders_list:output-->
+
+<h3><span class="num">22.2.3</span>A result with a partial fill and a rejection</h3>
+
+<pre class="long"><code>{
+  <span class="c-key">"content"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"text"</span>, <span class="c-key">"text"</span>:
+    <span class="c-str">"3 orders in ••••8820 from 2026-09-12 to 2026-09-19. WORKING: BUY 500 AAPL limit 246.00, 200 of 500 filled at avg 245.88, 300 still working, placed 14:05 UTC today. FILLED: SELL 100 MSFT market, all 100 at avg 418.22, 2026-09-18. REJECTED: BUY_TO_OPEN 5 TSLA 20 Mar 2026 300 Call — insufficient options approval level; this account is level 3 and the strategy requires level 4."</span> }],
+  <span class="c-key">"structuredContent"</span>: {
+    <span class="c-key">"accountId"</span>: <span class="c-str">"acct_01HQ8Z5N3Y8L4Q9S"</span>,
+    <span class="c-key">"asOf"</span>: <span class="c-str">"2026-09-19T14:33:02Z"</span>, <span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+    <span class="c-key">"orders"</span>: [
+      { <span class="c-key">"orderId"</span>: <span class="c-str">"ord_01HQ9D4N7Q1S5U8X"</span>, <span class="c-key">"status"</span>: <span class="c-str">"PARTIALLY_FILLED"</span>, <span class="c-key">"isTerminal"</span>: <span class="c-key">false</span>,
+        <span class="c-key">"assetClass"</span>: <span class="c-str">"EQUITY"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY"</span>, <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>,
+        <span class="c-key">"description"</span>: <span class="c-str">"Buy 500 AAPL limit 246.00 day"</span>,
+        <span class="c-key">"quantity"</span>: <span class="c-str">"500"</span>, <span class="c-key">"filledQuantity"</span>: <span class="c-str">"200"</span>, <span class="c-key">"remainingQuantity"</span>: <span class="c-str">"300"</span>,
+        <span class="c-key">"orderType"</span>: <span class="c-str">"LIMIT"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"246.00"</span>, <span class="c-key">"averageFillPrice"</span>: <span class="c-str">"245.88"</span>,
+        <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span>, <span class="c-key">"createdAt"</span>: <span class="c-str">"2026-09-19T14:05:41Z"</span>,
+        <span class="c-key">"updatedAt"</span>: <span class="c-str">"2026-09-19T14:31:12Z"</span>, <span class="c-key">"rejectReason"</span>: <span class="c-key">null</span> },
+
+      { <span class="c-key">"orderId"</span>: <span class="c-str">"ord_01HQ8W2K5M9P3R7V"</span>, <span class="c-key">"status"</span>: <span class="c-str">"FILLED"</span>, <span class="c-key">"isTerminal"</span>: <span class="c-key">true</span>,
+        <span class="c-key">"assetClass"</span>: <span class="c-str">"EQUITY"</span>, <span class="c-key">"side"</span>: <span class="c-str">"SELL"</span>, <span class="c-key">"symbol"</span>: <span class="c-str">"MSFT"</span>,
+        <span class="c-key">"description"</span>: <span class="c-str">"Sell 100 MSFT market day"</span>,
+        <span class="c-key">"quantity"</span>: <span class="c-str">"100"</span>, <span class="c-key">"filledQuantity"</span>: <span class="c-str">"100"</span>, <span class="c-key">"remainingQuantity"</span>: <span class="c-str">"0"</span>,
+        <span class="c-key">"orderType"</span>: <span class="c-str">"MARKET"</span>, <span class="c-key">"averageFillPrice"</span>: <span class="c-str">"418.22"</span>,
+        <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span>, <span class="c-key">"createdAt"</span>: <span class="c-str">"2026-09-18T15:48:02Z"</span>,
+        <span class="c-key">"updatedAt"</span>: <span class="c-str">"2026-09-18T15:48:03Z"</span>, <span class="c-key">"rejectReason"</span>: <span class="c-key">null</span> },
+
+      { <span class="c-key">"orderId"</span>: <span class="c-str">"ord_01HQ8V9J4L8N2Q6U"</span>, <span class="c-key">"status"</span>: <span class="c-str">"REJECTED"</span>, <span class="c-key">"isTerminal"</span>: <span class="c-key">true</span>,
+        <span class="c-key">"assetClass"</span>: <span class="c-str">"OPTION"</span>, <span class="c-key">"side"</span>: <span class="c-str">"BUY_TO_OPEN"</span>, <span class="c-key">"symbol"</span>: <span class="c-str">"TSLA"</span>,
+        <span class="c-key">"description"</span>: <span class="c-str">"Buy to open 5 TSLA 20 Mar 2026 300 Call"</span>,
+        <span class="c-key">"quantity"</span>: <span class="c-str">"5"</span>, <span class="c-key">"filledQuantity"</span>: <span class="c-str">"0"</span>, <span class="c-key">"remainingQuantity"</span>: <span class="c-str">"0"</span>,
+        <span class="c-key">"orderType"</span>: <span class="c-str">"LIMIT"</span>, <span class="c-key">"limitPrice"</span>: <span class="c-str">"8.40"</span>,
+        <span class="c-key">"timeInForce"</span>: <span class="c-str">"DAY"</span>, <span class="c-key">"createdAt"</span>: <span class="c-str">"2026-09-17T13:12:55Z"</span>,
+        <span class="c-key">"updatedAt"</span>: <span class="c-str">"2026-09-17T13:12:56Z"</span>,
+        <span class="c-key">"rejectReason"</span>: { <span class="c-key">"code"</span>: <span class="c-str">"OPTIONS_LEVEL_INSUFFICIENT"</span>,
+                          <span class="c-key">"message"</span>: <span class="c-str">"This strategy requires options level 4; the account holds level 3."</span> } }
+    ],
+    <span class="c-key">"completeness"</span>: { <span class="c-key">"returned"</span>: <span class="c-num">3</span>, <span class="c-key">"totalMatching"</span>: <span class="c-num">3</span>, <span class="c-key">"truncated"</span>: <span class="c-key">false</span>,
+                      <span class="c-key">"nextCursor"</span>: <span class="c-key">null</span>, <span class="c-key">"narrowingHint"</span>: <span class="c-key">null</span> }
+  },
+  <span class="c-key">"isError"</span>: <span class="c-key">false</span>
+}</code></pre>
+
+<div class="note">
+  <span class="lbl">"Did my Apple order go through?"</span>
+  <p>
+    The honest answer is "partly — 200 of 500 shares have filled at an average of 245.88, and
+    300 are still working." A payload carrying only <code>status</code> would have supported
+    "it's partially filled", which tells the customer almost nothing. A payload carrying only
+    <code>filledQuantity</code> would have supported "200 filled" without the reassurance that
+    the rest is still live. The three quantity fields plus <code>isTerminal</code> are the
+    minimum that makes the honest answer expressible, which is the test to apply when deciding
+    what a result must contain.
+  </p>
+</div>
+
+<h2 id="order-get"><span class="num">22.3</span>Reading one order</h2>
+
+<div class="tool tall">
+  <div class="tool-name">brokerage_order_get<span class="tt">Get the status of one order</span></div>
+  <div class="pills">
+    <span class="risk r1">TIER 1</span>
+    <span class="pill ro">READ-ONLY</span>
+    <span class="pill idem">IDEMPOTENT</span>
+    <span class="pill cls">CLOSED WORLD</span>
+    <span class="pill scope">brokerage:orders:read</span>
+    <span class="pill">p95 260 ms</span>
+  </div>
+</div>
+
+<!--CATALOG:brokerage_order_get:description-->
+
+<h3><span class="num">22.3.1</span>Output schema</h3>
+
+<!--CATALOG:brokerage_order_get:output-->
+
+<h3><span class="num">22.3.2</span>Three fields worth arguing about</h3>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Field</th><th>Why it is in the payload</th></tr></thead>
+  <tbody>
+    <tr><td><code>statusExplanation</code></td>
+        <td>A sentence, written by the domain team, already phrased for a customer: "200 of
+            500 shares have filled at an average of 245.88; 300 shares are still working and
+            will expire at the close if they do not fill." Status strings do not survive
+            paraphrase — <code>PENDING_REPLACE</code> is not a phrase any customer has heard —
+            and a model asked to paraphrase one invents plausible detail. Writing the sentence
+            once, in the tool, is the only place it can be reviewed.</td></tr>
+    <tr><td><code>nextPollAfterSeconds</code></td>
+        <td>Turns "poll sensibly" from a hope into an instruction. Two seconds for a
+            marketable order, thirty for a resting limit, null when terminal. Without it the
+            agent either polls in a tight loop or asks the customer to check back later.</td></tr>
+    <tr><td><code>cancellable</code></td>
+        <td>The server knows whether this order can be cancelled right now — including the
+            cases the status string does not express, such as an order in
+            <code>PENDING_CANCEL</code> or one at a venue that has gone dark. Offering a
+            cancellation that then fails is a worse customer experience than not offering
+            it.</td></tr>
+  </tbody>
+</table>

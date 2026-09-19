@@ -290,15 +290,16 @@
       <div>
         <p class="oa-eyebrow">Smiroh Publishers &middot; First Edition</p>
         <h1 class="oa-h1" data-gumroad-field="name">The Ultimate Developer's Guide to OAuth 2.1 and PKCE</h1>
-        <p class="oa-sub">Stop shipping OAuth config you don't fully trust. 54 pages,
-        11 original diagrams, and a complete authorization server printed in the
-        book &mdash; which you can break on purpose and watch exactly what breaks.</p>
+        <p class="oa-sub">Stop shipping OAuth config you don't fully trust. 81 pages,
+        16 original diagrams, and a complete authorization server printed in the
+        book &mdash; which you can break on purpose and watch exactly what breaks.
+        Now with full chapters on <b>OpenID Connect</b> and <b>OAuth for AI agents</b>.</p>
 
         <ul class="oa-stats">
-          <li>54 pages</li>
-          <li>13 chapters</li>
-          <li>10 hands-on labs</li>
-          <li>1,363 lines of source</li>
+          <li>81 pages</li>
+          <li>15 chapters</li>
+          <li>15 hands-on labs</li>
+          <li>1,933 lines of source</li>
           <li>~2 hour read</li>
         </ul>
 
@@ -420,7 +421,7 @@
   <!-- ====================== the diagram ====================== -->
   <section class="oa-sec">
     <div class="oa-wrap oa-rise">
-      <p class="oa-eyebrow">11 original diagrams</p>
+      <p class="oa-eyebrow">16 original diagrams</p>
       <h2 class="oa-h2">Drawn to show the mechanism, not the vibe</h2>
       <p class="oa-lede">Every diagram in the book is hand-built for it. Here's the
       idea the rest of the protocol hangs off &mdash; the split between what the
@@ -477,7 +478,7 @@
   <section class="oa-sec">
     <div class="oa-wrap oa-rise">
       <p class="oa-eyebrow">What's inside</p>
-      <h2 class="oa-h2">13 chapters, then the whole program</h2>
+      <h2 class="oa-h2">15 chapters, then the whole program</h2>
       <p class="oa-lede">Each chapter assumes only the ones before it. No fluff, no
       padding to hit a page count &mdash; the book is deliberately short enough to
       finish in one sitting.</p>
@@ -489,15 +490,17 @@
         <li><span class="n">04</span><span class="t">The Authorization Code flow</span></li>
         <li><span class="n">05</span><span class="t">The attack PKCE prevents</span></li>
         <li><span class="n">06</span><span class="t">PKCE, precisely</span></li>
-        <li><span class="n">07</span><span class="t">Anatomy of a token</span></li>
-        <li><span class="n">08</span><span class="t">Scopes and consent</span></li>
-        <li><span class="n">09</span><span class="t">Refresh tokens and rotation</span></li>
-        <li><span class="n">10</span><span class="t">What OAuth 2.1 changed</span></li>
-        <li><span class="n">11</span><span class="t">How an API validates a token</span></li>
-        <li><span class="n">12</span><span class="t">The mistakes that matter</span></li>
-        <li><span class="n">13</span><span class="t">Run it yourself</span></li>
-        <li class="part"><span class="n">II</span><span class="t">The Labs &mdash; 10 exercises</span></li>
-        <li class="part"><span class="n">A&ndash;D</span><span class="t">Complete source, 1,363 lines</span></li>
+        <li><span class="n">07</span><span class="t">Anatomy of a token &mdash; opaque vs JWT</span></li>
+        <li><span class="n">08</span><span class="t">OpenID Connect: who is this?</span></li>
+        <li><span class="n">09</span><span class="t">Scopes and consent</span></li>
+        <li><span class="n">10</span><span class="t">Refresh tokens and rotation</span></li>
+        <li><span class="n">11</span><span class="t">What OAuth 2.1 changed</span></li>
+        <li><span class="n">12</span><span class="t">How an API validates a token</span></li>
+        <li><span class="n">13</span><span class="t">The mistakes that matter</span></li>
+        <li><span class="n">14</span><span class="t">Run it yourself</span></li>
+        <li><span class="n">15</span><span class="t">OAuth 2.1 for agentic AI</span></li>
+        <li class="part"><span class="n">II</span><span class="t">The Labs &mdash; 15 exercises</span></li>
+        <li class="part"><span class="n">A&ndash;D</span><span class="t">Complete source, 1,933 lines</span></li>
       </ol>
     </div>
   </section>
@@ -511,7 +514,7 @@
         <p class="oa-lede">Part&nbsp;II prints a complete OAuth&nbsp;2.1 deployment
         &mdash; authorization server, API and client &mdash; as four files you can
         read and run. No repository to clone, nothing to install: it runs on Node's
-        own modules. Then ten labs put it under attack.</p>
+        own modules. Then fifteen labs put it under attack.</p>
       </div>
 
       <div class="oa-grid oa-2 oa-rise" style="margin-top:28px;align-items:start">
@@ -554,7 +557,7 @@ $ node client.js nopkce
         </div>
         <div class="oa-card">
           <h3>Zero dependencies</h3>
-          <p>1,363 lines across four files, on <code>node:http</code> and
+          <p>1,933 lines across four files, on <code>node:http</code> and
           <code>node:crypto</code>. A library would hide exactly the parts you're
           here to understand.</p>
         </div>
@@ -575,14 +578,14 @@ $ node client.js nopkce
       <h2 class="oa-h2">One PDF. Everything in it.</h2>
       <div class="oa-grid oa-2" style="margin-top:24px">
         <div class="oa-card">
-          <h3>The book &mdash; 54 pages</h3>
-          <p>13 chapters and 11 full-page diagrams, from the problem OAuth solves
+          <h3>The book &mdash; 81 pages</h3>
+          <p>15 chapters and 16 full-page diagrams, from the problem OAuth solves
           through to a checklist of the mistakes that actually recur. Letter size,
           embedded fonts, fully searchable.</p>
         </div>
         <div class="oa-card">
           <h3>Part II &mdash; the labs</h3>
-          <p>10 exercises and the complete source of an authorization server, a
+          <p>15 exercises and the complete source of an authorization server, a
           resource server and a client, printed in full with line numbers and
           syntax colouring.</p>
         </div>
@@ -653,7 +656,7 @@ $ node client.js nopkce
       <div class="oa-faq" style="margin-top:24px">
         <details>
           <summary>Do I need the code from anywhere else?</summary>
-          <div class="a">No. Part&nbsp;II prints all 1,363 lines &mdash; four files,
+          <div class="a">No. Part&nbsp;II prints all 1,933 lines &mdash; four files,
           complete, nothing elided. You need Node.js 18 or newer and nothing else:
           there's no <code>package.json</code> and no dependency to install.</div>
         </details>
@@ -672,15 +675,33 @@ $ node client.js nopkce
         </details>
         <details>
           <summary>Does it cover OpenID Connect?</summary>
-          <div class="a">The part that matters for most developers: the
-          <code>openid</code> scope, ID tokens, <code>nonce</code>, and the
-          difference between authentication and authorization. Chapter&nbsp;7 is
-          largely about not confusing an ID token with an access token &mdash; the
-          single most common bug in production OAuth code.</div>
+          <div class="a">Fully &mdash; Chapter&nbsp;8 is devoted to it. The ID token claim by claim, the
+          six checks a client must run on it, why <code>nonce</code> and
+          <code>state</code> solve different problems, <code>/userinfo</code>, and
+          which scope produces which claim. Lab&nbsp;11 runs the whole thing,
+          including an ID token addressed to another client being refused.</div>
+        </details>
+        <details>
+          <summary>Does it cover OAuth for AI agents?</summary>
+          <div class="a">Chapter&nbsp;15, written from the administrator's side: the
+          three access patterns and how to pick one, the device grant for agents with
+          no browser, token exchange and the <code>act</code> claim for delegation
+          chains, and structured limits (RFC&nbsp;9396) for when a scope like
+          &ldquo;may move money&rdquo; is too blunt to hand an autonomous process.
+          Four labs build it, including a confused-deputy escalation that gets
+          refused twice.</div>
+        </details>
+        <details>
+          <summary>Opaque tokens or JWTs &mdash; which should I use?</summary>
+          <div class="a">Chapter&nbsp;7 compares them directly: how each is
+          validated, what each reveals, what happens to revocation, and what happens
+          when your authorization server goes down. Plus the compromise most teams
+          actually land on, and why a client should treat <i>every</i> access token
+          as opaque regardless of its shape.</div>
         </details>
         <details>
           <summary>How long does it take to read?</summary>
-          <div class="a">About two hours for the 13 chapters. The labs are as long
+          <div class="a">About two hours for the 15 chapters. The labs are as long
           as you want them to be &mdash; the first one is a single command.</div>
         </details>
         <details>
@@ -699,7 +720,7 @@ $ node client.js nopkce
   <section class="oa-sec">
     <div class="oa-wrap oa-rise">
       <div class="oa-final">
-        <p class="oa-eyebrow">54 pages &middot; 10 labs &middot; complete source</p>
+        <p class="oa-eyebrow">81 pages &middot; 15 labs &middot; complete source</p>
         <h2 class="oa-h2" style="margin-top:12px">Understand it once, properly.</h2>
         <p class="oa-lede" style="margin:0 auto 26px">One afternoon, and you'll stop
         guessing at the flow that guards your users' data &mdash; with a server on
@@ -744,7 +765,7 @@ $ node client.js nopkce
 <span class="c">380</span>    log(<span class="y">'ok'</span>, <span class="g">'PKCE verified: SHA256(verifier) == challenge'</span>);
 <span class="c">381</span>  }</pre>
       </div>
-      <p class="oa-tiny" style="margin-top:14px">Part&nbsp;II prints all 1,363 lines
+      <p class="oa-tiny" style="margin-top:14px">Part&nbsp;II prints all 1,933 lines
       like this, across Listings A&ndash;D.</p>
       <div style="margin-top:20px">
         <a class="oa-btn" data-gumroad-action="buy" role="button" tabindex="0">

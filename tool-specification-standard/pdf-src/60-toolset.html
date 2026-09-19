@@ -1,0 +1,515 @@
+<!-- ==================== PART III ==================== -->
+<section class="part">
+  <div class="pnum">Part III</div>
+  <h1>Designing a tool set</h1>
+  <p class="pdesc">
+    Part II governs one tool. This part governs the collection — how many there should be,
+    where the boundaries fall, what they cost to keep in context, how they interact with a
+    human, and how they are secured, observed, and retired. Most of the value a catalogue
+    delivers or destroys is decided here rather than inside any single descriptor.
+  </p>
+  <ul>
+    <li>12 &nbsp; Granularity and catalogue design</li>
+    <li>13 &nbsp; Payload economics</li>
+    <li>14 &nbsp; Interaction patterns</li>
+    <li>15 &nbsp; Security and trust</li>
+    <li>16 &nbsp; Observability, audit, and supervision</li>
+    <li>17 &nbsp; Versioning and lifecycle</li>
+  </ul>
+</section>
+
+<!-- ==================== 12. GRANULARITY ==================== -->
+<h1 id="granularity"><span class="num">12</span>Granularity and catalogue design</h1>
+
+<p class="lede">
+  The most consequential decision in a tool catalogue is where one tool ends and the next
+  begins. Get it wrong and no amount of descriptor quality recovers it: the model will be
+  choosing between the wrong options, carefully.
+</p>
+
+<h2 id="unit"><span class="num">12.1</span>The unit of a tool</h2>
+
+<div class="rule should">
+  <p><span class="rid">TS-CAT-01</span>
+  <span class="lvl lvl-should">SHOULD</span> One tool <b>SHOULD</b> correspond to one decision
+  the agent has to make, expressed as one question a user would ask — not to one resource, one
+  endpoint, or one database table.</p>
+</div>
+
+<p>
+  Three diagnostic questions, applied to any proposed tool:
+</p>
+
+<table>
+  <thead><tr><th style="width:38%">Question</th><th>If the answer is wrong</th></tr></thead>
+  <tbody>
+    <tr><td><b>Can you state, in one sentence, the user question this answers?</b></td>
+        <td>If it takes two sentences with an "or" in the middle, it is two tools.</td></tr>
+    <tr><td><b>After calling it, does the agent know enough to answer?</b></td>
+        <td>If the agent must then call two more tools and do arithmetic involving a domain
+            convention, the boundary is drawn in the wrong place — move the work
+            server-side.</td></tr>
+    <tr><td><b>Do all of its paths have the same risk tier and annotations?</b></td>
+        <td>If one argument value makes it destructive, it is at least two tools
+            (<code>TS-INP-13</code>).</td></tr>
+  </tbody>
+</table>
+
+<h2 id="derive"><span class="num">12.2</span>Deriving a tool set</h2>
+
+<p>The procedure the firm uses, in order. It takes a day and saves a quarter.</p>
+
+<ol>
+  <li><b>Collect the utterances.</b> Twenty to fifty real things users say, taken from
+      transcripts, contact-centre logs, or search queries — not invented by the design team.
+      "Do I own any Tesla?" "Did my order go through?" "How much can I spend?" "What's my
+      account worth?"</li>
+  <li><b>Cluster by the answer, not the words.</b> "What do I own", "how much Apple do I
+      have", and "am I up on Tesla" are one cluster; they are all answered from the positions
+      snapshot.</li>
+  <li><b>Draft one tool per cluster</b>, named per §5, described per §6.</li>
+  <li><b>Run the knowledge test.</b> For each cluster, list the domain facts the agent needs
+      to turn the tool's output into a correct answer. Every fact on that list is either
+      stated in the description, embedded in the payload, or moved into the tool. Nothing
+      stays on the list.</li>
+  <li><b>Run the confusability test.</b> For each pair of tools, write the one sentence that
+      distinguishes them. If you cannot, merge them or re-scope. Every sentence you write goes
+      into both descriptions as an exclusion (§6.2, part 3).</li>
+  <li><b>Count.</b> If the result exceeds 25 tools for one agent, go back to step 2 — you have
+      almost certainly modelled resources rather than questions.</li>
+  <li><b>Classify.</b> Assign risk tiers before writing any code; the tier changes what the
+      tool is allowed to be.</li>
+</ol>
+
+<h2 id="composite"><span class="num">12.3</span>Primitive tools and workflow tools</h2>
+
+<table class="long">
+  <thead><tr><th style="width:20%">Shape</th><th style="width:34%">Use when</th><th>Brokerage example</th></tr></thead>
+  <tbody>
+    <tr><td><b>Primitive</b><br><span class="small">one entity, one read</span></td>
+        <td>The question maps cleanly onto one system of record and no domain arithmetic is
+            required.</td>
+        <td><code>brokerage_positions_list</code> — the positions snapshot answers the
+            question directly.</td></tr>
+    <tr><td><b>Composite read</b><br><span class="small">joins several sources</span></td>
+        <td>The answer requires two or three sources joined by a rule the model should not be
+            asked to know.</td>
+        <td><code>brokerage_portfolio_summarize</code> — positions plus balances plus
+            day-change, aggregated across accounts, with the netting rules applied once,
+            correctly, server-side.</td></tr>
+    <tr><td><b>Decision tool</b><br><span class="small">answers "can I?"</span></td>
+        <td>The user's question is a judgement the firm already knows how to make, and the
+            model would otherwise reconstruct it badly from raw numbers.</td>
+        <td><code>brokerage_order_check</code> — "can this account buy 100 AAPL?" returns a
+            verdict, the binding constraint, and the maximum permissible quantity.</td></tr>
+    <tr><td><b>Two-step action</b><br><span class="small">preview then execute</span></td>
+        <td>Any tier 3 change.</td>
+        <td><code>brokerage_order_preview</code> then <code>brokerage_order_place</code>
+            (§14.2).</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">The rule of three</span>
+  <p>
+    If answering a common user question reliably takes three or more tool calls plus a domain
+    convention the model must apply itself, build the composite. Each hop is an opportunity to
+    select the wrong tool, drop a caveat, or make an arithmetic slip — and the compounding is
+    multiplicative, not additive. Composites are not a shortcut; they are where the firm's
+    domain knowledge is made testable.
+  </p>
+</div>
+
+<h2 id="catalogue-size"><span class="num">12.4</span>Catalogue size and audience scoping</h2>
+
+<p>
+  Tool selection accuracy degrades as the catalogue grows, and it degrades fastest among tools
+  that resemble each other. The mitigation is not a better model; it is a smaller, better
+  separated menu.
+</p>
+
+<table class="long rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-CAT-02</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>An agent <b>SHOULD</b> be offered no more than 25 tools, and <b>MUST NOT</b> be
+            offered more than 40 without a documented exception.</td></tr>
+    <tr><td><code>TS-CAT-03</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>The catalogue <b>MUST</b> support audience-scoped views, so that a customer-facing
+            assistant, an adviser's copilot, and an operations agent each see only their own
+            set. Audience scoping is an entitlement decision (§10.4), not a UI preference.</td></tr>
+    <tr><td><code>TS-CAT-04</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>Where an estate genuinely exceeds what one agent can hold, the platform
+            <b>SHOULD</b> scope by task phase — a small core set always present, with a
+            task-specific set attached when the conversation enters that task — rather than
+            presenting everything and hoping.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">On "just let the agent search the catalogue"</span>
+  <p>
+    A meta-tool that searches a large catalogue and returns candidate tools is a legitimate
+    pattern for estates in the hundreds, and it has two costs worth stating before anyone
+    adopts it. It adds a round trip and a failure mode to <em>every</em> task, and it moves
+    tool selection from a mechanism you can evaluate offline into one you can only evaluate
+    end to end. Use it when the alternative is a 200-tool prompt, not to avoid the work in
+    §12.2.
+  </p>
+</div>
+
+<h2 id="confusability"><span class="num">12.5</span>Confusability</h2>
+
+<p>
+  The nearest-neighbour pairs in a brokerage catalogue are predictable, and each one needs an
+  explicit exclusion in <em>both</em> descriptions:
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:36%">Confusable pair</th><th>The distinguishing sentence</th></tr></thead>
+  <tbody>
+    <tr><td><code>positions_list</code> ↔ <code>orders_list</code></td>
+        <td>An order becomes a position only when it fills. "Did my trade go through" is
+            orders; "what do I own" is positions.</td></tr>
+    <tr><td><code>balances_get</code> ↔ <code>positions_list</code></td>
+        <td>Balances are cash and buying power; positions are holdings. "What is my account
+            worth" needs both, and is answered by <code>portfolio_summarize</code>.</td></tr>
+    <tr><td><code>balances_get</code> ↔ <code>transactions_list</code></td>
+        <td>A balance is a state; a transaction is an event. "Why did my cash drop" is
+            transactions.</td></tr>
+    <tr><td><code>orders_list</code> ↔ <code>executions_list</code></td>
+        <td>One order can have many executions at different prices. "What price did I get" may
+            need executions; "did it fill" needs the order.</td></tr>
+    <tr><td><code>order_check</code> ↔ <code>order_preview</code> ↔ <code>order_place</code></td>
+        <td>Check answers "can I?"; preview answers "what exactly would happen?" and mints a
+            confirmation token; place does it. Only the third one trades.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 13. PAYLOAD ECONOMICS ==================== -->
+<h1 id="economics"><span class="num">13</span>Payload economics</h1>
+
+<p class="lede">
+  Context is the scarcest resource in an agent system and the one most casually spent. A tool
+  that returns everything it knows is not being helpful; it is charging every future turn of
+  the conversation for data nobody asked for.
+</p>
+
+<h2 id="standing-tax"><span class="num">13.1</span>The standing tax</h2>
+
+<p>
+  Descriptors are re-sent on every turn. The arithmetic is worth doing once, in front of the
+  people who will be surprised by the invoice:
+</p>
+
+<table>
+  <thead><tr><th style="width:44%">Quantity</th><th style="width:26%">Modest catalogue</th><th>Sprawling catalogue</th></tr></thead>
+  <tbody>
+    <tr><td>Tools offered</td><td>20</td><td>60</td></tr>
+    <tr><td>Rendered tokens per descriptor</td><td>350</td><td>600</td></tr>
+    <tr><td>Standing cost per turn</td><td><b>7,000 tokens</b></td><td><b>36,000 tokens</b></td></tr>
+    <tr><td>A 15-turn conversation</td><td>105,000 tokens</td><td>540,000 tokens</td></tr>
+    <tr><td>Across 50,000 conversations a day</td><td>5.3 billion tokens</td><td>27 billion tokens</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The difference is not a rounding error on a cloud bill, and the sprawling catalogue also
+  selects worse. Both problems have the same fix.
+</p>
+
+<h2 id="result-budgets"><span class="num">13.2</span>Result budgets</h2>
+
+<table>
+  <thead><tr><th style="width:34%">Result type</th><th style="width:22%">Target</th><th>Hard limit</th></tr></thead>
+  <tbody>
+    <tr><td>Single entity (<code>get</code>)</td><td>&lt; 500 tokens</td><td>2,000</td></tr>
+    <tr><td>Collection page (<code>list</code>)</td><td>&lt; 1,500 tokens</td><td>5,000</td></tr>
+    <tr><td>Aggregate (<code>summarize</code>)</td><td>&lt; 800 tokens</td><td>2,000</td></tr>
+    <tr><td>Error</td><td>&lt; 200 tokens</td><td>500</td></tr>
+    <tr><td>Anything larger</td><td colspan="2">Returned by reference (§8.5), never inline.</td></tr>
+  </tbody>
+</table>
+
+<div class="rule must">
+  <p><span class="rid">TS-OUT-12</span>
+  <span class="lvl lvl-must">MUST</span> Every tool <b>MUST</b> enforce a result size ceiling
+  in code and <b>MUST</b> truncate with disclosure (<code>TS-OUT-07</code>) rather than
+  returning an unbounded payload. "The customer has 340 positions" is not an excuse; it is the
+  case the ceiling exists for.</p>
+</div>
+
+<h2 id="pruning"><span class="num">13.3</span>What to cut from a payload</h2>
+
+<table class="long">
+  <thead><tr><th style="width:34%">Cut</th><th>Reasoning</th></tr></thead>
+  <tbody>
+    <tr><td>Null and absent fields</td><td>Omit rather than emitting <code>"field": null</code> — unless null is itself meaningful, which the output schema should then say.</td></tr>
+    <tr><td>Internal identifiers with no caller use</td><td>Surrogate keys, partition hints, ETL timestamps. They cost tokens and leak topology.</td></tr>
+    <tr><td>Hypermedia links</td><td>A model cannot be trusted to follow a URL, and should not be given one it might quote to a customer. Express capability as the presence of a tool.</td></tr>
+    <tr><td>Redundant derivations</td><td>Emit <code>marketValue</code> and <code>unrealizedPnl</code>; drop <code>unrealizedPnlPercent</code> if the model can compute it — but keep any derivation whose convention it could get wrong.</td></tr>
+    <tr><td>Repeated constant context</td><td>Do not repeat <code>accountId</code>, <code>currency</code>, and <code>asOf</code> on all 340 rows. Put them once at the envelope level.</td></tr>
+    <tr><td>Pre-formatted display strings</td><td>One authoritative numeric form in <code>structuredContent</code>, one prose rendering in <code>content</code>. A third, half-formatted copy helps nobody.</td></tr>
+  </tbody>
+</table>
+
+<h3><span class="num">13.3.1</span>Verbosity levels</h3>
+
+<p>
+  Rather than a caller-supplied field list — which models compose badly and which makes the
+  output schema unstable — offer three named levels:
+</p>
+
+<table>
+  <thead><tr><th style="width:18%">Level</th><th style="width:26%">Contains</th><th>For</th></tr></thead>
+  <tbody>
+    <tr><td><code>SUMMARY</code></td><td>Identity, the one or two numbers that answer the common question</td><td>"Do I own any Tesla?"</td></tr>
+    <tr><td><code>STANDARD</code> <span class="small">(default)</span></td><td>The fields a customer would see on a holdings screen</td><td>"Show me my positions."</td></tr>
+    <tr><td><code>FULL</code></td><td>Cost basis detail, lot method, realised profit and loss, option greeks</td><td>"Explain my tax position in Apple."</td></tr>
+  </tbody>
+</table>
+
+<h2 id="worked-payload"><span class="num">13.4</span>A worked reduction</h2>
+
+<div class="dd">
+  <div>
+    <p class="lang b">Upstream record, passed through — 41 lines per position</p>
+    <pre class="bad"><code>{
+  <span class="c-key">"positionId"</span>: <span class="c-str">"pos_01HQ8Z…"</span>,
+  <span class="c-key">"accountId"</span>: <span class="c-str">"acct_01HQ8Z…"</span>,
+  <span class="c-key">"accountNumber"</span>: <span class="c-str">"••••4471"</span>,
+  <span class="c-key">"custodianCode"</span>: <span class="c-str">"NFSC"</span>,
+  <span class="c-key">"bookId"</span>: <span class="c-num">4471001</span>,
+  <span class="c-key">"instrument"</span>: {
+    <span class="c-key">"instrumentId"</span>: <span class="c-str">"inst_eq_AAPL"</span>,
+    <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>,
+    <span class="c-key">"name"</span>: <span class="c-str">"Apple Inc."</span>,
+    <span class="c-key">"cusip"</span>: <span class="c-str">"037833100"</span>,
+    <span class="c-key">"isin"</span>: <span class="c-str">"US0378331005"</span>,
+    <span class="c-key">"sedol"</span>: <span class="c-str">"2046251"</span>,
+    <span class="c-key">"figi"</span>: <span class="c-str">"BBG000B9XRY4"</span>,
+    <span class="c-key">"exchange"</span>: <span class="c-str">"XNAS"</span>,
+    <span class="c-key">"sector"</span>: <span class="c-str">"Technology"</span>,
+    <span class="c-key">"…"</span>: <span class="c-str">"14 more fields"</span>
+  },
+  <span class="c-key">"quantity"</span>: <span class="c-str">"250.0000"</span>,
+  <span class="c-key">"quantityLong"</span>: <span class="c-str">"250.0000"</span>,
+  <span class="c-key">"quantityShort"</span>: <span class="c-str">"0.0000"</span>,
+  <span class="c-key">"settledQuantity"</span>: <span class="c-str">"250.0000"</span>,
+  <span class="c-key">"averageCost"</span>: <span class="c-str">"231.30"</span>,
+  <span class="c-key">"…"</span>: <span class="c-str">"19 more fields"</span>,
+  <span class="c-key">"_links"</span>: { <span class="c-key">"…"</span>: <span class="c-str">"6 relations"</span> },
+  <span class="c-key">"lastUpdatedBy"</span>: <span class="c-str">"ETL_BATCH_0342"</span>,
+  <span class="c-key">"sourceSystem"</span>: <span class="c-str">"POSLEDGER-PRD-03"</span>
+}</code></pre>
+    <p class="small">340 positions × ~600 tokens ≈ <b>204,000 tokens</b>. Exceeds most context
+      windows outright, and tells the model the name of a production host.</p>
+  </div>
+  <div>
+    <p class="lang g">Shaped for the question — 9 lines per position</p>
+    <pre class="good"><code><span class="c-com">// envelope level, stated once</span>
+<span class="c-key">"accountId"</span>: <span class="c-str">"acct_01HQ8Z…"</span>,
+<span class="c-key">"currency"</span>: <span class="c-str">"USD"</span>,
+<span class="c-key">"asOf"</span>: <span class="c-str">"2026-09-19T14:32:05Z"</span>,
+<span class="c-key">"basis"</span>: <span class="c-str">"DELAYED_15M"</span>,
+
+<span class="c-com">// per position</span>
+{
+  <span class="c-key">"symbol"</span>: <span class="c-str">"AAPL"</span>,
+  <span class="c-key">"name"</span>: <span class="c-str">"Apple Inc."</span>,
+  <span class="c-key">"assetClass"</span>: <span class="c-str">"EQUITY"</span>,
+  <span class="c-key">"side"</span>: <span class="c-str">"LONG"</span>,
+  <span class="c-key">"quantity"</span>: <span class="c-str">"250"</span>,
+  <span class="c-key">"averageCost"</span>: <span class="c-str">"231.30"</span>,
+  <span class="c-key">"lastPrice"</span>: <span class="c-str">"248.55"</span>,
+  <span class="c-key">"marketValue"</span>: <span class="c-str">"62137.50"</span>,
+  <span class="c-key">"unrealizedPnl"</span>: <span class="c-str">"4312.50"</span>
+}</code></pre>
+    <p class="small">25 positions × ~70 tokens ≈ <b>1,750 tokens</b>, plus an explicit
+      truncation notice and a suggestion to filter. Two orders of magnitude, and a better
+      answer.</p>
+  </div>
+</div>
+
+<h2 id="numbers"><span class="num">13.5</span>Representing numbers</h2>
+
+<table class="long rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-OUT-13</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Monetary amounts and quantities <b>MUST</b> be decimal <b>strings</b> —
+            <code>"62137.50"</code> — never IEEE-754 numbers. Binary floating point cannot
+            represent a cent, and the error is silent, compounding, and eventually a
+            reconciliation break.</td></tr>
+    <tr><td><code>TS-OUT-14</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Every monetary value <b>MUST</b> be accompanied by an ISO 4217 currency, at the
+            value or at the envelope level. Never assume USD.</td></tr>
+    <tr><td><code>TS-OUT-15</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Structured values <b>MUST NOT</b> carry locale formatting — no thousands
+            separators, no currency symbols, no parenthesised negatives. Formatting belongs in
+            the text rendering, where <code>(2,110.00)</code> is spelled
+            <code>-2,110.00 USD</code> because parentheses for negatives are a convention a
+            model will misread.</td></tr>
+    <tr><td><code>TS-OUT-16</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>Timestamps <b>MUST</b> be RFC 3339 with an explicit UTC offset. Dates that are
+            genuinely dates — settlement date, expiry — are <code>YYYY-MM-DD</code>, and the
+            description <b>MUST</b> name the time zone they are interpreted in.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 14. INTERACTION ==================== -->
+<h1 id="interaction"><span class="num">14</span>Interaction patterns</h1>
+
+<p class="lede">
+  Four situations recur in every tool catalogue: the action needs a human's consent, the
+  action needs information the agent does not have, the action might be executed twice, and
+  the action takes longer than a conversation can wait. Each has one sanctioned pattern.
+</p>
+
+<h2 id="confirm-flow"><span class="num">14.1</span>Confirmation</h2>
+
+<p>
+  Policy comes from the risk tier (§9.4). The mechanics are the gateway's: it resolves the
+  approval mode <em>before</em> invoking the implementation, renders the
+  <code>confirmationTemplate</code> with validated arguments, obtains the principal's
+  decision, and binds that decision to an argument hash.
+</p>
+
+<p>
+  The implementation must still behave correctly if approval is missing — returning
+  <code>APPROVAL_REQUIRED</code> — because the gateway is not the only path that will ever
+  exist (§3.1).
+</p>
+
+<h2 id="preview"><span class="num">14.2</span>Preview then execute</h2>
+
+<p>
+  Every tier 3 action is split in two. The preview tool is read-only, computes exactly what
+  would happen, and returns a short-lived <code>confirmationToken</code> that encodes the
+  previewed outcome. The execute tool accepts that token and <b>MUST</b> refuse to act if the
+  world has moved enough to invalidate it.
+</p>
+
+<pre><code>brokerage_order_preview  →  { estimatedCost, buyingPowerAfter, warnings[],
+                              commission, confirmationToken: "cnf_…",
+                              expiresAt: "2026-09-19T14:34:05Z" }
+
+brokerage_order_place    ←  { …order details…, confirmationToken: "cnf_…" }
+                         →  PRECONDITION_FAILED if expired, or if the order
+                            details do not match what was previewed</code></pre>
+
+<div class="rule must">
+  <p><span class="rid">TS-SEC-01</span>
+  <span class="lvl lvl-must">MUST</span> A confirmation token <b>MUST</b> be bound to the
+  principal, the tool, and a hash of the previewed arguments; <b>MUST</b> expire within 120
+  seconds by default; and <b>MUST</b> be single-use. It is a capability, not a receipt.</p>
+</div>
+
+<div class="note">
+  <span class="lbl">Why this beats a <code>dryRun</code> flag</span>
+  <p>
+    Two tools give you two accurate annotation sets, two risk tiers, two audit identities, and
+    a preview an agent may call freely without any approval friction — which means it will
+    call it, which means the customer sees the cost before the question is asked. One tool
+    with a flag gives you a descriptor that is honest about neither of its two behaviours, and
+    a control model where the difference between simulated and real is one token in a JSON
+    object the model generated.
+  </p>
+</div>
+
+<h2 id="elicitation"><span class="num">14.3</span>Asking the principal for missing information</h2>
+
+<p>
+  Sometimes a tool cannot proceed without a value the agent does not have and should not
+  invent — which of three eligible accounts, whether to accept a worse price, an expiry date
+  the customer has not stated. The sanctioned pattern is for the tool to <em>ask</em>, through
+  the runtime, rather than to guess or to fail.
+</p>
+
+<table class="long rules">
+  <thead><tr><th style="width:14%">Rule</th><th style="width:10%">Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-SEC-04</code></td><td><span class="lvl lvl-must">MUST</span></td>
+        <td>A request for input <b>MUST</b> be expressed as a schema of primitive fields —
+            string, number, boolean, or enum — with a clear prompt, and <b>MUST</b> be
+            declinable. An agent that cannot obtain the value returns to the user; it does not
+            substitute a default.</td></tr>
+    <tr><td><code>TS-SEC-05</code></td><td><span class="lvl lvl-never">NEVER</span></td>
+        <td>Input requests <b>MUST NOT</b> be used to collect credentials, card numbers,
+            government identifiers, or one-time passcodes. Authentication happens in the
+            identity plane, on a surface the customer can verify — never inside a tool's
+            request for arguments, which is precisely the shape a phishing flow would
+            take.</td></tr>
+    <tr><td><code>TS-SEC-06</code></td><td><span class="lvl lvl-should">SHOULD</span></td>
+        <td>Prefer disambiguating in the schema over asking at runtime. A tool that returns
+            <code>INVALID_ARGUMENT</code> naming the three eligible accounts is usually a
+            better experience than a modal dialog, and always a simpler control.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="idempotency"><span class="num">14.4</span>Idempotency</h2>
+
+<p>
+  An agent retries. It retries after a timeout, after an ambiguous error, and sometimes
+  because a second model turn concluded the first one had not worked. For a read this is
+  wasteful; for an order it is a duplicate trade.
+</p>
+
+<div class="rule must">
+  <p><span class="rid">TS-SEC-07</span>
+  <span class="lvl lvl-must">MUST</span> Every tool that is not naturally idempotent
+  <b>MUST</b> require an <code>idempotencyKey</code>, <b>MUST</b> deduplicate on it for at
+  least 24 hours, and <b>MUST</b> return the original result — not an error — when a key is
+  replayed with identical arguments. A replay with the <em>same</em> key and
+  <em>different</em> arguments <b>MUST</b> fail with <code>CONFLICT</code>.</p>
+</div>
+
+<p>
+  State this in the description too, in one sentence: models supply a key far more reliably
+  when told what it is for than when it merely appears in the schema.
+</p>
+
+<h2 id="long-running"><span class="num">14.5</span>Long-running operations</h2>
+
+<table>
+  <thead><tr><th style="width:24%">Duration</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>&lt; 10 seconds</td><td>Synchronous. Declare the latency class (§10.5).</td></tr>
+    <tr><td>10 s – minutes</td>
+        <td>Job pattern: <code>..._start</code> returns a <code>jobId</code> immediately;
+            <code>..._status</code> reports progress and returns the result when complete.
+            The start tool is not read-only even if the eventual result is.</td></tr>
+    <tr><td>Minutes – hours</td>
+        <td>Job pattern plus an out-of-band notification to the principal. The agent
+            <b>MUST NOT</b> poll in a loop; the description says so, and the status tool
+            returns a <code>nextPollAfterSeconds</code> the agent is told to honour.</td></tr>
+  </tbody>
+</table>
+
+<div class="rule must">
+  <p><span class="rid">TS-GOV-05</span>
+  <span class="lvl lvl-must">MUST</span> A tool <b>MUST NOT</b> block for longer than its
+  declared timeout, and <b>MUST</b> return <code>TIMEOUT</code> with an explicit statement of
+  whether the underlying operation may still complete. "The order may still have been placed"
+  is a materially different instruction from "the order was not placed", and the agent cannot
+  work it out.</p>
+</div>
+
+<h2 id="polling"><span class="num">14.6</span>Polling and change</h2>
+
+<p>
+  Order status is the canonical case: the customer asks "did it fill?", the answer is "not
+  yet", and something has to decide when to look again. Push subscriptions are the right
+  answer for a trading screen and the wrong answer for a conversational agent, which has no
+  persistent loop to receive them.
+</p>
+
+<ul>
+  <li>Return <code>isTerminal</code> on any entity with a lifecycle, and say in the description
+      that a terminal entity <b>must not</b> be polled again. This single flag removes most
+      wasteful polling.</li>
+  <li>Return <code>nextPollAfterSeconds</code> when the answer is "not yet", scaled to the
+      entity — two seconds for a market order, sixty for a transfer.</li>
+  <li>Prefer telling the customer the firm will notify them over having an agent wait. An
+      agent holding a conversation open to poll is an expensive, fragile timer.</li>
+</ul>

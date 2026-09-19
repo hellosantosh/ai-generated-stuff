@@ -1,0 +1,273 @@
+<!-- ==================== APPENDIX A ==================== -->
+<h1 id="appendix-a"><span class="num">A</span>Normative descriptor schema</h1>
+
+<p class="lede">
+  The machine-readable form of Part II. A descriptor that does not validate against this
+  schema is not a descriptor. Published as
+  <code>schemas/tool-descriptor.schema.json</code>; the linter checks the rules this schema
+  cannot express, such as whether the description actually contains an exclusion.
+</p>
+
+<!--JSONFILE:schemas/tool-descriptor.schema.json-->
+
+<!-- ==================== APPENDIX B ==================== -->
+<h1 id="appendix-b"><span class="num">B</span>Shared type library</h1>
+
+<p class="lede">
+  Paste from here rather than reinventing. A concept defined in this file means the same thing
+  in every tool in the catalogue, which is what <code>TS-INP-04</code> requires and what makes
+  a catalogue navigable by a caller that reads it fresh every time.
+</p>
+
+<!--JSONFILE:schemas/common-types.schema.json-->
+
+<!-- ==================== APPENDIX C ==================== -->
+<h1 id="appendix-c"><span class="num">C</span>Error code registry</h1>
+
+<p class="lede">
+  Domain codes are registered centrally so that analytics can group them, customer-facing
+  surfaces can localise them, and two teams cannot ship two spellings of the same failure.
+  Adding a code is a pull request against this registry.
+</p>
+
+<h2 id="c1"><span class="num">C.1</span>Brokerage domain codes</h2>
+
+<table class="long">
+  <thead><tr><th style="width:30%">domainCode</th><th style="width:24%">Taxonomy code</th><th>Meaning and required remediation</th></tr></thead>
+  <tbody>
+    <tr><td><code>INSUFFICIENT_BUYING_POWER</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Order exceeds available buying power. <b>Must</b> carry <code>required</code>,
+            <code>available</code>, and <code>maxQuantity</code>.</td></tr>
+    <tr><td><code>UNSETTLED_FUNDS</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Purchase would use unsettled proceeds in a cash account. Must state the settlement
+            date of the funds.</td></tr>
+    <tr><td><code>MARKET_CLOSED</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Outside the tradable session. Must state the next session open and whether an
+            extended-hours limit order is possible.</td></tr>
+    <tr><td><code>INSTRUMENT_HALTED</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Trading halted in this instrument. Must state the halt reason where public.</td></tr>
+    <tr><td><code>OPTIONS_LEVEL_INSUFFICIENT</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Strategy exceeds the account's approval level. Must state the level held and the
+            level required.</td></tr>
+    <tr><td><code>PDT_RULE_VIOLATION</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Would exceed the day-trade allowance. Must state trades used, remaining, and when
+            the window rolls.</td></tr>
+    <tr><td><code>ACCOUNT_RESTRICTED</code></td><td><code>CONFLICT</code></td>
+        <td>Account may be read but not traded. Must state that reading still works.</td></tr>
+    <tr><td><code>ORDER_ALREADY_TERMINAL</code></td><td><code>CONFLICT</code></td>
+        <td>Cancel or replace on an order that has already filled, cancelled, or expired. Must
+            state the terminal status and tell the caller to re-read the order.</td></tr>
+    <tr><td><code>ORDER_OUTCOME_UNKNOWN</code></td><td><code>TIMEOUT</code></td>
+        <td>Placement timed out; the order may be live. Must forbid reporting failure and
+            must name the idempotency key (§23.4).</td></tr>
+    <tr><td><code>PRICE_OUTSIDE_COLLAR</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Limit price too far from the market. Must state the permissible band.</td></tr>
+    <tr><td><code>FRACTIONAL_NOT_SUPPORTED</code></td><td><code>INVALID_ARGUMENT</code></td>
+        <td>Fractional quantity supplied. Must name the nearest whole quantity.</td></tr>
+    <tr><td><code>MARGIN_ENGINE_UNAVAILABLE</code></td><td><code>DATA_INCOMPLETE</code></td>
+        <td>Buying power cannot be computed. Must forbid quoting cash as available and must
+            forbid reporting zero (§21.6).</td></tr>
+    <tr><td><code>MARKET_DATA_STALE</code></td><td>— <span class="small">(not an error)</span></td>
+        <td>Returned as a successful result with <code>basis: PRIOR_CLOSE</code> and a
+            disclosure, never as a failure.</td></tr>
+    <tr><td><code>CONFIRMATION_EXPIRED</code></td><td><code>PRECONDITION_FAILED</code></td>
+        <td>Confirmation token past its expiry. Must instruct the caller to preview again, not
+            to retry.</td></tr>
+    <tr><td><code>CONFIRMATION_MISMATCH</code></td><td><code>PRECONDITION_FAILED</code></td>
+        <td>Order details differ from what was previewed and approved. Must not be retried
+            without a fresh preview and a fresh approval.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="c2"><span class="num">C.2</span>Registry rules</h2>
+
+<ul>
+  <li>A domain code is permanent. Retire, never redefine.</li>
+  <li><code>SCREAMING_SNAKE_CASE</code>, 64 characters or fewer, no product or system names.</li>
+  <li>Every code declares its taxonomy mapping and the fields its <code>details</code> object
+      must carry. Those fields are what make the error actionable, and the contract test
+      asserts them.</li>
+  <li>A code that fires more than 5% of the time for a tool is not an error; it is an
+      undesigned path.</li>
+</ul>
+
+<!-- ==================== APPENDIX D ==================== -->
+<h1 id="appendix-d"><span class="num">D</span>Reserved enumerations</h1>
+
+<p class="lede">
+  These tokens are the firm's, shared by the REST estate and the tool estate. Using a
+  different spelling of any of them in a tool is a defect, not a style choice
+  (<code>TS-INP-09</code>).
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:22%">Enumeration</th><th>Members</th></tr></thead>
+  <tbody>
+    <tr><td><code>accountType</code></td><td><code>CASH</code> · <code>MARGIN</code></td></tr>
+    <tr><td><code>registration</code></td>
+        <td><code>INDIVIDUAL</code> · <code>JOINT</code> · <code>TRADITIONAL_IRA</code> ·
+            <code>ROTH_IRA</code> · <code>SEP_IRA</code> · <code>ROLLOVER_IRA</code> ·
+            <code>TRUST</code> · <code>CUSTODIAL</code> · <code>CORPORATE</code></td></tr>
+    <tr><td><code>accountStatus</code></td>
+        <td><code>ACTIVE</code> · <code>RESTRICTED</code> · <code>CLOSED</code> · <code>PENDING</code></td></tr>
+    <tr><td><code>optionsLevel</code></td>
+        <td><code>NONE</code> · <code>LEVEL_1</code> · <code>LEVEL_2</code> · <code>LEVEL_3</code> · <code>LEVEL_4</code></td></tr>
+    <tr><td><code>assetClass</code></td><td><code>EQUITY</code> · <code>ETF</code> · <code>OPTION</code></td></tr>
+    <tr><td><code>positionSide</code></td><td><code>LONG</code> · <code>SHORT</code></td></tr>
+    <tr><td><code>equitySide</code></td>
+        <td><code>BUY</code> · <code>SELL</code> · <code>SELL_SHORT</code> · <code>BUY_TO_COVER</code></td></tr>
+    <tr><td><code>optionSide</code></td>
+        <td><code>BUY_TO_OPEN</code> · <code>BUY_TO_CLOSE</code> · <code>SELL_TO_OPEN</code> · <code>SELL_TO_CLOSE</code></td></tr>
+    <tr><td><code>orderType</code></td>
+        <td><code>MARKET</code> · <code>LIMIT</code> · <code>STOP</code> · <code>STOP_LIMIT</code> ·
+            <code>TRAILING_STOP</code> · <code>TRAILING_STOP_LIMIT</code> · <code>NET_DEBIT</code> ·
+            <code>NET_CREDIT</code> · <code>NET_EVEN</code></td></tr>
+    <tr><td><code>timeInForce</code></td>
+        <td><code>DAY</code> · <code>GTC</code> · <code>GTD</code> · <code>IOC</code> ·
+            <code>FOK</code> · <code>OPG</code> · <code>CLS</code></td></tr>
+    <tr><td><code>orderStatus</code><br><span class="small">open enumeration</span></td>
+        <td><b>Working:</b> <code>PENDING_NEW</code> · <code>NEW</code> ·
+            <code>PARTIALLY_FILLED</code> · <code>PENDING_CANCEL</code> ·
+            <code>PENDING_REPLACE</code> · <code>SUSPENDED</code><br>
+            <b>Terminal:</b> <code>FILLED</code> · <code>CANCELLED</code> ·
+            <code>REJECTED</code> · <code>EXPIRED</code> · <code>REPLACED</code><br>
+            <b>New members may be added.</b> Unrecognised means working
+            (<code>TS-VER-02</code>).</td></tr>
+    <tr><td><code>orderStatusFilter</code><br><span class="small">input only</span></td>
+        <td><code>WORKING</code> · <code>FILLED</code> · <code>CANCELLED</code> ·
+            <code>REJECTED</code> · <code>EXPIRED</code></td></tr>
+    <tr><td><code>priceBasis</code></td><td><code>REALTIME</code> · <code>DELAYED_15M</code> · <code>PRIOR_CLOSE</code></td></tr>
+    <tr><td><code>moneyBasis</code></td><td><code>INTRADAY_ESTIMATE</code> · <code>TRADE_DATE</code> · <code>SETTLED</code></td></tr>
+    <tr><td><code>marginCallType</code></td>
+        <td><code>FED_CALL</code> · <code>MAINTENANCE_CALL</code> · <code>DAY_TRADE_CALL</code> · <code>CASH_CALL</code></td></tr>
+    <tr><td><code>detail</code></td><td><code>SUMMARY</code> · <code>STANDARD</code> · <code>FULL</code></td></tr>
+    <tr><td><code>dataClassification</code></td>
+        <td><code>public</code> · <code>internal</code> · <code>customer-confidential</code> · <code>restricted</code></td></tr>
+    <tr><td><code>approvalMode</code></td>
+        <td><code>none</code> · <code>notify</code> · <code>confirm</code> · <code>dualControl</code> · <code>humanExecution</code></td></tr>
+    <tr><td><code>lifecycle</code></td><td><code>draft</code> · <code>active</code> · <code>deprecated</code> · <code>retired</code></td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== APPENDIX E ==================== -->
+<h1 id="appendix-e"><span class="num">E</span>Architecture review checklist</h1>
+
+<p class="lede">
+  The working document for a review meeting. Every line references the rule that settles it,
+  so a disagreement is resolved by reading a section rather than by seniority. Items in
+  <b>bold</b> are gating: a failure means the tool does not ship.
+</p>
+
+<h2 id="e1"><span class="num">E.1</span>Identity and description</h2>
+<ul class="check">
+  <li><b>TS-NAM-01</b> &nbsp;Name matches the grammar, has a domain segment, and its final segment is in the operation vocabulary</li>
+  <li><b>TS-NAM-02</b> &nbsp;Name is globally unique and has never been used before</li>
+  <li><b>TS-NAM-07</b> &nbsp;Title is human-readable, 60 characters or fewer, and names the consequence for tier 3</li>
+  <li><b>TS-DSC-01</b> &nbsp;Description contains purpose, "use when", "do not use", result orientation, and effects</li>
+  <li><b>TS-DSC-05</b> &nbsp;Every nearest-neighbour tool is named by exact wire name in an exclusion</li>
+  <li>TS-DSC-02 &nbsp;Description is within 2,000 characters and 180 words</li>
+  <li><b>TS-DSC-06</b> &nbsp;No instructions about agent behaviour outside this tool</li>
+  <li><b>TS-DSC-07</b> &nbsp;Description is static, reviewed, and not templated at runtime</li>
+  <li>§18.3 &nbsp;Every domain convention that could produce a wrong answer is stated somewhere</li>
+</ul>
+
+<h2 id="e2"><span class="num">E.2</span>Schemas</h2>
+<ul class="check">
+  <li><b>TS-INP-01</b> &nbsp;Input schema is a closed object with explicit required and <code>additionalProperties: false</code></li>
+  <li><b>TS-INP-09</b> &nbsp;Every finite-valued parameter is an enum, drawn from Appendix D</li>
+  <li><b>TS-INP-07</b> &nbsp;Every identifier is prefixed and pattern-constrained</li>
+  <li><b>TS-INP-08</b> &nbsp;Every array has <code>maxItems</code>; every free-text string has <code>maxLength</code></li>
+  <li><b>TS-INP-14</b> &nbsp;Every parameter has a description that says more than its type</li>
+  <li>TS-INP-12 &nbsp;Defaults are the conservative choice</li>
+  <li><b>TS-INP-17</b> &nbsp;No identity, credential, pass-through query, operation discriminator, or safety-defeating flag</li>
+  <li>TS-INP-16 &nbsp;No parameter the tool cannot honour</li>
+  <li><b>TS-OUT-01</b> &nbsp;Output schema declared; both <code>content</code> and <code>structuredContent</code> returned on every path</li>
+  <li><b>TS-OUT-03</b> &nbsp;<code>asOf</code> and <code>basis</code> present on every figure that can change</li>
+  <li><b>TS-OUT-07</b> &nbsp;<code>completeness</code> present; truncation stated in the text rendering</li>
+  <li><b>TS-OUT-13</b> &nbsp;Money and quantities are decimal strings with an explicit currency</li>
+  <li>§8.6 &nbsp;Empty is a success; partial is disclosed or refused</li>
+</ul>
+
+<h2 id="e3"><span class="num">E.3</span>Classification and control</h2>
+<ul class="check">
+  <li><b>TS-ANN-01</b> &nbsp;All four annotations stated and consistent with the operation verb</li>
+  <li><b>TS-ANN-03</b> &nbsp;Risk tier declared and defensible; state-changing tools are tier 2 or above</li>
+  <li><b>TS-ANN-04</b> &nbsp;Tier 3 carries a confirmation template that a human can act on</li>
+  <li><b>TS-ANN-05</b> &nbsp;Approval is bound to an argument hash and expires</li>
+  <li><b>TS-SEC-07</b> &nbsp;Non-idempotent tools require an idempotency key and deduplicate for 24 hours</li>
+  <li><b>TS-SEC-02</b> &nbsp;No identity is accepted from the caller</li>
+  <li><b>TS-SEC-08</b> &nbsp;Resource-level authorization demonstrated by a negative test</li>
+  <li><b>TS-SEC-10</b> &nbsp;No token is passed through to a downstream system</li>
+  <li><b>TS-SEC-11</b> &nbsp;Externally-sourced free text is neutralised and labelled</li>
+  <li><b>TS-SEC-12</b> &nbsp;Kill switch exists for tier 2 and above, and has been tested</li>
+</ul>
+
+<h2 id="e4"><span class="num">E.4</span>Errors</h2>
+<ul class="check">
+  <li><b>TS-ERR-01</b> &nbsp;Domain failures are execution errors, not transport errors</li>
+  <li><b>TS-ERR-02</b> &nbsp;Every error carries an imperative remediation naming the next action</li>
+  <li><b>TS-ERR-03</b> &nbsp;Constraint violations state the permissible bound</li>
+  <li><b>TS-ERR-06</b> &nbsp;Every upstream failure mode is mapped and tested; the default branch alerts</li>
+  <li><b>§11.5</b> &nbsp;No stack traces, hostnames, upstream prose, or unmasked identifiers in any error</li>
+  <li>§11.3 &nbsp;<code>INVALID_ARGUMENT</code> and <code>BUSINESS_RULE_VIOLATION</code> are not conflated</li>
+</ul>
+
+<h2 id="e5"><span class="num">E.5</span>Governance and evidence</h2>
+<ul class="check">
+  <li><b>TS-GOV-01</b> &nbsp;Named owning team with a paging escalation path</li>
+  <li><b>TS-GOV-02</b> &nbsp;Minimum necessary data returned; classification and PII fields mapped</li>
+  <li><b>TS-GOV-03</b> &nbsp;Entitlements enforced at catalogue, gateway, and implementation</li>
+  <li><b>TS-GOV-04</b> &nbsp;Per-principal rate limit declared</li>
+  <li><b>TS-OBS-01</b> &nbsp;Audit record emitted on every path, including the descriptor hash</li>
+  <li><b>TS-VER-04</b> &nbsp;Evaluation suite exists and has run against this version</li>
+  <li>§27.3 &nbsp;Selection, refusal, argument, and interpretation thresholds met</li>
+  <li><b>TS-SEC-09</b> &nbsp;Descriptor hash registered with the catalogue</li>
+  <li>TS-CAT-05 &nbsp;Every exception recorded with a compensating control and an expiry</li>
+</ul>
+
+<h2 id="e6"><span class="num">E.6</span>Catalogue fit</h2>
+<ul class="check">
+  <li>TS-CAT-01 &nbsp;The tool answers one question a user actually asks</li>
+  <li>TS-CAT-02 &nbsp;The agent's catalogue stays within 25 tools</li>
+  <li>§12.5 &nbsp;One sentence distinguishes this tool from its nearest neighbour, and it is in both descriptions</li>
+  <li>§12.3 &nbsp;No common question needs three or more calls plus a domain convention the model must know</li>
+</ul>
+
+<!-- ==================== APPENDIX F ==================== -->
+<h1 id="appendix-f"><span class="num">F</span>Glossary</h1>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Term</th><th>Meaning in this standard</th></tr></thead>
+  <tbody>
+    <tr><td><b>Agent</b></td><td>A system that uses a model to decide which tools to invoke and in what order, on behalf of a principal.</td></tr>
+    <tr><td><b>Annotation</b></td><td>One of four boolean behavioural hints in the descriptor. Advisory to a runtime; never a security control (§9.2).</td></tr>
+    <tr><td><b>Audience</b></td><td>A set of principals to whom a scoped view of the catalogue is served.</td></tr>
+    <tr><td><b>Basis</b></td><td>The convention under which a figure was computed — settled versus trade-date cash, real-time versus delayed price.</td></tr>
+    <tr><td><b>Catalogue</b></td><td>The system of record for descriptors: versions, hashes, owners, tiers, audiences, lifecycle.</td></tr>
+    <tr><td><b>Composite tool</b></td><td>A tool that joins several sources or applies domain rules server-side, so the caller does not have to (§12.3).</td></tr>
+    <tr><td><b>Confirmation token</b></td><td>A single-use, short-lived capability issued by a preview tool and required by its execute counterpart (§14.2).</td></tr>
+    <tr><td><b>Descriptor</b></td><td>The eight-field document that defines a tool (§4).</td></tr>
+    <tr><td><b>Execution error</b></td><td>A failure the tool returns inside a successful transport response, with <code>isError: true</code> (§11.1).</td></tr>
+    <tr><td><b>Gateway</b></td><td>The enforcement point between agent and implementation: identity, validation, policy, approval, quota, audit (§3.1).</td></tr>
+    <tr><td><b>Principal</b></td><td>The human or legal person on whose behalf a tool is invoked, and whose authority is used.</td></tr>
+    <tr><td><b>Result envelope</b></td><td><code>content</code> plus <code>structuredContent</code> plus <code>isError</code> (§8.1).</td></tr>
+    <tr><td><b>Risk tier</b></td><td>The firm's classification, 0 to 3, that drives approval, evidence, and monitoring (§9.3).</td></tr>
+    <tr><td><b>Selection accuracy</b></td><td>How often the right tool is chosen for a real user question (§27.3).</td></tr>
+    <tr><td><b>Silent wrongness</b></td><td>An invocation that succeeded, returned valid data, and produced a wrong answer. Measurable only by reading conversations (§16.2).</td></tr>
+    <tr><td><b>Terminal</b></td><td>A lifecycle state that can never change again. Expressed as a boolean, never inferred from a status string (§22.1).</td></tr>
+    <tr><td><b>Tool</b></td><td>A capability of the firm, described precisely enough that a model can decide to use it, use it correctly, and be held to account for having used it.</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<p class="small" style="margin-top:8mm">
+  <b>EA-STD-TOOL-001 · Tool Specification Standard · version 1.0.0-rc1</b><br>
+  Enterprise Architecture — Agent Platform. Comments and exception requests through the
+  catalogue. The machine-readable artifacts accompanying this document —
+  <code>schemas/tool-descriptor.schema.json</code>,
+  <code>schemas/common-types.schema.json</code>, the seven reference descriptors in
+  <code>catalog/</code>, and the conformance linter in
+  <code>tools/lint-descriptors.py</code> — are normative where they and this prose disagree
+  about a structural rule, and subordinate to this prose where they disagree about intent.
+</p>
