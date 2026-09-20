@@ -1,0 +1,173 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>A tool is a capability of the firm, described precisely enough that a language model can
+  decide to use it, use it correctly, and be held to account for having used it. This
+  section fixes what "precisely enough" means and how conformance is judged.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>1.1 What a conformant tool is</h2>
+
+<p>
+  A conformant tool is three artifacts that ship and version together:
+</p>
+
+<table>
+  <thead><tr><th>Artifact</th><th>Definition</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>The descriptor</strong></td>
+      <td>A machine-readable document declaring the tool's name, its purpose in prose
+          addressed to a model, a JSON Schema for its inputs, a JSON Schema for its outputs,
+          behavioral annotations, and a governance block. Part II specifies it in full;
+          Appendix A is its schema.</td>
+    </tr>
+    <tr>
+      <td><strong>The implementation</strong></td>
+      <td>Code that accepts an invocation conforming to the input schema, performs
+          authorization independently of anything the model said, and returns a result
+          envelope conforming to the output schema — or a structured error that tells the
+          caller what to do next.</td>
+    </tr>
+    <tr>
+      <td><strong>The evidence</strong></td>
+      <td>Conformance test results, evaluation transcripts, a security review record, and an
+          owner. A tool without evidence is a prototype, whatever else it is.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  The standard governs all three. It is deliberately silent on how the tool is transported to
+  the model, what framework implements it, and which model consumes it — those are
+  substitutable, and every one of them has been substituted at least once already.
+</p>
+
+<h2>1.2 Conformance language and rule identifiers</h2>
+
+<p>
+  The keywords <strong>MUST</strong>, <strong>MUST NOT</strong>, <strong>SHOULD</strong>, <strong>SHOULD NOT</strong>, and <strong>MAY</strong>
+  are used as defined in RFC 2119 and RFC 8174. Every normative rule carries a stable
+  identifier of the form <code>TS-AREA-NN</code>:
+</p>
+
+<table>
+  <thead><tr><th>Prefix</th><th>Area</th><th>Prefix</th><th>Area</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-GEN</code></td><td>General and descriptor structure</td>
+        <td><code>TS-ANN</code></td><td>Annotations and risk tiers</td></tr>
+    <tr><td><code>TS-NAM</code></td><td>Naming and identity</td>
+        <td><code>TS-GOV</code></td><td>Governance metadata</td></tr>
+    <tr><td><code>TS-DSC</code></td><td>Descriptions</td>
+        <td><code>TS-SEC</code></td><td>Security and trust</td></tr>
+    <tr><td><code>TS-INP</code></td><td>Input schemas</td>
+        <td><code>TS-OBS</code></td><td>Observability and audit</td></tr>
+    <tr><td><code>TS-OUT</code></td><td>Output schemas and envelopes</td>
+        <td><code>TS-VER</code></td><td>Versioning and lifecycle</td></tr>
+    <tr><td><code>TS-ERR</code></td><td>Errors</td>
+        <td><code>TS-CAT</code></td><td>Catalog and registration</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Rule identifiers are permanent. A rule that is withdrawn is marked withdrawn and its number
+  is never reused, so a review comment reading "fails <code>TS-INP-07</code>" means the same
+  thing in five years as it does today. The linter in <code>tools/lint-descriptors.py</code>
+  reports findings by rule identifier, which is what makes the checklist in Appendix E
+  mechanically enforceable rather than a matter of taste.
+</p>
+
+<h2>1.3 Conformance levels</h2>
+
+<p>
+  Not every tool needs the same scrutiny. A tool that reads a public holiday calendar and a
+  tool that reads a customer's buying power are not comparable risks, and a standard that
+  pretends otherwise gets routed around. Four levels:
+</p>
+
+<table>
+  <thead><tr><th>Level</th><th>Name</th><th>Requirements</th><th>Permitted exposure</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">L0</ac:parameter></ac:structured-macro></td>
+      <td><strong>Registered</strong></td>
+      <td>Descriptor exists in the catalog and parses against Appendix A. Nothing else.</td>
+      <td>Development and test environments only. Never reachable from a production agent.</td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">L1</ac:parameter></ac:structured-macro></td>
+      <td><strong>Conformant</strong></td>
+      <td>Every <strong>MUST</strong> in this standard is satisfied and the linter is clean. Named
+          owning team. Structured errors. Audit events emitted.</td>
+      <td>Internal, employee-facing agents. Non-customer data. Risk tier 0 or 1 only.</td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">L2</ac:parameter></ac:structured-macro></td>
+      <td><strong>Certified</strong></td>
+      <td>L1, plus: security review recorded; evaluation evidence (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27.3</ac:link-body></ac:link>) showing correct
+          selection and correct refusal; entitlement mapping signed off by the data owner;
+          an SLO and a kill switch; retention and record-keeping wired to the firm's
+          archive.</td>
+      <td>Anything touching customer data, money, or positions. <strong>Mandatory for every tool
+          in Part IV.</strong></td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">L3</ac:parameter></ac:structured-macro></td>
+      <td><strong>Externally exposed</strong></td>
+      <td>L2, plus: data-egress assessment for the receiving party; contractual controls on
+          model providers and vendor agents; per-tenant isolation proof; independent
+          red-team result no older than twelve months.</td>
+      <td>Tools reachable by an agent the firm does not operate — a vendor assistant, a
+          customer's own agent, a third-party platform.</td>
+    </tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GEN-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool reachable from a production agent
+  <strong>MUST</strong> hold at least Level 1. Every tool that reads customer data, moves money,
+  changes an order, or writes to a system of record <strong>MUST</strong> hold Level 2.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>1.4 Relationship to the firm's API standard</h2>
+
+<p>
+  The firm already has a REST API standard, and most tools will be built over APIs that
+  conform to it. The two standards are complementary and occasionally in tension, because
+  they serve different callers. Where they differ, the difference is deliberate:
+</p>
+
+<table>
+  <thead><tr><th>Concern</th><th>REST API standard</th><th>This standard</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Caller</strong></td>
+        <td>A developer who read the documentation once and encoded their understanding into
+            code that then runs unchanged.</td>
+        <td>A model that reads the description on every single call and has never seen the
+            documentation.</td></tr>
+    <tr><td><strong>Granularity</strong></td>
+        <td>Resource-oriented. One resource, the standard verbs, composition left to the
+            client.</td>
+        <td>Task-oriented. One tool per decision the agent has to make, even when that means
+            joining three resources server-side (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Error signaling</strong></td>
+        <td>HTTP status plus a problem document. The status code carries real meaning.</td>
+        <td>A structured error inside a successful transport response. The model never sees a
+            status code, so the payload must carry everything (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Discovery</strong></td>
+        <td>Hypermedia links let a client navigate without hard-coding URLs.</td>
+        <td>Links are not affordances a model can be trusted to follow blindly. Capability is
+            expressed as the presence of a tool and as explicit flags in the result (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Payload size</strong></td>
+        <td>Bounded by bandwidth and client memory; a 2 MB response is unremarkable.</td>
+        <td>Bounded by the model's context window and by cost per call. A 2 MB response
+            is a defect (<ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Versioning</strong></td>
+        <td>Path or header version, long support windows, clients upgrade on their schedule.</td>
+        <td>The model has no schedule. Additive change only; a breaking change is a new tool
+            name (<ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">The one-line summary</ac:parameter><ac:rich-text-body><p>
+    A REST API is a contract with a programmer. A tool is a contract with a reader who will
+    never ask a clarifying question, never read the changelog, and never remember what
+    happened last time. Everything else follows from that.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== 2. WHAT A TOOL IS ==================== -->

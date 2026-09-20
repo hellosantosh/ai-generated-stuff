@@ -1,0 +1,98 @@
+{
+  "name": "brokerage_order_preview",
+  "title": "Preview an order before placing it",
+  "description": "Computes exactly what would happen if an equity order were placed — estimated cost, commission, resulting buying power, and any warnings — without placing anything. Use when the customer is considering an order, asks what something would cost, asks whether they can afford it, or has asked to trade and must see and approve the terms first. Every call to brokerage_order_place must be preceded by this tool, because it issues the confirmationToken that authorizes the order. Do not use to report an existing order — call brokerage_orders_list. This changes nothing and may be called freely, including several times while the customer adjusts quantity or price. Read canPlace first: false means the order would be rejected and blockers says why, so tell the customer rather than proceeding. The confirmationToken is valid for 120 seconds and for this exact order only; if the customer changes anything, preview again. estimatedCost for a market order is an estimate based on the current quote and the fill may differ, materially so in a fast market — say so when presenting it.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account that would trade, from brokerage_accounts_list." },
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}$", "description": "Ticker to trade, uppercase." },
+      "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction. SELL_SHORT opens a short position and BUY_TO_COVER closes one; they are not interchangeable with SELL and BUY." },
+      "quantity": { "type": "integer", "minimum": 1, "maximum": 1000000, "description": "Whole shares. Fractional quantities are not supported." },
+      "orderType": { "type": "string", "enum": ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"], "description": "How the order would be priced. MARKET executes at whatever the market offers." },
+      "limitPrice": { "type": "string", "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$", "description": "The worst acceptable price. Required for LIMIT and STOP_LIMIT; omit for MARKET and STOP." },
+      "stopPrice": { "type": "string", "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$", "description": "The price at which the order would activate. Required for STOP and STOP_LIMIT; omit otherwise." },
+      "timeInForce": { "type": "string", "enum": ["DAY", "GTC", "IOC", "FOK"], "default": "DAY", "description": "How long the order would stay live. Omitted means DAY, which expires at the close of the current session." }
+    },
+    "required": ["accountId", "symbol", "side", "quantity", "orderType"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": { "type": "string", "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "A decimal number as a string, to avoid binary floating-point error." }
+    },
+    "type": "object",
+    "properties": {
+      "asOf": { "type": "string", "format": "date-time", "description": "The instant this preview was computed (UTC). Quotes move; an old preview is not a quote." },
+      "canPlace": { "type": "boolean", "description": "Whether this order would be accepted right now. Read this first: false means do not proceed." },
+      "blockers": {
+        "type": "array",
+        "maxItems": 10,
+        "description": "Reasons the order would be rejected. Empty when canPlace is true.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string", "maxLength": 64, "description": "Stable machine-readable reason, such as INSUFFICIENT_BUYING_POWER or MARKET_CLOSED." },
+            "message": { "type": "string", "maxLength": 240, "description": "Customer-safe explanation of the blocker." },
+            "maxPermissibleQuantity": { "type": ["integer", "null"], "minimum": 0, "description": "The largest quantity that would be accepted, when the blocker is a size limit. Null when the blocker is not about size." }
+          },
+          "required": ["code", "message"],
+          "additionalProperties": false
+        }
+      },
+      "warnings": {
+        "type": "array",
+        "maxItems": 10,
+        "description": "Conditions the customer should know about but that do not block the order — a wide spread, an extended-hours session, a concentrated position.",
+        "items": { "type": "string", "maxLength": 240 }
+      },
+      "estimate": {
+        "type": "object",
+        "description": "What the order would cost and leave behind.",
+        "properties": {
+          "referencePrice": { "$ref": "#/$defs/decimal", "description": "Price the estimate is based on." },
+          "estimatedPrincipal": { "$ref": "#/$defs/decimal", "description": "Quantity multiplied by the reference price, before costs." },
+          "commission": { "$ref": "#/$defs/decimal", "description": "Commission and regulatory fees." },
+          "estimatedCost": { "$ref": "#/$defs/decimal", "description": "Total the customer would pay, or receive if selling. This is the number to show them." },
+          "buyingPowerBefore": { "$ref": "#/$defs/decimal", "description": "Applicable buying power now." },
+          "buyingPowerAfter": { "$ref": "#/$defs/decimal", "description": "Applicable buying power if this order filled in full." },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency for these figures." },
+          "isEstimate": { "type": "boolean", "description": "True for market orders, where the fill price is not knowable in advance. Say so when presenting the cost." }
+        },
+        "required": ["referencePrice", "estimatedPrincipal", "commission", "estimatedCost", "buyingPowerBefore", "buyingPowerAfter", "currency", "isEstimate"],
+        "additionalProperties": false
+      },
+      "confirmationToken": { "type": ["string", "null"], "maxLength": 512, "description": "Single-use token authorizing brokerage_order_place for this exact order. Null when canPlace is false." },
+      "expiresAt": { "type": ["string", "null"], "format": "date-time", "description": "When the token stops being valid (UTC). Preview again rather than placing an expired order." },
+      "summary": { "type": "string", "maxLength": 240, "description": "One-line description of the proposed order, suitable for reading back to the customer before they approve." }
+    },
+    "required": ["asOf", "canPlace", "blockers", "warnings", "estimate", "confirmationToken", "expiresAt", "summary"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "4.0.2",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 1,
+      "owner": { "team": "trading-platform", "contact": "trading-platform@example.com", "escalation": "pagerduty://trading-platform" },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:write"],
+      "approval": { "mode": "none" },
+      "recordKeeping": { "auditEvent": "tool.order.preview", "retention": "P6Y", "regulatoryBasis": ["books-and-records", "suitability"] },
+      "cost": { "class": "medium", "p95LatencyMs": 700 },
+      "rateLimit": { "perPrincipalPerMinute": 30 },
+      "dependencies": ["risk-engine", "margin-engine", "market-data"],
+      "availability": { "slo": "99.95", "killSwitch": "tools.brokerage.trading" },
+      "evaluation": { "suite": "evals/brokerage-trading", "lastRunAt": "2026-09-15T08:00:00Z", "selectionAccuracy": 0.97, "refusalAccuracy": 0.99 }
+    }
+  }
+}

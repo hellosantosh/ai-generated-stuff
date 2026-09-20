@@ -1,0 +1,144 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Four situations recur in every tool catalog: the action needs a human's consent, the
+  action needs information the agent does not have, the action might be executed twice, and
+  the action takes longer than a conversation can wait. Each has one sanctioned pattern.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>14.1 Confirmation</h2>
+
+<p>
+  Policy comes from the risk tier (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.4</ac:link-body></ac:link>). The mechanics are the gateway's: it resolves the
+  approval mode <em>before</em> invoking the implementation, renders the
+  <code>confirmationTemplate</code> with validated arguments, obtains the principal's
+  decision, and binds that decision to an argument hash.
+</p>
+
+<p>
+  The implementation must still behave correctly if approval is missing — returning
+  <code>APPROVAL_REQUIRED</code> — because the gateway is not the only path that will ever
+  exist (<ac:link><ri:page ri:content-title="3. Reference architecture"/><ac:link-body>§3.1</ac:link-body></ac:link>).
+</p>
+
+<h2>14.2 Preview then execute</h2>
+
+<p>
+  Every tier 3 action is split in two. The preview tool is read-only, computes exactly what
+  would happen, and returns a short-lived <code>confirmationToken</code> that encodes the
+  previewed outcome. The execute tool accepts that token and <strong>MUST</strong> refuse to act if the
+  world has moved enough to invalidate it.
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_order_preview  →  { estimatedCost, buyingPowerAfter, warnings[],
+                              commission, confirmationToken: "cnf_…",
+                              expiresAt: "2026-09-19T14:34:05Z" }
+
+brokerage_order_place    ←  { …order details…, confirmationToken: "cnf_…" }
+                         →  PRECONDITION_FAILED if expired, or if the order
+                            details do not match what was previewed]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-SEC-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   A confirmation token <strong>MUST</strong> be bound to the
+  principal, the tool, and a hash of the previewed arguments; <strong>MUST</strong> expire within 120
+  seconds by default; and <strong>MUST</strong> be single-use. It is a capability, not a receipt.</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Why this beats a dryRun flag</ac:parameter><ac:rich-text-body><p>
+    Two tools give you two accurate annotation sets, two risk tiers, two audit identities, and
+    a preview an agent may call freely without any approval friction — which means it will
+    call it, which means the customer sees the cost before the question is asked. One tool
+    with a flag gives you a descriptor that is honest about neither of its two behaviors, and
+    a control model where the difference between simulated and real is one token in a JSON
+    object the model generated.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>14.3 Asking the principal for missing information</h2>
+
+<p>
+  Sometimes a tool cannot proceed without a value the agent does not have and should not
+  invent — which of three eligible accounts, whether to accept a worse price, an expiry date
+  the customer has not stated. The sanctioned pattern is for the tool to <em>ask</em>, through
+  the runtime, rather than to guess or to fail.
+</p>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-SEC-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>A request for input <strong>MUST</strong> be expressed as a schema of primitive fields —
+            string, number, boolean, or enum — with a clear prompt, and <strong>MUST</strong> be
+            declinable. An agent that cannot obtain the value returns to the user; it does not
+            substitute a default.</td></tr>
+    <tr><td><code>TS-SEC-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">NEVER</ac:parameter></ac:structured-macro></td>
+        <td>Input requests <strong>MUST NOT</strong> be used to collect credentials, card numbers,
+            government identifiers, or one-time passcodes. Authentication happens in the
+            identity plane, on a surface the customer can verify — never inside a tool's
+            request for arguments, which is precisely the shape a phishing flow would
+            take.</td></tr>
+    <tr><td><code>TS-SEC-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Prefer disambiguating in the schema over asking at runtime. A tool that returns
+            <code>INVALID_ARGUMENT</code> naming the three eligible accounts is usually a
+            better experience than a modal dialog, and always a simpler control.</td></tr>
+  </tbody>
+</table>
+
+<h2>14.4 Idempotency</h2>
+
+<p>
+  An agent retries. It retries after a timeout, after an ambiguous error, and sometimes
+  because a second model turn concluded the first one had not worked. For a read this is
+  wasteful; for an order it is a duplicate trade.
+</p>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-SEC-07 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool that is not naturally idempotent
+  <strong>MUST</strong> require an <code>idempotencyKey</code>, <strong>MUST</strong> deduplicate on it for at
+  least 24 hours, and <strong>MUST</strong> return the original result — not an error — when a key is
+  replayed with identical arguments. A replay with the <em>same</em> key and
+  <em>different</em> arguments <strong>MUST</strong> fail with <code>CONFLICT</code>.</p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  State this in the description too, in one sentence: models supply a key far more reliably
+  when told what it is for than when it merely appears in the schema.
+</p>
+
+<h2>14.5 Long-running operations</h2>
+
+<table>
+  <thead><tr><th>Duration</th><th>Pattern</th></tr></thead>
+  <tbody>
+    <tr><td>&lt; 10 seconds</td><td>Synchronous. Declare the latency class (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.5</ac:link-body></ac:link>).</td></tr>
+    <tr><td>10 s – minutes</td>
+        <td>Job pattern: <code>..._start</code> returns a <code>jobId</code> immediately;
+            <code>..._status</code> reports progress and returns the result when complete.
+            The start tool is not read-only even if the eventual result is.</td></tr>
+    <tr><td>Minutes – hours</td>
+        <td>Job pattern plus an out-of-band notification to the principal. The agent
+            <strong>MUST NOT</strong> poll in a loop; the description says so, and the status tool
+            returns a <code>nextPollAfterSeconds</code> the agent is told to honor.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GOV-05 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   A tool <strong>MUST NOT</strong> block for longer than its
+  declared timeout, and <strong>MUST</strong> return <code>TIMEOUT</code> with an explicit statement of
+  whether the underlying operation may still complete. "The order may still have been placed"
+  is a materially different instruction from "the order was not placed", and the agent cannot
+  work it out.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>14.6 Polling and change</h2>
+
+<p>
+  Order status is the canonical case: the customer asks "did it fill?", the answer is "not
+  yet", and something has to decide when to look again. Push subscriptions are the right
+  answer for a trading screen and the wrong answer for a conversational agent, which has no
+  persistent loop to receive them.
+</p>
+
+<ul>
+  <li>Return <code>isTerminal</code> on any entity with a lifecycle, and say in the description
+      that a terminal entity <strong>must not</strong> be polled again. This single flag removes most
+      wasteful polling.</li>
+  <li>Return <code>nextPollAfterSeconds</code> when the answer is "not yet", scaled to the
+      entity — two seconds for a market order, sixty for a transfer.</li>
+  <li>Prefer telling the customer the firm will notify them over having an agent wait. An
+      agent holding a conversation open to poll is an expensive, fragile timer.</li>
+</ul>
+
+<!-- ==================== 15. SECURITY ==================== -->

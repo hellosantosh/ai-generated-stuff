@@ -1,0 +1,193 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Annotations let a runtime that has never seen your tool reason about it: whether to offer it
+  to an autonomous agent, whether to demand a confirmation, whether a retry after a timeout is
+  safe. They are the machine-readable half of "what does this thing do to the world".</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>9.1 The four behavioral hints</h2>
+
+<table>
+  <thead><tr><th>Annotation</th><th>Default</th><th>Meaning, and what a runtime does with it</th></tr></thead>
+  <tbody>
+    <tr><td><code>readOnlyHint</code></td><td><code>false</code></td>
+        <td><strong>True means the tool changes nothing</strong> in any system, including caches,
+            counters, and audit-visible state. Runtimes use it to decide what an agent may do
+            without supervision, what may run speculatively or in parallel, and what is safe
+            to replay while debugging. If the tool writes anything at all — even a search-history
+            row — this is <code>false</code>.</td></tr>
+    <tr><td><code>destructiveHint</code></td><td><code>true</code></td>
+        <td>Meaningful only when <code>readOnlyHint</code> is false. <strong>True means the change
+            may be irreversible or may overwrite existing state</strong>; false means it is purely
+            additive. Placing an order is destructive: it can fill in milliseconds and cannot
+            be un-filled. Adding a symbol to a watchlist is additive.</td></tr>
+    <tr><td><code>idempotentHint</code></td><td><code>false</code></td>
+        <td>Meaningful only when <code>readOnlyHint</code> is false. <strong>True means repeating
+            the identical call has no additional effect.</strong> This is the annotation that tells
+            a runtime whether a timeout can be retried. Canceling an already-canceled order
+            is idempotent; placing an order is not, unless an
+            <code>idempotencyKey</code> makes it so — and if it does, say so here and require
+            the key.</td></tr>
+    <tr><td><code>openWorldHint</code></td><td><code>true</code></td>
+        <td><strong>True means the tool reaches outside the firm's controlled domain</strong> — the
+            public internet, a market data vendor, a counterparty. False means a closed,
+            enumerable universe. Runtimes use it to decide what may be quoted to a customer
+            without attribution and what content needs treating as untrusted.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-ANN-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   All four annotations <strong>MUST</strong> be stated
+  explicitly, even where the value equals the default. The defaults are deliberately
+  pessimistic so that an omission fails safe; but an omission also means the reviewer cannot
+  tell whether the author decided or forgot.</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-ANN-02 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Annotations <strong>MUST</strong> be consistent with the
+  operation verb in the tool's name (<ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>§5.3</ac:link-body></ac:link>). A tool named <code>..._list</code> with
+  <code>readOnlyHint: false</code> fails the linter, and a tool named <code>..._place</code>
+  with <code>readOnlyHint: true</code> fails it harder.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>9.2 Hints are advisory, never enforcement</h2>
+
+<ac:structured-macro ac:name="warning"><ac:parameter ac:name="title">Read this paragraph twice before designing a control around an annotation</ac:parameter><ac:rich-text-body><p>
+    An annotation is an assertion made by whoever wrote the descriptor. For a tool the firm
+    builds and signs, that assertion is as trustworthy as the review that approved it. For a
+    tool supplied by a third party, it is a claim by an untrusted party about their own
+    software — and a <code>readOnlyHint: true</code> on someone else's tool is worth precisely
+    what any self-certification is worth. <strong>No security control may depend solely on an
+    annotation.</strong>
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  The firm's controls therefore derive from the <strong>risk tier</strong> in the governance block,
+  which is set by the tool's owner, verified at review, recorded in the catalog, and
+  signed — not from the annotations, which are conveniences for the runtime and hints for the
+  agent. Annotations and risk tier must agree; where they disagree, the linter fails the build
+  and a human decides which one was wrong.
+</p>
+
+<h2>9.3 The risk tier</h2>
+
+<table>
+  <thead><tr><th>Tier</th><th>Scope</th><th>Brokerage examples</th><th>Baseline controls</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">T0</ac:parameter></ac:structured-macro><br/>Reference</td>
+      <td>Reads data that is public or firm-wide reference. No customer, no position, no
+          money.</td>
+      <td>Market calendar · symbol lookup · contract specifications · fee schedule</td>
+      <td>Audit event. No entitlement beyond authentication. Freely available to autonomous
+          agents.</td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro><br/>Customer read</td>
+      <td>Reads customer-identifying or position data. Changes nothing.</td>
+      <td><strong>Accounts · positions · balances · order status</strong> · transaction history</td>
+      <td>Entitlement check at three points (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.4</ac:link-body></ac:link>). Full argument-and-result audit. Per-principal
+          rate limit. Level 2 conformance. No confirmation needed.</td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">T2</ac:parameter></ac:structured-macro><br/>Reversible change</td>
+      <td>Changes state, but the change is reversible and not financially material.</td>
+      <td>Set an account nickname · create a price alert · request a statement · save a
+          watchlist</td>
+      <td>T1 controls, plus: idempotency key, explicit notification to the principal, and a
+          documented reversal path.</td>
+    </tr>
+    <tr>
+      <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">T3</ac:parameter></ac:structured-macro><br/>Material</td>
+      <td>Moves money, creates market exposure, or makes an irreversible change to a
+          customer's holdings or standing instructions.</td>
+      <td><strong>Place, replace, or cancel an order</strong> · transfer funds · change beneficiaries ·
+          exercise an option</td>
+      <td>T2 controls, plus: mandatory human confirmation bound to the exact arguments,
+          two-step preview-then-execute, <code>reason</code> captured, dedicated kill switch,
+          heightened monitoring, and Level 2 conformance with an independent security
+          review.</td>
+    </tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-ANN-03 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every descriptor <strong>MUST</strong> declare a
+  <code>riskTier</code>. A tool whose tier is disputed at review defaults to the higher tier
+  until the dispute is resolved in writing.</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Cancellation is tier 3, and people argue about it</ac:parameter><ac:rich-text-body><p>
+    Canceling an order feels like undoing something and therefore harmless. It is not: a
+    canceled order does not fill, and an order that does not fill in a moving market is a
+    realized economic difference for the customer. It is also irreversible — you cannot
+    un-cancel; you can only place a new order at a new price. Treat cancellation exactly as
+    you treat placement.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>9.4 Binding approval policy to the tier</h2>
+
+<table>
+  <thead><tr><th>Approval mode</th><th>Default for</th><th>Behavior</th></tr></thead>
+  <tbody>
+    <tr><td><code>none</code></td><td>T0, T1</td>
+        <td>Invoked without interruption. Audited.</td></tr>
+    <tr><td><code>notify</code></td><td>T2</td>
+        <td>Executed immediately; the principal is told what happened, with the reversal path.</td></tr>
+    <tr><td><code>confirm</code></td><td>T3</td>
+        <td>The principal is shown a rendering of exactly what will happen and must approve
+            before execution.</td></tr>
+    <tr><td><code>dualControl</code></td><td>By exception</td>
+        <td>Two distinct human approvers, neither of them the requesting agent's principal.
+            Reserved for instruction changes and money movement above threshold.</td></tr>
+    <tr><td><code>humanExecution</code></td><td>By exception</td>
+        <td>The agent may only prepare the action; a human executes it in a separate system.
+            The appropriate answer for anything the firm is not yet willing to automate.</td></tr>
+  </tbody>
+</table>
+
+<h3>9.4.1 What a confirmation must show</h3>
+
+<p>
+  A confirmation dialog that renders raw arguments is a rubber stamp. The descriptor therefore
+  carries a <code>confirmationTemplate</code> in its governance block, and the runtime renders
+  it with the validated arguments.
+</p>
+
+<table><tbody><tr><td><p class="lang b">What the principal must not be asked to approve</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Allow brokerage_order_place?
+
+{"accountId":"acct_01HQ8Z4M2X9K3P7R",
+ "symbol":"AAPL","side":"BUY",
+ "quantity":100,"orderType":"MARKET",
+ "timeInForce":"DAY"}
+
+           [ Allow ]  [ Deny ]]]></ac:plain-text-body></ac:structured-macro></td><td><p class="lang g">What they must</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Place a real order — this trades money
+
+  Buy 100 shares of AAPL (Apple Inc.)
+  Account ••••4471 · Roth IRA
+  Market order, good for today
+  Estimated cost   24,875.00 USD
+  Buying power after   59,485.20 USD
+
+  Fills immediately and cannot be undone.
+
+      [ Place order ]  [ Cancel ]]]></ac:plain-text-body></ac:structured-macro></td></tr></tbody></table><table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-ANN-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Tier 3 tools <strong>MUST</strong> supply a <code>confirmationTemplate</code> that renders,
+            in the principal's language: the action, the identified account in customer-facing
+            terms, the instrument in words, the quantity and the money, the reversibility, and
+            the material consequence.</td></tr>
+    <tr><td><code>TS-ANN-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Approval <strong>MUST</strong> be bound to the exact argument set that was displayed. The
+            runtime <strong>MUST</strong> hash the validated arguments, present them, and refuse
+            execution if anything differs. An agent that could alter arguments between
+            approval and execution has made the approval meaningless.</td></tr>
+    <tr><td><code>TS-ANN-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Approvals <strong>MUST</strong> expire — 120 seconds is the default for trading actions —
+            and <strong>MUST NOT</strong> be reusable for a second invocation.</td></tr>
+    <tr><td><code>TS-ANN-07</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">NEVER</ac:parameter></ac:structured-macro></td>
+        <td>A tool <strong>MUST NOT</strong> be able to lower its own approval requirement through an
+            argument, a description, or a returned instruction. Approval policy is resolved
+            from the catalog, before the implementation is reached.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 10. GOVERNANCE ==================== -->

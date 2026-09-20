@@ -1,0 +1,37 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The schema, the type library, the reference catalog, and the CI linter — the parts of the standard a build can enforce.</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">These are the enforceable half of the standard</ac:parameter><ac:rich-text-body><p>Prose describes intent; these files decide whether a build passes. Where the two disagree about a structural rule, the files govern; where they disagree about intent, the prose governs.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>Schemas</h2>
+<table><tbody>
+<tr><th>File</th><th>What it is</th></tr>
+<tr><td><code>tool-descriptor.schema.json</code></td>
+    <td>The normative shape of a descriptor — Appendix A. A descriptor that does not validate against it is not a descriptor.</td></tr>
+<tr><td><code>common-types.schema.json</code></td>
+    <td>The shared type library — Appendix B. Decimal, currency, identifiers, completeness, the error payload, the result envelope. Paste from here rather than reinventing, so a concept means the same thing in every tool.</td></tr>
+</tbody></table>
+
+<h2>Reference catalog</h2>
+<p>Seven conformant brokerage descriptors covering accounts, positions, balances, and order
+status, plus a preview/place pair for contrast. All pass the linter with no findings.</p>
+<table><tbody><tr><th>Descriptor</th><th>Where</th></tr><tr><td><code>brokerage_accounts_list.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_balances_get.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_order_get.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_order_place.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_order_preview.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_orders_list.json</code></td><td>Attached to this page.</td></tr><tr><td><code>brokerage_positions_list.json</code></td><td>Attached to this page.</td></tr></tbody></table>
+
+<h2>The conformance linter</h2>
+<p>Standard library only, so it runs anywhere CI runs. Exit status 1 on any MUST violation;
+SHOULD findings are warnings. Every finding names the rule identifier the standard defines.</p>
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">bash</ac:parameter><ac:plain-text-body><![CDATA[python3 tools/lint-descriptors.py catalog/
+python3 tools/lint-descriptors.py catalog/brokerage_balances_get.json
+
+# 7 descriptor(s) · 0 error(s) · 0 warning(s)]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>The CI gate</h2>
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">bash</ac:parameter><ac:plain-text-body><![CDATA[tools/lint-descriptors.py catalog/                       # rules, by identifier
+validate catalog/*.json  against schemas/tool-descriptor.schema.json
+validate examples/*.json against each tool's own outputSchema
+check     rendered descriptor size <= 1200 tokens
+check     no descriptor name changed since the last release
+register  descriptor content hashes with the catalog     # TS-SEC-09
+run       evaluation suite; fail below threshold]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>Files</h2>
+<p><ac:structured-macro ac:name="attachments"><ac:parameter ac:name="upload">false</ac:parameter><ac:parameter ac:name="old">false</ac:parameter></ac:structured-macro></p>

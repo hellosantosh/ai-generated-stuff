@@ -1,0 +1,99 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>This is a normative standard, not a guideline. Sections marked <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro>
+  are gating conditions for production release; a tool that fails one does not ship.
+  Everything else is engineering advice with the firm's reasoning attached.</p></ac:rich-text-body></ac:structured-macro>
+
+<table>
+  <tbody>
+    <tr><th>Title</th><td>Tool Specification Standard</td></tr>
+    <tr><th>Identifier</th><td><code>EA-STD-TOOL-001</code></td></tr>
+    <tr><th>Version</th><td>1.0.0-rc1</td></tr>
+    <tr><th>Status</th><td>Draft for Architecture Review Board ratification</td></tr>
+    <tr><th>Owner</th><td>Enterprise Architecture — Agent Platform</td></tr>
+    <tr><th>Applies to</th><td>
+      Every capability exposed for invocation by a language model, whether reached through an
+      internal agent, a vendor assistant, a copilot embedded in a desktop product, or an
+      autonomous workflow. Applies equally to tools that wrap an existing REST API, a database,
+      a mainframe transaction, or a human workflow queue.
+    </td></tr>
+    <tr><th>Does not apply to</th><td>
+      Human-facing REST and GraphQL APIs (governed by <code>EA-STD-API-002</code>), event
+      schemas, and batch interfaces — except where one of those is being <em>wrapped</em> as a
+      tool, at which point this standard governs the wrapper.
+    </td></tr>
+    <tr><th>Normative dependencies</th><td>
+      JSON Schema 2020-12 · RFC 2119 / RFC 8174 keywords · RFC 3339 timestamps ·
+      ISO 4217 currency codes · ISO 8601 durations · the firm's identity and
+      entitlement standard
+    </td></tr>
+    <tr><th>Review cycle</th><td>Twice yearly, or on any breaking change to a bound runtime</td></tr>
+  </tbody>
+</table>
+
+<h2>0.1 Why the firm needs this</h2>
+
+<p>
+  Three things have happened at once. Business lines are shipping agents. Vendors are
+  shipping assistants that expect to be handed capabilities. And the safest, most valuable
+  capabilities we own — an account's positions, a customer's buying power, the status of a
+  live order — are exactly the ones an agent most wants to reach.
+</p>
+
+<p>
+  In the absence of a standard, each team invents its own answers to the same twelve
+  questions: what the tool is called, how much it should say about itself, what it returns
+  when there is nothing to return, whether the caller may retry, who the caller is, what
+  happens when the upstream system is down, and who signed off on any of it. The result is
+  not merely inconsistent. It is unreviewable: an architecture board cannot assess forty
+  tools that each describe themselves differently, and a model cannot reliably choose
+  between them either.
+</p>
+
+<p>
+  This standard fixes the shape of the contract so that the interesting questions — is this
+  capability safe to expose, to whom, under what supervision — are the only ones left on the
+  table at review time.
+</p>
+
+<h2>0.2 How to read this document</h2>
+
+<table>
+  <thead><tr><th>If you are</th><th>Read</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>An architect</strong> assessing a proposal</td>
+      <td>Part I for the model, <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9</ac:link-body></ac:link> and <ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link> for the classification scheme, <ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15</ac:link-body></ac:link> for the trust
+          argument, and Appendix E — the one-page review checklist you will actually use in
+          the meeting.</td>
+    </tr>
+    <tr>
+      <td><strong>A tech lead</strong> designing a tool set</td>
+      <td>Part II end to end, then <ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12</ac:link-body></ac:link> (granularity) and <ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13</ac:link-body></ac:link> (payload economics). Part IV is
+          a worked catalog you can copy structurally.</td>
+    </tr>
+    <tr>
+      <td><strong>A developer</strong> writing one tool</td>
+      <td><ac:link><ri:page ri:content-title="4. Descriptor anatomy"/><ac:link-body>§4</ac:link-body></ac:link> for the anatomy, <ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6</ac:link-body></ac:link> for the description, <ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7</ac:link-body></ac:link>–<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8</ac:link-body></ac:link> for schemas, <ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11</ac:link-body></ac:link> for errors, and
+          the nearest analogue in Part IV. Appendix B is a type library you should paste from
+          rather than reinvent.</td>
+    </tr>
+    <tr>
+      <td><strong>A risk, audit, or compliance reviewer</strong></td>
+      <td><ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9</ac:link-body></ac:link> (risk tiers), <ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link> (governance metadata), <ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15</ac:link-body></ac:link> (security), <ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>§16</ac:link-body></ac:link> (audit and
+          supervision), <ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17</ac:link-body></ac:link> (lifecycle), <ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27</ac:link-body></ac:link> (certification evidence).</td>
+    </tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">On protocol neutrality</ac:parameter><ac:rich-text-body><p>
+    This standard deliberately specifies a <em>contract</em>, not a wire protocol. Field
+    names, schema dialect, envelope shape, and annotation semantics are chosen to map
+    one-to-one onto the tool-calling interfaces in current use, so a conformant descriptor
+    can be published over any of them by a thin adapter that renames nothing. Where a
+    runtime imposes a stricter limit than this standard — a shorter name budget, a smaller
+    payload ceiling — the stricter limit wins and <ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17.5</ac:link-body></ac:link> explains how to record that.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== TABLE OF CONTENTS ==================== -->
+
+
+<!-- ==================== PART I ==================== -->

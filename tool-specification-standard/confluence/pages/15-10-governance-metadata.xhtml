@@ -1,0 +1,150 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Everything an architecture board, a risk function, an auditor, or an on-call engineer needs
+  to know about a tool — and nothing the model needs. It lives in <code>_meta</code> precisely
+  so that it never competes for context.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>10.1 The governance block</h2>
+
+<table>
+  <thead><tr><th>Member</th><th>Required</th><th>Content</th></tr></thead>
+  <tbody>
+    <tr><td><code>version</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Semantic version of the tool contract. Bumped by the rules in <ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17.2</ac:link-body></ac:link>.</td></tr>
+    <tr><td><code>lifecycle</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>draft</code> | <code>active</code> | <code>deprecated</code> |
+            <code>retired</code>. The catalog will not serve a <code>draft</code> or
+            <code>retired</code> tool to a production audience.</td></tr>
+    <tr><td><code>conformanceLevel</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>L0</code>–<code>L3</code> per <ac:link><ri:page ri:content-title="1. Scope, audience, and conformance"/><ac:link-body>§1.3</ac:link-body></ac:link>. Asserted by the owner, verified by the
+            certification gate (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>riskTier</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>0</code>–<code>3</code> per <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.3</ac:link-body></ac:link>.</td></tr>
+    <tr><td><code>owner</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>{team, contact, escalation}</code>. A distribution list is not an owner; a
+            team with an on-call rotation is.</td></tr>
+    <tr><td><code>dataClassification</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The highest classification of anything the tool can return, per the firm's data
+            classification standard (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>containsPii</code>, <code>piiFields</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Whether results can contain personal data, and which output fields carry it —
+            expressed as JSON Pointers into the output schema, so redaction and retention can
+            be applied mechanically.</td></tr>
+    <tr><td><code>entitlements</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The scopes a principal must hold (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.4</ac:link-body></ac:link>). An empty array is a positive assertion
+            that none are needed and is scrutinized at review.</td></tr>
+    <tr><td><code>approval</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>{mode, confirmationTemplate, expiresInSeconds}</code> per <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.4</ac:link-body></ac:link>.</td></tr>
+    <tr><td><code>recordKeeping</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>{auditEvent, retention, regulatoryBasis}</code> — the audit event name, an
+            ISO 8601 retention duration, and the obligations that drive it.</td></tr>
+    <tr><td><code>cost</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td><code>{class, p95LatencyMs, unitCost}</code>. Lets an orchestrator prefer a cheap
+            tool and a capacity planner forecast.</td></tr>
+    <tr><td><code>rateLimit</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Per-principal and per-tenant ceilings. An agent in a retry loop is the most
+            common source of load a tool will ever see.</td></tr>
+    <tr><td><code>dependencies</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>The systems of record this tool reads or writes, so that an outage in one can be
+            mapped to the tools it degrades.</td></tr>
+    <tr><td><code>availability</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td><code>{slo, killSwitch, degradedMode}</code>.</td></tr>
+    <tr><td><code>evaluation</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro> at L2</td>
+        <td><code>{suite, lastRunAt, selectionAccuracy, refusalAccuracy}</code> — the evidence
+            behind the conformance claim (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>deprecation</code></td><td>When deprecated</td>
+        <td><code>{since, sunset, successor, migrationNote}</code> (<ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17.4</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<h2>10.2 Ownership and lifecycle</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GOV-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool <strong>MUST</strong> name an owning team with a
+  paging escalation path. The catalog <strong>MUST</strong> re-verify ownership quarterly and
+  automatically move a tool whose owner cannot be confirmed to <code>deprecated</code>, then
+  <code>retired</code> ninety days later.</p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  This rule exists because of a failure mode specific to tool catalogs: tools are cheap to
+  add and invisible once added. A REST endpoint with no owner eventually breaks and someone
+  notices. A tool with no owner keeps working, keeps returning customer data to agents, and
+  keeps being selected — silently, correctly, and unaccountably — for years.
+</p>
+
+<h2>10.3 Data classification</h2>
+
+<table>
+  <thead><tr><th>Classification</th><th>In this domain</th><th>Consequence</th></tr></thead>
+  <tbody>
+    <tr><td><code>public</code></td><td>Market calendar, contract specs</td><td>No restriction.</td></tr>
+    <tr><td><code>internal</code></td><td>Aggregate firm statistics</td><td>Employee agents only.</td></tr>
+    <tr><td><code>customer-confidential</code></td><td><strong>Accounts, positions, balances, orders</strong></td>
+        <td>Entitlement-gated; encrypted in transit and at rest; results excluded from model
+            training and from any vendor retention; egress assessed before any L3
+            exposure.</td></tr>
+    <tr><td><code>restricted</code></td><td>Government identifiers, full account numbers, compliance case data</td>
+        <td><strong>Must not be returned by a tool at all</strong> in the ordinary case. Where an
+            identifier is genuinely needed it is masked to the last four characters and the
+            unmasked form requires a separate, tier-3, dual-control tool.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GOV-02 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   A tool <strong>MUST</strong> return the minimum data that
+  answers its question. Returning an entire upstream record because it was convenient is a
+  data-minimization failure, and in an agent context the data does not merely sit in a
+  response object — it enters a context window, is retained in conversation history, and may
+  be forwarded to a model provider.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>10.4 Entitlements</h2>
+
+<p>
+  Entitlement scopes are named <code>&lt;domain&gt;:&lt;resource&gt;:&lt;action&gt;</code> and
+  reused across the firm's API and tool estates, so that a customer's consent means the same
+  thing whichever surface consumes it.
+</p>
+
+<table>
+  <thead><tr><th>Scope</th><th>Grants</th></tr></thead>
+  <tbody>
+    <tr><td><code>brokerage:accounts:read</code></td><td>Enumerate accounts and read their attributes, with masked account numbers.</td></tr>
+    <tr><td><code>brokerage:positions:read</code></td><td>Read holdings, cost basis, and unrealized profit and loss.</td></tr>
+    <tr><td><code>brokerage:balances:read</code></td><td>Read cash, buying power, and margin detail.</td></tr>
+    <tr><td><code>brokerage:orders:read</code></td><td>Read order status, history, and executions.</td></tr>
+    <tr><td><code>brokerage:orders:write</code></td><td>Place, replace, and cancel orders.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GOV-03 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Entitlements <strong>MUST</strong> be enforced at three points:
+  <strong>(a)</strong> catalog visibility — an agent is not offered a tool its principal cannot use;
+  <strong>(b)</strong> the gateway, before invocation; <strong>(c)</strong> the implementation, against the
+  specific resource named in the arguments. Point (c) is the one that stops a customer
+  reading another customer's account, and it is the one most often skipped because (a) and (b)
+  feel sufficient.</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="note"><ac:parameter ac:name="title">Visibility is an entitlement decision, not a convenience</ac:parameter><ac:rich-text-body><p>
+    Offering an agent a tool that its principal may not invoke wastes context, invites a
+    failed call, and — worse — tells the model that the capability exists, which is enough for
+    it to describe the capability to the customer. "I can see there's a way to place orders
+    but I'm not permitted" is a disclosure the firm did not intend to make.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>10.5 Cost, latency, and rate class</h2>
+
+<table>
+  <thead><tr><th>Class</th><th>p95 budget</th><th>Design implication</th></tr></thead>
+  <tbody>
+    <tr><td><code>low</code></td><td>&lt; 500 ms</td><td>Freely composable; an agent may call several per turn.</td></tr>
+    <tr><td><code>medium</code></td><td>&lt; 2 s</td><td>Acceptable in a conversational loop; avoid fan-out.</td></tr>
+    <tr><td><code>high</code></td><td>&lt; 10 s</td><td>Warn in the description; consider a <code>summarize</code> alternative.</td></tr>
+    <tr><td><code>async</code></td><td>&gt; 10 s</td><td><strong>Must</strong> use the job pattern (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.5</ac:link-body></ac:link>), never a blocking call.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GOV-04 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool <strong>MUST</strong> declare a rate limit per
+  principal. Where a tool is expensive in money or in upstream capacity, the description
+  <strong>SHOULD</strong> say so plainly — a model told that a tool is slow and expensive will use it
+  more sparingly, which is a cheaper control than a quota rejection.</p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== 11. ERRORS ==================== -->

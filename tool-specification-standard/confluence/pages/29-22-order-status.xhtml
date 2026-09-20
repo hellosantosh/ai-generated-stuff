@@ -1,0 +1,726 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Two tools: one to find orders, one to read a specific order in full. The split follows the
+  shape of the question — "did my trade go through?" is a search, "what price did I get on
+  that one?" is a lookup — and it keeps the payload of the common case small.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>22.1 The lifecycle, and the only field to branch on</h2>
+
+<p><ac:image ac:align="center" ac:layout="center"><ri:attachment ri:filename="figure-22-1.png"/></ac:image></p><p><em>
+  <strong>Figure 22.1 — Working versus terminal.</strong> The state machine inside the left panel is
+  real and it is the order management system's business. What a tool exposes is the boundary,
+  because the boundary is what every caller actually needs and it is the only part that is
+  safe against a future state being added.
+</em></p>
+
+<h2>22.2 Finding orders</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">Tool</ac:parameter><ac:parameter ac:name="borderColor">#1F4F8F</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">1</ac:parameter><ac:parameter ac:name="titleBGColor">#EEF3FA</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body>brokerage_orders_listFind orders on an account</ac:rich-text-body></ac:structured-macro><p>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">TIER 1</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">READ-ONLY</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">IDEMPOTENT</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">CLOSED WORLD</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">brokerage:orders:read</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">p95 300 ms</ac:parameter></ac:structured-macro>
+  </p>
+
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Returns orders on one account, filtered by lifecycle state, symbol, or date, most recent
+first. Use when the customer asks whether a trade went through, what orders are still
+working, what they traded recently, or why something was rejected — and use it first
+whenever you need an orderId for another tool. Do not use for holdings — call
+brokerage_positions_list, because an order becomes a position only once it fills and a
+filled order is not the same as a current holding. Do not use for cash movements — call
+brokerage_transactions_list. status WORKING covers every non-terminal state and is what the
+customer means by open orders. Terminal states are FILLED, CANCELLED, REJECTED, EXPIRED, and
+REPLACED; an order in a terminal state will never change again and must not be polled. New
+status values may be added over time: treat any status you do not recognize as still
+working, never as terminal. filledQuantity and remainingQuantity together describe a partial
+fill, which is a common and non-obvious state — an order can be both working and partly
+filled. Rejected orders carry a rejectReason with a machine-readable code. An empty array
+means no orders matched the filter, which is a successful answer. Reads only.]]></ac:plain-text-body></ac:structured-macro>
+
+<h3>22.2.1 Input schema</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account whose orders to read. Obtain it from brokerage_accounts_list.",
+        "examples": [
+          "acct_01HQ8Z4M2X9K3P7R"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "WORKING",
+          "FILLED",
+          "CANCELLED",
+          "REJECTED",
+          "EXPIRED"
+        ],
+        "description": "Filter to one lifecycle state. WORKING covers every non-terminal state including partially filled. Omitted returns every order in the date window."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}$",
+        "description": "Filter to one underlying ticker, uppercase. Matches the underlying for option orders. Omitted returns every symbol."
+      },
+      "fromDate": {
+        "type": "string",
+        "format": "date",
+        "description": "Earliest order creation date, inclusive, in US Eastern time. Omitted means seven days ago. The window may not exceed 90 days."
+      },
+      "toDate": {
+        "type": "string",
+        "format": "date",
+        "description": "Latest order creation date, inclusive, in US Eastern time. Omitted means today."
+      },
+      "pageSize": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100,
+        "default": 25,
+        "description": "Maximum orders to return, most recent first. Omitted returns up to 25."
+      },
+      "cursor": {
+        "type": "string",
+        "maxLength": 512,
+        "description": "Continuation token from a previous result's completeness.nextCursor. Omit for the first page."
+      }
+    },
+    "required": [
+      "accountId"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<p>
+  The <code>status</code> enumeration is deliberately <em>not</em> the lifecycle enumeration.
+  A customer filtering for open orders does not mean "<code>NEW</code> or
+  <code>PARTIALLY_FILLED</code> or <code>PENDING_CANCEL</code> or
+  <code>PENDING_REPLACE</code> or <code>SUSPENDED</code>"; they mean <code>WORKING</code>. The
+  filter vocabulary matches the question; the result vocabulary matches the domain. Using one
+  enumeration for both would force the model to reconstruct the set, and it would get it wrong
+  the first time a state was added.
+</p>
+
+<h3>22.2.2 Output schema</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account these orders belong to."
+      },
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant this view of the order book was true (UTC)."
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "description": "ISO 4217 currency for every monetary value in this result."
+      },
+      "orders": {
+        "type": "array",
+        "maxItems": 100,
+        "description": "Matching orders, most recently created first.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "string",
+              "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+              "description": "Order identifier. Pass to brokerage_order_get for full detail including executions."
+            },
+            "status": {
+              "type": "string",
+              "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognized value as still working."
+            },
+            "isTerminal": {
+              "type": "boolean",
+              "description": "True when the order can never change again. Use this rather than comparing the status string, and never poll a terminal order."
+            },
+            "assetClass": {
+              "type": "string",
+              "enum": [
+                "EQUITY",
+                "OPTION"
+              ],
+              "description": "What was traded."
+            },
+            "side": {
+              "type": "string",
+              "enum": [
+                "BUY",
+                "SELL",
+                "SELL_SHORT",
+                "BUY_TO_COVER",
+                "BUY_TO_OPEN",
+                "BUY_TO_CLOSE",
+                "SELL_TO_OPEN",
+                "SELL_TO_CLOSE"
+              ],
+              "description": "Direction. Option orders use the explicit open and close forms because they drive margin treatment."
+            },
+            "symbol": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Ticker, or the option's underlying ticker."
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Human-readable description of what was ordered, such as AAPL 18 Dec 2026 250 Call."
+            },
+            "quantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "Ordered quantity: shares for equities, contracts for options. Always positive; direction is in side."
+            },
+            "filledQuantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "How much has executed so far. Greater than zero with a non-terminal status means a partial fill."
+            },
+            "remainingQuantity": {
+              "$ref": "#/$defs/decimal",
+              "description": "How much is still working. Zero on a terminal order."
+            },
+            "orderType": {
+              "type": "string",
+              "enum": [
+                "MARKET",
+                "LIMIT",
+                "STOP",
+                "STOP_LIMIT",
+                "TRAILING_STOP",
+                "TRAILING_STOP_LIMIT",
+                "NET_DEBIT",
+                "NET_CREDIT",
+                "NET_EVEN"
+              ],
+              "description": "How the order is priced."
+            },
+            "limitPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Limit price, when the order type has one."
+            },
+            "stopPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Stop trigger price, when the order type has one."
+            },
+            "averageFillPrice": {
+              "$ref": "#/$defs/decimal",
+              "description": "Volume-weighted average price of the executions so far. This is the price the customer actually got."
+            },
+            "timeInForce": {
+              "type": "string",
+              "enum": [
+                "DAY",
+                "GTC",
+                "GTD",
+                "IOC",
+                "FOK",
+                "OPG",
+                "CLS"
+              ],
+              "description": "How long the order stays live. DAY expires at the close; GTC persists across sessions."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the order was accepted (UTC)."
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When it last changed (UTC)."
+            },
+            "rejectReason": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "description": "Present only when status is REJECTED.",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "maxLength": 64,
+                  "description": "Stable machine-readable reason, such as INSUFFICIENT_BUYING_POWER or MARKET_CLOSED."
+                },
+                "message": {
+                  "type": "string",
+                  "maxLength": 240,
+                  "description": "Customer-safe explanation of the rejection."
+                }
+              },
+              "required": [
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "orderId",
+            "status",
+            "isTerminal",
+            "assetClass",
+            "side",
+            "symbol",
+            "description",
+            "quantity",
+            "filledQuantity",
+            "remainingQuantity",
+            "orderType",
+            "timeInForce",
+            "createdAt",
+            "updatedAt"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "completeness": {
+        "type": "object",
+        "properties": {
+          "returned": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Orders in this result."
+          },
+          "totalMatching": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Total orders matching the filter."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more orders matched than were returned."
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512,
+            "description": "Pass as cursor for the next page. Null on the last page."
+          },
+          "narrowingHint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 240,
+            "description": "How to narrow the query to a complete answer, when truncated."
+          }
+        },
+        "required": [
+          "returned",
+          "truncated",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "description": "How much of the matching set this result contains."
+      }
+    },
+    "required": [
+      "accountId",
+      "asOf",
+      "currency",
+      "orders",
+      "completeness"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h3>22.2.3 A result with a partial fill and a rejection</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "content": [{ "type": "text", "text":
+    "3 orders in ••••8820 from 2026-09-12 to 2026-09-19. WORKING: BUY 500 AAPL limit 246.00, 200 of 500 filled at avg 245.88, 300 still working, placed 14:05 UTC today. FILLED: SELL 100 MSFT market, all 100 at avg 418.22, 2026-09-18. REJECTED: BUY_TO_OPEN 5 TSLA 20 Mar 2026 300 Call — insufficient options approval level; this account is level 3 and the strategy requires level 4." }],
+  "structuredContent": {
+    "accountId": "acct_01HQ8Z5N3Y8L4Q9S",
+    "asOf": "2026-09-19T14:33:02Z", "currency": "USD",
+    "orders": [
+      { "orderId": "ord_01HQ9D4N7Q1S5U8X", "status": "PARTIALLY_FILLED", "isTerminal": false,
+        "assetClass": "EQUITY", "side": "BUY", "symbol": "AAPL",
+        "description": "Buy 500 AAPL limit 246.00 day",
+        "quantity": "500", "filledQuantity": "200", "remainingQuantity": "300",
+        "orderType": "LIMIT", "limitPrice": "246.00", "averageFillPrice": "245.88",
+        "timeInForce": "DAY", "createdAt": "2026-09-19T14:05:41Z",
+        "updatedAt": "2026-09-19T14:31:12Z", "rejectReason": null },
+
+      { "orderId": "ord_01HQ8W2K5M9P3R7V", "status": "FILLED", "isTerminal": true,
+        "assetClass": "EQUITY", "side": "SELL", "symbol": "MSFT",
+        "description": "Sell 100 MSFT market day",
+        "quantity": "100", "filledQuantity": "100", "remainingQuantity": "0",
+        "orderType": "MARKET", "averageFillPrice": "418.22",
+        "timeInForce": "DAY", "createdAt": "2026-09-18T15:48:02Z",
+        "updatedAt": "2026-09-18T15:48:03Z", "rejectReason": null },
+
+      { "orderId": "ord_01HQ8V9J4L8N2Q6U", "status": "REJECTED", "isTerminal": true,
+        "assetClass": "OPTION", "side": "BUY_TO_OPEN", "symbol": "TSLA",
+        "description": "Buy to open 5 TSLA 20 Mar 2026 300 Call",
+        "quantity": "5", "filledQuantity": "0", "remainingQuantity": "0",
+        "orderType": "LIMIT", "limitPrice": "8.40",
+        "timeInForce": "DAY", "createdAt": "2026-09-17T13:12:55Z",
+        "updatedAt": "2026-09-17T13:12:56Z",
+        "rejectReason": { "code": "OPTIONS_LEVEL_INSUFFICIENT",
+                          "message": "This strategy requires options level 4; the account holds level 3." } }
+    ],
+    "completeness": { "returned": 3, "totalMatching": 3, "truncated": false,
+                      "nextCursor": null, "narrowingHint": null }
+  },
+  "isError": false
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">"Did my Apple order go through?"</ac:parameter><ac:rich-text-body><p>
+    The honest answer is "partly — 200 of 500 shares have filled at an average of 245.88, and
+    300 are still working." A payload carrying only <code>status</code> would have supported
+    "it's partially filled", which tells the customer almost nothing. A payload carrying only
+    <code>filledQuantity</code> would have supported "200 filled" without the reassurance that
+    the rest is still live. The three quantity fields plus <code>isTerminal</code> are the
+    minimum that makes the honest answer expressible, which is the test to apply when deciding
+    what a result must contain.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>22.3 Reading one order</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">Tool</ac:parameter><ac:parameter ac:name="borderColor">#1F4F8F</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">1</ac:parameter><ac:parameter ac:name="titleBGColor">#EEF3FA</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body>brokerage_order_getGet the status of one order</ac:rich-text-body></ac:structured-macro><p>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">TIER 1</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">READ-ONLY</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">IDEMPOTENT</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">CLOSED WORLD</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">brokerage:orders:read</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">p95 260 ms</ac:parameter></ac:structured-macro>
+  </p>
+
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Returns the current status, fill progress, and executions of one specific order. Use when
+the customer asks about a particular order they have already placed — whether it filled, at
+what price, how much is still working, or why it was rejected. Do not use to find orders:
+call brokerage_orders_list first to search by account, symbol, date, or status, then call
+this tool with the orderId it returns. Do not use for positions; a filled order becomes a
+position and only brokerage_positions_list knows the current holding. isTerminal tells you
+whether the order can still change: when it is true the order will never change again and
+must not be polled. When it is false, nextPollAfterSeconds says how long to wait before
+checking again, and that interval must be honored rather than polling in a loop. An order
+may be partially filled and still working: filledQuantity, remainingQuantity, and
+averageFillPrice together are the accurate account of what has happened so far. Executions
+are the individual fills that make up the order and may be at different prices. Reads only;
+never modifies an order.]]></ac:plain-text-body></ac:structured-macro>
+
+<h3>22.3.1 Output schema</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant this order state was true (UTC)."
+      },
+      "isTerminal": {
+        "type": "boolean",
+        "description": "True when the order can never change again. Do not poll a terminal order."
+      },
+      "nextPollAfterSeconds": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1,
+        "description": "Seconds to wait before checking again. Null when the order is terminal. Honor this interval; do not poll in a loop."
+      },
+      "order": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+            "description": "Order identifier."
+          },
+          "accountId": {
+            "type": "string",
+            "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+            "description": "Account the order belongs to."
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognized value as still working."
+          },
+          "statusExplanation": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "One sentence explaining what this status means for the customer, already phrased for them."
+          },
+          "assetClass": {
+            "type": "string",
+            "enum": [
+              "EQUITY",
+              "OPTION"
+            ],
+            "description": "What was traded."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL",
+              "SELL_SHORT",
+              "BUY_TO_COVER",
+              "BUY_TO_OPEN",
+              "BUY_TO_CLOSE",
+              "SELL_TO_OPEN",
+              "SELL_TO_CLOSE"
+            ],
+            "description": "Direction."
+          },
+          "symbol": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Ticker, or the option's underlying."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Human-readable description of the order."
+          },
+          "quantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Ordered quantity: shares for equities, contracts for options."
+          },
+          "filledQuantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Executed so far."
+          },
+          "remainingQuantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Still working."
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "MARKET",
+              "LIMIT",
+              "STOP",
+              "STOP_LIMIT",
+              "TRAILING_STOP",
+              "TRAILING_STOP_LIMIT",
+              "NET_DEBIT",
+              "NET_CREDIT",
+              "NET_EVEN"
+            ],
+            "description": "How the order is priced."
+          },
+          "limitPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Limit price, when the order type has one."
+          },
+          "stopPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Stop trigger price, when the order type has one."
+          },
+          "averageFillPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Volume-weighted average price of executions so far — the price the customer actually got."
+          },
+          "timeInForce": {
+            "type": "string",
+            "enum": [
+              "DAY",
+              "GTC",
+              "GTD",
+              "IOC",
+              "FOK",
+              "OPG",
+              "CLS"
+            ],
+            "description": "How long the order stays live."
+          },
+          "extendedHours": {
+            "type": "boolean",
+            "description": "Whether the order may execute outside regular hours."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217 currency for monetary values on this order."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the order was accepted (UTC)."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it last changed (UTC)."
+          },
+          "filledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it completed, if it did."
+          },
+          "cancelable": {
+            "type": "boolean",
+            "description": "Whether this order can be canceled right now. Branch on this rather than on the status string."
+          },
+          "rejectReason": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Present only when status is REJECTED.",
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Stable machine-readable reason."
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Customer-safe explanation."
+              },
+              "remediation": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "What the customer could do differently."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "executions": {
+            "type": "array",
+            "maxItems": 50,
+            "description": "Individual fills, earliest first. Present when includeExecutions is true and the order has fills.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "executionId": {
+                  "type": "string",
+                  "maxLength": 48,
+                  "description": "Execution identifier."
+                },
+                "quantity": {
+                  "$ref": "#/$defs/decimal",
+                  "description": "Quantity filled in this execution."
+                },
+                "price": {
+                  "$ref": "#/$defs/decimal",
+                  "description": "Price of this execution."
+                },
+                "executedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it executed (UTC)."
+                },
+                "venue": {
+                  "type": "string",
+                  "maxLength": 32,
+                  "description": "Execution venue code."
+                }
+              },
+              "required": [
+                "executionId",
+                "quantity",
+                "price",
+                "executedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "accountId",
+          "status",
+          "statusExplanation",
+          "assetClass",
+          "side",
+          "symbol",
+          "description",
+          "quantity",
+          "filledQuantity",
+          "remainingQuantity",
+          "orderType",
+          "timeInForce",
+          "currency",
+          "createdAt",
+          "updatedAt",
+          "cancelable"
+        ],
+        "additionalProperties": false,
+        "description": "The order and its current state."
+      }
+    },
+    "required": [
+      "asOf",
+      "isTerminal",
+      "order"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h3>22.3.2 Three fields worth arguing about</h3>
+
+<table>
+  <thead><tr><th>Field</th><th>Why it is in the payload</th></tr></thead>
+  <tbody>
+    <tr><td><code>statusExplanation</code></td>
+        <td>A sentence, written by the domain team, already phrased for a customer: "200 of
+            500 shares have filled at an average of 245.88; 300 shares are still working and
+            will expire at the close if they do not fill." Status strings do not survive
+            paraphrase — <code>PENDING_REPLACE</code> is not a phrase any customer has heard —
+            and a model asked to paraphrase one invents plausible detail. Writing the sentence
+            once, in the tool, is the only place it can be reviewed.</td></tr>
+    <tr><td><code>nextPollAfterSeconds</code></td>
+        <td>Turns "poll sensibly" from a hope into an instruction. Two seconds for a
+            marketable order, thirty for a resting limit, null when terminal. Without it the
+            agent either polls in a tight loop or asks the customer to check back later.</td></tr>
+    <tr><td><code>cancelable</code></td>
+        <td>The server knows whether this order can be canceled right now — including the
+            cases the status string does not express, such as an order in
+            <code>PENDING_CANCEL</code> or one at a venue that has gone dark. Offering a
+            cancellation that then fails is a worse customer experience than not offering
+            it.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 23. STATE CHANGE ==================== -->

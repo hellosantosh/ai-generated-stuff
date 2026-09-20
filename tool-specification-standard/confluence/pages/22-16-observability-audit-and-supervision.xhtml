@@ -1,0 +1,78 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Two distinct obligations live here. One is operational: is the tool healthy. The other is
+  novel and more demanding: is the agent using it <em>well</em> — a question no traditional
+  API ever had to answer about its callers.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>16.1 The audit record</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-OBS-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every invocation — successful, failed, denied, or
+  refused at policy — <strong>MUST</strong> emit exactly one audit record containing the fields below,
+  retained for the period named in the tool's <code>recordKeeping.retention</code>.</p></ac:rich-text-body></ac:structured-macro>
+
+<table>
+  <thead><tr><th>Field</th><th>Content</th></tr></thead>
+  <tbody>
+    <tr><td><code>traceId</code>, <code>conversationId</code>, <code>turnId</code></td>
+        <td>Correlation across the whole interaction, not just this call.</td></tr>
+    <tr><td><code>principal</code></td><td>Who the action was performed as, and how that identity was established.</td></tr>
+    <tr><td><code>agent</code></td><td>Which agent, which version, operated by which business line.</td></tr>
+    <tr><td><code>toolName</code>, <code>toolVersion</code>, <code>descriptorHash</code></td>
+        <td><strong>The descriptor hash is not optional.</strong> Without it you cannot reconstruct what
+            the model was told when it made the call, which is the first question asked in any
+            investigation.</td></tr>
+    <tr><td><code>arguments</code></td><td>The validated arguments, with fields listed in <code>piiFields</code> masked per policy.</td></tr>
+    <tr><td><code>outcome</code></td><td><code>success</code>, error <code>code</code> and <code>domainCode</code>, or the policy decision.</td></tr>
+    <tr><td><code>resultDigest</code></td><td>A hash of the result plus its size and record count. The full payload is retained separately where classification and retention permit.</td></tr>
+    <tr><td><code>approval</code></td><td>Mode, who approved, when, and the argument hash they approved — or the decline.</td></tr>
+    <tr><td><code>entitlements</code></td><td>Scopes presented and the decision made.</td></tr>
+    <tr><td><code>latencyMs</code>, <code>upstreamCalls</code></td><td>Operational attribution.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-OBS-02 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   For tier 3 tools the audit record <strong>MUST</strong> be
+  sufficient to reconstruct the decision: the arguments, the confirmation exactly as the
+  principal saw it, their response, the result, and the descriptor version that produced the
+  prose the model read. "The agent placed an order" is not a record; it is a summary of
+  one.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>16.2 Metrics</h2>
+
+<table>
+  <thead><tr><th>Family</th><th>Metric</th><th>Why it matters here</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="3"><strong>Health</strong></td><td>Invocation rate, by tool and audience</td><td>Baseline; also the first signal of a runaway agent.</td></tr>
+    <tr><td>Error rate, by <code>code</code></td><td>Split by taxonomy code — a rise in <code>BUSINESS_RULE_VIOLATION</code> is a market condition, a rise in <code>INVALID_ARGUMENT</code> is a descriptor defect.</td></tr>
+    <tr><td>Latency p50/p95/p99 against the declared class</td><td>A tool that has drifted past its declared class is lying in its governance block.</td></tr>
+    <tr><td rowspan="4"><strong>Agent behavior</strong></td><td><strong>Selection accuracy</strong></td><td>Of calls to this tool, how many were the right tool for the question. Sampled and human-labeled; the single most valuable metric in the estate.</td></tr>
+    <tr><td><strong>Repeat-call rate</strong></td><td>Identical arguments twice in one conversation: a loop, an ambiguous result, or an unclear error.</td></tr>
+    <tr><td><strong>Truncation rate</strong></td><td>How often results hit the ceiling. High truncation means the tool is the wrong granularity (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Post-call correction rate</strong></td><td>How often the user corrects the agent immediately after this tool returns. Points at a payload that is being misread.</td></tr>
+    <tr><td rowspan="3"><strong>Control</strong></td><td>Approval request, grant, and decline rates</td><td>A decline rate near zero means the confirmation is being rubber-stamped and is not doing its job.</td></tr>
+    <tr><td>Entitlement denial rate</td><td>Sustained denials mean the catalog is showing tools it should be hiding (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td>Kill-switch activations and duration</td><td>Reported to the board with the incident.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">The metric nobody instruments and everybody needs</ac:parameter><ac:rich-text-body><p>
+    <strong>Silent wrongness rate</strong>: invocations that succeeded, returned valid data, and produced
+    a wrong answer for the customer. It cannot be measured from telemetry — it requires
+    sampling conversations and having a domain expert read them. Budget for it. Every failure
+    mode this standard is most worried about, from an undocumented signed quantity to a stale
+    mark, shows up here and nowhere else.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>16.3 Alerting</h2>
+
+<table>
+  <thead><tr><th>Condition</th><th>Response</th></tr></thead>
+  <tbody>
+    <tr><td>Any tier 3 tool exceeds its baseline invocation rate by 3×</td><td>Page the owner; consider the kill switch.</td></tr>
+    <tr><td>Approval-declined followed by a re-attempt</td><td>Block the conversation; investigate same day.</td></tr>
+    <tr><td><code>INTERNAL_ERROR</code> above 0.5% of invocations</td><td>Unmapped upstream failures (<code>TS-ERR-06</code>).</td></tr>
+    <tr><td>Descriptor hash mismatch at a runtime</td><td>Treat as a security event until proven a deployment race.</td></tr>
+    <tr><td>Repeat-call rate above 15% for any tool</td><td>Descriptor defect. Fix the prose, not the agent.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 17. VERSIONING ==================== -->

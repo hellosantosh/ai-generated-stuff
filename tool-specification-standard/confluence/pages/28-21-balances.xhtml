@@ -1,0 +1,476 @@
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">Tool</ac:parameter><ac:parameter ac:name="borderColor">#1F4F8F</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">1</ac:parameter><ac:parameter ac:name="titleBGColor">#EEF3FA</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body>brokerage_balances_getGet cash, buying power, and margin for an account</ac:rich-text-body></ac:structured-macro><p>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">TIER 1</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">READ-ONLY</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">IDEMPOTENT</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">CLOSED WORLD</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">brokerage:balances:read</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">APPROVAL: NONE</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">p95 900 ms</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">FAILS CLOSED</ac:parameter></ac:structured-macro>
+  </p>
+  <p class="small" style="margin:0">
+    The tool where the gap between "returning the data" and "answering the question" is
+    widest. A customer asking how much they can spend has one question; the account has four
+    defensible answers, and three of them are wrong for any given account.
+  </p>
+
+
+<h2>21.1 The problem this tool solves</h2>
+
+<p>
+  Consider the same customer, the same instant, four figures:
+</p>
+
+<table>
+  <thead><tr><th>Figure</th><th>Value</th><th>True for</th></tr></thead>
+  <tbody>
+    <tr><td><code>cash.total</code></td><td>18,420.00 USD</td><td>Nothing directly — it includes unsettled proceeds.</td></tr>
+    <tr><td><code>cash.settled</code></td><td>12,180.00 USD</td><td>What a cash or retirement account can actually spend today.</td></tr>
+    <tr><td><code>buyingPower.stock</code></td><td>36,840.00 USD</td><td>A margin account buying marginable equities.</td></tr>
+    <tr><td><code>buyingPower.dayTrading</code></td><td>73,680.00 USD</td><td>A pattern day trader, intraday only, resetting each session.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  A tool that returns all four and stops has discharged its duty to the data and abandoned its
+  duty to the question. The model must then know that a Roth IRA cannot borrow, that
+  unsettled proceeds cannot fund a purchase in a cash account without a good-faith violation,
+  and that day-trading buying power must never be quoted to someone who is not flagged. Those
+  are three domain rules, each of which the firm already encodes correctly in its margin
+  engine.
+</p>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">The fix, and the general principle</ac:parameter><ac:rich-text-body><p>
+    The tool returns <code>buyingPower.applicable</code> — the figure that actually governs
+    this account today — alongside <code>applicableReason</code>, a sentence explaining why.
+    The four underlying figures remain available for a customer who asks for the breakdown.
+    <strong>When the server knows which of several correct answers is the right one, it must say
+    so rather than shipping the ambiguity to a caller that cannot resolve it.</strong>
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>21.2 The description</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Returns the money in one brokerage account: cash and settled cash, buying power broken out
+by what it can be used for, margin detail, and the account's total value. Use when the
+customer asks how much cash they have, how much they can spend or invest, what their account
+is worth, whether they are on margin, or whether they have a margin call. Do not use for
+holdings — call brokerage_positions_list. Do not use to explain why a balance changed — call
+brokerage_transactions_list. An account has several different correct answers to how much
+can I spend, and they can differ by a factor of four: read buyingPower.applicable, which is
+the figure that actually governs this account given its type and registration, and
+buyingPower.applicableReason, which says why. Never present buyingPower.dayTrading to a
+customer who is not a pattern day trader, and never present margin figures for a retirement
+account, which cannot borrow. Cash that is unsettled cannot fund a purchase in a cash
+account without a good-faith violation. Figures are computed intraday and restated after the
+close; asOf and basis state which. Reads only, and never returns a partially computed figure
+— if the margin engine is unavailable the call fails rather than returning a number that
+looks complete.]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>21.3 Input schema</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account to read. Obtain it from brokerage_accounts_list; never construct or guess one.",
+        "examples": [
+          "acct_01HQ8Z4M2X9K3P7R"
+        ]
+      },
+      "detail": {
+        "type": "string",
+        "enum": [
+          "SUMMARY",
+          "STANDARD",
+          "FULL"
+        ],
+        "default": "STANDARD",
+        "description": "SUMMARY returns applicable buying power, settled cash, and total value — enough to answer how much can I spend. STANDARD adds the full cash and buying power breakdown. FULL adds margin and day-trade detail. Omitted means STANDARD."
+      }
+    },
+    "required": [
+      "accountId"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>21.4 Output schema</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account these balances belong to."
+      },
+      "accountNumberMasked": {
+        "type": "string",
+        "maxLength": 24,
+        "description": "Customer-facing masked account number."
+      },
+      "accountType": {
+        "type": "string",
+        "enum": [
+          "CASH",
+          "MARGIN"
+        ],
+        "description": "Repeated here so the figures can be interpreted without a second call."
+      },
+      "registration": {
+        "type": "string",
+        "enum": [
+          "INDIVIDUAL",
+          "JOINT",
+          "TRADITIONAL_IRA",
+          "ROTH_IRA",
+          "SEP_IRA",
+          "ROLLOVER_IRA",
+          "TRUST",
+          "CUSTODIAL",
+          "CORPORATE"
+        ],
+        "description": "Any IRA is a retirement account: it cannot borrow and margin figures do not apply."
+      },
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant these figures were computed (UTC)."
+      },
+      "basis": {
+        "type": "string",
+        "enum": [
+          "INTRADAY_ESTIMATE",
+          "TRADE_DATE",
+          "SETTLED"
+        ],
+        "description": "INTRADAY_ESTIMATE is a live estimate that will be restated after the close. TRADE_DATE reflects executed but unsettled activity. SETTLED reflects only settled activity."
+      },
+      "currency": {
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "description": "ISO 4217 currency for every monetary value in this result."
+      },
+      "totalValue": {
+        "type": "object",
+        "description": "What the account is worth.",
+        "properties": {
+          "netLiquidation": {
+            "$ref": "#/$defs/decimal",
+            "description": "Total account value if every position were liquidated at current marks. This is the answer to what is my account worth."
+          },
+          "equity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Net liquidation less any borrowed amount."
+          },
+          "positionsMarketValue": {
+            "$ref": "#/$defs/decimal",
+            "description": "Market value of all holdings."
+          },
+          "dayChange": {
+            "$ref": "#/$defs/decimal",
+            "description": "Change in net liquidation since the prior close."
+          },
+          "dayChangePercent": {
+            "$ref": "#/$defs/decimal",
+            "description": "Day change as a percentage of the prior close."
+          }
+        },
+        "required": [
+          "netLiquidation",
+          "equity",
+          "positionsMarketValue"
+        ],
+        "additionalProperties": false
+      },
+      "cash": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "$ref": "#/$defs/decimal",
+            "description": "All cash in the account, settled or not."
+          },
+          "settled": {
+            "$ref": "#/$defs/decimal",
+            "description": "Cash that has settled and can fund a purchase in a cash account without a good-faith violation."
+          },
+          "unsettled": {
+            "$ref": "#/$defs/decimal",
+            "description": "Proceeds not yet settled. Spending these in a cash account causes a good-faith violation."
+          },
+          "withdrawable": {
+            "$ref": "#/$defs/decimal",
+            "description": "Cash that can be withdrawn today. Usually lower than settled cash because of holds."
+          }
+        },
+        "required": [
+          "total",
+          "settled",
+          "unsettled",
+          "withdrawable"
+        ],
+        "additionalProperties": false,
+        "description": "Cash in the account. Settled and total are different numbers and only settled can fund a purchase in a cash account."
+      },
+      "buyingPower": {
+        "type": "object",
+        "description": "How much can be spent, by use. These figures are not interchangeable.",
+        "properties": {
+          "applicable": {
+            "$ref": "#/$defs/decimal",
+            "description": "The figure that actually governs a normal stock purchase in this account today. This is the number to use when the customer asks how much they can spend."
+          },
+          "applicableReason": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Why that figure applies — for example settled cash because this is a retirement account and cannot borrow. Quote this when explaining the number."
+          },
+          "stock": {
+            "$ref": "#/$defs/decimal",
+            "description": "Buying power for marginable equities. In a margin account typically twice equity; in a cash or retirement account equal to settled cash."
+          },
+          "option": {
+            "$ref": "#/$defs/decimal",
+            "description": "Buying power for options, which are not marginable. Typically lower than stock buying power."
+          },
+          "dayTrading": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Day-trading buying power, typically four times maintenance excess, resetting each session. Null unless the account is flagged as a pattern day trader. Never present this figure to a customer who is not."
+          }
+        },
+        "required": [
+          "applicable",
+          "applicableReason",
+          "stock",
+          "option"
+        ],
+        "additionalProperties": false
+      },
+      "margin": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Margin detail. Null for cash and retirement accounts, which cannot borrow — say so rather than reporting zeros.",
+        "properties": {
+          "marginBalance": {
+            "$ref": "#/$defs/decimal",
+            "description": "Amount currently borrowed. Zero or negative means nothing is borrowed."
+          },
+          "maintenanceRequirement": {
+            "$ref": "#/$defs/decimal",
+            "description": "Equity that must be maintained against current positions."
+          },
+          "excessLiquidity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Equity above the maintenance requirement. Negative means a maintenance call."
+          },
+          "marginCall": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Present only when a call is outstanding. A margin call is material: surface it whenever it exists, even if the customer did not ask.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "FED_CALL",
+                  "MAINTENANCE_CALL",
+                  "DAY_TRADE_CALL",
+                  "CASH_CALL"
+                ],
+                "description": "Which kind of call."
+              },
+              "amount": {
+                "$ref": "#/$defs/decimal",
+                "description": "Amount that must be met."
+              },
+              "dueDate": {
+                "type": "string",
+                "format": "date",
+                "description": "Date by which it must be met."
+              }
+            },
+            "required": [
+              "type",
+              "amount",
+              "dueDate"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "marginBalance",
+          "maintenanceRequirement",
+          "excessLiquidity",
+          "marginCall"
+        ],
+        "additionalProperties": false
+      },
+      "dayTrades": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "description": "Day-trade counters. Null for accounts where the pattern day trader rule does not apply.",
+        "properties": {
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Day trades used in the rolling five-business-day window."
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Day trades remaining before the pattern day trader rule applies."
+          },
+          "patternDayTrader": {
+            "type": "boolean",
+            "description": "True when the account is flagged, which imposes a 25,000 minimum equity requirement."
+          }
+        },
+        "required": [
+          "used",
+          "remaining",
+          "patternDayTrader"
+        ],
+        "additionalProperties": false
+      },
+      "disclosures": {
+        "type": "array",
+        "maxItems": 5,
+        "description": "Compliance text that must accompany these figures if presented to the customer.",
+        "items": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "required": [
+      "accountId",
+      "accountType",
+      "registration",
+      "asOf",
+      "basis",
+      "currency",
+      "totalValue",
+      "cash",
+      "buyingPower"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>21.5 Two results, same customer</h2>
+
+<p class="lang g">The Roth IRA — cannot borrow, so the applicable figure is settled cash</p>
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "content": [{ "type": "text", "text":
+    "Account ••••4471 (Roth IRA, cash) as of 2026-09-19 14:32:11 UTC, intraday estimate. Available to invest: 12,180.00 USD — settled cash, because a retirement account cannot borrow. Total cash 18,420.00 USD, of which 6,240.00 USD is unsettled and cannot fund a purchase yet. Account value 84,317.40 USD, up 612.30 USD (+0.73%) today. No margin: retirement accounts cannot borrow." }],
+  "structuredContent": {
+    "accountId": "acct_01HQ8Z4M2X9K3P7R", "accountNumberMasked": "••••4471",
+    "accountType": "CASH", "registration": "ROTH_IRA",
+    "asOf": "2026-09-19T14:32:11Z", "basis": "INTRADAY_ESTIMATE", "currency": "USD",
+    "totalValue": { "netLiquidation": "84317.40", "equity": "84317.40",
+                    "positionsMarketValue": "65897.40",
+                    "dayChange": "612.30", "dayChangePercent": "0.73" },
+    "cash": { "total": "18420.00", "settled": "12180.00",
+              "unsettled": "6240.00", "withdrawable": "12180.00" },
+    "buyingPower": {
+      "applicable": "12180.00",
+      "applicableReason": "Settled cash. This is a retirement account and cannot borrow, so margin buying power does not apply.",
+      "stock": "12180.00", "option": "12180.00", "dayTrading": null },
+    "margin": null,
+    "dayTrades": null,
+    "disclosures": [
+      "Intraday figures are estimates and are restated after the close.",
+      "Spending unsettled proceeds in a cash account may cause a good-faith violation."
+    ]
+  },
+  "isError": false
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<p class="lang g">The margin account — same customer, a different correct answer, and a margin call</p>
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "content": [{ "type": "text", "text":
+    "Account ••••8820 (Individual, margin) as of 2026-09-19 14:32:12 UTC, intraday estimate. Available to invest: 36,840.00 USD — margin buying power, roughly twice equity. Settled cash 12,180.00 USD. Account value 118,455.00 USD. Borrowed 24,310.00 USD. MAINTENANCE CALL: 4,120.00 USD due 2026-09-23. Day trades used 2 of 4 in the rolling five-day window." }],
+  "structuredContent": {
+    "accountId": "acct_01HQ8Z5N3Y8L4Q9S", "accountNumberMasked": "••••8820",
+    "accountType": "MARGIN", "registration": "INDIVIDUAL",
+    "asOf": "2026-09-19T14:32:12Z", "basis": "INTRADAY_ESTIMATE", "currency": "USD",
+    "buyingPower": {
+      "applicable": "36840.00",
+      "applicableReason": "Margin buying power for marginable equities, approximately twice equity. A maintenance call is outstanding; meeting it takes priority.",
+      "stock": "36840.00", "option": "18420.00", "dayTrading": null },
+    "margin": {
+      "marginBalance": "24310.00", "maintenanceRequirement": "31200.00",
+      "excessLiquidity": "-4120.00",
+      "marginCall": { "type": "MAINTENANCE_CALL", "amount": "4120.00",
+                        "dueDate": "2026-09-23" } },
+    "dayTrades": { "used": 2, "remaining": 2, "patternDayTrader": false },
+    "disclosures": [
+      "Intraday figures are estimates and are restated after the close.",
+      "Margin borrowing involves interest costs and the risk of forced liquidation."
+    ]
+  },
+  "isError": false
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="warning"><ac:parameter ac:name="title">The margin call is in the text rendering whether or not it was asked about</ac:parameter><ac:rich-text-body><p>
+    The customer asked how much cash they had. The tool told them, and also told them they
+    owe 4,120.00 USD by Tuesday. Material adverse facts about an account belong in the primary
+    rendering, not buried three levels into a structured payload the model may or may not
+    traverse. This is a design rule worth writing into every tool that touches an account's
+    financial state: <strong>if a human adviser would have to mention it, the text block mentions
+    it.</strong>
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>21.6 Why this tool fails closed</h2>
+
+<p>
+  <code>brokerage_balances_get</code> declares <code>degradedMode: "none — fails closed
+  rather than returning a partial figure"</code>, which is unusual in a read tool and is
+  required by <code>TS-OUT-11</code>.
+</p>
+
+<p>
+  If the margin engine does not respond, the cash ledger alone can still produce numbers. They
+  would be well-formed, plausible, and wrong — understating or overstating buying power by
+  whatever the margin component contributes. A customer told they have 12,180.00 USD available
+  when the real figure is 36,840.00 USD makes a worse decision; told the reverse, they place an
+  order that is rejected, or worse, accepted against an incorrect assessment. The tool
+  therefore returns <code>DATA_INCOMPLETE</code> and names the unavailable component:
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{ "error": {
+    "code": "DATA_INCOMPLETE",
+    "domainCode": "MARGIN_ENGINE_UNAVAILABLE",
+    "message": "Buying power cannot be computed right now because the margin calculation is unavailable. Cash figures alone would be misleading for this account.",
+    "retryable": true, "retryAfterSeconds": 30,
+    "remediation": "Retry once after 30 seconds. Do not quote any cash figure as available to invest, and do not tell the customer their buying power is zero.",
+    "details": { "system": "margin engine", "availableComponents": ["cash", "positions"] },
+    "traceId": "01HQ9D5P8R2T6V9Y0B3D5F7H" } }]]></ac:plain-text-body></ac:structured-macro>
+
+<p>
+  The last clause of the remediation exists because of an observed failure: told only that
+  buying power was unavailable, a model reported buying power of zero and advised the customer
+  they could not trade. The error text now forbids both interpretations explicitly.
+</p>
+
+<!-- ==================== 22. ORDER STATUS ==================== -->

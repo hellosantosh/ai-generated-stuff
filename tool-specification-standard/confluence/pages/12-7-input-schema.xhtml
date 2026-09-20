@@ -1,0 +1,345 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The input schema does two jobs at once. It is the validation contract the gateway enforces,
+  and it is the instruction manual the model reads while composing arguments. A schema tight
+  enough for the first job usually solves the second for free — which is the central
+  insight of this section.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>7.1 The schema profile</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   <code>inputSchema</code> <strong>MUST</strong> be a JSON Schema
+  2020-12 document whose root is <code>{"type": "object"}</code> with an explicit
+  <code>properties</code> map, an explicit <code>required</code> array (possibly empty), and
+  <code>"additionalProperties": false</code>.</p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  A tool that takes no arguments still declares <code>{"type":"object","properties":{},
+  "required":[],"additionalProperties":false}</code>. Omitting the schema entirely is not the
+  same statement and several runtimes treat it as "arguments unconstrained".
+</p>
+
+<h3>7.1.1 Permitted keywords</h3>
+
+<table>
+  <thead><tr><th>Keyword</th><th>Use</th></tr></thead>
+  <tbody>
+    <tr><td><code>type</code>, <code>properties</code>, <code>required</code></td>
+        <td>The backbone. <code>type</code> may be an array to express nullability:
+            <code>"type": ["string", "null"]</code>.</td></tr>
+    <tr><td><code>description</code></td><td>Required on every property (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.5</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>enum</code>, <code>const</code></td><td>The most valuable keywords in the profile (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>default</code></td><td>Permitted, but the behavior on omission <strong>MUST</strong> also be stated in prose (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>examples</code></td><td>One or two realistic values. Worth more than a sentence of description.</td></tr>
+    <tr><td><code>minimum</code>, <code>maximum</code>, <code>exclusiveMinimum</code>, <code>exclusiveMaximum</code>, <code>multipleOf</code></td>
+        <td>Numeric bounds. Always bound a number that reaches a system of record.</td></tr>
+    <tr><td><code>minLength</code>, <code>maxLength</code>, <code>pattern</code></td>
+        <td>String bounds. Every free-text field carries a <code>maxLength</code>.</td></tr>
+    <tr><td><code>format</code></td>
+        <td>Restricted to <code>date</code>, <code>date-time</code>, <code>duration</code>,
+            <code>uuid</code>, and <code>uri</code>. Others are not consistently
+            validated and give false assurance.</td></tr>
+    <tr><td><code>items</code>, <code>minItems</code>, <code>maxItems</code>, <code>uniqueItems</code></td>
+        <td>Arrays. <code>maxItems</code> is mandatory (<code>TS-INP-08</code>).</td></tr>
+    <tr><td><code>$ref</code>, <code>$defs</code></td>
+        <td>Reuse from the shared type library (Appendix B). Local or pinned-immutable
+            only.</td></tr>
+    <tr><td><code>oneOf</code></td>
+        <td>Permitted only as a discriminated union with a <code>const</code> tag, at most
+            three branches (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.3.2</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<h3>7.1.2 Prohibited keywords</h3>
+
+<table>
+  <thead><tr><th>Keyword</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><code>if</code> / <code>then</code> / <code>else</code>, <code>dependentSchemas</code>, <code>dependentRequired</code></td>
+        <td>Conditional structure is where model accuracy falls off a cliff: the model reads
+            the properties and largely ignores the conditional envelope, producing arguments
+            that are individually plausible and jointly invalid. Split into two tools, or
+            enforce the rule in the implementation and explain it in prose.</td></tr>
+    <tr><td><code>not</code>, <code>anyOf</code>, <code>allOf</code></td>
+        <td>Negation and unconstrained unions are close to unreadable as instructions.
+            <code>allOf</code> additionally interacts badly with
+            <code>additionalProperties: false</code> in several validators.</td></tr>
+    <tr><td><code>patternProperties</code>, <code>propertyNames</code>, <code>additionalProperties: true</code></td>
+        <td>Open maps are unvalidatable, unreviewable, and an injection surface. If the keys
+            are unknown at design time, the design is not finished.</td></tr>
+    <tr><td><code>$dynamicRef</code>, <code>$dynamicAnchor</code>, recursive <code>$ref</code></td>
+        <td>Unbounded structures cannot be size-limited, and recursion is not something to
+            put in front of a generative caller.</td></tr>
+    <tr><td><code>nullable</code></td>
+        <td>Not a JSON Schema keyword at all. Left in a document it is silently ignored, so a
+            field you believe is nullable validates as non-nullable. Use
+            <code>"type": ["string","null"]</code>.</td></tr>
+    <tr><td>Remote <code>$ref</code> resolved at invocation time</td>
+        <td>Turns a validation into a network call, an availability dependency, and a
+            tampering surface (<code>TS-GEN-07</code>).</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-02 — SHOULD</ac:parameter><ac:parameter ac:name="borderColor">#8A5A00</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   An input schema <strong>SHOULD</strong> declare no more
+  than 12 top-level properties and <strong>SHOULD NOT</strong> nest more than two levels deep. Beyond
+  that, argument-composition accuracy degrades sharply and the tool is usually doing two
+  jobs.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>7.2 Parameter naming and shape</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-INP-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Property names <strong>MUST</strong> be <code>lowerCamelCase</code> and <strong>MUST</strong> use the
+            domain's own vocabulary — <code>accountId</code>, <code>timeInForce</code>,
+            <code>limitPrice</code> — not invented synonyms.</td></tr>
+    <tr><td><code>TS-INP-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>A property name <strong>MUST</strong> mean the same thing in every tool in the catalog.
+            <code>quantity</code> cannot be shares in one tool and contracts in another. Where
+            a concept recurs, take it from the shared type library (Appendix B) rather than
+            redefining it.</td></tr>
+    <tr><td><code>TS-INP-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Boolean parameters <strong>SHOULD</strong> be named positively and default to the
+            conservative value: <code>includeClosed</code> defaulting to <code>false</code>,
+            never <code>excludeClosed</code> defaulting to <code>false</code>. Double
+            negatives are reliably mis-set.</td></tr>
+    <tr><td><code>TS-INP-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Inputs <strong>SHOULD</strong> be flat. Nesting that exists only to mirror an upstream
+            request body is noise; flatten it and let the implementation rebuild the shape.</td></tr>
+    <tr><td><code>TS-INP-07</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Identifiers <strong>MUST</strong> be opaque, prefixed, and pattern-constrained
+            (<code>acct_</code>, <code>ord_</code>, <code>inst_</code>). The prefix tells the
+            model which identifier goes in which slot, and the pattern stops a
+            well-formed-looking hallucination before it reaches a system of record.</td></tr>
+    <tr><td><code>TS-INP-08</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Every array parameter <strong>MUST</strong> declare <code>maxItems</code>, and every string
+            parameter <strong>MUST</strong> declare <code>maxLength</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2>7.3 Making illegal states unrepresentable</h2>
+
+<p>
+  The model will supply a value that looks like the values it has seen. Your defense is to
+  make the set of values that look right identical to the set that are right.
+</p>
+
+<table><tbody><tr><td><p class="lang b">Weak — five ways to be wrong</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "status": {
+    "type": "string",
+    "description": "Order status filter"
+  },
+  "symbol": { "type": "string" },
+  "quantity": { "type": "number" },
+  "since": { "type": "string" },
+  "limit": { "type": "integer" }
+}]]></ac:plain-text-body></ac:structured-macro>
+    <p class="small">Produces <code>"open"</code>, <code>"OPEN"</code>,
+      <code>"working"</code>, <code>"aapl"</code>, <code>"AAPL "</code>,
+      <code>100.5</code> shares, <code>"last week"</code>, and
+      <code>"limit": 10000</code>.</p></td><td><p class="lang g">Strong — one way to be right</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "status": {
+    "type": "string",
+    "enum": ["WORKING", "FILLED", "CANCELLED",
+             "REJECTED", "EXPIRED"],
+    "description": "Filter to one lifecycle state. WORKING covers every non-terminal state. Omit for all orders."
+  },
+  "symbol": { "type": "string",
+               "pattern": "^[A-Z]{1,5}$" },
+  "quantity": { "type": "integer",
+                 "minimum": 1, "maximum": 100000 },
+  "fromDate": { "type": "string",
+                 "format": "date" },
+  "pageSize": { "type": "integer",
+                 "minimum": 1, "maximum": 100,
+                 "default": 25 }
+}]]></ac:plain-text-body></ac:structured-macro></td></tr></tbody></table><h3>7.3.1 Enumerations</h3>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-09 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Any parameter whose valid values are a known finite
+  set <strong>MUST</strong> be an <code>enum</code>. Enumerated values <strong>MUST</strong> be
+  <code>SCREAMING_SNAKE_CASE</code> and <strong>MUST</strong> match the domain enumerations in
+  Appendix D exactly — the same tokens the systems of record and the customer statement
+  use.</p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  Where an enumeration is long (a currency list, an exchange list) or grows frequently, use a
+  <code>pattern</code> plus a prose pointer to the tool that enumerates valid values, rather
+  than a 180-member <code>enum</code> that costs tokens on every turn. Where an enumeration is
+  short and consequential — order status, side, time in force, account type — spell it out.
+</p>
+
+<h3>7.3.2 Unions, and the alternative</h3>
+
+<p>
+  When two shapes are genuinely different, the default answer is two tools, not one tool with
+  a union. Two tools give you two accurate descriptions, two accurate annotation sets, two
+  risk tiers, and two audit identities. That is almost always worth more than the saved
+  descriptor.
+</p>
+
+<p>
+  Where a union is unavoidable — a multi-leg order where each leg is one of two shapes — use a
+  discriminated union with a <code>const</code> tag, and keep it to three branches:
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "oneOf": [
+    { "properties": { "legType": { "const": "EQUITY" },
+                      "symbol":  { "type": "string", "pattern": "^[A-Z]{1,5}$" } },
+      "required": ["legType", "symbol"] },
+    { "properties": { "legType":     { "const": "OPTION" },
+                      "instrumentId": { "type": "string", "pattern": "^inst_" } },
+      "required": ["legType", "instrumentId"] }
+  ]
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>7.4 Required, optional, and default</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-INP-10</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>A parameter is <code>required</code> only if the tool genuinely cannot proceed
+            without it. Marking a parameter required to force the model to "think about it"
+            causes the model to invent a value instead.</td></tr>
+    <tr><td><code>TS-INP-11</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Every optional parameter's omission behavior <strong>MUST</strong> be stated in its
+            <code>description</code> in prose, not only in <code>default</code>. Models read
+            prose far more reliably than they read schema annotations.</td></tr>
+    <tr><td><code>TS-INP-12</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Defaults <strong>MUST</strong> be the narrow, conservative, least-surprising choice: the
+            smallest page, the current account only, the shortest date window, exclusions on.
+            A default that widens scope is a defect even when it is convenient.</td></tr>
+    <tr><td><code>TS-INP-13</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">NEVER</ac:parameter></ac:structured-macro></td>
+        <td>A parameter that changes the tool's safety characteristics — whether a change is
+            simulated or real, whether validation is skipped, whether a confirmation is
+            required — <strong>MUST NOT</strong> exist. Those are separate tools with separate
+            annotations (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.1</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="25. The anti-pattern catalog"/><ac:link-body>§25.2</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<h2>7.5 Per-parameter descriptions</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-14 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every property in an input schema <strong>MUST</strong> carry a
+  <code>description</code>. A property description <strong>MUST NOT</strong> restate the type, and
+  <strong>MUST</strong> state, where applicable: where the value comes from, its unit or convention,
+  and what happens if it is omitted.</p></ac:rich-text-body></ac:structured-macro>
+
+<table><tbody><tr><td><p class="lang b">Restates the schema</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA["accountId": {
+  "type": "string",
+  "description": "The account ID (a string)."
+}
+
+"quantity": {
+  "type": "integer",
+  "description": "The quantity."
+}]]></ac:plain-text-body></ac:structured-macro></td><td><p class="lang g">Says what the schema cannot</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA["accountId": {
+  "type": "string",
+  "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+  "description": "The account to read. Obtain it from brokerage_accounts_list; never construct or guess one. Not the customer-facing account number.",
+  "examples": ["acct_01HQ8Z4M2X9K3P7R"]
+}
+
+"quantity": {
+  "type": "integer", "minimum": 1,
+  "description": "Number of shares for an equity order, or contracts for an option order — one contract is 100 shares of exposure. Whole units only; fractional orders are not supported."
+}]]></ac:plain-text-body></ac:structured-macro></td></tr></tbody></table><h2>7.6 Standard parameter patterns</h2>
+
+<p>
+  These names are reserved firm-wide. Where a tool needs the concept, it <strong>MUST</strong> use the
+  name and shape below rather than inventing an equivalent (<code>TS-INP-15</code>).
+</p>
+
+<table>
+  <thead><tr><th>Parameter</th><th>Shape</th><th>Semantics</th></tr></thead>
+  <tbody>
+    <tr><td><code>pageSize</code></td><td>integer, 1–100, default 25</td>
+        <td>Maximum items to return. Never call it <code>limit</code>, <code>count</code>, or
+            <code>top</code>.</td></tr>
+    <tr><td><code>cursor</code></td><td>string, maxLength 512</td>
+        <td>Opaque continuation token from a previous result's <code>nextCursor</code>.
+            <strong>Offset and page-number pagination are prohibited</strong> — they produce duplicates
+            and gaps against a moving book, which is exactly what a positions or orders
+            collection is.</td></tr>
+    <tr><td><code>asOf</code></td><td>string, date-time</td>
+        <td>Point-in-time read. Omitted means now. A tool that cannot honor a historical
+            <code>asOf</code> must not accept the parameter at all.</td></tr>
+    <tr><td><code>fromDate</code>, <code>toDate</code></td><td>string, date</td>
+        <td>Inclusive date window in the account's reporting time zone. Declare the maximum
+            span in the description and enforce it.</td></tr>
+    <tr><td><code>detail</code></td><td>enum <code>SUMMARY</code> | <code>STANDARD</code> | <code>FULL</code></td>
+        <td>Verbosity of the result. Preferred over a caller-supplied field list, which the
+            model composes badly (<ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>idempotencyKey</code></td><td>string, uuid</td>
+        <td><strong>Required</strong> on every non-idempotent state-changing tool. The implementation
+            deduplicates for at least 24 hours and returns the original result on replay
+            (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>confirmationToken</code></td><td>string, maxLength 512</td>
+        <td>Short-lived token issued by the matching <code>preview</code> tool, binding an
+            execution to a previewed outcome (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>reason</code></td><td>string, maxLength 280</td>
+        <td>Why the action is being taken, captured verbatim into the audit record. Required
+            on risk tier 3 tools.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-16 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   A tool <strong>MUST NOT</strong> accept a parameter it cannot
+  honor. Offering an <code>asOf</code> on a tool with no history, or a <code>currency</code>
+  on a tool that only reports in the account's base currency, is worse than omitting it: the
+  model will supply the parameter and silently receive an answer that does not match what it
+  asked for.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>7.7 Prohibited input patterns</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-INP-17 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   An input schema <strong>MUST NOT</strong> contain any of the
+  patterns below. Each is rejected at review and by the linter; the right-hand column is the
+  reason, not a mitigation.</p></ac:rich-text-body></ac:structured-macro>
+
+<table>
+  <thead><tr><th>Pattern</th><th>Why it is prohibited</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Identity parameters</strong><br/><code>userId</code>, <code>customerId</code>,
+            <code>onBehalfOf</code>, <code>role</code>, <code>tenantId</code></td>
+        <td>Identity comes from the identity plane, never from the model. A tool that accepts
+            an identity argument is a tool that can be talked into acting as someone else, and
+            it will be. <strong>Hard rejection at review</strong> (<code>TS-SEC-02</code>).</td></tr>
+    <tr><td><strong>Credentials</strong><br/><code>apiKey</code>, <code>token</code>, <code>password</code></td>
+        <td>Secrets must never enter a context window. They would be logged, cached, and
+            possibly returned to the user (<code>TS-SEC-03</code>).</td></tr>
+    <tr><td><strong>Pass-through query languages</strong><br/><code>sql</code>, <code>filterExpression</code>,
+            <code>graphqlQuery</code>, <code>jsonPath</code></td>
+        <td>Unvalidatable, unauditable, and an injection surface with the model as the
+            injector. If the query space is genuinely open, the tool is a database
+            connection wearing a costume; expose the three questions actually being asked
+            instead.</td></tr>
+    <tr><td><strong>Operation discriminators</strong><br/><code>action</code>, <code>operation</code>,
+            <code>mode</code>, <code>command</code></td>
+        <td>Collapses several risk profiles into one descriptor, making annotations, risk
+            tiers, approval policy, and the audit record all wrong simultaneously (<ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>§5.3</ac:link-body></ac:link>,
+            <ac:link><ri:page ri:content-title="25. The anti-pattern catalog"/><ac:link-body>§25.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Safety-defeating flags</strong><br/><code>force</code>, <code>skipValidation</code>,
+            <code>dryRun</code>, <code>override</code></td>
+        <td>A flag that changes whether a tool is dangerous means the annotations describe one
+            of two tools. Split them (<code>TS-INP-13</code>).</td></tr>
+    <tr><td><strong>Caller-supplied URLs or paths</strong></td>
+        <td>A tool that fetches a URL supplied by the model is a server-side request forgery
+            primitive. Permitted only against an allow-list held in configuration, never
+            in the argument.</td></tr>
+    <tr><td><strong>Unbounded arrays and blobs</strong></td>
+        <td>A cost, latency, and denial-of-service vector. <code>maxItems</code> and
+            <code>maxLength</code> are mandatory (<code>TS-INP-08</code>).</td></tr>
+    <tr><td><strong>Environment or routing hints</strong><br/><code>env</code>, <code>region</code>,
+            <code>useCache</code>, <code>debug</code></td>
+        <td>Deployment concerns the model must not be able to reason about or influence.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 8. OUTPUT ==================== -->

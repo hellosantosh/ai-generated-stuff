@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 352" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#4a5058"/>
+    </marker>
+    <marker id="arl" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#a0a6ae"/>
+    </marker>
+  </defs>
+
+  <!-- trust boundary -->
+  <line x1="278" y1="8" x2="278" y2="232" stroke="#a32a2a" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="282" y="18" font-size="8.5" font-weight="700" fill="#a32a2a" letter-spacing=".06em">TRUST BOUNDARY</text>
+  <text x="282" y="29" font-size="7.5" fill="#a32a2a">everything to the left is untrusted input</text>
+
+  <!-- 1. human -->
+  <rect x="4" y="42" width="96" height="86" rx="4" fill="#fff" stroke="#d9dde3"/>
+  <text x="52" y="60" font-size="8" font-weight="700" fill="#767d87" text-anchor="middle" letter-spacing=".06em">PRINCIPAL</text>
+  <text x="52" y="80" font-size="9.5" fill="#16181d" text-anchor="middle">Customer or</text>
+  <text x="52" y="92" font-size="9.5" fill="#16181d" text-anchor="middle">adviser</text>
+  <text x="52" y="110" font-size="7.5" fill="#767d87" text-anchor="middle">delegates authority,</text>
+  <text x="52" y="120" font-size="7.5" fill="#767d87" text-anchor="middle">approves, is accountable</text>
+
+  <!-- 2. agent runtime -->
+  <rect x="116" y="42" width="150" height="150" rx="4" fill="#fff" stroke="#d9dde3"/>
+  <text x="191" y="60" font-size="8" font-weight="700" fill="#767d87" text-anchor="middle" letter-spacing=".06em">AGENT RUNTIME</text>
+  <rect x="128" y="70" width="126" height="26" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="191" y="87" font-size="9" fill="#16181d" text-anchor="middle">Model</text>
+  <rect x="128" y="102" width="126" height="26" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="191" y="119" font-size="9" fill="#16181d" text-anchor="middle">Orchestrator</text>
+  <rect x="128" y="134" width="126" height="26" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="191" y="151" font-size="9" fill="#16181d" text-anchor="middle">Tool client</text>
+  <text x="191" y="177" font-size="7.5" fill="#767d87" text-anchor="middle">selects a tool, composes</text>
+  <text x="191" y="186" font-size="7.5" fill="#767d87" text-anchor="middle">arguments, reads results</text>
+
+  <!-- 3. gateway -->
+  <rect x="292" y="42" width="160" height="150" rx="4" fill="#fff" stroke="#1f4f8f" stroke-width="1.2"/>
+  <text x="372" y="60" font-size="8" font-weight="700" fill="#1f4f8f" text-anchor="middle" letter-spacing=".06em">TOOL GATEWAY</text>
+  <rect x="302" y="70" width="140" height="22" rx="3" fill="#eef3fa" stroke="#dce6f3"/>
+  <text x="372" y="85" font-size="8.5" fill="#1f4f8f" text-anchor="middle">Identity &amp; entitlement</text>
+  <rect x="302" y="97" width="140" height="22" rx="3" fill="#eef3fa" stroke="#dce6f3"/>
+  <text x="372" y="112" font-size="8.5" fill="#1f4f8f" text-anchor="middle">Schema validation</text>
+  <rect x="302" y="124" width="140" height="22" rx="3" fill="#eef3fa" stroke="#dce6f3"/>
+  <text x="372" y="139" font-size="8.5" fill="#1f4f8f" text-anchor="middle">Policy, approval, quota</text>
+  <rect x="302" y="151" width="140" height="22" rx="3" fill="#eef3fa" stroke="#dce6f3"/>
+  <text x="372" y="166" font-size="8.5" fill="#1f4f8f" text-anchor="middle">Audit &amp; kill switch</text>
+
+  <!-- 4. implementation -->
+  <rect x="478" y="42" width="86" height="150" rx="4" fill="#fff" stroke="#d9dde3"/>
+  <text x="521" y="60" font-size="8" font-weight="700" fill="#767d87" text-anchor="middle" letter-spacing=".06em">TOOL</text>
+  <text x="521" y="88" font-size="9.5" fill="#16181d" text-anchor="middle">Implementation</text>
+  <text x="521" y="110" font-size="7.5" fill="#767d87" text-anchor="middle">domain logic,</text>
+  <text x="521" y="120" font-size="7.5" fill="#767d87" text-anchor="middle">composition,</text>
+  <text x="521" y="130" font-size="7.5" fill="#767d87" text-anchor="middle">shaping,</text>
+  <text x="521" y="140" font-size="7.5" fill="#767d87" text-anchor="middle">sanitization</text>
+  <text x="521" y="160" font-size="7.5" fill="#767d87" text-anchor="middle">re-checks every</text>
+  <text x="521" y="170" font-size="7.5" fill="#767d87" text-anchor="middle">authorization</text>
+
+  <!-- 5. systems of record -->
+  <rect x="578" y="42" width="78" height="150" rx="4" fill="#fff" stroke="#d9dde3"/>
+  <text x="617" y="60" font-size="8" font-weight="700" fill="#767d87" text-anchor="middle" letter-spacing=".06em">SOR</text>
+  <rect x="586" y="70" width="62" height="24" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="617" y="85" font-size="8" fill="#16181d" text-anchor="middle">Positions</text>
+  <rect x="586" y="99" width="62" height="24" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="617" y="114" font-size="8" fill="#16181d" text-anchor="middle">Margin</text>
+  <rect x="586" y="128" width="62" height="24" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="617" y="143" font-size="8" fill="#16181d" text-anchor="middle">OMS</text>
+  <rect x="586" y="157" width="62" height="24" rx="3" fill="#f6f7f9" stroke="#eaedf1"/>
+  <text x="617" y="172" font-size="8" fill="#16181d" text-anchor="middle">Ledger</text>
+
+  <!-- arrows -->
+  <line x1="100" y1="100" x2="112" y2="100" stroke="#4a5058" stroke-width="1.1" marker-end="url(#ar)"/>
+  <line x1="266" y1="100" x2="288" y2="100" stroke="#4a5058" stroke-width="1.1" marker-end="url(#ar)"/>
+  <line x1="452" y1="100" x2="474" y2="100" stroke="#4a5058" stroke-width="1.1" marker-end="url(#ar)"/>
+  <line x1="564" y1="100" x2="574" y2="100" stroke="#4a5058" stroke-width="1.1" marker-end="url(#ar)"/>
+  <line x1="474" y1="140" x2="456" y2="140" stroke="#a0a6ae" stroke-width="1" marker-end="url(#arl)" stroke-dasharray="3 2"/>
+  <line x1="288" y1="140" x2="270" y2="140" stroke="#a0a6ae" stroke-width="1" marker-end="url(#arl)" stroke-dasharray="3 2"/>
+
+  <!-- catalog -->
+  <rect x="116" y="216" width="448" height="34" rx="4" fill="#f2eefa" stroke="#ddd3ee"/>
+  <text x="340" y="232" font-size="8.5" font-weight="700" fill="#5b3a8e" text-anchor="middle" letter-spacing=".05em">TOOL CATALOG</text>
+  <text x="340" y="244" font-size="7.5" fill="#5b3a8e" text-anchor="middle">signed descriptors · versions · owners · risk tiers · entitlement map · deprecation state</text>
+  <line x1="191" y1="216" x2="191" y2="196" stroke="#5b3a8e" stroke-width="1" marker-end="url(#ar)" stroke-dasharray="3 2"/>
+  <line x1="372" y1="216" x2="372" y2="196" stroke="#5b3a8e" stroke-width="1" marker-end="url(#ar)" stroke-dasharray="3 2"/>
+
+  <!-- identity plane -->
+  <rect x="4" y="266" width="560" height="34" rx="4" fill="#e9f5ee" stroke="#cfe6d9"/>
+  <text x="284" y="282" font-size="8.5" font-weight="700" fill="#1d6b45" text-anchor="middle" letter-spacing=".05em">IDENTITY PLANE</text>
+  <text x="284" y="294" font-size="7.5" fill="#1d6b45" text-anchor="middle">the principal's delegated, scoped, expiring authority — carried end to end, never minted by the agent</text>
+
+  <!-- audit plane -->
+  <rect x="4" y="310" width="652" height="34" rx="4" fill="#fdf3e0" stroke="#f0e0c0"/>
+  <text x="330" y="326" font-size="8.5" font-weight="700" fill="#8a5a00" text-anchor="middle" letter-spacing=".05em">AUDIT PLANE</text>
+  <text x="330" y="338" font-size="7.5" fill="#8a5a00" text-anchor="middle">who asked · which tool · what arguments · what was returned · who approved · what changed — retained to the firm's record-keeping schedule</text>
+</svg>

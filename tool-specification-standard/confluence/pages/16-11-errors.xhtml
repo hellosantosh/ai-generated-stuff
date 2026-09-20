@@ -1,0 +1,266 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>A tool's error path is used more often than anyone plans for, is read by a caller that
+  cannot ask what it means, and is the single place where a firm most often leaks something it
+  should not. It deserves the same design attention as the success path and usually gets a
+  tenth of it.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>11.1 Two kinds of failure</h2>
+
+<table>
+  <thead><tr><th>Kind</th><th>Examples</th><th>Handling</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Transport or protocol failure</strong><br/>the tool never ran</td>
+        <td>Tool name not found · malformed invocation · gateway unreachable · authentication
+            to the gateway failed</td>
+        <td>Handled by the runtime. The model may never see it. Not modeled by this
+            standard.</td></tr>
+    <tr><td><strong>Execution error</strong><br/>the tool ran and could not do the job</td>
+        <td>Account not found · not entitled · insufficient buying power · market closed ·
+            upstream margin engine down · rate limit exceeded</td>
+        <td><strong>Returned as a successful transport response with
+            <code>isError: true</code></strong> and a structured error payload the model reads and
+            acts on.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-ERR-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Domain and business failures <strong>MUST</strong> be returned
+  as execution errors inside the envelope, never raised as transport or protocol errors. A
+  protocol error is frequently retried blindly by the runtime, is often invisible to the
+  model, and reaches the customer as "something went wrong" — which is the least useful true
+  statement available.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>11.2 The error envelope</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "content": [
+    { "type": "text",
+      "text": "Cannot place this order: the account has 84,360.20 USD of stock buying power and the order requires 123,750.00 USD. Reduce the quantity to 68 shares or fewer, or choose a different account." }
+  ],
+  "structuredContent": {
+    "error": {
+      "code":         "BUSINESS_RULE_VIOLATION",   // closed taxonomy, <ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.3</ac:link-body></ac:link>
+      "domainCode":   "INSUFFICIENT_BUYING_POWER", // registry, Appendix C
+      "message":      "Order requires 123,750.00 USD of stock buying power; 84,360.20 USD is available.",
+      "retryable":    false,
+      "remediation":  "Reduce quantity to 68 shares or fewer, or place the order in an account with sufficient buying power. Do not retry this order unchanged.",
+      "details": {
+        "required":  { "amount": "123750.00", "currency": "USD" },
+        "available": { "amount": "84360.20",  "currency": "USD" },
+        "maxQuantity": 68
+      },
+      "traceId":     "01HQ9D5P8R2T6V9Y0B3D5F7H"
+    }
+  },
+  "isError": true
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<table>
+  <thead><tr><th>Field</th><th>Required</th><th>Rules</th></tr></thead>
+  <tbody>
+    <tr><td><code>code</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>One of the fifteen values in <ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.3</ac:link-body></ac:link>. Closed set; the only field safe to branch
+            on.</td></tr>
+    <tr><td><code>domainCode</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>A specific, stable, registered code from Appendix C. This is what a customer-facing
+            surface localizes and what analytics group by.</td></tr>
+    <tr><td><code>message</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>One or two sentences a person could read. States what happened, including the
+            numbers that make it concrete. Contains no internal identifiers, no stack, no
+            upstream prose (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.5</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>retryable</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Whether repeating the identical call could succeed. Explicitly boolean: a caller
+            that must infer retryability from prose will infer it wrongly, and its wrong
+            inference is a retry storm.</td></tr>
+    <tr><td><code>retryAfterSeconds</code></td><td>When retryable</td>
+        <td>How long to wait. Present on <code>RATE_LIMITED</code> and
+            <code>UPSTREAM_UNAVAILABLE</code>.</td></tr>
+    <tr><td><code>remediation</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>What to do next, as an instruction (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>details</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Structured, code-specific facts — which field failed, which limit was hit, what
+            the maximum permissible value would have been. This is what turns a dead end into
+            a second, correct attempt.</td></tr>
+    <tr><td><code>traceId</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The correlation identifier. The only value in the payload that ties a customer's
+            complaint to a log line, and the only internal identifier permitted to cross
+            out.</td></tr>
+  </tbody>
+</table>
+
+<h2>11.3 The taxonomy</h2>
+
+<table>
+  <thead><tr><th>Code</th><th>Retry</th><th>Means, and what the caller should do</th></tr></thead>
+  <tbody>
+    <tr><td><code>INVALID_ARGUMENT</code></td><td>No</td>
+        <td>The arguments were malformed or violated the schema. <strong>Fix the argument</strong> —
+            <code>details.violations</code> names the offending field with a JSON Pointer.</td></tr>
+    <tr><td><code>NOT_FOUND</code></td><td>No</td>
+        <td>The identified entity does not exist, or exists outside the principal's grant —
+            deliberately indistinguishable, so that the tool cannot be used to enumerate
+            identifiers. <strong>Do not guess another identifier</strong>; list first.</td></tr>
+    <tr><td><code>AUTHENTICATION_REQUIRED</code></td><td>After re-auth</td>
+        <td>Credentials absent, expired, or revoked. The agent cannot fix this; the principal
+            must re-authenticate.</td></tr>
+    <tr><td><code>ENTITLEMENT_DENIED</code></td><td>No</td>
+        <td>Authenticated, but not permitted — a missing scope or an unapproved account.
+            <strong>Ask the customer to grant access; never retry.</strong></td></tr>
+    <tr><td><code>APPROVAL_REQUIRED</code></td><td>After approval</td>
+        <td>A human confirmation is needed and was not present. Present the confirmation and
+            re-invoke with the token.</td></tr>
+    <tr><td><code>APPROVAL_DENIED</code></td><td>No</td>
+        <td>A human declined. <strong>Stop.</strong> Do not rephrase and retry — this is the failure mode
+            that turns a declined trade into three declined trades.</td></tr>
+    <tr><td><code>PRECONDITION_FAILED</code></td><td>Sometimes</td>
+        <td>A required precondition was not met — a stale confirmation token, a missing
+            idempotency key, a version mismatch. <code>details</code> names it.</td></tr>
+    <tr><td><code>CONFLICT</code></td><td>No</td>
+        <td>The entity's state does not permit the operation: the order already filled, the
+            account is closed. <strong>Re-read the entity before doing anything else.</strong></td></tr>
+    <tr><td><code>BUSINESS_RULE_VIOLATION</code></td><td>No</td>
+        <td>Well-formed and permitted, but the domain said no — insufficient buying power,
+            market closed, options level too low, instrument halted. <strong>The request was fine;
+            the world declined.</strong> Explain it to the customer rather than retrying.</td></tr>
+    <tr><td><code>RATE_LIMITED</code></td><td>Yes, after wait</td>
+        <td>Quota exhausted. Honor <code>retryAfterSeconds</code>. If it recurs, the agent is
+            looping and should stop.</td></tr>
+    <tr><td><code>TIMEOUT</code></td><td>If idempotent</td>
+        <td>The operation did not complete in budget. <strong>Retry only if
+            <code>idempotentHint</code> is true or an idempotency key was supplied</strong> —
+            otherwise re-read state to find out whether it happened.</td></tr>
+    <tr><td><code>UPSTREAM_UNAVAILABLE</code></td><td>Yes, with backoff</td>
+        <td>A system of record is down or degraded. <code>details.system</code> names which,
+            so the agent can tell the customer what is unavailable rather than
+            apologizing vaguely.</td></tr>
+    <tr><td><code>DATA_INCOMPLETE</code></td><td>Yes, with backoff</td>
+        <td>The answer could be computed only partially and the tool refused to return a
+            misleading figure (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.6</ac:link-body></ac:link>). Distinct from <code>UPSTREAM_UNAVAILABLE</code> because
+            the tool <em>did</em> reach its sources.</td></tr>
+    <tr><td><code>NOT_SUPPORTED</code></td><td>No</td>
+        <td>A well-formed request for something this tool does not do — a historical
+            <code>asOf</code> on a real-time-only tool, an asset class not covered.
+            <code>remediation</code> names the tool that does.</td></tr>
+    <tr><td><code>INTERNAL_ERROR</code></td><td>Once</td>
+        <td>An unexpected failure. Carries a <code>traceId</code> and nothing else of
+            substance. If a tool returns this more than rarely, it is mapping errors lazily
+            (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.6</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">INVALID_ARGUMENT versus BUSINESS_RULE_VIOLATION</ac:parameter><ac:rich-text-body><p>
+    The distinction is the most useful one in the taxonomy. <code>INVALID_ARGUMENT</code>
+    means <em>the caller is wrong</em> — change the argument and it will work.
+    <code>BUSINESS_RULE_VIOLATION</code> means <em>the caller is fine and reality declined</em>
+    — not enough buying power, market closed, instrument halted. A caller that conflates them
+    retries a doomed order and then tells the customer "invalid request" when the honest
+    answer was "the market is closed". Tools that return one code for both make every agent
+    built on them worse.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>11.4 Remediation the model can act on</h2>
+
+<table><tbody><tr><td><p class="lang b">Dead ends</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA["An error occurred."
+
+"Request failed with status 422."
+
+"Sorry, something went wrong. Please try again later."
+
+"NullPointerException at
+ com.example.oms.OrderService.validate(
+ OrderService.java:214)"
+
+"Invalid account."]]></ac:plain-text-body></ac:structured-macro></td><td><p class="lang g">Next steps</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA["The market is closed. Regular hours are 09:30–16:00 ET; the next session opens 2026-09-21 09:30 ET. Offer to place the order for the next session with timeInForce DAY."
+
+"This account is not approved for spreads (level 3); it holds level 2. Single-leg options are permitted. Do not retry the spread."
+
+"accountId is not a valid identifier. Call brokerage_accounts_list to obtain one; do not construct it from the account number."]]></ac:plain-text-body></ac:structured-macro></td></tr></tbody></table><table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-ERR-02</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>remediation</code> <strong>MUST</strong> be an instruction in the imperative, naming
+            the argument to change or the tool to call instead. Apologies are not
+            remediation.</td></tr>
+    <tr><td><code>TS-ERR-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Where a constraint was violated, the error <strong>MUST</strong> state the permissible value
+            or bound — the maximum quantity, the valid window, the required approval level.
+            An error that says "too large" without saying how large is permitted forces a
+            guessing loop.</td></tr>
+    <tr><td><code>TS-ERR-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Where a retry is futile, <code>remediation</code> <strong>MUST</strong> say so explicitly —
+            "do not retry". Models are biased toward retrying, and an explicit prohibition is
+            markedly more effective than <code>retryable: false</code> alone.</td></tr>
+    <tr><td><code>TS-ERR-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Validation failures <strong>MUST</strong> enumerate every violation, not just the first.
+            One round trip per invalid field is a conversation the customer watches.</td></tr>
+  </tbody>
+</table>
+
+<h2>11.5 Redaction</h2>
+
+<p>
+  An error payload enters a context window, is retained in conversation history, may be
+  forwarded to a model provider, and is frequently pasted into a support ticket. Treat every
+  byte of it as published.
+</p>
+
+<table>
+  <thead><tr><th>Never include</th><th>Instead</th></tr></thead>
+  <tbody>
+    <tr><td>Stack traces, exception class names, line numbers</td>
+        <td><code>INTERNAL_ERROR</code> plus a <code>traceId</code>. The stack belongs in the
+            log, correlated by that identifier.</td></tr>
+    <tr><td>Raw upstream error text, vendor error codes, SQL fragments</td>
+        <td>A mapped taxonomy code. Upstream prose is unversioned, occasionally contains
+            customer data, and is written for a different reader.</td></tr>
+    <tr><td>Internal hostnames, queue names, service topology</td>
+        <td><code>details.system</code> with a stable business-capability label
+            ("margin engine"), never an infrastructure name.</td></tr>
+    <tr><td>Full account numbers, government identifiers, dates of birth</td>
+        <td>The masked form the customer sees on their statement (<code>••••4471</code>).</td></tr>
+    <tr><td>Any data about a principal other than the caller</td>
+        <td>Nothing. If the error would disclose that another customer exists, the correct
+            answer is <code>NOT_FOUND</code>.</td></tr>
+    <tr><td>Whether an identifier exists but is not permitted</td>
+        <td><code>NOT_FOUND</code>, uniformly. Distinguishing the two turns a tool into an
+            enumeration oracle.</td></tr>
+  </tbody>
+</table>
+
+<h2>11.6 Mapping upstream failures</h2>
+
+<p>
+  Most tools wrap something. The mapping from that something's failures to this taxonomy is a
+  design artifact that belongs in the tool's tests, not an afterthought in a catch block.
+</p>
+
+<table>
+  <thead><tr><th>Upstream</th><th>Maps to</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>INVALID_ARGUMENT</code></td>
+        <td>If the gateway validated the input schema and upstream still says 400, the schema
+            and the upstream contract have drifted — alert on it.</td></tr>
+    <tr><td><code>401</code></td><td><code>AUTHENTICATION_REQUIRED</code></td><td>Refresh once, then surface.</td></tr>
+    <tr><td><code>403</code></td><td><code>ENTITLEMENT_DENIED</code></td><td>Never retried.</td></tr>
+    <tr><td><code>404</code></td><td><code>NOT_FOUND</code></td><td>Uniform for both "absent" and "not yours".</td></tr>
+    <tr><td><code>409</code></td><td><code>CONFLICT</code></td><td>Re-read before acting.</td></tr>
+    <tr><td><code>412</code>, <code>428</code></td><td><code>PRECONDITION_FAILED</code></td><td>Name the missing precondition in <code>details</code>.</td></tr>
+    <tr><td><code>422</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>The most important mapping in the table, and the one most often collapsed into
+            <code>INVALID_ARGUMENT</code>.</td></tr>
+    <tr><td><code>429</code></td><td><code>RATE_LIMITED</code></td><td>Propagate <code>Retry-After</code> into <code>retryAfterSeconds</code>.</td></tr>
+    <tr><td><code>5xx</code>, timeouts</td><td><code>UPSTREAM_UNAVAILABLE</code> or <code>TIMEOUT</code></td>
+        <td>Distinguish them: a timeout on a non-idempotent write means the outcome is
+            <em>unknown</em>, and the remediation is to re-read state, not to retry.</td></tr>
+    <tr><td>Circuit open</td><td><code>UPSTREAM_UNAVAILABLE</code></td><td>With a realistic <code>retryAfterSeconds</code>, not zero.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-ERR-06 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every upstream failure mode <strong>MUST</strong> have an
+  explicit mapping with a test. A default branch that maps everything unrecognized to
+  <code>INTERNAL_ERROR</code> is permitted and <strong>MUST</strong> raise an alert when it fires: an
+  unmapped upstream failure is a contract change nobody was told about.</p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== PART III ==================== -->

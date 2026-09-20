@@ -1,0 +1,54 @@
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">EA-STD-TOOL-001 · Draft for Architecture Review Board · v1.0.0-rc1</ac:parameter><ac:rich-text-body><p>A normative standard for defining, describing, classifying, securing, and governing tools that a language model can invoke. It specifies a contract, not a wire protocol, so a conformant descriptor publishes over any tool-calling runtime without amendment.</p></ac:rich-text-body></ac:structured-macro>
+<h2>Start here</h2>
+<table><tbody>
+<tr><th>If you are</th><th>Read</th></tr>
+<tr><td><strong>An architect</strong> assessing a proposal</td>
+    <td><ac:link><ri:page ri:content-title="How to use this standard"/><ac:link-body>How to use this standard</ac:link-body></ac:link>, then <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>risk tiers</ac:link-body></ac:link>,
+        <ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>security</ac:link-body></ac:link>, and the <ac:link><ri:page ri:content-title="Review checklist"/><ac:link-body>Review checklist</ac:link-body></ac:link> you will use in the meeting.</td></tr>
+<tr><td><strong>A tech lead</strong> designing a tool set</td>
+    <td>Part II end to end, then <ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>granularity</ac:link-body></ac:link> and
+        <ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>payload economics</ac:link-body></ac:link>. Part IV is a catalog you can copy structurally.</td></tr>
+<tr><td><strong>A developer</strong> writing one tool</td>
+    <td><ac:link><ri:page ri:content-title="4. Descriptor anatomy"/><ac:link-body>the anatomy</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>the description</ac:link-body></ac:link>,
+        <ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>input</ac:link-body></ac:link> and <ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>output</ac:link-body></ac:link> schemas,
+        <ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>errors</ac:link-body></ac:link>, and the nearest analogue in Part IV.</td></tr>
+<tr><td><strong>Risk, audit, or compliance</strong></td>
+    <td><ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>governance metadata</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>security</ac:link-body></ac:link>,
+        <ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>audit and supervision</ac:link-body></ac:link>,
+        <ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>certification evidence</ac:link-body></ac:link>.</td></tr>
+</tbody></table>
+
+<h2>The four things most people come here for</h2>
+<table><tbody>
+<tr><td><ac:link><ri:page ri:content-title="Rule index"/><ac:link-body>Rule index</ac:link-body></ac:link></td><td>All 113 normative rules, with level and section. Cite these in reviews.</td></tr>
+<tr><td><ac:link><ri:page ri:content-title="Review checklist"/><ac:link-body>Review checklist</ac:link-body></ac:link></td><td>A tickable checklist for an architecture review. Copy it onto your review page.</td></tr>
+<tr><td><ac:link><ri:page ri:content-title="Machine-readable artifacts"/><ac:link-body>Machine-readable artifacts</ac:link-body></ac:link></td><td>The descriptor schema, the shared type library, the reference catalog, and the CI linter.</td></tr>
+<tr><td><ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>5. Identity and naming</ac:link-body></ac:link></td><td>The naming grammar and the closed operation verb vocabulary.</td></tr>
+</tbody></table>
+
+<h2>Conformance levels</h2>
+<table><tbody>
+<tr><th>Level</th><th>Name</th><th>Requires</th><th>Permitted exposure</th></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Green</ac:parameter><ac:parameter ac:name="title">L0</ac:parameter></ac:structured-macro></td><td><strong>Registered</strong></td>
+    <td>Parses against the descriptor schema.</td><td>Dev and test only.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">L1</ac:parameter></ac:structured-macro></td><td><strong>Conformant</strong></td>
+    <td>Every MUST satisfied; linter clean; named owner; structured errors; audit events.</td>
+    <td>Internal agents, non-customer data, tier 0–1.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">L2</ac:parameter></ac:structured-macro></td><td><strong>Certified</strong></td>
+    <td>L1 plus security review, evaluation evidence, entitlement sign-off, SLO, kill switch, retention.</td>
+    <td><strong>Mandatory</strong> for customer data, money, or positions.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">L3</ac:parameter></ac:structured-macro></td><td><strong>Externally exposed</strong></td>
+    <td>L2 plus egress assessment, contractual controls, tenant isolation proof, annual red team.</td>
+    <td>Agents the firm does not operate.</td></tr>
+</tbody></table>
+
+<ac:structured-macro ac:name="warning"><ac:parameter ac:name="title">The gating rule</ac:parameter><ac:rich-text-body><p><strong>TS-GEN-01.</strong> Every tool reachable from a production agent must hold at least Level 1. Every tool that reads customer data, moves money, changes an order, or writes to a system of record must hold Level 2.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>Downloads</h2>
+<p>The full standard and the quick reference are attached to this page.</p>
+<p><ac:structured-macro ac:name="attachments"><ac:parameter ac:name="upload">false</ac:parameter><ac:parameter ac:name="old">false</ac:parameter></ac:structured-macro></p>
+
+<h2>Contents</h2>
+<ac:structured-macro ac:name="children"><ac:parameter ac:name="all">true</ac:parameter><ac:parameter ac:name="excerpt">true</ac:parameter><ac:parameter ac:name="depth">2</ac:parameter></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">How this space is maintained</ac:parameter><ac:rich-text-body><p>Every page here is generated from the standard's source repository by <code>tools/build-confluence.py</code> and re-imported. <strong>Edit the repository, not the page</strong> — a wiki edit is overwritten on the next import, and a descriptor rule that exists only in Confluence is not a rule anyone's CI enforces (TS-GEN-03).</p></ac:rich-text-body></ac:structured-macro>

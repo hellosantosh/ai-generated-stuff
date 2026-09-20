@@ -1,0 +1,351 @@
+{
+  "space_home": "Tool Specification Standard",
+  "title_prefix": "",
+  "generated_from": "pdf-src/, catalog/, diagrams/",
+  "pages": [
+    {
+      "title": "Tool Specification Standard",
+      "parent": null,
+      "file": "pages/00-tool-specification-standard.xhtml",
+      "order": 0,
+      "attachments": [
+        "Enterprise-Tool-Specification-Standard.pdf",
+        "Tool-Specification-Standard-Quick-Reference.pdf"
+      ]
+    },
+    {
+      "title": "How to use this standard",
+      "parent": "Tool Specification Standard",
+      "file": "pages/01-how-to-use-this-standard.xhtml",
+      "order": 1,
+      "attachments": []
+    },
+    {
+      "title": "0. Document control",
+      "parent": "Tool Specification Standard",
+      "file": "pages/03-0-document-control.xhtml",
+      "order": 3,
+      "attachments": []
+    },
+    {
+      "title": "Part I \u2014 Foundations",
+      "parent": "Tool Specification Standard",
+      "file": "pages/04-part-i-foundations.xhtml",
+      "order": 4,
+      "attachments": []
+    },
+    {
+      "title": "1. Scope, audience, and conformance",
+      "parent": "Part I \u2014 Foundations",
+      "file": "pages/05-1-scope-audience-and-conformance.xhtml",
+      "order": 5,
+      "attachments": []
+    },
+    {
+      "title": "2. What a tool is",
+      "parent": "Part I \u2014 Foundations",
+      "file": "pages/06-2-what-a-tool-is.xhtml",
+      "order": 6,
+      "attachments": [
+        "figure-2-1.png"
+      ]
+    },
+    {
+      "title": "3. Reference architecture",
+      "parent": "Part I \u2014 Foundations",
+      "file": "pages/07-3-reference-architecture.xhtml",
+      "order": 7,
+      "attachments": [
+        "anatomy-of-an-invocation.png",
+        "anatomy-of-an-invocation.puml",
+        "anatomy-of-an-invocation.svg"
+      ]
+    },
+    {
+      "title": "Part II \u2014 The tool descriptor",
+      "parent": "Tool Specification Standard",
+      "file": "pages/08-part-ii-the-tool-descriptor.xhtml",
+      "order": 8,
+      "attachments": []
+    },
+    {
+      "title": "4. Descriptor anatomy",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/09-4-descriptor-anatomy.xhtml",
+      "order": 9,
+      "attachments": []
+    },
+    {
+      "title": "5. Identity and naming",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/10-5-identity-and-naming.xhtml",
+      "order": 10,
+      "attachments": []
+    },
+    {
+      "title": "6. The description: the model-facing contract",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/11-6-the-description-the-model-facing-contract.xhtml",
+      "order": 11,
+      "attachments": []
+    },
+    {
+      "title": "7. Input schema",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/12-7-input-schema.xhtml",
+      "order": 12,
+      "attachments": []
+    },
+    {
+      "title": "8. Output schema and the result envelope",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/13-8-output-schema-and-the-result-envelope.xhtml",
+      "order": 13,
+      "attachments": []
+    },
+    {
+      "title": "9. Behavioral annotations and risk tiers",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/14-9-behavioral-annotations-and-risk-tiers.xhtml",
+      "order": 14,
+      "attachments": []
+    },
+    {
+      "title": "10. Governance metadata",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/15-10-governance-metadata.xhtml",
+      "order": 15,
+      "attachments": []
+    },
+    {
+      "title": "11. Errors",
+      "parent": "Part II \u2014 The tool descriptor",
+      "file": "pages/16-11-errors.xhtml",
+      "order": 16,
+      "attachments": []
+    },
+    {
+      "title": "Part III \u2014 Designing a tool set",
+      "parent": "Tool Specification Standard",
+      "file": "pages/17-part-iii-designing-a-tool-set.xhtml",
+      "order": 17,
+      "attachments": []
+    },
+    {
+      "title": "12. Granularity and catalog design",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/18-12-granularity-and-catalog-design.xhtml",
+      "order": 18,
+      "attachments": []
+    },
+    {
+      "title": "13. Payload economics",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/19-13-payload-economics.xhtml",
+      "order": 19,
+      "attachments": []
+    },
+    {
+      "title": "14. Interaction patterns",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/20-14-interaction-patterns.xhtml",
+      "order": 20,
+      "attachments": []
+    },
+    {
+      "title": "15. Security and trust",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/21-15-security-and-trust.xhtml",
+      "order": 21,
+      "attachments": []
+    },
+    {
+      "title": "16. Observability, audit, and supervision",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/22-16-observability-audit-and-supervision.xhtml",
+      "order": 22,
+      "attachments": []
+    },
+    {
+      "title": "17. Versioning and lifecycle",
+      "parent": "Part III \u2014 Designing a tool set",
+      "file": "pages/23-17-versioning-and-lifecycle.xhtml",
+      "order": 23,
+      "attachments": []
+    },
+    {
+      "title": "Part IV \u2014 Brokerage reference catalog",
+      "parent": "Tool Specification Standard",
+      "file": "pages/24-part-iv-brokerage-reference-catalog.xhtml",
+      "order": 24,
+      "attachments": []
+    },
+    {
+      "title": "18. Reference domain and shared types",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/25-18-reference-domain-and-shared-types.xhtml",
+      "order": 25,
+      "attachments": []
+    },
+    {
+      "title": "19. Accounts",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/26-19-accounts.xhtml",
+      "order": 26,
+      "attachments": []
+    },
+    {
+      "title": "20. Positions",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/27-20-positions.xhtml",
+      "order": 27,
+      "attachments": []
+    },
+    {
+      "title": "21. Balances",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/28-21-balances.xhtml",
+      "order": 28,
+      "attachments": []
+    },
+    {
+      "title": "22. Order status",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/29-22-order-status.xhtml",
+      "order": 29,
+      "attachments": [
+        "figure-22-1.png"
+      ]
+    },
+    {
+      "title": "23. A state-changing tool, for contrast",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/30-23-a-state-changing-tool-for-contrast.xhtml",
+      "order": 30,
+      "attachments": []
+    },
+    {
+      "title": "24. Composition: five questions, one catalog",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/31-24-composition-five-questions-one-catalog.xhtml",
+      "order": 31,
+      "attachments": []
+    },
+    {
+      "title": "25. The anti-pattern catalog",
+      "parent": "Part IV \u2014 Brokerage reference catalog",
+      "file": "pages/32-25-the-anti-pattern-catalog.xhtml",
+      "order": 32,
+      "attachments": []
+    },
+    {
+      "title": "Part V \u2014 Governance and adoption",
+      "parent": "Tool Specification Standard",
+      "file": "pages/33-part-v-governance-and-adoption.xhtml",
+      "order": 33,
+      "attachments": []
+    },
+    {
+      "title": "26. Conformance and review",
+      "parent": "Part V \u2014 Governance and adoption",
+      "file": "pages/34-26-conformance-and-review.xhtml",
+      "order": 34,
+      "attachments": []
+    },
+    {
+      "title": "27. Testing and certification",
+      "parent": "Part V \u2014 Governance and adoption",
+      "file": "pages/35-27-testing-and-certification.xhtml",
+      "order": 35,
+      "attachments": []
+    },
+    {
+      "title": "28. The catalog and the onboarding process",
+      "parent": "Part V \u2014 Governance and adoption",
+      "file": "pages/36-28-the-catalog-and-the-onboarding-process.xhtml",
+      "order": 36,
+      "attachments": []
+    },
+    {
+      "title": "29. Adoption roadmap",
+      "parent": "Part V \u2014 Governance and adoption",
+      "file": "pages/37-29-adoption-roadmap.xhtml",
+      "order": 37,
+      "attachments": []
+    },
+    {
+      "title": "Appendices",
+      "parent": "Tool Specification Standard",
+      "file": "pages/38-appendices.xhtml",
+      "order": 38,
+      "attachments": []
+    },
+    {
+      "title": "A. Normative descriptor schema",
+      "parent": "Appendices",
+      "file": "pages/39-a-normative-descriptor-schema.xhtml",
+      "order": 39,
+      "attachments": []
+    },
+    {
+      "title": "B. Shared type library",
+      "parent": "Appendices",
+      "file": "pages/40-b-shared-type-library.xhtml",
+      "order": 40,
+      "attachments": []
+    },
+    {
+      "title": "C. Error code registry",
+      "parent": "Appendices",
+      "file": "pages/41-c-error-code-registry.xhtml",
+      "order": 41,
+      "attachments": []
+    },
+    {
+      "title": "D. Reserved enumerations",
+      "parent": "Appendices",
+      "file": "pages/42-d-reserved-enumerations.xhtml",
+      "order": 42,
+      "attachments": []
+    },
+    {
+      "title": "Review checklist",
+      "parent": "Tool Specification Standard",
+      "file": "pages/43-review-checklist.xhtml",
+      "order": 43,
+      "attachments": []
+    },
+    {
+      "title": "F. Glossary",
+      "parent": "Appendices",
+      "file": "pages/44-f-glossary.xhtml",
+      "order": 44,
+      "attachments": []
+    },
+    {
+      "title": "Rule index",
+      "parent": "Tool Specification Standard",
+      "file": "pages/45-rule-index.xhtml",
+      "order": 45,
+      "attachments": []
+    },
+    {
+      "title": "Machine-readable artifacts",
+      "parent": "Tool Specification Standard",
+      "file": "pages/46-machine-readable-artifacts.xhtml",
+      "order": 46,
+      "attachments": [
+        "tool-descriptor.schema.json",
+        "common-types.schema.json",
+        "lint-descriptors.py",
+        "brokerage_accounts_list.json",
+        "brokerage_balances_get.json",
+        "brokerage_order_get.json",
+        "brokerage_order_place.json",
+        "brokerage_order_preview.json",
+        "brokerage_orders_list.json",
+        "brokerage_positions_list.json"
+      ]
+    }
+  ]
+}

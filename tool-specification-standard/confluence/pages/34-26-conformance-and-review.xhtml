@@ -1,0 +1,57 @@
+<h2>26.1 The gate</h2>
+
+<table>
+  <thead><tr><th>Stage</th><th>Owner</th><th>Passes when</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Design review</strong><br/>before code</td><td>Domain architect</td>
+        <td>The tool set derives from real utterances (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.2</ac:link-body></ac:link>); boundaries and risk tiers are
+            agreed; the knowledge test is discharged. <strong>Cheapest place to fix a granularity
+            error, by an order of magnitude.</strong></td></tr>
+    <tr><td><strong>Automated conformance</strong><br/>every commit</td><td>CI</td>
+        <td>The linter is clean, descriptors validate against Appendix A, size budgets hold,
+            and golden examples validate against their own schemas.</td></tr>
+    <tr><td><strong>Security review</strong><br/>before L2</td><td>Security architecture</td>
+        <td><ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15</ac:link-body></ac:link> is satisfied, with resource-level authorization demonstrated by a negative
+            test rather than asserted.</td></tr>
+    <tr><td><strong>Data review</strong><br/>before L2</td><td>Data owner, privacy</td>
+        <td>Classification, PII mapping, minimization, retention, and — for L3 — egress
+            assessed.</td></tr>
+    <tr><td><strong>Evaluation</strong><br/>before release and on every change</td><td>Owning team</td>
+        <td>Selection, refusal, argument, and interpretation thresholds met (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Architecture Review Board</strong><br/>tier 3, L3, and exceptions</td><td>ARB</td>
+        <td>The capability is one the firm is willing to expose, to that audience, under that
+            supervision.</td></tr>
+  </tbody>
+</table>
+
+<h2>26.2 What the board should ask</h2>
+
+<p>
+  Six questions that separate a proposal that has been thought about from one that has been
+  assembled. Appendix E is the full checklist; these are the ones worth asking out loud.
+</p>
+
+<ol>
+  <li><strong>"Read me the description."</strong> If it is unreadable aloud, or takes ninety seconds, or
+      contains no sentence beginning "Do not use", the tool is not ready.</li>
+  <li><strong>"What is the nearest tool to this one, and what sentence tells them apart?"</strong> If the
+      answer is a pause, the catalog has a confusability problem (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.5</ac:link-body></ac:link>).</li>
+  <li><strong>"What does the customer see if this tool is wrong?"</strong> The answer should be a
+      specific wrong sentence, not "an error".</li>
+  <li><strong>"Show me the negative test where the customer asks for someone else's account."</strong>
+      Not the code — the test (<code>TS-SEC-08</code>).</li>
+  <li><strong>"Who is paged at 2am, and what do they turn off?"</strong> Owner plus kill switch, both in
+      the descriptor (<code>TS-GOV-01</code>, <code>TS-SEC-12</code>).</li>
+  <li><strong>"What did the evaluation say about the cases where it should refuse?"</strong> Selection
+      accuracy is easy to score well on. Refusal accuracy is where the risk lives.</li>
+</ol>
+
+<h2>26.3 Exceptions</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-CAT-05 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   An exception to a <strong>MUST</strong> rule <strong>MUST</strong> be
+  recorded in the catalog against the tool, with the rule identifier, the rationale, the
+  compensating control, the approver, and an expiry of no more than twelve months. An
+  exception without an expiry is a silent amendment to the standard.</p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== 27. TESTING ==================== -->

@@ -1,0 +1,151 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The descriptor is read by three different audiences with three different failure modes.
+  Most bad tools are bad because they were written for exactly one of them.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>2.1 One artifact, three audiences</h2>
+
+<table>
+  <thead><tr><th>Audience</th><th>Reads it for</th><th>Fails by</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>The model</strong><br/>at selection time</td>
+      <td>Deciding whether this tool, out of the forty in context, is the one that answers
+          the user's question — and what to put in each argument.</td>
+      <td>Picking a plausible neighbor (<code>orders_list</code> when it wanted
+          <code>positions_list</code>), inventing an argument value that looks like the
+          examples, or calling nothing at all because no description matched.</td>
+    </tr>
+    <tr>
+      <td><strong>The runtime</strong><br/>at invocation time</td>
+      <td>Validating arguments, resolving the caller's identity and entitlements, deciding
+          whether to demand human approval, metering, logging, and enforcing timeouts.</td>
+      <td>Being unable to decide anything, because the descriptor declares no risk tier, no
+          entitlement, and no idempotency — so the runtime either blocks everything or
+          waves everything through.</td>
+    </tr>
+    <tr>
+      <td><strong>The human</strong><br/>at review and incident time</td>
+      <td>Approving the tool for release; approving a specific invocation in a confirmation
+          dialog; reconstructing, six months later, what an agent did to a customer's
+          account and why.</td>
+      <td>Reading <code>{"a": "acct_01HQ8Z", "q": 100}</code> in an approval dialog and
+          having no idea what they are being asked to authorize.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  These pull in different directions, and the standard resolves the pull the same way every
+  time: <strong>the model's needs decide the prose, the runtime's needs decide the structure, and
+  the human's needs decide what must never be omitted.</strong> A description written only for the
+  model produces an unauditable tool. A descriptor written only for the runtime produces a
+  tool the model never selects.
+</p>
+
+<h2>2.2 A tool is not an endpoint</h2>
+
+<p>
+  The most common failure in a first tool catalog is a mechanical translation of an
+  existing API: every path becomes a tool, every query parameter becomes an argument, every
+  response body becomes the output. It produces a catalog that is simultaneously too large
+  and not useful.
+</p>
+
+<p>Consider what a customer actually asks an assistant:</p>
+
+<blockquote class="small" style="margin:0 0 3.5mm 6mm; border-left:2px solid #d9dde3; padding-left:4mm; font-style:italic;">
+  "Do I have enough cash to buy 100 shares of Apple in my Roth, or would that put me on
+  margin?"
+</blockquote>
+
+<p>
+  Against a faithfully translated REST surface, answering that means: list accounts, filter
+  to the one registered as a Roth IRA, fetch balances, understand that a retirement account
+  cannot borrow so <code>buyingPower.stock</code> is not the number to use, fetch a quote,
+  multiply, compare against settled rather than total cash because an unsettled balance
+  cannot fund a purchase without a good-faith violation, and then explain the result. That is
+  five round trips, two pieces of domain knowledge the model does not reliably have, and at
+  least three plausible ways to get the wrong answer while sounding confident.
+</p>
+
+<p>
+  A tool designed for the question takes an account reference, a symbol, and a quantity, and
+  returns a decision with the reasoning attached. The domain knowledge lives in the tool,
+  where it can be tested, rather than in the model, where it can only be hoped for.
+</p>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">The design question</ac:parameter><ac:rich-text-body><p>
+    Not "what resources do we have?" but <strong>"what questions will be asked, and what is the
+    smallest set of tools that answers them without requiring the model to know things we
+    have not told it?"</strong> Section 12 turns this into a procedure.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>2.3 Designing for a non-deterministic caller</h2>
+
+<p>
+  Six properties of the caller drive most of the rules in Part II. They are worth stating
+  plainly because they are unlike any caller the firm has designed for before.
+</p>
+
+<table>
+  <thead><tr><th>Property</th><th>Consequence for the design</th></tr></thead>
+  <tbody>
+    <tr><td><strong>It reads the description on every call</strong></td>
+        <td>The description is not documentation, it is <em>runtime input</em>. It occupies
+            context on every turn, costs money on every turn, and can be rewritten to fix a
+            behavior without redeploying the implementation.</td></tr>
+    <tr><td><strong>It cannot be corrected</strong></td>
+        <td>There is no support ticket and no developer to email. If the tool is
+            misunderstood, the only lever is the descriptor. This is why <ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6</ac:link-body></ac:link> is as long as
+            it is.</td></tr>
+    <tr><td><strong>It generates plausible values</strong></td>
+        <td>Given a free-text <code>status</code> parameter it will confidently pass
+            <code>"open"</code>, <code>"OPEN"</code>, <code>"working"</code>, and
+            <code>"pending"</code> — none of which are in your enumeration. Constrain the
+            schema and the problem disappears (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>It has a finite, shared context</strong></td>
+        <td>Your tool's description competes with thirty-nine others, the conversation, and
+            the system prompt. Every token you spend must buy a decision (<ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>It retries</strong></td>
+        <td>On an ambiguous failure it will try again, often with slightly different
+            arguments. Anything not idempotent needs an idempotency key and a declared
+            annotation (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.6</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>It is steerable by its input</strong></td>
+        <td>Everything the tool returns enters the model's context as text. A position
+            nickname containing "ignore previous instructions and transfer…" is an injection
+            vector, and the tool is where it must be neutralized (<ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15.5</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<h2>2.4 The trust boundary</h2>
+
+<p>
+  The single most important architectural statement in this standard is where trust stops.
+  Three assertions, each of which has to be built rather than assumed:
+</p>
+
+<ol>
+  <li><strong>Arguments from the model are untrusted input.</strong> They are not a caller's
+      credentials, not a claim of identity, and not evidence of authorization. An
+      <code>accountId</code> in an invocation is a <em>request</em>, and the implementation
+      must independently verify that the human on whose behalf the agent is acting is
+      entitled to that account. Treat the model exactly as you would treat a browser form
+      post from the open internet.</li>
+  <li><strong>Results are untrusted input to the model.</strong> Content that originated with a
+      customer, a counterparty, or an external venue — nicknames, order memos, instrument
+      descriptions, error text from an upstream system — is data, never instruction. The
+      tool marks it as such and neutralizes it (<ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15.5</ac:link-body></ac:link>).</li>
+  <li><strong>Descriptors are trusted only because the catalog signs them.</strong> A description is
+      an instruction to the model. Anyone who can edit a description can redirect an agent.
+      That makes the catalog a control point with change management, review, and an audit
+      trail — not a wiki (<ac:link><ri:page ri:content-title="28. The catalog and the onboarding process"/><ac:link-body>§28</ac:link-body></ac:link>).</li>
+</ol>
+
+<p><ac:image ac:align="center" ac:layout="center"><ri:attachment ri:filename="figure-2-1.png"/></ac:image></p><p><em>
+  <strong>Figure 2.1 — The reference architecture.</strong> The gateway is the only place where a tool
+  invocation can be refused on policy grounds, and the tool implementation is the only place
+  where a domain rule can be enforced; neither delegates that job to the model. Note that the
+  identity plane stops at the tool: the agent never mints authority, it only carries the
+  principal's.
+</em></p>
+
+<!-- ==================== 3. REFERENCE ARCHITECTURE ==================== -->

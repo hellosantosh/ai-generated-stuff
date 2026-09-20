@@ -22,6 +22,7 @@ which keeps its systems-of-record spelling; Appendix D explains why.
 | Shared type library | [`schemas/common-types.schema.json`](schemas/common-types.schema.json) | Anyone writing a descriptor |
 | Reference catalog | [`catalog/`](catalog/) | Seven conformant brokerage descriptors |
 | Invocation sequence diagram | [`diagrams/anatomy-of-an-invocation.puml`](diagrams/anatomy-of-an-invocation.puml) | §3.2 as a PlantUML sequence diagram, editable and previewable in VS Code |
+| **Confluence page set** | [`confluence/`](confluence/) | 46 generated pages for the enterprise wiki — the everyday reference for architects and tech leads |
 | Conformance linter | [`tools/lint-descriptors.py`](tools/lint-descriptors.py) | CI gate; reports findings by rule identifier |
 
 ## Layout
@@ -33,6 +34,11 @@ tool-specification-standard/
 ├── *.html                   assembled HTML for each (build byproducts)
 ├── pdf-src/                 standard: source fragments, concatenated in filename order
 ├── quickref-src/            quick reference: same pipeline, denser stylesheet
+├── confluence/              generated page set — do not hand-edit
+│   ├── pages/*.xhtml        one file per page, Confluence storage format
+│   ├── attachments/         figures, schemas, descriptors, both PDFs
+│   ├── manifest.json        page tree, titles, parents, attachments
+│   └── README.md            how to import, three ways
 ├── diagrams/
 │   ├── anatomy-of-an-invocation.puml   §3.2, the source of truth
 │   ├── anatomy-of-an-invocation.svg    generated, for viewing without PlantUML
@@ -53,6 +59,9 @@ tool-specification-standard/
     ├── build-quickref.sh    quickref-src/ → the quick reference
     ├── build-diagrams.sh    diagrams/*.puml → SVG and PNG
     ├── check-diagram-sync.py  fails if the diagram drifts from §3.2
+    ├── build-confluence.py  pdf-src/ + catalog/ → confluence/
+    ├── check-confluence.py  validates the page set before import
+    ├── import-confluence.py publishes it over the Confluence REST API
     ├── lint-descriptors.py  conformance rules, by rule identifier
     ├── extract-rules.py     pdf-src/ → the quick reference's rule index
     └── embed-catalog.py     expands catalog, file, and tool-card markers
@@ -111,6 +120,38 @@ python3 tools/check-diagram-sync.py   # just the drift check
 The drift check compares the diagram's eleven step dividers against the table in
 `pdf-src/20-foundations.html` and fails if a step is renamed, added, or removed on either
 side — the same "generated, never retyped" discipline as the rule index and the tool card.
+
+## Confluence
+
+The PDFs are for reading once and for the review board; the wiki is where people look things
+up mid-task. [`confluence/`](confluence/) holds a 46-page space **generated from the same
+sources as the PDFs**, so it cannot drift:
+
+| Page | What it adds over the PDF |
+| --- | --- |
+| **Tool Specification Standard** (home) | Role-based entry points, the conformance levels, both PDFs attached |
+| **How to use this standard** | What is normative, the approval gate, how to run a review, how to raise an exception |
+| One page per section, under its Part | Searchable, linkable, `§7.3` rendered as a real cross-page link |
+| **Rule index** | All 113 rules in one table — generated from `pdf-src/` |
+| **Review checklist** | Appendix E as **native Confluence tasks**, so a reviewer ticks them and they report |
+| **Machine-readable artifacts** | The schemas, the seven descriptors, and the linter, attached and documented |
+
+```bash
+python3 tools/build-confluence.py     # generate confluence/
+python3 tools/check-confluence.py     # gate: must pass before importing
+python3 tools/import-confluence.py    # dry run, prints the page tree
+python3 tools/import-confluence.py --apply
+```
+
+`check-confluence.py` parses every page as XML in the storage namespaces and fails on
+print-only markup that survived conversion, on named HTML entities (which break Confluence's
+parser), on links or attachments that do not resolve, and on a child that precedes its parent.
+Current state: **46 pages · 0 findings**, using only built-in macros — `info`, `note`,
+`warning`, `tip`, `panel`, `code`, `status`, `excerpt`, `children`, `attachments`, and native
+task lists. No marketplace add-ons, so it imports into a vanilla space.
+
+See [`confluence/README.md`](confluence/README.md) for the import routes, space setup, and
+permissions. **Pages are generated: edit the repository, not the wiki.**
 
 ## Checking conformance
 

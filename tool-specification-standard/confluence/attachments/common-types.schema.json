@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example.com/tooling/common-types/1",
+  "title": "Shared tool types (EA-STD-TOOL-001, Appendix B)",
+  "description": "Paste from here rather than reinventing. A concept defined in this file means the same thing in every tool in the catalog (TS-INP-04).",
+  "$defs": {
+    "decimal": {
+      "type": "string",
+      "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+      "description": "A decimal number as a string, to avoid binary floating-point error. Never parse as a float for money arithmetic.",
+      "examples": ["62137.50", "-98240.00", "0"]
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "ISO 4217 currency code.",
+      "examples": ["USD"]
+    },
+    "money": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "additionalProperties": false,
+      "description": "An amount paired with its currency. Use where a single figure travels without an envelope-level currency.",
+      "properties": {
+        "amount": { "$ref": "#/$defs/decimal", "description": "The amount." },
+        "currency": { "$ref": "#/$defs/currency", "description": "The currency of the amount." }
+      }
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 instant with an explicit UTC offset.",
+      "examples": ["2026-09-19T14:32:05Z"]
+    },
+    "dateOnly": {
+      "type": "string",
+      "format": "date",
+      "description": "A calendar date. The tool's description must state the time zone it is interpreted in.",
+      "examples": ["2026-12-18"]
+    },
+    "accountId": {
+      "type": "string",
+      "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+      "description": "Internal account identifier. Obtain from brokerage_accounts_list; never construct one, and never show it to a customer.",
+      "examples": ["acct_01HQ8Z4M2X9K3P7R"]
+    },
+    "orderId": {
+      "type": "string",
+      "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+      "description": "Order identifier. Obtain from a list tool or from the result of placing an order.",
+      "examples": ["ord_01HQ9D4N7Q1S5U8X"]
+    },
+    "instrumentId": {
+      "type": "string",
+      "pattern": "^inst_[A-Za-z0-9_]{1,48}$",
+      "description": "Instrument identifier. Required when an option contract must be named precisely.",
+      "examples": ["inst_op_AAPL_20261218C00250000"]
+    },
+    "maskedAccountNumber": {
+      "type": "string",
+      "maxLength": 24,
+      "description": "Customer-facing account number, masked to the last four digits. The only account reference that may be spoken to a customer.",
+      "examples": ["••••4471"]
+    },
+    "priceBasis": {
+      "type": "string",
+      "enum": ["REALTIME", "DELAYED_15M", "PRIOR_CLOSE"],
+      "description": "How a price or a valuation was sourced. Required alongside any mark (TS-OUT-03)."
+    },
+    "moneyBasis": {
+      "type": "string",
+      "enum": ["INTRADAY_ESTIMATE", "TRADE_DATE", "SETTLED"],
+      "description": "How a cash or balance figure was computed. Required alongside any balance (TS-OUT-03)."
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 25,
+      "description": "Maximum items to return. Never called limit, count, or top (TS-INP-15)."
+    },
+    "cursor": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Opaque forward continuation token from a previous result. Offset and page-number pagination are prohibited (TS-OUT-06)."
+    },
+    "detail": {
+      "type": "string",
+      "enum": ["SUMMARY", "STANDARD", "FULL"],
+      "default": "STANDARD",
+      "description": "Verbosity of the result. Preferred over a caller-supplied field list (§13.3.1)."
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "format": "uuid",
+      "description": "A UUID identifying one attempt at a state change. Required on every non-idempotent tool (TS-SEC-07)."
+    },
+    "completeness": {
+      "type": "object",
+      "required": ["returned", "truncated", "nextCursor"],
+      "additionalProperties": false,
+      "description": "How much of the matching set this result contains. Mandatory on every collection result (TS-OUT-07).",
+      "properties": {
+        "returned": { "type": "integer", "minimum": 0, "description": "Items in this result." },
+        "totalMatching": { "type": ["integer", "null"], "minimum": 0, "description": "Total items matching the filter, or null when genuinely unknowable." },
+        "truncated": { "type": "boolean", "description": "True when more matched than were returned. Never null." },
+        "nextCursor": { "type": ["string", "null"], "maxLength": 512, "description": "Continuation token, or null on the last page." },
+        "narrowingHint": { "type": ["string", "null"], "maxLength": 240, "description": "How to narrow the query to a complete answer. Preferred over paging (TS-OUT-08)." }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["code", "message", "retryable", "remediation", "traceId"],
+      "additionalProperties": false,
+      "description": "The execution-error payload, carried in structuredContent alongside isError true (§11.2).",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": ["INVALID_ARGUMENT", "NOT_FOUND", "AUTHENTICATION_REQUIRED", "ENTITLEMENT_DENIED",
+                   "APPROVAL_REQUIRED", "APPROVAL_DENIED", "PRECONDITION_FAILED", "CONFLICT",
+                   "BUSINESS_RULE_VIOLATION", "RATE_LIMITED", "TIMEOUT", "UPSTREAM_UNAVAILABLE",
+                   "DATA_INCOMPLETE", "NOT_SUPPORTED", "INTERNAL_ERROR"],
+          "description": "The closed taxonomy of §11.3. The only field safe to branch on."
+        },
+        "domainCode": { "type": "string", "maxLength": 64, "description": "Registered domain-specific code from Appendix C." },
+        "message": { "type": "string", "maxLength": 500, "description": "One or two sentences a person could read, including the numbers that make it concrete." },
+        "retryable": { "type": "boolean", "description": "Whether repeating the identical call could succeed." },
+        "retryAfterSeconds": { "type": ["integer", "null"], "minimum": 0, "description": "How long to wait before retrying, when retryable." },
+        "remediation": { "type": "string", "maxLength": 500, "description": "What to do next, in the imperative, naming the argument to change or the tool to call." },
+        "details": { "type": "object", "description": "Structured, code-specific facts: the field that failed, the limit that was hit, the maximum permissible value." },
+        "traceId": { "type": "string", "maxLength": 64, "description": "Correlation identifier. The only internal identifier permitted to cross out." }
+      }
+    },
+    "resultEnvelope": {
+      "type": "object",
+      "required": ["content", "structuredContent", "isError"],
+      "additionalProperties": false,
+      "description": "The shape of every invocation result, success or failure (§8.1).",
+      "properties": {
+        "content": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "description": "Presentation blocks. At least one text block, always (TS-OUT-01).",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "enum": ["text", "image", "audio", "resourceLink", "resource"], "description": "Block kind." },
+              "text": { "type": "string", "maxLength": 20000, "description": "The compact prose rendering, derived from structuredContent (TS-OUT-02)." },
+              "uri": { "type": "string", "maxLength": 2048, "description": "Reference target, for resourceLink blocks (TS-OUT-10)." },
+              "name": { "type": "string", "maxLength": 240, "description": "Human-readable name of the referenced resource." },
+              "mimeType": { "type": "string", "maxLength": 64, "description": "Media type of the referenced resource." },
+              "description": { "type": "string", "maxLength": 500, "description": "What the reference contains, its size, and when the link expires." }
+            }
+          }
+        },
+        "structuredContent": { "type": "object", "description": "The authoritative payload. Validates against the descriptor's outputSchema, or carries an 'error' member when isError is true." },
+        "isError": { "type": "boolean", "description": "True when the tool ran and could not do its job. Transport failures never reach the tool (§11.1)." }
+      }
+    }
+  }
+}

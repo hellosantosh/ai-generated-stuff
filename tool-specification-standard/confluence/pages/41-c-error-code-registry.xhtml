@@ -1,0 +1,66 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Domain codes are registered centrally so that analytics can group them, customer-facing
+  surfaces can localize them, and two teams cannot ship two spellings of the same failure.
+  Adding a code is a pull request against this registry.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>C.1 Brokerage domain codes</h2>
+
+<table>
+  <thead><tr><th>domainCode</th><th>Taxonomy code</th><th>Meaning and required remediation</th></tr></thead>
+  <tbody>
+    <tr><td><code>INSUFFICIENT_BUYING_POWER</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Order exceeds available buying power. <strong>Must</strong> carry <code>required</code>,
+            <code>available</code>, and <code>maxQuantity</code>.</td></tr>
+    <tr><td><code>UNSETTLED_FUNDS</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Purchase would use unsettled proceeds in a cash account. Must state the settlement
+            date of the funds.</td></tr>
+    <tr><td><code>MARKET_CLOSED</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Outside the tradable session. Must state the next session open and whether an
+            extended-hours limit order is possible.</td></tr>
+    <tr><td><code>INSTRUMENT_HALTED</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Trading halted in this instrument. Must state the halt reason where public.</td></tr>
+    <tr><td><code>OPTIONS_LEVEL_INSUFFICIENT</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Strategy exceeds the account's approval level. Must state the level held and the
+            level required.</td></tr>
+    <tr><td><code>PDT_RULE_VIOLATION</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Would exceed the day-trade allowance. Must state trades used, remaining, and when
+            the window rolls.</td></tr>
+    <tr><td><code>ACCOUNT_RESTRICTED</code></td><td><code>CONFLICT</code></td>
+        <td>Account may be read but not traded. Must state that reading still works.</td></tr>
+    <tr><td><code>ORDER_ALREADY_TERMINAL</code></td><td><code>CONFLICT</code></td>
+        <td>Cancel or replace on an order that has already filled, canceled, or expired. Must
+            state the terminal status and tell the caller to re-read the order.</td></tr>
+    <tr><td><code>ORDER_OUTCOME_UNKNOWN</code></td><td><code>TIMEOUT</code></td>
+        <td>Placement timed out; the order may be live. Must forbid reporting failure and
+            must name the idempotency key (<ac:link><ri:page ri:content-title="23. A state-changing tool, for contrast"/><ac:link-body>§23.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>PRICE_OUTSIDE_COLLAR</code></td><td><code>BUSINESS_RULE_VIOLATION</code></td>
+        <td>Limit price too far from the market. Must state the permissible band.</td></tr>
+    <tr><td><code>FRACTIONAL_NOT_SUPPORTED</code></td><td><code>INVALID_ARGUMENT</code></td>
+        <td>Fractional quantity supplied. Must name the nearest whole quantity.</td></tr>
+    <tr><td><code>MARGIN_ENGINE_UNAVAILABLE</code></td><td><code>DATA_INCOMPLETE</code></td>
+        <td>Buying power cannot be computed. Must forbid quoting cash as available and must
+            forbid reporting zero (<ac:link><ri:page ri:content-title="21. Balances"/><ac:link-body>§21.6</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>MARKET_DATA_STALE</code></td><td>— (not an error)</td>
+        <td>Returned as a successful result with <code>basis: PRIOR_CLOSE</code> and a
+            disclosure, never as a failure.</td></tr>
+    <tr><td><code>CONFIRMATION_EXPIRED</code></td><td><code>PRECONDITION_FAILED</code></td>
+        <td>Confirmation token past its expiry. Must instruct the caller to preview again, not
+            to retry.</td></tr>
+    <tr><td><code>CONFIRMATION_MISMATCH</code></td><td><code>PRECONDITION_FAILED</code></td>
+        <td>Order details differ from what was previewed and approved. Must not be retried
+            without a fresh preview and a fresh approval.</td></tr>
+  </tbody>
+</table>
+
+<h2>C.2 Registry rules</h2>
+
+<ul>
+  <li>A domain code is permanent. Retire, never redefine.</li>
+  <li><code>SCREAMING_SNAKE_CASE</code>, 64 characters or fewer, no product or system names.</li>
+  <li>Every code declares its taxonomy mapping and the fields its <code>details</code> object
+      must carry. Those fields are what make the error actionable, and the contract test
+      asserts them.</li>
+  <li>A code that fires more than 5% of the time for a tool is not an error; it is an
+      undesigned path.</li>
+</ul>
+
+<!-- ==================== APPENDIX D ==================== -->

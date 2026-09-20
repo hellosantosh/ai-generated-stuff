@@ -1,0 +1,357 @@
+{
+  "name": "brokerage_order_get",
+  "title": "Get the status of one order",
+  "description": "Returns the current status, fill progress, and executions of one specific order. Use when the customer asks about a particular order they have already placed — whether it filled, at what price, how much is still working, or why it was rejected. Do not use to find orders: call brokerage_orders_list first to search by account, symbol, date, or status, then call this tool with the orderId it returns. Do not use for positions; a filled order becomes a position and only brokerage_positions_list knows the current holding. isTerminal tells you whether the order can still change: when it is true the order will never change again and must not be polled. When it is false, nextPollAfterSeconds says how long to wait before checking again, and that interval must be honored rather than polling in a loop. An order may be partially filled and still working: filledQuantity, remainingQuantity, and averageFillPrice together are the accurate account of what has happened so far. Executions are the individual fills that make up the order and may be at different prices. Reads only; never modifies an order.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account holding the order, from brokerage_accounts_list.",
+        "examples": [
+          "acct_01HQ8Z4M2X9K3P7R"
+        ]
+      },
+      "orderId": {
+        "type": "string",
+        "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The order to read, from brokerage_orders_list or from the result of placing an order. Never construct one.",
+        "examples": [
+          "ord_01HQ9D4N7Q1S5U8X"
+        ]
+      },
+      "includeExecutions": {
+        "type": "boolean",
+        "default": true,
+        "description": "Include the individual fills. Omitted means true. Set false when only the summary status is needed."
+      }
+    },
+    "required": [
+      "accountId",
+      "orderId"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, to avoid binary floating-point error."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "asOf": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The instant this order state was true (UTC)."
+      },
+      "isTerminal": {
+        "type": "boolean",
+        "description": "True when the order can never change again. Do not poll a terminal order."
+      },
+      "nextPollAfterSeconds": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 1,
+        "description": "Seconds to wait before checking again. Null when the order is terminal. Honor this interval; do not poll in a loop."
+      },
+      "order": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+            "description": "Order identifier."
+          },
+          "accountId": {
+            "type": "string",
+            "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+            "description": "Account the order belongs to."
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Lifecycle state. Known values: PENDING_NEW, NEW, PARTIALLY_FILLED, PENDING_CANCEL, PENDING_REPLACE, SUSPENDED, FILLED, CANCELLED, REJECTED, EXPIRED, REPLACED. Treat an unrecognized value as still working."
+          },
+          "statusExplanation": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "One sentence explaining what this status means for the customer, already phrased for them."
+          },
+          "assetClass": {
+            "type": "string",
+            "enum": [
+              "EQUITY",
+              "OPTION"
+            ],
+            "description": "What was traded."
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL",
+              "SELL_SHORT",
+              "BUY_TO_COVER",
+              "BUY_TO_OPEN",
+              "BUY_TO_CLOSE",
+              "SELL_TO_OPEN",
+              "SELL_TO_CLOSE"
+            ],
+            "description": "Direction."
+          },
+          "symbol": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Ticker, or the option's underlying."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 120,
+            "description": "Human-readable description of the order."
+          },
+          "quantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Ordered quantity: shares for equities, contracts for options."
+          },
+          "filledQuantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Executed so far."
+          },
+          "remainingQuantity": {
+            "$ref": "#/$defs/decimal",
+            "description": "Still working."
+          },
+          "orderType": {
+            "type": "string",
+            "enum": [
+              "MARKET",
+              "LIMIT",
+              "STOP",
+              "STOP_LIMIT",
+              "TRAILING_STOP",
+              "TRAILING_STOP_LIMIT",
+              "NET_DEBIT",
+              "NET_CREDIT",
+              "NET_EVEN"
+            ],
+            "description": "How the order is priced."
+          },
+          "limitPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Limit price, when the order type has one."
+          },
+          "stopPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Stop trigger price, when the order type has one."
+          },
+          "averageFillPrice": {
+            "$ref": "#/$defs/decimal",
+            "description": "Volume-weighted average price of executions so far — the price the customer actually got."
+          },
+          "timeInForce": {
+            "type": "string",
+            "enum": [
+              "DAY",
+              "GTC",
+              "GTD",
+              "IOC",
+              "FOK",
+              "OPG",
+              "CLS"
+            ],
+            "description": "How long the order stays live."
+          },
+          "extendedHours": {
+            "type": "boolean",
+            "description": "Whether the order may execute outside regular hours."
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$",
+            "description": "ISO 4217 currency for monetary values on this order."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the order was accepted (UTC)."
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it last changed (UTC)."
+          },
+          "filledAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it completed, if it did."
+          },
+          "cancelable": {
+            "type": "boolean",
+            "description": "Whether this order can be canceled right now. Branch on this rather than on the status string."
+          },
+          "rejectReason": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Present only when status is REJECTED.",
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 64,
+                "description": "Stable machine-readable reason."
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "Customer-safe explanation."
+              },
+              "remediation": {
+                "type": "string",
+                "maxLength": 240,
+                "description": "What the customer could do differently."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          },
+          "executions": {
+            "type": "array",
+            "maxItems": 50,
+            "description": "Individual fills, earliest first. Present when includeExecutions is true and the order has fills.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "executionId": {
+                  "type": "string",
+                  "maxLength": 48,
+                  "description": "Execution identifier."
+                },
+                "quantity": {
+                  "$ref": "#/$defs/decimal",
+                  "description": "Quantity filled in this execution."
+                },
+                "price": {
+                  "$ref": "#/$defs/decimal",
+                  "description": "Price of this execution."
+                },
+                "executedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it executed (UTC)."
+                },
+                "venue": {
+                  "type": "string",
+                  "maxLength": 32,
+                  "description": "Execution venue code."
+                }
+              },
+              "required": [
+                "executionId",
+                "quantity",
+                "price",
+                "executedAt"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "orderId",
+          "accountId",
+          "status",
+          "statusExplanation",
+          "assetClass",
+          "side",
+          "symbol",
+          "description",
+          "quantity",
+          "filledQuantity",
+          "remainingQuantity",
+          "orderType",
+          "timeInForce",
+          "currency",
+          "createdAt",
+          "updatedAt",
+          "cancelable"
+        ],
+        "additionalProperties": false,
+        "description": "The order and its current state."
+      }
+    },
+    "required": [
+      "asOf",
+      "isTerminal",
+      "order"
+    ],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "2.3.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 1,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": [
+        "brokerage:orders:read"
+      ],
+      "approval": {
+        "mode": "none"
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.order.read",
+        "retention": "P6Y",
+        "regulatoryBasis": [
+          "books-and-records",
+          "order-audit-trail"
+        ]
+      },
+      "cost": {
+        "class": "low",
+        "p95LatencyMs": 260
+      },
+      "rateLimit": {
+        "perPrincipalPerMinute": 120
+      },
+      "dependencies": [
+        "order-management-system"
+      ],
+      "availability": {
+        "slo": "99.95",
+        "killSwitch": "tools.brokerage.orders"
+      },
+      "evaluation": {
+        "suite": "evals/brokerage-orders",
+        "lastRunAt": "2026-09-15T08:00:00Z",
+        "selectionAccuracy": 0.97,
+        "refusalAccuracy": 0.97
+      }
+    }
+  }
+}

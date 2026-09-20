@@ -1,0 +1,98 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Twelve failures seen repeatedly in first-generation tool catalogs, each with the rule it
+  breaks. A reviewer who memorizes this section will catch most of what arrives at an
+  architecture board.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>25.1 The kitchen-sink tool</h2>
+
+<table><tbody><tr><td><p class="lang b">One tool, four behaviors</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "name": "brokerage_orders_manage",
+  "inputSchema": { "properties": {
+    "action": { "enum": ["list", "get",
+                          "place", "cancel"] },
+    "params": { "type": "object" }
+  }},
+  "annotations": {
+    "readOnlyHint": false,   // wrong for 2 of 4
+    "destructiveHint": true // wrong for 2 of 4
+  }
+}]]></ac:plain-text-body></ac:structured-macro></td><td><p class="lang g">Four tools, four accurate contracts</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_orders_list    T1  read-only
+brokerage_order_get      T1  read-only
+brokerage_order_preview  T1  read-only
+brokerage_order_place    T3  confirm + token
+brokerage_order_cancel   T3  confirm
+
+// Each has its own description, risk tier,
+// approval policy, rate limit, audit event,
+// kill switch, and evaluation.]]></ac:plain-text-body></ac:structured-macro></td></tr></tbody></table><p>
+  <strong>Breaks:</strong> <code>TS-NAM-06</code>, <code>TS-ANN-02</code>, <code>TS-INP-01</code> (the
+  open <code>params</code> object), and the entire control model — approval policy cannot be
+  written against a tool whose risk depends on an argument the model chose.
+</p>
+
+<h2>25.2 The rest of the catalog</h2>
+
+<table>
+  <thead><tr><th>Anti-pattern</th><th>What goes wrong</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td><strong>The <code>dryRun</code> flag</strong></td>
+        <td>One token in a model-generated object is the only thing between a simulation and a
+            real trade. Annotations describe one of two tools.</td>
+        <td><code>TS-INP-13</code></td></tr>
+    <tr><td><strong>The API mirror</strong><br/>one tool per endpoint</td>
+        <td>Forty tools, none of which answers a question anyone asks; selection accuracy
+            collapses and every answer needs four hops.</td>
+        <td><code>TS-CAT-01</code></td></tr>
+    <tr><td><strong>The free-text filter</strong><br/><code>query</code>, <code>sql</code>, <code>filterExpression</code></td>
+        <td>Unvalidatable, unauditable, and an injection surface with the model as the
+            injector. Also impossible to rate-limit meaningfully.</td>
+        <td><ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.7</ac:link-body></ac:link></td></tr>
+    <tr><td><strong>The identity parameter</strong><br/><code>customerId</code>, <code>onBehalfOf</code></td>
+        <td>Access control delegated to a language model. Will eventually be persuaded.</td>
+        <td><code>TS-SEC-02</code></td></tr>
+    <tr><td><strong>Silent truncation</strong></td>
+        <td>"Your portfolio is worth $310,000" when 25 of 340 positions were returned. Nothing
+            errors; the number is simply wrong.</td>
+        <td><code>TS-OUT-07</code></td></tr>
+    <tr><td><strong>Empty as error</strong></td>
+        <td>An account with no positions reported to the customer as an outage. Support ticket,
+            no logs, nothing to find.</td>
+        <td><ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.6</ac:link-body></ac:link></td></tr>
+    <tr><td><strong>The raw upstream payload</strong></td>
+        <td>200,000 tokens, a production hostname, an ETL batch identifier, and six fields the
+            customer must never see.</td>
+        <td><code>TS-GOV-02</code>, <ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13.4</ac:link-body></ac:link></td></tr>
+    <tr><td><strong>The apologetic error</strong><br/>"Something went wrong, please try later"</td>
+        <td>The agent retries a doomed call three times, then tells the customer nothing
+            useful. Every retry costs money and time.</td>
+        <td><code>TS-ERR-02</code></td></tr>
+    <tr><td><strong>The description as documentation</strong></td>
+        <td>600 words of API reference in the selection context, restating the schema and
+            omitting every domain convention that actually matters.</td>
+        <td><code>TS-DSC-01</code>, <code>TS-DSC-02</code></td></tr>
+    <tr><td><strong>The description as system prompt</strong></td>
+        <td>"Always greet the customer warmly and suggest our premium tier." A tool reaching
+            into a surface it cannot see, and an instruction the model may follow in unrelated
+            turns.</td>
+        <td><code>TS-DSC-06</code></td></tr>
+    <tr><td><strong>The unowned tool</strong></td>
+        <td>Still returning customer data to agents two years after the team that built it was
+            reorganized. Works perfectly; accountable to no one.</td>
+        <td><code>TS-GOV-01</code></td></tr>
+    <tr><td><strong>The rename</strong></td>
+        <td>Six years of audit records silently change meaning. In a regulated firm this is a
+            record-keeping defect, not a refactor.</td>
+        <td><code>TS-NAM-11</code></td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">The pattern behind the patterns</ac:parameter><ac:rich-text-body><p>
+    Eleven of these twelve are the same mistake: <strong>optimizing for the convenience of the team
+    building the tool rather than the reliability of the caller consuming it.</strong> One tool is
+    easier to ship than four. Passing the upstream payload through is easier than shaping it.
+    A generic error is easier than a mapped taxonomy. Each shortcut moves work from a place
+    where it can be tested to a place where it can only be hoped for.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== PART V ==================== -->

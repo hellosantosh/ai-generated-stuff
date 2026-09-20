@@ -1,0 +1,53 @@
+<h2>28.1 What the catalog must do</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-CAT-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Be the single system of record for descriptors, serving them by name and version,
+            with content hashes, to every runtime in the firm.</td></tr>
+    <tr><td><code>TS-CAT-07</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Accept descriptors only from an authenticated publishing pipeline, never from a
+            user interface, and <strong>MUST</strong> reject any that fail the linter or the meta-schema
+            (<code>TS-GEN-03</code>, <code>TS-GEN-05</code>).</td></tr>
+    <tr><td><code>TS-CAT-08</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Enforce global name uniqueness at publish time and refuse to reuse a retired name
+            (<code>TS-NAM-02</code>, <code>TS-NAM-11</code>).</td></tr>
+    <tr><td><code>TS-CAT-09</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Serve audience-scoped views resolved against the principal's entitlements, so a
+            tool a principal cannot use is never placed in an agent's context
+            (<code>TS-GOV-03</code>).</td></tr>
+    <tr><td><code>TS-CAT-10</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Retain every published version indefinitely. An audit record naming a tool version
+            is meaningless if that version cannot be retrieved.</td></tr>
+    <tr><td><code>TS-CAT-11</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Expose ownership, risk tier, lifecycle, dependencies, invocation volume, and
+            evaluation results as a browsable inventory — the artifact a regulator asks for
+            when they ask what the firm's agents can do.</td></tr>
+  </tbody>
+</table>
+
+<h2>28.2 The onboarding path</h2>
+
+<table>
+  <thead><tr><th>#</th><th>Step</th><th>Accountable</th><th>Output</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Utterance collection and clustering</td><td>Product + domain architect</td><td>The question list</td></tr>
+    <tr><td>2</td><td>Tool set design and risk tiering</td><td>Domain architect</td><td>Draft names, boundaries, tiers</td></tr>
+    <tr><td>3</td><td>Design review</td><td>Architecture</td><td>Approved boundaries</td></tr>
+    <tr><td>4</td><td>Descriptor and implementation</td><td>Owning team</td><td>Descriptor, code, contract tests</td></tr>
+    <tr><td>5</td><td>Evaluation suite</td><td>Owning team + domain expert</td><td>Scores on four dimensions</td></tr>
+    <tr><td>6</td><td>Security and data review</td><td>Security, data owner</td><td>Sign-offs, entitlement mapping</td></tr>
+    <tr><td>7</td><td>Certification and publication</td><td>Platform</td><td>L2, hash registered, audience scoped</td></tr>
+    <tr><td>8</td><td>Post-release supervision</td><td>Owning team</td><td>Metrics live, sampling in place, kill switch tested</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Step 8 is not optional and is the one that gets dropped</ac:parameter><ac:rich-text-body><p>
+    A tool is not finished at publication because the caller is not finished learning. Selection
+    accuracy in production diverges from the evaluation suite as real utterances arrive.
+    Sampled, human-read conversations in the first four weeks catch descriptor defects that no
+    offline suite will, and the fix is almost always one sentence of prose.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== 29. ROADMAP ==================== -->

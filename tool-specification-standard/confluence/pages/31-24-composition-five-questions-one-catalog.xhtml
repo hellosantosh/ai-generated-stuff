@@ -1,0 +1,93 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The test of a catalog is not whether each tool is good but whether the set answers real
+  questions without the model needing to know anything the firm has not told it. Five
+  questions, traced.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>24.1 "What do I own?"</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_accounts_list  {}
+  → 3 accounts; customer says "the Roth"  → acct_01HQ8Z4M2X9K3P7R
+brokerage_positions_list { accountId: "acct_01HQ8Z4M2X9K3P7R" }
+  → 3 positions, totals, asOf, DELAYED_15M]]></ac:plain-text-body></ac:structured-macro>
+
+<p><strong>What the descriptors did:</strong> the accounts description said it is the only source of
+account identifiers, so the model did not invent one. The positions description said quantity
+is signed, so the short position was reported as short. The <code>basis</code> field meant the
+answer was "as of 14:32, prices delayed up to 15 minutes" rather than a bare number.</p>
+
+<h2>24.2 "Did my Apple order go through?"</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_orders_list { accountId: "…", symbol: "AAPL", status: "WORKING" }
+  → 1 order, PARTIALLY_FILLED, 200 of 500 at 245.88, isTerminal false]]></ac:plain-text-body></ac:structured-macro>
+
+<p><strong>What the descriptors did:</strong> the positions description's exclusion — "do not use to
+check whether a trade went through" — routed the question to orders rather than positions,
+which is the single most common misroute in this domain. <code>filledQuantity</code> and
+<code>remainingQuantity</code> made "partly, 200 of 500" expressible;
+<code>status</code> alone would not have.</p>
+
+<h2>24.3 "How much can I spend in my Roth?"</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_balances_get { accountId: "acct_01HQ8Z4M2X9K3P7R" }
+  → applicable 12,180.00 USD
+    applicableReason "Settled cash. This is a retirement account and cannot
+                      borrow, so margin buying power does not apply."]]></ac:plain-text-body></ac:structured-macro>
+
+<p><strong>What the descriptors did:</strong> everything. Four figures were available and the tool named
+the right one and said why. A catalog without <code>applicable</code> would have required
+the model to know that a Roth IRA cannot borrow — which it might, most of the time, which is
+the worst possible reliability profile for a number the customer will act on.</p>
+
+<h2>24.4 "Can I afford 100 Apple in there?"</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_order_preview { accountId: "…", symbol: "AAPL", side: "BUY",
+                          quantity: 100, orderType: "MARKET" }
+  → canPlace true, estimatedCost 24,875.00, buyingPowerAfter -12,695.00 …
+    blockers [{ code: "INSUFFICIENT_BUYING_POWER",
+                message: "This order needs 24,875.00 USD; 12,180.00 USD is available.",
+                maxPermissibleQuantity: 48 }]
+    canPlace false]]></ac:plain-text-body></ac:structured-macro>
+
+<p><strong>What the descriptors did:</strong> the preview tool refused, in advance, with the largest
+quantity that <em>would</em> work. The customer hears "not quite — that would need $24,875 and
+you have $12,180 settled; 48 shares would fit" instead of watching an order get rejected.
+<code>maxPermissibleQuantity</code> is <code>TS-ERR-03</code> applied inside a success
+payload.</p>
+
+<h2>24.5 "Fine, buy 48 then."</h2>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[brokerage_order_preview { … quantity: 48 }        → canPlace true, cnf_… (120 s)
+   confirmation shown, customer approves, arguments hashed
+brokerage_order_place   { … confirmationToken: "cnf_…",
+                          idempotencyKey: "3f2b1c88-…", reason: "customer requested" }
+   → ord_01HQ9F8R2T5V8X1A, status NEW, isTerminal false,
+     statusExplanation "Your order for 48 shares of AAPL has been accepted and
+                        is working. It has not filled yet."
+brokerage_order_get     { … }  after nextPollAfterSeconds = 2
+   → FILLED, 48 at 248.57, isTerminal true]]></ac:plain-text-body></ac:structured-macro>
+
+<p><strong>What the descriptors did:</strong> <code>statusExplanation</code> stopped "accepted" being
+reported as "bought". <code>isTerminal</code> stopped the polling loop at the right moment.
+The idempotency key meant a retry would have been safe. The audit record carries the
+confirmation the customer saw, their approval, the argument hash, and the descriptor version
+that produced the prose the model read.</p>
+
+<h2>24.6 The same five questions against a mirrored REST surface</h2>
+
+<table>
+  <thead><tr><th>Question</th><th>What happens</th><th>Root cause</th></tr></thead>
+  <tbody>
+    <tr><td>"What do I own?"</td><td>Short position reported as a holding; option exposure understated 100×</td><td>Conventions never stated (<ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6.1</ac:link-body></ac:link>)</td></tr>
+    <tr><td>"Did my order go through?"</td><td>Answered from positions: "you own 200 Apple", which is true and not the question</td><td>No exclusions (<ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6.2</ac:link-body></ac:link> part 3)</td></tr>
+    <tr><td>"How much can I spend?"</td><td>Margin buying power quoted for a retirement account</td><td>Ambiguity shipped to the caller (<ac:link><ri:page ri:content-title="21. Balances"/><ac:link-body>§21.1</ac:link-body></ac:link>)</td></tr>
+    <tr><td>"Can I afford it?"</td><td>Model multiplies a delayed price by quantity and compares to total cash; off by the unsettled balance</td><td>No decision tool (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.3</ac:link-body></ac:link>)</td></tr>
+    <tr><td>"Buy 48"</td><td>Order placed twice after a timeout</td><td>No idempotency key (<code>TS-SEC-07</code>)</td></tr>
+  </tbody>
+</table>
+
+<p>
+  Every one of those failures is silent. None throws, none is logged as an error, and none
+  fails a contract test. They are visible only in the conversation, which is why <ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>§16.2</ac:link-body></ac:link>'s
+  silent wrongness rate is the metric this standard is ultimately trying to move.
+</p>
+
+<!-- ==================== 25. ANTI-PATTERNS ==================== -->

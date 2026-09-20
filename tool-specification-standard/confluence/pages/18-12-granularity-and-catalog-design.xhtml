@@ -1,0 +1,156 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The most consequential decision in a tool catalog is where one tool ends and the next
+  begins. Get it wrong and no amount of descriptor quality recovers it: the model will be
+  choosing between the wrong options, carefully.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>12.1 The unit of a tool</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-CAT-01 — SHOULD</ac:parameter><ac:parameter ac:name="borderColor">#8A5A00</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   One tool <strong>SHOULD</strong> correspond to one decision
+  the agent has to make, expressed as one question a user would ask — not to one resource, one
+  endpoint, or one database table.</p></ac:rich-text-body></ac:structured-macro>
+
+<p>
+  Three diagnostic questions, applied to any proposed tool:
+</p>
+
+<table>
+  <thead><tr><th>Question</th><th>If the answer is wrong</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Can you state, in one sentence, the user question this answers?</strong></td>
+        <td>If it takes two sentences with an "or" in the middle, it is two tools.</td></tr>
+    <tr><td><strong>After calling it, does the agent know enough to answer?</strong></td>
+        <td>If the agent must then call two more tools and do arithmetic involving a domain
+            convention, the boundary is drawn in the wrong place — move the work
+            server-side.</td></tr>
+    <tr><td><strong>Do all of its paths have the same risk tier and annotations?</strong></td>
+        <td>If one argument value makes it destructive, it is at least two tools
+            (<code>TS-INP-13</code>).</td></tr>
+  </tbody>
+</table>
+
+<h2>12.2 Deriving a tool set</h2>
+
+<p>The procedure the firm uses, in order. It takes a day and saves a quarter.</p>
+
+<ol>
+  <li><strong>Collect the utterances.</strong> Twenty to fifty real things users say, taken from
+      transcripts, contact-center logs, or search queries — not invented by the design team.
+      "Do I own any Tesla?" "Did my order go through?" "How much can I spend?" "What's my
+      account worth?"</li>
+  <li><strong>Cluster by the answer, not the words.</strong> "What do I own", "how much Apple do I
+      have", and "am I up on Tesla" are one cluster; they are all answered from the positions
+      snapshot.</li>
+  <li><strong>Draft one tool per cluster</strong>, named per <ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>§5</ac:link-body></ac:link>, described per <ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6</ac:link-body></ac:link>.</li>
+  <li><strong>Run the knowledge test.</strong> For each cluster, list the domain facts the agent needs
+      to turn the tool's output into a correct answer. Every fact on that list is either
+      stated in the description, embedded in the payload, or moved into the tool. Nothing
+      stays on the list.</li>
+  <li><strong>Run the confusability test.</strong> For each pair of tools, write the one sentence that
+      distinguishes them. If you cannot, merge them or re-scope. Every sentence you write goes
+      into both descriptions as an exclusion (<ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6.2</ac:link-body></ac:link>, part 3).</li>
+  <li><strong>Count.</strong> If the result exceeds 25 tools for one agent, go back to step 2 — you have
+      almost certainly modeled resources rather than questions.</li>
+  <li><strong>Classify.</strong> Assign risk tiers before writing any code; the tier changes what the
+      tool is allowed to be.</li>
+</ol>
+
+<h2>12.3 Primitive tools and workflow tools</h2>
+
+<table>
+  <thead><tr><th>Shape</th><th>Use when</th><th>Brokerage example</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Primitive</strong><br/>one entity, one read</td>
+        <td>The question maps cleanly onto one system of record and no domain arithmetic is
+            required.</td>
+        <td><code>brokerage_positions_list</code> — the positions snapshot answers the
+            question directly.</td></tr>
+    <tr><td><strong>Composite read</strong><br/>joins several sources</td>
+        <td>The answer requires two or three sources joined by a rule the model should not be
+            asked to know.</td>
+        <td><code>brokerage_portfolio_summarize</code> — positions plus balances plus
+            day-change, aggregated across accounts, with the netting rules applied once,
+            correctly, server-side.</td></tr>
+    <tr><td><strong>Decision tool</strong><br/>answers "can I?"</td>
+        <td>The user's question is a judgment the firm already knows how to make, and the
+            model would otherwise reconstruct it badly from raw numbers.</td>
+        <td><code>brokerage_order_check</code> — "can this account buy 100 AAPL?" returns a
+            verdict, the binding constraint, and the maximum permissible quantity.</td></tr>
+    <tr><td><strong>Two-step action</strong><br/>preview then execute</td>
+        <td>Any tier 3 change.</td>
+        <td><code>brokerage_order_preview</code> then <code>brokerage_order_place</code>
+            (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.2</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="tip"><ac:parameter ac:name="title">The rule of three</ac:parameter><ac:rich-text-body><p>
+    If answering a common user question reliably takes three or more tool calls plus a domain
+    convention the model must apply itself, build the composite. Each hop is an opportunity to
+    select the wrong tool, drop a caveat, or make an arithmetic slip — and the compounding is
+    multiplicative, not additive. Composites are not a shortcut; they are where the firm's
+    domain knowledge is made testable.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>12.4 Catalog size and audience scoping</h2>
+
+<p>
+  Tool selection accuracy degrades as the catalog grows, and it degrades fastest among tools
+  that resemble each other. The mitigation is not a better model; it is a smaller, better
+  separated menu.
+</p>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-CAT-02</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>An agent <strong>SHOULD</strong> be offered no more than 25 tools, and <strong>MUST NOT</strong> be
+            offered more than 40 without a documented exception.</td></tr>
+    <tr><td><code>TS-CAT-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The catalog <strong>MUST</strong> support audience-scoped views, so that a customer-facing
+            assistant, an adviser's copilot, and an operations agent each see only their own
+            set. Audience scoping is an entitlement decision (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.4</ac:link-body></ac:link>), not a UI preference.</td></tr>
+    <tr><td><code>TS-CAT-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Where an estate genuinely exceeds what one agent can hold, the platform
+            <strong>SHOULD</strong> scope by task phase — a small core set always present, with a
+            task-specific set attached when the conversation enters that task — rather than
+            presenting everything and hoping.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="note"><ac:parameter ac:name="title">On "just let the agent search the catalog"</ac:parameter><ac:rich-text-body><p>
+    A meta-tool that searches a large catalog and returns candidate tools is a legitimate
+    pattern for estates in the hundreds, and it has two costs worth stating before anyone
+    adopts it. It adds a round trip and a failure mode to <em>every</em> task, and it moves
+    tool selection from a mechanism you can evaluate offline into one you can only evaluate
+    end to end. Use it when the alternative is a 200-tool prompt, not to avoid the work in
+    <ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.2</ac:link-body></ac:link>.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>12.5 Confusability</h2>
+
+<p>
+  The nearest-neighbor pairs in a brokerage catalog are predictable, and each one needs an
+  explicit exclusion in <em>both</em> descriptions:
+</p>
+
+<table>
+  <thead><tr><th>Confusable pair</th><th>The distinguishing sentence</th></tr></thead>
+  <tbody>
+    <tr><td><code>positions_list</code> ↔ <code>orders_list</code></td>
+        <td>An order becomes a position only when it fills. "Did my trade go through" is
+            orders; "what do I own" is positions.</td></tr>
+    <tr><td><code>balances_get</code> ↔ <code>positions_list</code></td>
+        <td>Balances are cash and buying power; positions are holdings. "What is my account
+            worth" needs both, and is answered by <code>portfolio_summarize</code>.</td></tr>
+    <tr><td><code>balances_get</code> ↔ <code>transactions_list</code></td>
+        <td>A balance is a state; a transaction is an event. "Why did my cash drop" is
+            transactions.</td></tr>
+    <tr><td><code>orders_list</code> ↔ <code>executions_list</code></td>
+        <td>One order can have many executions at different prices. "What price did I get" may
+            need executions; "did it fill" needs the order.</td></tr>
+    <tr><td><code>order_check</code> ↔ <code>order_preview</code> ↔ <code>order_place</code></td>
+        <td>Check answers "can I?"; preview answers "what exactly would happen?" and mints a
+            confirmation token; place does it. Only the third one trades.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 13. PAYLOAD ECONOMICS ==================== -->

@@ -1,0 +1,86 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The standard assumes the five-component architecture in Figure 2.1. This section names each
+  component's non-negotiable responsibilities, because a rule about descriptors is only
+  enforceable if something is enforcing it.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>3.1 Components and responsibilities</h2>
+
+<table>
+  <thead><tr><th>Component</th><th>Owns</th><th>Must never</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Agent runtime</strong></td>
+        <td>Tool selection, argument composition, reading results, deciding when to stop.
+            Presents confirmation prompts to the principal.</td>
+        <td>Be the place where authorization is decided. Be trusted to obey an annotation.</td></tr>
+    <tr><td><strong>Tool gateway</strong></td>
+        <td>Authenticating the principal and the agent; validating arguments against the
+            input schema before the implementation sees them; enforcing risk-tier policy,
+            approval requirements, quotas, and timeouts; emitting audit events; honoring the
+            kill switch.</td>
+        <td>Contain domain logic. Rewrite arguments silently.</td></tr>
+    <tr><td><strong>Tool implementation</strong></td>
+        <td>Domain correctness, independent entitlement checks, composition across systems of
+            record, result shaping and truncation, sanitization of untrusted content,
+            structured errors.</td>
+        <td>Trust that the gateway validated anything. Return raw upstream payloads.</td></tr>
+    <tr><td><strong>Tool catalog</strong></td>
+        <td>The signed, versioned descriptor of record; ownership; lifecycle state; which
+            audiences may see which tool.</td>
+        <td>Serve a descriptor that has not passed the linter and review gate.</td></tr>
+    <tr><td><strong>Identity plane</strong></td>
+        <td>Issuing the principal's delegated, scoped, expiring authority and carrying it to
+            the implementation.</td>
+        <td>Accept an identity asserted by the model. Pass an inbound token straight through
+            to a downstream system (<ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15.3</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="note"><ac:parameter ac:name="title">Defense in depth is not optional here</ac:parameter><ac:rich-text-body><p>
+    Both the gateway and the implementation validate. This looks redundant and is not: the
+    gateway protects the implementation from malformed input at scale, and the implementation
+    protects the firm from a misconfigured, bypassed, or newly-added gateway. Tools are
+    increasingly reached through more than one path — an internal agent today, a vendor
+    assistant next quarter — and the second path will not have been built by the team that
+    built the first.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>3.2 Anatomy of an invocation</h2>
+
+<p>
+  Every rule in Part II exists to make one of these eleven steps mechanical. Steps marked
+  <strong>◆</strong> are where a defect in the descriptor causes a failure that no amount of
+  downstream engineering can recover.
+</p>
+
+<table>
+  <thead><tr><th>#</th><th>Step</th><th>What must be true</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Catalog resolves the audience</td><td>The agent is offered only the tools its principal is entitled to see. Tool visibility is itself an entitlement decision (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td>2 ◆</td><td>Descriptors enter context</td><td>Name, title, description, and input schema are rendered into the model's context. Their combined token cost is the standing tax on every turn (<ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td>3 ◆</td><td>Model selects a tool</td><td>The description makes this tool distinguishable from its nearest neighbor, and says when <em>not</em> to use it (<ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td>4 ◆</td><td>Model composes arguments</td><td>The schema is tight enough that a plausible guess is a valid value, and enums prevent invented ones (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td>5</td><td>Gateway validates</td><td>Arguments are checked against the input schema. A validation failure returns a structured, actionable error — never a stack trace (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td>6</td><td>Policy evaluates</td><td>Risk tier, entitlements, quota, and the approval requirement are resolved from the descriptor's governance block (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.4</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link>).</td></tr>
+    <tr><td>7</td><td>Approval, if required</td><td>The principal sees a human-readable rendering of exactly what will happen, built from the descriptor's title and a confirmation template (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td>8</td><td>Implementation executes</td><td>Entitlements re-checked; upstream calls made; domain rules applied; results composed.</td></tr>
+    <tr><td>9 ◆</td><td>Result is shaped</td><td>Shaped to the output schema, truncated to budget with an explicit completeness flag, untrusted content neutralized (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="13. Payload economics"/><ac:link-body>§13</ac:link-body></ac:link>).</td></tr>
+    <tr><td>10 ◆</td><td>Model reads the result</td><td>Both a structured payload and a compact human-readable rendering are present, and they agree (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td>11</td><td>Audit is written</td><td>A record sufficient to reconstruct the decision, retained to schedule (<ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>§16</ac:link-body></ac:link>).</td></tr>
+  </tbody>
+</table>
+
+<h2>3.3 Where this standard binds</h2>
+
+<table>
+  <thead><tr><th>Subject</th><th>Position</th></tr></thead>
+  <tbody>
+    <tr><td>Descriptor content and structure</td><td><strong>Normative.</strong> Appendix A is the schema; the linter enforces it.</td></tr>
+    <tr><td>Result envelope and error taxonomy</td><td><strong>Normative.</strong> <ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8</ac:link-body></ac:link> and <ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11</ac:link-body></ac:link>.</td></tr>
+    <tr><td>Gateway obligations</td><td><strong>Normative</strong> for platform teams. <ac:link><ri:page ri:content-title="3. Reference architecture"/><ac:link-body>§3.1</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="15. Security and trust"/><ac:link-body>§15</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>§16</ac:link-body></ac:link>.</td></tr>
+    <tr><td>Governance metadata and lifecycle</td><td><strong>Normative.</strong> <ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17</ac:link-body></ac:link>, <ac:link><ri:page ri:content-title="28. The catalog and the onboarding process"/><ac:link-body>§28</ac:link-body></ac:link>.</td></tr>
+    <tr><td>Tool set design and granularity</td><td><strong>Advisory with review teeth.</strong> <ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12</ac:link-body></ac:link> is a recommendation, but <ac:link><ri:page ri:content-title="26. Conformance and review"/><ac:link-body>§26</ac:link-body></ac:link> asks the architect to justify departures.</td></tr>
+    <tr><td>Wire protocol, transport, framing</td><td><strong>Out of scope.</strong> Any transport that can carry the descriptor and the envelope without loss is acceptable.</td></tr>
+    <tr><td>Model choice, prompting, agent loops</td><td><strong>Out of scope</strong> — governed separately.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== PART II ==================== --><h2>3.2 as a sequence diagram</h2><p>The same eleven steps, drawn. The PlantUML source is attached and is the editable original; steps marked ◆ are the ones where a descriptor defect cannot be recovered downstream.</p><p><ac:image ac:align="center" ac:layout="center"><ri:attachment ri:filename="anatomy-of-an-invocation.png"/></ac:image></p>

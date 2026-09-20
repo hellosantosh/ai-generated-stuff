@@ -1,0 +1,146 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The catalog answers the questions a retail brokerage customer actually asks an assistant.
+  It is deliberately small: six tools, no resource mirroring, and every piece of domain
+  knowledge that could produce a wrong answer pushed into the tool rather than left for the
+  model to reconstruct.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>18.1 The catalog at a glance</h2>
+
+<table>
+  <thead><tr><th>Tool</th><th>Tier</th><th>Entitlement</th><th>Answers</th></tr></thead>
+  <tbody>
+    <tr><td><code>brokerage_accounts_list</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td><code>accounts:read</code></td>
+        <td>"What accounts do I have?" — and it is the only source of valid account identifiers.</td></tr>
+    <tr><td><code>brokerage_positions_list</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td><code>positions:read</code></td>
+        <td>"What do I own? How much Apple? Am I up on Tesla?"</td></tr>
+    <tr><td><code>brokerage_balances_get</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td><code>balances:read</code></td>
+        <td>"How much cash do I have? What can I spend? What's my account worth?"</td></tr>
+    <tr><td><code>brokerage_orders_list</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td><code>orders:read</code></td>
+        <td>"Did my trade go through? What's still working? Why was it rejected?"</td></tr>
+    <tr><td><code>brokerage_order_get</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td><code>orders:read</code></td>
+        <td>"What happened with that specific order? What price did I get?"</td></tr>
+    <tr><td><code>brokerage_order_place</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">T3</ac:parameter></ac:structured-macro></td>
+        <td><code>orders:write</code></td>
+        <td>"Buy 100 Apple." — the only tool here that spends money.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">What is deliberately absent</ac:parameter><ac:rich-text-body><p>
+    There is no <code>brokerage_account_get</code>: the list tool returns everything a
+    single-account read would, and two tools that differ only in cardinality are two
+    opportunities to pick the wrong one. There is no <code>brokerage_instrument_get</code>:
+    instrument details arrive inside the results that need them. There is no
+    <code>brokerage_orders_manage</code> — see <ac:link><ri:page ri:content-title="25. The anti-pattern catalog"/><ac:link-body>§25.1</ac:link-body></ac:link> — and no tool that mirrors the REST
+    surface's transaction history, because the questions it answers were not in the top
+    twenty (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.2</ac:link-body></ac:link>). Each of these is a decision, revisited when the utterance data says so.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>18.2 Shared types</h2>
+
+<p>
+  Five shapes recur across every tool. They are defined once in Appendix B and referenced by
+  every descriptor, so that <code>quantity</code> means the same thing everywhere
+  (<code>TS-INP-04</code>).
+</p>
+
+<h4>Decimal — the money and quantity type</h4>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "type": "string",
+  "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+  "description": "A decimal number as a string, to avoid binary floating-point error. Never parse as a float for money arithmetic."
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<p>
+  A string, always. <code>0.1 + 0.2</code> is not <code>0.3</code> in IEEE-754, the error
+  compounds across a portfolio, and the resulting reconciliation break is discovered by an
+  operations team rather than a test. The currency travels with it, at the value or at the
+  envelope level (<code>TS-OUT-14</code>).
+</p>
+
+<h4>Identifiers</h4>
+
+<table>
+  <thead><tr><th>Type</th><th>Pattern</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Account</td><td><code>^acct_[0-9A-HJKMNP-TV-Z]{16}$</code></td>
+        <td>Crockford base-32 body: no <code>I</code>, <code>L</code>, <code>O</code>, or
+            <code>U</code>, so it survives being read aloud and cannot spell anything
+            unfortunate. Never shown to the customer.</td></tr>
+    <tr><td>Order</td><td><code>^ord_[0-9A-HJKMNP-TV-Z]{16}$</code></td><td>Same shape, different prefix.</td></tr>
+    <tr><td>Instrument</td><td><code>^inst_[A-Za-z0-9_]{1,48}$</code></td><td>Carries an option's terms in readable form for support purposes.</td></tr>
+    <tr><td>Masked account number</td><td>—</td><td><code>••••4471</code>. What the customer sees on their statement and the only account reference spoken aloud.</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The prefixes do real work: they tell the model which identifier belongs in which slot, and
+  they let the gateway reject a hallucinated or transposed value before it reaches a system of
+  record (<code>TS-INP-07</code>).
+</p>
+
+<h4>The completeness block</h4>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "returned":      25,
+  "totalMatching": 340,
+  "truncated":     true,
+  "nextCursor":    "eyJvIjoyNX0",
+  "narrowingHint": "340 positions matched. Filter by symbol or assetClass rather than paging."
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h4>asOf and basis</h4>
+
+<p>
+  Every result states the instant it was true and the convention it was computed under. The
+  <code>basis</code> vocabulary differs by tool because the honest answers differ:
+  <code>REALTIME</code> / <code>DELAYED_15M</code> / <code>PRIOR_CLOSE</code> for prices;
+  <code>INTRADAY_ESTIMATE</code> / <code>TRADE_DATE</code> / <code>SETTLED</code> for money.
+</p>
+
+<h2>18.3 The conventions the model must be told</h2>
+
+<p>
+  This table is the work product of step 4 of <ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.2</ac:link-body></ac:link> — the knowledge test. Every row is a fact
+  that turns a correct payload into an incorrect customer answer if the reader does not know
+  it, and every row has been discharged somewhere.
+</p>
+
+<table>
+  <thead><tr><th>Convention</th><th>Wrong answer if unknown</th><th>Discharged by</th></tr></thead>
+  <tbody>
+    <tr><td>Quantity is signed; negative is short</td>
+        <td>"You own 400 Tesla" when the customer is short 400</td>
+        <td>Description, plus an explicit <code>side</code> field, plus SHORT in the text rendering</td></tr>
+    <tr><td>Option quantity is in contracts</td>
+        <td>Exposure understated by 100×</td>
+        <td><code>sharesEquivalent</code> computed server-side; described in prose</td></tr>
+    <tr><td>Settled cash ≠ total cash</td>
+        <td>"You have $12,000 available" leading to a good-faith violation</td>
+        <td>Separate fields; <code>buyingPower.applicable</code></td></tr>
+    <tr><td>Four different buying power figures</td>
+        <td>A retirement account told it has 2× margin buying power</td>
+        <td><code>applicable</code> + <code>applicableReason</code>, computed by the tool</td></tr>
+    <tr><td>Retirement accounts cannot borrow</td>
+        <td>Margin advice given to an IRA</td>
+        <td><code>registration</code> in the result; <code>margin: null</code></td></tr>
+    <tr><td>An order can be partially filled and still working</td>
+        <td>"Your order filled" when 40% filled</td>
+        <td><code>filledQuantity</code> / <code>remainingQuantity</code> / <code>isTerminal</code></td></tr>
+    <tr><td>Status values may be added</td>
+        <td>An unknown status treated as terminal — customer told a live order is dead</td>
+        <td><code>isTerminal</code> boolean; described as the field to branch on</td></tr>
+    <tr><td>Marks may be 15 minutes delayed</td>
+        <td>A stale price quoted as live during a fast market</td>
+        <td><code>asOf</code> and <code>basis</code>, plus a disclosure string</td></tr>
+    <tr><td>The account identifier is not the account number</td>
+        <td>An internal identifier read aloud to a customer</td>
+        <td>Two separate fields, each described with its audience</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 19. ACCOUNTS ==================== -->

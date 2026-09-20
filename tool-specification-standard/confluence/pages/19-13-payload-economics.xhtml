@@ -1,0 +1,156 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Context is the scarcest resource in an agent system and the one most casually spent. A tool
+  that returns everything it knows is not being helpful; it is charging every future turn of
+  the conversation for data nobody asked for.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>13.1 The standing tax</h2>
+
+<p>
+  Descriptors are re-sent on every turn. The arithmetic is worth doing once, in front of the
+  people who will be surprised by the invoice:
+</p>
+
+<table>
+  <thead><tr><th>Quantity</th><th>Modest catalog</th><th>Sprawling catalog</th></tr></thead>
+  <tbody>
+    <tr><td>Tools offered</td><td>20</td><td>60</td></tr>
+    <tr><td>Rendered tokens per descriptor</td><td>350</td><td>600</td></tr>
+    <tr><td>Standing cost per turn</td><td><strong>7,000 tokens</strong></td><td><strong>36,000 tokens</strong></td></tr>
+    <tr><td>A 15-turn conversation</td><td>105,000 tokens</td><td>540,000 tokens</td></tr>
+    <tr><td>Across 50,000 conversations a day</td><td>5.3 billion tokens</td><td>27 billion tokens</td></tr>
+  </tbody>
+</table>
+
+<p>
+  The difference is not a rounding error on a cloud bill, and the sprawling catalog also
+  selects worse. Both problems have the same fix.
+</p>
+
+<h2>13.2 Result budgets</h2>
+
+<table>
+  <thead><tr><th>Result type</th><th>Target</th><th>Hard limit</th></tr></thead>
+  <tbody>
+    <tr><td>Single entity (<code>get</code>)</td><td>&lt; 500 tokens</td><td>2,000</td></tr>
+    <tr><td>Collection page (<code>list</code>)</td><td>&lt; 1,500 tokens</td><td>5,000</td></tr>
+    <tr><td>Aggregate (<code>summarize</code>)</td><td>&lt; 800 tokens</td><td>2,000</td></tr>
+    <tr><td>Error</td><td>&lt; 200 tokens</td><td>500</td></tr>
+    <tr><td>Anything larger</td><td colspan="2">Returned by reference (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.5</ac:link-body></ac:link>), never inline.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-OUT-12 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool <strong>MUST</strong> enforce a result size ceiling
+  in code and <strong>MUST</strong> truncate with disclosure (<code>TS-OUT-07</code>) rather than
+  returning an unbounded payload. "The customer has 340 positions" is not an excuse; it is the
+  case the ceiling exists for.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>13.3 What to cut from a payload</h2>
+
+<table>
+  <thead><tr><th>Cut</th><th>Reasoning</th></tr></thead>
+  <tbody>
+    <tr><td>Null and absent fields</td><td>Omit rather than emitting <code>"field": null</code> — unless null is itself meaningful, which the output schema should then say.</td></tr>
+    <tr><td>Internal identifiers with no caller use</td><td>Surrogate keys, partition hints, ETL timestamps. They cost tokens and leak topology.</td></tr>
+    <tr><td>Hypermedia links</td><td>A model cannot be trusted to follow a URL, and should not be given one it might quote to a customer. Express capability as the presence of a tool.</td></tr>
+    <tr><td>Redundant derivations</td><td>Emit <code>marketValue</code> and <code>unrealizedPnl</code>; drop <code>unrealizedPnlPercent</code> if the model can compute it — but keep any derivation whose convention it could get wrong.</td></tr>
+    <tr><td>Repeated constant context</td><td>Do not repeat <code>accountId</code>, <code>currency</code>, and <code>asOf</code> on all 340 rows. Put them once at the envelope level.</td></tr>
+    <tr><td>Pre-formatted display strings</td><td>One authoritative numeric form in <code>structuredContent</code>, one prose rendering in <code>content</code>. A third, half-formatted copy helps nobody.</td></tr>
+  </tbody>
+</table>
+
+<h3>13.3.1 Verbosity levels</h3>
+
+<p>
+  Rather than a caller-supplied field list — which models compose badly and which makes the
+  output schema unstable — offer three named levels:
+</p>
+
+<table>
+  <thead><tr><th>Level</th><th>Contains</th><th>For</th></tr></thead>
+  <tbody>
+    <tr><td><code>SUMMARY</code></td><td>Identity, the one or two numbers that answer the common question</td><td>"Do I own any Tesla?"</td></tr>
+    <tr><td><code>STANDARD</code> (default)</td><td>The fields a customer would see on a holdings screen</td><td>"Show me my positions."</td></tr>
+    <tr><td><code>FULL</code></td><td>Cost basis detail, lot method, realized profit and loss, option greeks</td><td>"Explain my tax position in Apple."</td></tr>
+  </tbody>
+</table>
+
+<h2>13.4 A worked reduction</h2>
+
+<table><tbody><tr><td><p class="lang b">Upstream record, passed through — 41 lines per position</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "positionId": "pos_01HQ8Z…",
+  "accountId": "acct_01HQ8Z…",
+  "accountNumber": "••••4471",
+  "custodianCode": "NFSC",
+  "bookId": 4471001,
+  "instrument": {
+    "instrumentId": "inst_eq_AAPL",
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "cusip": "037833100",
+    "isin": "US0378331005",
+    "sedol": "2046251",
+    "figi": "BBG000B9XRY4",
+    "exchange": "XNAS",
+    "sector": "Technology",
+    "…": "14 more fields"
+  },
+  "quantity": "250.0000",
+  "quantityLong": "250.0000",
+  "quantityShort": "0.0000",
+  "settledQuantity": "250.0000",
+  "averageCost": "231.30",
+  "…": "19 more fields",
+  "_links": { "…": "6 relations" },
+  "lastUpdatedBy": "ETL_BATCH_0342",
+  "sourceSystem": "POSLEDGER-PRD-03"
+}]]></ac:plain-text-body></ac:structured-macro>
+    <p class="small">340 positions × ~600 tokens ≈ <strong>204,000 tokens</strong>. Exceeds most context
+      windows outright, and tells the model the name of a production host.</p></td><td><p class="lang g">Shaped for the question — 9 lines per position</p>
+    <ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[// envelope level, stated once
+"accountId": "acct_01HQ8Z…",
+"currency": "USD",
+"asOf": "2026-09-19T14:32:05Z",
+"basis": "DELAYED_15M",
+
+// per position
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "assetClass": "EQUITY",
+  "side": "LONG",
+  "quantity": "250",
+  "averageCost": "231.30",
+  "lastPrice": "248.55",
+  "marketValue": "62137.50",
+  "unrealizedPnl": "4312.50"
+}]]></ac:plain-text-body></ac:structured-macro>
+    <p class="small">25 positions × ~70 tokens ≈ <strong>1,750 tokens</strong>, plus an explicit
+      truncation notice and a suggestion to filter. Two orders of magnitude, and a better
+      answer.</p></td></tr></tbody></table><h2>13.5 Representing numbers</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-OUT-13</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Monetary amounts and quantities <strong>MUST</strong> be decimal <strong>strings</strong> —
+            <code>"62137.50"</code> — never IEEE-754 numbers. Binary floating point cannot
+            represent a cent, and the error is silent, compounding, and eventually a
+            reconciliation break.</td></tr>
+    <tr><td><code>TS-OUT-14</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Every monetary value <strong>MUST</strong> be accompanied by an ISO 4217 currency, at the
+            value or at the envelope level. Never assume USD.</td></tr>
+    <tr><td><code>TS-OUT-15</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Structured values <strong>MUST NOT</strong> carry locale formatting — no thousands
+            separators, no currency symbols, no parenthesized negatives. Formatting belongs in
+            the text rendering, where <code>(2,110.00)</code> is spelled
+            <code>-2,110.00 USD</code> because parentheses for negatives are a convention a
+            model will misread.</td></tr>
+    <tr><td><code>TS-OUT-16</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Timestamps <strong>MUST</strong> be RFC 3339 with an explicit UTC offset. Dates that are
+            genuinely dates — settlement date, expiry — are <code>YYYY-MM-DD</code>, and the
+            description <strong>MUST</strong> name the time zone they are interpreted in.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 14. INTERACTION ==================== -->

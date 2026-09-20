@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 258" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 z" fill="#4a5058"/>
+    </marker>
+  </defs>
+
+  <!-- working panel -->
+  <rect x="6" y="30" width="286" height="150" rx="5" fill="#eef3fa" stroke="#1f4f8f" stroke-width="1.1"/>
+  <text x="149" y="49" font-size="9.5" font-weight="700" fill="#1f4f8f" text-anchor="middle" letter-spacing=".06em">WORKING</text>
+  <text x="149" y="62" font-size="8" fill="#1f4f8f" text-anchor="middle">isTerminal: false — may still change</text>
+
+  <rect x="18" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_NEW</text>
+  <rect x="155" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">NEW</text>
+  <rect x="18" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PARTIALLY_FILLED</text>
+  <rect x="155" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">SUSPENDED</text>
+  <rect x="18" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="80" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_CANCEL</text>
+  <rect x="155" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#c7d6ea"/>
+  <text x="217" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">PENDING_REPLACE</text>
+
+  <text x="149" y="169" font-size="7.8" fill="#1f4f8f" text-anchor="middle">poll again after nextPollAfterSeconds</text>
+
+  <!-- arrow -->
+  <line x1="296" y1="105" x2="362" y2="105" stroke="#4a5058" stroke-width="1.3" marker-end="url(#ar2)"/>
+  <text x="329" y="98" font-size="8" fill="#4a5058" text-anchor="middle">one way</text>
+  <text x="329" y="119" font-size="7.5" fill="#767d87" text-anchor="middle">never returns</text>
+
+  <!-- terminal panel -->
+  <rect x="368" y="30" width="286" height="150" rx="5" fill="#f6f7f9" stroke="#767d87" stroke-width="1.1"/>
+  <text x="511" y="49" font-size="9.5" font-weight="700" fill="#4a5058" text-anchor="middle" letter-spacing=".06em">TERMINAL</text>
+  <text x="511" y="62" font-size="8" fill="#4a5058" text-anchor="middle">isTerminal: true — will never change again</text>
+
+  <rect x="380" y="72" width="125" height="22" rx="3" fill="#e9f5ee" stroke="#cfe6d9"/>
+  <text x="442" y="87" font-size="8.2" fill="#1d6b45" text-anchor="middle" font-family="Menlo, monospace">FILLED</text>
+  <rect x="517" y="72" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="579" y="87" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">CANCELLED</text>
+  <rect x="380" y="100" width="125" height="22" rx="3" fill="#fbeeee" stroke="#f0d7d7"/>
+  <text x="442" y="115" font-size="8.2" fill="#a32a2a" text-anchor="middle" font-family="Menlo, monospace">REJECTED</text>
+  <rect x="517" y="100" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="579" y="115" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">EXPIRED</text>
+  <rect x="380" y="128" width="125" height="22" rx="3" fill="#fff" stroke="#dfe3e8"/>
+  <text x="442" y="143" font-size="8.2" fill="#16181d" text-anchor="middle" font-family="Menlo, monospace">REPLACED</text>
+
+  <text x="511" y="169" font-size="7.8" fill="#4a5058" text-anchor="middle">do not poll · do not offer to cancel</text>
+
+  <!-- footnote box -->
+  <rect x="6" y="198" width="648" height="52" rx="4" fill="#fdf3e0" stroke="#f0e0c0"/>
+  <text x="20" y="216" font-size="8.6" font-weight="700" fill="#8a5a00">A status you do not recognize belongs on the LEFT.</text>
+  <text x="20" y="230" font-size="8" fill="#8a5a00">New lifecycle states are added over time. Treating an unknown status as terminal tells a customer their live order is dead —</text>
+  <text x="20" y="242" font-size="8" fill="#8a5a00">so the contract is the isTerminal boolean, computed by the tool, never a comparison against a list of status strings.</text>
+</svg>

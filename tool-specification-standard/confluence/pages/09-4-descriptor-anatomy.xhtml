@@ -1,0 +1,157 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>A descriptor is a JSON document with eight top-level fields. Four of them are read by the
+  model, three by the runtime, and one by both. Nothing else may appear at the top level.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>4.1 The eight fields</h2>
+
+<table>
+  <thead><tr><th>Field</th><th>Required</th><th>Read by</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>name</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>model, runtime</td>
+        <td>The stable, globally unique, machine-readable identifier used to invoke the tool.
+            Also the primary key in the catalog and in every audit record (<ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>§5.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>title</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>human</td>
+        <td>A short human-readable label for approval dialogs, audit views, and catalog
+            listings. Never a substitute for the description (<ac:link><ri:page ri:content-title="5. Identity and naming"/><ac:link-body>§5.4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>description</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>model</td>
+        <td>The prose contract that tells the model what this tool does, when to reach for
+            it, when not to, and how to read what comes back (<ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>inputSchema</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>model, runtime</td>
+        <td>A JSON Schema 2020-12 object schema describing the arguments. Doubles as the
+            validation contract and as instruction to the model (<ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>outputSchema</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>model, runtime</td>
+        <td>A JSON Schema 2020-12 object schema describing the structured payload the tool
+            returns. Optional in most runtimes; <strong>required by this standard</strong> (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>annotations</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>runtime, human</td>
+        <td>Four boolean behavioral hints — read-only, destructive, idempotent, open-world —
+            that let a runtime reason about a tool it has never seen (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>icons</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">MAY</ac:parameter></ac:structured-macro></td><td>human</td>
+        <td>Display icons for catalog and approval surfaces. Cosmetic, never semantic.</td></tr>
+    <tr><td><code>_meta</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>runtime, human</td>
+        <td>Namespaced out-of-band metadata. This standard requires one member — the
+            governance block — and permits others (<ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link>). The leading underscore marks the
+            field as never rendered into the model's context.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-GEN-02 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   A descriptor <strong>MUST NOT</strong> carry top-level fields
+  other than the eight above. Extensions go inside <code>_meta</code> under a namespaced key.
+  A runtime that encounters an unknown top-level field <strong>MUST</strong> reject the descriptor
+  rather than ignore it: silent tolerance is how two teams end up with two incompatible
+  meanings for the same word.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>4.2 A complete descriptor, annotated</h2>
+
+<p>
+  Here is a small, complete, conformant tool. Schemas are shown in full; the description is
+  the real one, not a placeholder. Part IV develops this and four siblings properly.
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "name": "brokerage_order_get",
+  "title": "Get order status",
+
+  // The prose contract. Read by the model on every turn. <ac:link><ri:page ri:content-title="6. The description: the model-facing contract"/><ac:link-body>§6</ac:link-body></ac:link>.
+  "description": "Returns the current status and fill progress of one specific order, identified by its order ID. Use when the customer asks about a particular order they have already placed — whether it filled, at what price, how much is left working, or why it was rejected. Do not use to find orders: call brokerage_orders_list first to search by account, symbol, date, or status, then call this tool with the order ID it returns. Do not use for positions; a filled order becomes a position and only brokerage_positions_list knows the current holding. Orders reach a terminal state of FILLED, CANCELLED, REJECTED, EXPIRED, or REPLACED; any other status means the order is still working and may still change. Rejected orders carry a machine-readable rejectReason explaining the refusal. Reads only; never modifies an order.",
+
+  // The argument contract. Also read by the model. <ac:link><ri:page ri:content-title="7. Input schema"/><ac:link-body>§7</ac:link-body></ac:link>.
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account holding the order, from brokerage_accounts_list. Never guess or construct this value."
+      },
+      "orderId": {
+        "type": "string",
+        "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The order identifier, from brokerage_orders_list or from the result of placing an order."
+      }
+    },
+    "required": ["accountId", "orderId"],
+    "additionalProperties": false
+  },
+
+  // The result contract. <ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8</ac:link-body></ac:link>. Abbreviated here; see <ac:link><ri:page ri:content-title="22. Order status"/><ac:link-body>§22</ac:link-body></ac:link> for the real one.
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "order":    { "$ref": "https://schemas.example.com/brokerage/order/2" },
+      "asOf":     { "type": "string", "format": "date-time" },
+      "isTerminal": { "type": "boolean",
+                      "description": "True when the order can no longer change. Do not poll a terminal order." }
+    },
+    "required": ["order", "asOf", "isTerminal"],
+    "additionalProperties": false
+  },
+
+  // Behavioral hints for the runtime. <ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9</ac:link-body></ac:link>.
+  "annotations": {
+    "readOnlyHint":    true,
+    "destructiveHint": false,
+    "idempotentHint":  true,
+    "openWorldHint":   false
+  },
+
+  // Governance. Never enters the model's context. <ac:link><ri:page ri:content-title="10. Governance metadata"/><ac:link-body>§10</ac:link-body></ac:link>.
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version":            "2.1.0",
+      "lifecycle":          "active",
+      "conformanceLevel":   "L2",
+      "riskTier":           1,
+      "owner":              { "team": "trading-platform",
+                               "contact": "trading-platform@example.com",
+                               "escalation": "pagerduty://trading-platform" },
+      "dataClassification": "customer-confidential",
+      "containsPii":        true,
+      "entitlements":       ["orders:read"],
+      "approval":           { "mode": "none" },
+      "recordKeeping":      { "auditEvent": "tool.order.read",
+                               "retention": "P6Y" },
+      "cost":               { "class": "low", "p95LatencyMs": 400 },
+      "rateLimit":          { "perPrincipalPerMinute": 60 }
+    }
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">Read the ratio, not the code</ac:parameter><ac:rich-text-body><p>
+    Roughly half of that document is prose addressed to a model, and roughly a quarter is
+    metadata addressed to a governance process. Less than a third is anything a traditional
+    API contract would have contained. If your first tool descriptor inverts that ratio, it is
+    almost certainly an endpoint wearing a costume.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>4.3 Descriptor rules</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-GEN-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The descriptor is the source of truth and <strong>MUST</strong> be version-controlled in the
+            owning team's repository, published to the catalog by an automated pipeline, and
+            never edited in the catalog's user interface.</td></tr>
+    <tr><td><code>TS-GEN-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Descriptor, implementation, and tests <strong>MUST</strong> version and deploy together. A
+            descriptor describing behavior that is not yet deployed is a defect of the same
+            severity as a wrong answer.</td></tr>
+    <tr><td><code>TS-GEN-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Descriptors <strong>MUST</strong> be generated or validated by the conformance linter in CI.
+            A build that emits a non-conformant descriptor fails.</td></tr>
+    <tr><td><code>TS-GEN-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Schemas <strong>SHOULD</strong> be derived from the implementation's types rather than
+            hand-written alongside them, so that drift is impossible rather than merely
+            discouraged. Prose fields are hand-written; shapes are generated.</td></tr>
+    <tr><td><code>TS-GEN-07</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>A descriptor <strong>MUST</strong> be self-contained: every <code>$ref</code> resolves
+            either within the document or to a schema the catalog publishes and pins by
+            immutable version. No unresolvable references, no network-dependent resolution at
+            invocation time.</td></tr>
+    <tr><td><code>TS-GEN-08</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">NEVER</ac:parameter></ac:structured-macro></td>
+        <td>A descriptor <strong>MUST NOT</strong> embed credentials, internal hostnames, connection
+            strings, or system topology. It is read by a model and may be logged in full.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 5. NAMING ==================== -->

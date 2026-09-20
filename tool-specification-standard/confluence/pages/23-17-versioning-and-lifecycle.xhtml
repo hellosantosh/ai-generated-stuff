@@ -1,0 +1,85 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>The consumer of a tool contract cannot read a changelog, cannot be scheduled for an upgrade,
+  and does not have a version pin of its own. That removes most of the usual options and makes
+  the remaining rule very simple: additive change, or a new tool.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>17.1 What is a breaking change</h2>
+
+<table>
+  <thead><tr><th>Change</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>Adding an optional input parameter with a safe default</td><td>Compatible</td></tr>
+    <tr><td>Adding a field to the output schema</td><td>Compatible</td></tr>
+    <tr><td>Adding a member to an <strong>output</strong> enum</td><td>Compatible — consumers are told to treat unrecognized members as unknown (<ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17.2</ac:link-body></ac:link>)</td></tr>
+    <tr><td>Relaxing a constraint (raising a maximum, widening a pattern)</td><td>Compatible</td></tr>
+    <tr><td>Clarifying prose without changing behavior</td><td>Compatible — and encouraged; this is the cheapest fix available</td></tr>
+    <tr><td>Making an optional parameter required</td><td><strong>Breaking</strong></td></tr>
+    <tr><td>Removing or renaming any field, input or output</td><td><strong>Breaking</strong></td></tr>
+    <tr><td>Adding a member to an <strong>input</strong> enum</td><td><strong>Breaking in effect</strong> — it changes what the model will send, and callers of the old contract never learn about it. Treat as a minor version and re-run evaluations.</td></tr>
+    <tr><td>Tightening a constraint</td><td><strong>Breaking</strong></td></tr>
+    <tr><td>Changing a unit, a convention, or a sign</td><td><strong>Breaking, and dangerous</strong> — nothing fails, answers just become wrong</td></tr>
+    <tr><td>Changing default behavior on omission</td><td><strong>Breaking</strong></td></tr>
+    <tr><td>Raising the risk tier or adding an approval requirement</td><td>Compatible technically, <strong>breaking operationally</strong> — announce it</td></tr>
+  </tbody>
+</table>
+
+<h2>17.2 Versioning rules</h2>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-VER-01</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td><code>governance.version</code> <strong>MUST</strong> be semantic. Patch for prose and
+            non-behavioral fixes; minor for compatible additions; major only alongside a new
+            tool name (<code>TS-VER-03</code>).</td></tr>
+    <tr><td><code>TS-VER-02</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Output enumerations <strong>MUST</strong> be documented as open: the description states that
+            new members may appear and how to treat one. Order status is the canonical case —
+            an unrecognized status means <em>working</em>, never <em>terminal</em>, and getting
+            that default backwards tells a customer their order is dead when it is live.</td></tr>
+    <tr><td><code>TS-VER-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>A breaking change <strong>MUST</strong> be published as a new tool name with a
+            <code>_v2</code> suffix, running alongside the original. The two coexist for the
+            full deprecation window.</td></tr>
+    <tr><td><code>TS-VER-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Any change to prose, schema, or behavior <strong>MUST</strong> re-run the tool's evaluation
+            suite before publication (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27.3</ac:link-body></ac:link>). A description edit is a behavior change: it is
+            the input that determines whether the tool is selected at all.</td></tr>
+  </tbody>
+</table>
+
+<h2>17.3 Deprecation</h2>
+
+<ol>
+  <li><strong>Announce.</strong> Set <code>lifecycle: deprecated</code> with
+      <code>deprecation.{since, sunset, successor, migrationNote}</code>. Minimum window: 90
+      days, or one full regulatory reporting cycle, whichever is longer.</li>
+  <li><strong>Stop new grants.</strong> The catalog no longer offers the tool to audiences that do not
+      already have it. Existing consumers are unaffected.</li>
+  <li><strong>Warn out of band.</strong> Results carry a deprecation notice in <code>_meta</code>, which
+      the runtime logs. <strong>The description is not changed</strong> — deprecation prose in the
+      description costs tokens on every turn, and a model told a tool is deprecated behaves
+      unpredictably rather than migrating.</li>
+  <li><strong>Measure.</strong> Track invocations by audience. Contact the owner of each remaining
+      consumer directly.</li>
+  <li><strong>Retire.</strong> At sunset, set <code>lifecycle: retired</code>. The tool returns
+      <code>NOT_SUPPORTED</code> naming the successor for a further 90 days, then is
+      withdrawn. The name is never reused (<code>TS-NAM-11</code>).</li>
+</ol>
+
+<h2>17.4 The runtime constraint register</h2>
+
+<p>
+  Tool-calling runtimes impose their own limits — name length and character set, maximum
+  number of tools, maximum schema depth, whether output schemas are honored, whether
+  annotations are surfaced. These change without notice and are not the firm's to control.
+</p>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-VER-05 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   The platform team <strong>MUST</strong> maintain a register of
+  the constraints imposed by every runtime the firm publishes to, <strong>MUST</strong> enforce the
+  intersection of those constraints in the linter, and <strong>MUST</strong> re-validate the entire
+  catalog whenever a runtime's constraints change. A tool that silently stops being offered
+  because a name grew too long for one runtime is an outage nobody will attribute
+  correctly.</p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== PART IV ==================== -->

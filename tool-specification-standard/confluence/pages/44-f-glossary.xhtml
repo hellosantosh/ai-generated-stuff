@@ -1,0 +1,35 @@
+<table>
+  <thead><tr><th>Term</th><th>Meaning in this standard</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Agent</strong></td><td>A system that uses a model to decide which tools to invoke and in what order, on behalf of a principal.</td></tr>
+    <tr><td><strong>Annotation</strong></td><td>One of four boolean behavioral hints in the descriptor. Advisory to a runtime; never a security control (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Audience</strong></td><td>A set of principals to whom a scoped view of the catalog is served.</td></tr>
+    <tr><td><strong>Basis</strong></td><td>The convention under which a figure was computed — settled versus trade-date cash, real-time versus delayed price.</td></tr>
+    <tr><td><strong>Catalog</strong></td><td>The system of record for descriptors: versions, hashes, owners, tiers, audiences, lifecycle.</td></tr>
+    <tr><td><strong>Composite tool</strong></td><td>A tool that joins several sources or applies domain rules server-side, so the caller does not have to (<ac:link><ri:page ri:content-title="12. Granularity and catalog design"/><ac:link-body>§12.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Confirmation token</strong></td><td>A single-use, short-lived capability issued by a preview tool and required by its execute counterpart (<ac:link><ri:page ri:content-title="14. Interaction patterns"/><ac:link-body>§14.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Descriptor</strong></td><td>The eight-field document that defines a tool (<ac:link><ri:page ri:content-title="4. Descriptor anatomy"/><ac:link-body>§4</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Execution error</strong></td><td>A failure the tool returns inside a successful transport response, with <code>isError: true</code> (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Gateway</strong></td><td>The enforcement point between agent and implementation: identity, validation, policy, approval, quota, audit (<ac:link><ri:page ri:content-title="3. Reference architecture"/><ac:link-body>§3.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Principal</strong></td><td>The human or legal person on whose behalf a tool is invoked, and whose authority is used.</td></tr>
+    <tr><td><strong>Result envelope</strong></td><td><code>content</code> plus <code>structuredContent</code> plus <code>isError</code> (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Risk tier</strong></td><td>The firm's classification, 0 to 3, that drives approval, evidence, and monitoring (<ac:link><ri:page ri:content-title="9. Behavioral annotations and risk tiers"/><ac:link-body>§9.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Selection accuracy</strong></td><td>How often the right tool is chosen for a real user question (<ac:link><ri:page ri:content-title="27. Testing and certification"/><ac:link-body>§27.3</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Silent wrongness</strong></td><td>An invocation that succeeded, returned valid data, and produced a wrong answer. Measurable only by reading conversations (<ac:link><ri:page ri:content-title="16. Observability, audit, and supervision"/><ac:link-body>§16.2</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Terminal</strong></td><td>A lifecycle state that can never change again. Expressed as a boolean, never inferred from a status string (<ac:link><ri:page ri:content-title="22. Order status"/><ac:link-body>§22.1</ac:link-body></ac:link>).</td></tr>
+    <tr><td><strong>Tool</strong></td><td>A capability of the firm, described precisely enough that a model can decide to use it, use it correctly, and be held to account for having used it.</td></tr>
+  </tbody>
+</table>
+
+<hr/>
+
+<p class="small" style="margin-top:8mm">
+  <strong>EA-STD-TOOL-001 · Tool Specification Standard · version 1.0.0-rc1</strong><br/>
+  Enterprise Architecture — Agent Platform. Comments and exception requests through the
+  catalog. The machine-readable artifacts accompanying this document —
+  <code>schemas/tool-descriptor.schema.json</code>,
+  <code>schemas/common-types.schema.json</code>, the seven reference descriptors in
+  <code>catalog/</code>, and the conformance linter in
+  <code>tools/lint-descriptors.py</code> — are normative where they and this prose disagree
+  about a structural rule, and subordinate to this prose where they disagree about intent.
+</p>

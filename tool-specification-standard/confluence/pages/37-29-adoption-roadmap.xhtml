@@ -1,0 +1,58 @@
+<h2>29.1 Maturity model</h2>
+
+<table>
+  <thead><tr><th>Level</th><th>State</th><th>Characteristics</th></tr></thead>
+  <tbody>
+    <tr><td><strong>0</strong></td><td>Ad hoc</td><td>Each team invents its own tool format. No inventory. Nobody can say how many tools exist or what they can reach.</td></tr>
+    <tr><td><strong>1</strong></td><td>Inventoried</td><td>Every tool is registered with an owner and a risk tier. Still inconsistent, but now visible — and visibility is what makes everything else possible.</td></tr>
+    <tr><td><strong>2</strong></td><td>Conformant</td><td>New tools meet this standard and CI enforces it. Legacy tools are scheduled.</td></tr>
+    <tr><td><strong>3</strong></td><td>Certified</td><td>Every customer-facing tool is L2 with evidence. Approval, audit, and kill switches work and have been exercised.</td></tr>
+    <tr><td><strong>4</strong></td><td>Supervised</td><td>Selection accuracy and silent wrongness are measured continuously. Descriptors are improved from production evidence. The catalog is the inventory a regulator is shown.</td></tr>
+  </tbody>
+</table>
+
+<h2>29.2 A first year</h2>
+
+<table>
+  <thead><tr><th>Horizon</th><th>Do</th><th>Done when</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Days 1–90</strong></td>
+        <td>Ratify this standard. Stand up the catalog with names, owners, risk tiers, and
+            hashes. Run the linter over every existing descriptor and publish the findings
+            without blame. Pick one domain — brokerage read tools are the right first choice —
+            and bring it to L2 as the worked example.</td>
+        <td>Maturity 1, one domain at maturity 2</td></tr>
+    <tr><td><strong>Days 91–180</strong></td>
+        <td>CI gates mandatory for new tools. Evaluation suites for every tier 1 and above.
+            Approval, audit, and kill switch wired through the gateway and exercised in a
+            game day. Retire or schedule every unowned tool.</td>
+        <td>Maturity 2 firm-wide</td></tr>
+    <tr><td><strong>Days 181–365</strong></td>
+        <td>Certify every customer-facing tool to L2. Red-team the tier 3 set. Stand up
+            conversation sampling and the silent wrongness measure. Publish the tool inventory
+            to risk and compliance as a standing report.</td>
+        <td>Maturity 3, credible path to 4</td></tr>
+  </tbody>
+</table>
+
+<h2>29.3 Three ways adoption fails</h2>
+
+<table>
+  <thead><tr><th>Failure</th><th>Counter</th></tr></thead>
+  <tbody>
+    <tr><td><strong>The standard is a document, not a gate</strong></td>
+        <td>Ship the linter in week one, before the debate about section 7 is settled. A rule
+            that CI enforces is a rule; a rule in a PDF is a suggestion with formatting.</td></tr>
+    <tr><td><strong>Retrofitting blocks everything</strong></td>
+        <td>Apply the full standard to new tools immediately, and to existing tools at their
+            next change — except for the security and ownership rules (<code>TS-SEC-02</code>,
+            <code>TS-SEC-08</code>, <code>TS-GOV-01</code>), which apply now. Perfect coverage
+            later beats no coverage forever.</td></tr>
+    <tr><td><strong>It is run as an API program</strong></td>
+        <td>The novel work is the prose, the evaluation, and the supervision — none of which
+            an API governance function has ever had to do. Staff it with people who will read
+            conversations, not only specifications.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== APPENDIX A ==================== -->

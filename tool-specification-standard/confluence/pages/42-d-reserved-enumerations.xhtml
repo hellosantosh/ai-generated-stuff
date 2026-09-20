@@ -1,0 +1,63 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>These tokens are the firm's, shared by the REST estate and the tool estate. Using a
+  different spelling of any of them in a tool is a defect, not a style choice
+  (<code>TS-INP-09</code>).</p></ac:rich-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="info"><ac:parameter ac:name="title">On CANCELLED</ac:parameter><ac:rich-text-body><p>
+    This document is written in US English, in which the prose spelling is "canceled". The
+    enumeration member keeps the double <em>l</em> because it is the token the order management
+    system and the firm's REST estate already emit, and <ac:link><ri:page ri:content-title="17. Versioning and lifecycle"/><ac:link-body>§17.1</ac:link-body></ac:link> classifies changing an
+    enumeration member as a breaking change. The rule that enumerations match the systems of
+    record outranks the rule that prose matches the style guide — which is the general
+    principle whenever the two collide.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<table>
+  <thead><tr><th>Enumeration</th><th>Members</th></tr></thead>
+  <tbody>
+    <tr><td><code>accountType</code></td><td><code>CASH</code> · <code>MARGIN</code></td></tr>
+    <tr><td><code>registration</code></td>
+        <td><code>INDIVIDUAL</code> · <code>JOINT</code> · <code>TRADITIONAL_IRA</code> ·
+            <code>ROTH_IRA</code> · <code>SEP_IRA</code> · <code>ROLLOVER_IRA</code> ·
+            <code>TRUST</code> · <code>CUSTODIAL</code> · <code>CORPORATE</code></td></tr>
+    <tr><td><code>accountStatus</code></td>
+        <td><code>ACTIVE</code> · <code>RESTRICTED</code> · <code>CLOSED</code> · <code>PENDING</code></td></tr>
+    <tr><td><code>optionsLevel</code></td>
+        <td><code>NONE</code> · <code>LEVEL_1</code> · <code>LEVEL_2</code> · <code>LEVEL_3</code> · <code>LEVEL_4</code></td></tr>
+    <tr><td><code>assetClass</code></td><td><code>EQUITY</code> · <code>ETF</code> · <code>OPTION</code></td></tr>
+    <tr><td><code>positionSide</code></td><td><code>LONG</code> · <code>SHORT</code></td></tr>
+    <tr><td><code>equitySide</code></td>
+        <td><code>BUY</code> · <code>SELL</code> · <code>SELL_SHORT</code> · <code>BUY_TO_COVER</code></td></tr>
+    <tr><td><code>optionSide</code></td>
+        <td><code>BUY_TO_OPEN</code> · <code>BUY_TO_CLOSE</code> · <code>SELL_TO_OPEN</code> · <code>SELL_TO_CLOSE</code></td></tr>
+    <tr><td><code>orderType</code></td>
+        <td><code>MARKET</code> · <code>LIMIT</code> · <code>STOP</code> · <code>STOP_LIMIT</code> ·
+            <code>TRAILING_STOP</code> · <code>TRAILING_STOP_LIMIT</code> · <code>NET_DEBIT</code> ·
+            <code>NET_CREDIT</code> · <code>NET_EVEN</code></td></tr>
+    <tr><td><code>timeInForce</code></td>
+        <td><code>DAY</code> · <code>GTC</code> · <code>GTD</code> · <code>IOC</code> ·
+            <code>FOK</code> · <code>OPG</code> · <code>CLS</code></td></tr>
+    <tr><td><code>orderStatus</code><br/>open enumeration</td>
+        <td><strong>Working:</strong> <code>PENDING_NEW</code> · <code>NEW</code> ·
+            <code>PARTIALLY_FILLED</code> · <code>PENDING_CANCEL</code> ·
+            <code>PENDING_REPLACE</code> · <code>SUSPENDED</code><br/>
+            <strong>Terminal:</strong> <code>FILLED</code> · <code>CANCELLED</code> ·
+            <code>REJECTED</code> · <code>EXPIRED</code> · <code>REPLACED</code><br/>
+            <strong>New members may be added.</strong> Unrecognized means working
+            (<code>TS-VER-02</code>).</td></tr>
+    <tr><td><code>orderStatusFilter</code><br/>input only</td>
+        <td><code>WORKING</code> · <code>FILLED</code> · <code>CANCELLED</code> ·
+            <code>REJECTED</code> · <code>EXPIRED</code></td></tr>
+    <tr><td><code>priceBasis</code></td><td><code>REALTIME</code> · <code>DELAYED_15M</code> · <code>PRIOR_CLOSE</code></td></tr>
+    <tr><td><code>moneyBasis</code></td><td><code>INTRADAY_ESTIMATE</code> · <code>TRADE_DATE</code> · <code>SETTLED</code></td></tr>
+    <tr><td><code>marginCallType</code></td>
+        <td><code>FED_CALL</code> · <code>MAINTENANCE_CALL</code> · <code>DAY_TRADE_CALL</code> · <code>CASH_CALL</code></td></tr>
+    <tr><td><code>detail</code></td><td><code>SUMMARY</code> · <code>STANDARD</code> · <code>FULL</code></td></tr>
+    <tr><td><code>dataClassification</code></td>
+        <td><code>public</code> · <code>internal</code> · <code>customer-confidential</code> · <code>restricted</code></td></tr>
+    <tr><td><code>approvalMode</code></td>
+        <td><code>none</code> · <code>notify</code> · <code>confirm</code> · <code>dualControl</code> · <code>humanExecution</code></td></tr>
+    <tr><td><code>lifecycle</code></td><td><code>draft</code> · <code>active</code> · <code>deprecated</code> · <code>retired</code></td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== APPENDIX E ==================== -->

@@ -1,0 +1,211 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>What a tool returns is read twice: once by a model that will paraphrase it to a customer,
+  and once by a human reconstructing what happened. The envelope in this section serves both
+  without making either read the other's format.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>8.1 The envelope</h2>
+
+<p>Every invocation returns the same three-field envelope, success or failure:</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "content": [                          // what a reader sees — always present
+    { "type": "text",
+      "text": "3 positions in ••••4471 as of 2026-09-19T14:32:05Z. AAPL 250 sh, mkt val 62,137.50 USD, +4,312.50 (+7.5%). TSLA -400 sh SHORT, mkt val -98,240.00 USD, -2,110.00 (-2.2%). AAPL 20261218C250 3 contracts (300 sh equiv), mkt val 4,140.00 USD, +640.00 (+18.3%)." }
+  ],
+  "structuredContent": {                // the authoritative payload — validates against outputSchema
+    "accountId": "acct_01HQ8Z4M2X9K3P7R",
+    "asOf": "2026-09-19T14:32:05Z",
+    "positions": [ /* … */ ],
+    "completeness": { "returned": 3, "totalMatching": 3, "truncated": false, "nextCursor": null }
+  },
+  "isError": false
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<table>
+  <thead><tr><th>Field</th><th>Rules</th></tr></thead>
+  <tbody>
+    <tr><td><code>content</code></td>
+        <td>An ordered array of presentation blocks. <strong>MUST</strong> contain at least one
+            <code>text</code> block. Additional block types — <code>image</code>,
+            <code>audio</code>, <code>resourceLink</code>, <code>resource</code> — <strong>MAY</strong>
+            follow (<ac:link><ri:page ri:content-title="8. Output schema and the result envelope"/><ac:link-body>§8.5</ac:link-body></ac:link>).</td></tr>
+    <tr><td><code>structuredContent</code></td>
+        <td>A JSON object that <strong>MUST</strong> validate against the descriptor's
+            <code>outputSchema</code>. This is the authoritative result; anything a downstream
+            system computes from, it computes from here.</td></tr>
+    <tr><td><code>isError</code></td>
+        <td>Boolean. <code>true</code> means the tool ran and could not do its job (<ac:link><ri:page ri:content-title="11. Errors"/><ac:link-body>§11.1</ac:link-body></ac:link>).
+            Transport and protocol failures are <em>not</em> signaled here — they never reach
+            the tool.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-OUT-01 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Every tool <strong>MUST</strong> declare an
+  <code>outputSchema</code> and <strong>MUST</strong> return both <code>content</code> and
+  <code>structuredContent</code> on every invocation, including error invocations. Runtimes
+  differ in which one they surface to the model; a tool that populates only one is broken on
+  half the estate and nobody notices until a migration.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>8.2 The dual-rendering rule</h2>
+
+<p>
+  The text block is not a second-class debug string. It is what several runtimes actually put
+  in front of the model, what an approval dialog shows, and what an auditor reads. It is also
+  the only part of the result that will survive being pasted into an incident ticket.
+</p>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-OUT-02</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The text rendering <strong>MUST</strong> be derived from <code>structuredContent</code> by
+            the implementation — generated, not hand-maintained — so the two cannot
+            disagree.</td></tr>
+    <tr><td><code>TS-OUT-03</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>The text rendering <strong>MUST NOT</strong> contain any fact absent from
+            <code>structuredContent</code>, and <strong>MUST</strong> carry the facts a reader could be
+            materially misled by omitting: the as-of time, the currency, the sign of a
+            position, and any truncation.</td></tr>
+    <tr><td><code>TS-OUT-04</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>The text rendering <strong>SHOULD</strong> be compact — a few hundred characters for a
+            typical result — and <strong>SHOULD NOT</strong> be a pretty-printed dump of the structured
+            payload. Duplicating the whole payload as text doubles the token cost of every
+            call for no gain.</td></tr>
+    <tr><td><code>TS-OUT-05</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Monetary and quantity values in the text rendering <strong>MUST</strong> carry their
+            currency and their sign explicitly. "−98,240.00 USD" and "SHORT 400" are
+            unambiguous; "98240" is a defect waiting for a customer complaint.</td></tr>
+  </tbody>
+</table>
+
+<h2>8.3 Provenance, as-of, and completeness</h2>
+
+<p>
+  Three pieces of metadata turn a payload into something a regulated firm can stand behind.
+  All three live inside <code>structuredContent</code>, because they are data about the
+  answer, not decoration.
+</p>
+
+<table>
+  <thead><tr><th>Member</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>asOf</code><br/>RFC 3339, UTC, always</td>
+        <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro> be present on every result carrying data
+            that can change. It is the instant the data was true, not the instant the response
+            was built. Without it, a model will present a 20-minute-old mark as the current
+            price, in a market that moved.</td></tr>
+    <tr><td><code>basis</code><br/>how the number was derived</td>
+        <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro> be present on any computed or
+            convention-dependent figure. A balance is <code>SETTLED</code>,
+            <code>TRADE_DATE</code>, or <code>INTRADAY_ESTIMATE</code>; a price is
+            <code>REALTIME</code>, <code>DELAYED_15M</code>, or <code>PRIOR_CLOSE</code>. The
+            same question has several correct answers and the reader must know which one they
+            received.</td></tr>
+    <tr><td><code>completeness</code><br/>what you did not get</td>
+        <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro> be present on every collection result:
+            <code>{returned, totalMatching, truncated, nextCursor}</code>.
+            <code>totalMatching</code> may be <code>null</code> where it is genuinely
+            unknowable, but <code>truncated</code> never may.</td></tr>
+    <tr><td><code>disclosures</code><br/>what must be said</td>
+        <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro> carry compliance text the firm requires
+            to accompany the figure — delayed-quote notices, estimate caveats, tax-lot method.
+            Carrying them in the payload puts them where the agent can surface them, rather
+            than in a description where they cost tokens on every turn and are reproduced
+            unreliably.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="warning"><ac:parameter ac:name="title">The single most damaging omission in a financial tool</ac:parameter><ac:rich-text-body><p>
+    A number without an <code>asOf</code> and a <code>basis</code> is not a fact, it is a
+    rumour with a decimal point. "You have $84,360 of buying power" is true of settled cash,
+    of margin buying power, of day-trading buying power, or of an intraday estimate that will
+    be restated at the close — and those four numbers can differ by a factor of four in the
+    same account at the same instant. The tool knows which one it computed. Say so.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<h2>8.4 Pagination and truncation</h2>
+
+<p>
+  A model is a poor paginator. It will follow a cursor once, sometimes twice, and then
+  summarize what it has as though it were everything. Design for that rather than against it.
+</p>
+
+<table>
+  <thead><tr><th>Rule</th><th>Level</th><th>Requirement</th></tr></thead>
+  <tbody>
+    <tr><td><code>TS-OUT-06</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>Collections <strong>MUST</strong> use opaque forward cursors. Offset and page-number
+            pagination <strong>MUST NOT</strong> be used against a mutable collection.</td></tr>
+    <tr><td><code>TS-OUT-07</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td>
+        <td>When a result is truncated, <code>completeness.truncated</code> <strong>MUST</strong> be
+            <code>true</code> <em>and</em> the text rendering <strong>MUST</strong> say so in words:
+            "showing 25 of 340 positions". Silent truncation causes the model to state a
+            partial total as a complete one.</td></tr>
+    <tr><td><code>TS-OUT-08</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>A truncated result <strong>SHOULD</strong> tell the reader how to narrow rather than how to
+            continue: "filter by <code>assetClass</code> or <code>symbol</code> to see fewer
+            than 340". Narrowing produces a correct answer in one more call; paging produces
+            fourteen calls and an abandoned loop.</td></tr>
+    <tr><td><code>TS-OUT-09</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td>
+        <td>Where a caller is likely to want the whole collection only in order to compute an
+            aggregate, the catalog <strong>SHOULD</strong> offer a <code>summarize</code> tool that
+            computes it server-side. Totals computed by a model over a paginated collection
+            are wrong often enough to matter.</td></tr>
+  </tbody>
+</table>
+
+<h2>8.5 References instead of payloads</h2>
+
+<p>
+  Not everything belongs in a context window. A confirmation PDF, a tax-lot export, a
+  year's transactions, an image of a chart: these are returned <em>by reference</em>, as a
+  <code>resourceLink</code> block naming a URI, a media type, a size, and an expiry.
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "type": "resourceLink",
+  "uri": "https://documents.example.com/exports/exp_01HQ9F2K8R4T6V8Y",
+  "name": "positions-acct4471-20260919.csv",
+  "mimeType": "text/csv",
+  "description": "340 positions, 62 KB. Link expires in 15 minutes and requires the customer's session."
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">TS-OUT-10 — MUST</ac:parameter><ac:parameter ac:name="borderColor">#A32A2A</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">2</ac:parameter><ac:parameter ac:name="titleBGColor">#F4F5F7</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body><p>
+   Binary content and any text payload over 100 KB
+  <strong>MUST</strong> be returned by reference rather than inline. Reference URIs <strong>MUST</strong> be
+  short-lived and <strong>MUST</strong> require the principal's own authority to dereference — a link
+  that anyone holding the URI can fetch has moved customer data outside the entitlement
+  model.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>8.6 Empty, partial, and stale results</h2>
+
+<table>
+  <thead><tr><th>Situation</th><th>Required behavior</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Empty</strong></td>
+        <td><code>isError: false</code>, an empty array, and a text rendering that says what
+            the emptiness means: "This account holds no positions." <strong>Never</strong> an error, and
+            never a bare <code>[]</code> — a model shown an empty array with no prose reports
+            an outage about half the time.</td></tr>
+    <tr><td><strong>Not found</strong></td>
+        <td>An error with code <code>NOT_FOUND</code> for a single-entity <code>get</code>; an
+            empty collection for a <code>list</code>. The distinction matters: "that order does
+            not exist" and "you have no orders" are different customer answers.</td></tr>
+    <tr><td><strong>Partial</strong><br/>one source degraded</td>
+        <td>Permitted only where the missing part is <em>separable and disclosed</em>: return
+            what is available, set <code>completeness.truncated</code> or a
+            <code>degraded</code> flag, name what is missing, and say it in the text. A result
+            that silently omits one custodian's positions is worse than no result.</td></tr>
+    <tr><td><strong>Partial, where the number will be relied on</strong></td>
+        <td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro> fail instead. A buying-power figure
+            computed from a margin engine that did not respond is not a degraded answer, it is
+            a wrong one. Balances, buying power, and anything that gates a trading decision
+            <strong>MUST NOT</strong> be returned partially computed (<code>TS-OUT-11</code>).</td></tr>
+    <tr><td><strong>Stale</strong></td>
+        <td>Return it with an honest <code>asOf</code> and <code>basis</code>, plus a
+            <code>stale: true</code> flag where the data is older than the tool's own freshness
+            target. Let the reader decide; do not decide for them by hiding it.</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 9. ANNOTATIONS ==================== -->

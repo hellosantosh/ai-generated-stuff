@@ -1,0 +1,62 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>What the standard binds, how a tool gets approved, and how to raise an exception.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>What is normative</h2>
+<table><tbody>
+<tr><th>Subject</th><th>Position</th></tr>
+<tr><td>Descriptor content and structure</td><td><strong>Normative.</strong> The schema is published; the linter enforces it.</td></tr>
+<tr><td>Result envelope and error taxonomy</td><td><strong>Normative.</strong></td></tr>
+<tr><td>Gateway obligations</td><td><strong>Normative</strong> for platform teams.</td></tr>
+<tr><td>Governance metadata and lifecycle</td><td><strong>Normative.</strong></td></tr>
+<tr><td>Tool set design and granularity</td><td><strong>Advisory with review teeth</strong> — departures must be justified at review.</td></tr>
+<tr><td>Wire protocol, transport, framing</td><td><strong>Out of scope.</strong> Any transport that carries the descriptor and envelope without loss.</td></tr>
+<tr><td>Model choice, prompting, agent loops</td><td><strong>Out of scope</strong> — governed separately.</td></tr>
+</tbody></table>
+
+<h2>Conformance keywords</h2>
+<table><tbody>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">MUST</ac:parameter></ac:structured-macro></td><td>Gating. Fails the build and the review.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">SHOULD</ac:parameter></ac:structured-macro></td><td>Departure needs a recorded reason.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">MAY</ac:parameter></ac:structured-macro></td><td>Permitted, no expectation.</td></tr>
+<tr><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">NEVER</ac:parameter></ac:structured-macro></td><td>MUST NOT, with no exception path.</td></tr>
+</tbody></table>
+<p>Rule identifiers are permanent and are the currency of a review: "fails <code>TS-INP-07</code>"
+means the same thing in five years as it does today. The full list is on <ac:link><ri:page ri:content-title="Rule index"/><ac:link-body>Rule index</ac:link-body></ac:link>.</p>
+
+<h2>Getting a tool approved</h2>
+<table><tbody>
+<tr><th>Stage</th><th>Owner</th><th>Passes when</th></tr>
+<tr><td><strong>Design review</strong> — before code</td><td>Domain architect</td>
+    <td>The tool set derives from real utterances; boundaries and risk tiers agreed; the knowledge test discharged. Cheapest place to fix a granularity error, by an order of magnitude.</td></tr>
+<tr><td><strong>Automated conformance</strong> — every commit</td><td>CI</td>
+    <td>Linter clean, descriptors validate, size budgets hold.</td></tr>
+<tr><td><strong>Security review</strong> — before L2</td><td>Security architecture</td>
+    <td>Resource-level authorization demonstrated by a negative test, not asserted.</td></tr>
+<tr><td><strong>Data review</strong> — before L2</td><td>Data owner, privacy</td>
+    <td>Classification, PII mapping, minimization, retention.</td></tr>
+<tr><td><strong>Evaluation</strong> — before release and on every change</td><td>Owning team</td>
+    <td>Selection, refusal, argument, and interpretation thresholds met.</td></tr>
+<tr><td><strong>Architecture Review Board</strong> — tier 3, L3, exceptions</td><td>ARB</td>
+    <td>The capability is one the firm is willing to expose, to that audience, under that supervision.</td></tr>
+</tbody></table>
+
+<h2>Running a review</h2>
+<p>Copy <ac:link><ri:page ri:content-title="Review checklist"/><ac:link-body>Review checklist</ac:link-body></ac:link> onto your review page — the items are Confluence tasks, so they
+can be ticked, assigned, and reported on. Then ask these six out loud:</p>
+<ol>
+<li><strong>"Read me the description."</strong> Unreadable aloud, ninety seconds long, or no sentence beginning "Do not use" — not ready.</li>
+<li><strong>"What is the nearest tool to this one, and what sentence tells them apart?"</strong> A pause is a confusability problem.</li>
+<li><strong>"What does the customer see if this tool is wrong?"</strong> The answer should be a specific wrong sentence, not "an error".</li>
+<li><strong>"Show me the negative test where the customer asks for someone else's account."</strong> Not the code — the test.</li>
+<li><strong>"Who is paged at 2am, and what do they turn off?"</strong></li>
+<li><strong>"What did the evaluation say about the cases where it should refuse?"</strong> Selection accuracy is easy to score well on. Refusal accuracy is where the risk lives.</li>
+</ol>
+
+<h2>Raising an exception</h2>
+<ac:structured-macro ac:name="note"><ac:parameter ac:name="title">TS-CAT-05</ac:parameter><ac:rich-text-body><p>An exception to a MUST rule must be recorded against the tool in the catalog with the rule identifier, the rationale, the compensating control, the approver, and an expiry of no more than twelve months. <strong>An exception without an expiry is a silent amendment to the standard.</strong></p></ac:rich-text-body></ac:structured-macro>
+<p>Raise one through the Architecture Review Board intake, not by editing a page here.</p>
+
+<h2>Proposing a change to the standard</h2>
+<p>Open a pull request against the standard's repository. Prose, schemas, the reference catalog,
+the linter, and this space are all built from it, so a merged change reaches every surface at
+once. Changes to a rule's meaning need ARB ratification; clarifications that do not change
+meaning do not.</p>

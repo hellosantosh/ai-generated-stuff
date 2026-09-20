@@ -1,0 +1,290 @@
+<ac:structured-macro ac:name="excerpt"><ac:parameter ac:name="hidden">false</ac:parameter><ac:parameter ac:name="atlassian-macro-output-type">BLOCK</ac:parameter><ac:rich-text-body><p>Everything so far has been read-only. This section shows what changes when a tool spends a
+  customer's money — and how little of it is about the code.</p></ac:rich-text-body></ac:structured-macro>
+
+<h2>23.1 The two-step shape</h2>
+
+<table>
+  <thead><tr><th>Tool</th><th>Tier</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td><code>brokerage_order_preview</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">T1</ac:parameter></ac:structured-macro></td>
+        <td>Read-only. Computes cost, commission, resulting buying power, blockers, and
+            warnings. Issues the <code>confirmationToken</code>. May be called freely, which
+            means it <em>is</em> called — the customer sees the numbers before anyone asks
+            them to commit.</td></tr>
+    <tr><td><code>brokerage_order_place</code></td><td><ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">T3</ac:parameter></ac:structured-macro></td>
+        <td>Places the order. Requires the token, an idempotency key, and an explicit human
+            confirmation bound to the exact arguments.</td></tr>
+  </tbody>
+</table>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[customer: "buy 100 apple in my roth"
+
+  1. brokerage_accounts_list              → acct_01HQ8Z4M2X9K3P7R (Roth IRA, canTrade: true)
+  2. brokerage_order_preview              → canPlace: true, estimatedCost 24,875.00 USD,
+                                             buyingPowerAfter 59,485.20 USD,
+                                             confirmationToken "cnf_…", expires 14:36:20Z
+  3. agent presents the confirmation      → rendered from confirmationTemplate, not from JSON
+  4. customer approves                    → runtime hashes the arguments and binds the approval
+  5. brokerage_order_place                → orderId ord_…, status NEW, isTerminal false
+  6. brokerage_order_get (after 2 s)      → status PARTIALLY_FILLED, 40 of 100 at 248.61]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>23.2 The descriptor</h2>
+
+<ac:structured-macro ac:name="panel"><ac:parameter ac:name="title">Tool</ac:parameter><ac:parameter ac:name="borderColor">#1F4F8F</ac:parameter><ac:parameter ac:name="borderStyle">solid</ac:parameter><ac:parameter ac:name="borderWidth">1</ac:parameter><ac:parameter ac:name="titleBGColor">#EEF3FA</ac:parameter><ac:parameter ac:name="bgColor">#FFFFFF</ac:parameter><ac:rich-text-body>brokerage_order_placePlace a real order — trades money</ac:rich-text-body></ac:structured-macro><p>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">TIER 3</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">DESTRUCTIVE</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Blue</ac:parameter><ac:parameter ac:name="title">IDEMPOTENT VIA KEY</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Yellow</ac:parameter><ac:parameter ac:name="title">OPEN WORLD</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">brokerage:orders:write</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Red</ac:parameter><ac:parameter ac:name="title">APPROVAL: CONFIRM</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">RATE 10/min</ac:parameter></ac:structured-macro>
+    <ac:structured-macro ac:name="status"><ac:parameter ac:name="colour">Grey</ac:parameter><ac:parameter ac:name="title">KILL SWITCH</ac:parameter></ac:structured-macro>
+  </p>
+
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[Places a live equity order in the market using a confirmation token obtained from
+brokerage_order_preview. This spends the customer's money and creates market exposure; it
+cannot be undone once it fills. Use when the customer has seen a preview of this exact order
+and explicitly told you to place it, and only then: brokerage_order_preview must have
+returned a confirmationToken for the same order first. Do not use to check whether an order
+is possible — call brokerage_order_check. Do not use to show the customer what an order
+would cost — call brokerage_order_preview. Do not re-invoke after a rejection or a declined
+approval without the customer explicitly asking again. Every call requires an
+idempotencyKey: a fresh one for a genuinely new order, and the same one when retrying an
+order whose outcome is unknown, which returns the original result rather than placing a
+second order. If the call times out, the order may still have been placed: call
+brokerage_orders_list before doing anything else, and never assume failure. A successful
+result means the order was accepted, not that it filled — check status and isTerminal, and
+tell the customer which of the two happened.]]></ac:plain-text-body></ac:structured-macro>
+
+<p>
+  Note the title: <strong>"Place a real order — trades money"</strong>. It appears in the approval
+  dialog and in every audit export. Titles for tier 3 tools name the consequence, not the
+  operation (<code>TS-NAM-09</code>), because the person reading it at speed is deciding
+  whether to authorize something real.
+</p>
+
+<h3>23.2.1 Input schema</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account to trade in, from brokerage_accounts_list. Must match the account the preview was run against."
+      },
+      "confirmationToken": {
+        "type": "string",
+        "maxLength": 512,
+        "description": "Token from brokerage_order_preview, valid for 120 seconds and single use. It binds this order to the outcome the customer was shown."
+      },
+      "idempotencyKey": {
+        "type": "string",
+        "format": "uuid",
+        "description": "A UUID identifying this order attempt. Use a new one for a new order; reuse the same one to retry an attempt whose outcome is unknown."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}$",
+        "description": "Ticker to trade, uppercase. Must match the preview."
+      },
+      "side": {
+        "type": "string",
+        "enum": [
+          "BUY",
+          "SELL",
+          "SELL_SHORT",
+          "BUY_TO_COVER"
+        ],
+        "description": "Direction. SELL_SHORT opens a short position and BUY_TO_COVER closes one; they are not interchangeable with SELL and BUY."
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000,
+        "description": "Whole shares. Fractional quantities are not supported. Must match the preview."
+      },
+      "orderType": {
+        "type": "string",
+        "enum": [
+          "MARKET",
+          "LIMIT",
+          "STOP",
+          "STOP_LIMIT"
+        ],
+        "description": "How to price the order. MARKET executes immediately at whatever the market offers, which in a fast market may be materially worse than the last price shown."
+      },
+      "limitPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "Required for LIMIT and STOP_LIMIT. The worst price the customer will accept. Omit for MARKET and STOP orders."
+      },
+      "stopPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "Required for STOP and STOP_LIMIT. The price at which the order activates. Omit for MARKET and LIMIT orders."
+      },
+      "timeInForce": {
+        "type": "string",
+        "enum": [
+          "DAY",
+          "GTC",
+          "IOC",
+          "FOK"
+        ],
+        "default": "DAY",
+        "description": "How long the order stays live. Omitted means DAY, which expires at the close of the current session."
+      },
+      "extendedHours": {
+        "type": "boolean",
+        "default": false,
+        "description": "Allow execution outside regular hours, where spreads are wider and liquidity thinner. Omitted means false. Only valid with LIMIT orders."
+      },
+      "reason": {
+        "type": "string",
+        "maxLength": 280,
+        "description": "Why the customer is placing this order, in their own words where available. Captured verbatim in the audit record. Omitted when the customer has not given a reason; do not invent one."
+      }
+    },
+    "required": [
+      "accountId",
+      "confirmationToken",
+      "idempotencyKey",
+      "symbol",
+      "side",
+      "quantity",
+      "orderType"
+    ],
+    "additionalProperties": false
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h3>23.2.2 Annotations and governance</h3>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": true,
+    "openWorldHint": true
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<p>
+  <code>idempotentHint</code> is <code>true</code> only because <code>idempotencyKey</code> is
+  required: placing the same order twice with the same key places one order. Without the key
+  this would be <code>false</code>, and the runtime would be unable to retry a timeout safely.
+  <code>openWorldHint</code> is <code>true</code> because the order reaches a market venue
+  outside the firm's control, whose behavior is not enumerable.
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{
+  "com.example.tooling/governance": {
+    "version": "4.0.2",
+    "lifecycle": "active",
+    "conformanceLevel": "L2",
+    "riskTier": 3,
+    "owner": {
+      "team": "trading-platform",
+      "contact": "trading-platform@example.com",
+      "escalation": "pagerduty://trading-platform-critical"
+    },
+    "dataClassification": "customer-confidential",
+    "containsPii": false,
+    "piiFields": [],
+    "entitlements": [
+      "brokerage:orders:write"
+    ],
+    "approval": {
+      "mode": "confirm",
+      "expiresInSeconds": 120,
+      "confirmationTemplate": "Place a real order — this trades money.\n{{side}} {{quantity}} shares of {{symbol}} ({{instrumentName}})\nAccount {{accountNumberMasked}} · {{registrationLabel}}\n{{orderTypeLabel}}, {{timeInForceLabel}}\nEstimated cost {{estimatedCost}} {{currency}}\nBuying power after {{buyingPowerAfter}} {{currency}}\n{{reversibilityNote}}"
+    },
+    "recordKeeping": {
+      "auditEvent": "tool.order.place",
+      "retention": "P6Y",
+      "regulatoryBasis": [
+        "books-and-records",
+        "order-audit-trail",
+        "suitability"
+      ]
+    },
+    "cost": {
+      "class": "medium",
+      "p95LatencyMs": 1200
+    },
+    "rateLimit": {
+      "perPrincipalPerMinute": 10
+    },
+    "dependencies": [
+      "order-management-system",
+      "risk-engine",
+      "margin-engine"
+    ],
+    "availability": {
+      "slo": "99.99",
+      "killSwitch": "tools.brokerage.trading",
+      "degradedMode": "none — fails closed"
+    },
+    "evaluation": {
+      "suite": "evals/brokerage-trading",
+      "lastRunAt": "2026-09-15T08:00:00Z",
+      "selectionAccuracy": 0.99,
+      "refusalAccuracy": 0.99
+    }
+  }
+}]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>23.3 The confirmation</h2>
+
+<p>
+  The <code>confirmationTemplate</code> in that governance block renders to this, and the
+  approval is bound to a hash of exactly these arguments (<code>TS-ANN-05</code>):
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">text</ac:parameter><ac:plain-text-body><![CDATA[┌──────────────────────────────────────────────────┐
+│  Place a real order — this trades money          │
+│                                                  │
+│  BUY 100 shares of AAPL (Apple Inc.)             │
+│  Account ••••4471 · Roth IRA                     │
+│  Market order, good for today                    │
+│                                                  │
+│  Estimated cost         24,875.00 USD            │
+│  Buying power after     59,485.20 USD            │
+│                                                  │
+│  A market order fills at whatever the market     │
+│  offers and cannot be undone once it fills.      │
+│                                                  │
+│          [ Place order ]    [ Cancel ]           │
+│                                                  │
+│  Expires in 1:47                                 │
+└──────────────────────────────────────────────────┘]]></ac:plain-text-body></ac:structured-macro>
+
+<h2>23.4 The failure that matters most</h2>
+
+<p>
+  A timeout on <code>brokerage_order_place</code> leaves the outcome <em>unknown</em>. The
+  order may be live in the market. The error says so, in the only words that reliably produce
+  the right next action:
+</p>
+
+<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">json</ac:parameter><ac:plain-text-body><![CDATA[{ "error": {
+    "code": "TIMEOUT",
+    "domainCode": "ORDER_OUTCOME_UNKNOWN",
+    "message": "The order was sent but no acknowledgment was received within 5 seconds. It may or may not have been placed.",
+    "retryable": true,
+    "remediation": "Do not tell the customer the order failed. Either retry brokerage_order_place with the SAME idempotencyKey, which will return the original result if the order was placed, or call brokerage_orders_list to check. Never place a second order with a new key.",
+    "details": { "idempotencyKey": "3f2b1c88-9a41-4e2d-8b77-5c1e9d4a6f20" },
+    "traceId": "01HQ9F6Q9S3U7W0Z1C4E6G8J" } }]]></ac:plain-text-body></ac:structured-macro>
+
+<ac:structured-macro ac:name="warning"><ac:parameter ac:name="title">Three sentences, three prevented incidents</ac:parameter><ac:rich-text-body><p>
+    "Do not tell the customer the order failed" prevents a false negative the customer acts
+    on. "Retry with the SAME idempotencyKey" prevents a duplicate trade. "Never place a second
+    order with a new key" closes the loophole a model will otherwise find when the retry also
+    times out. This is what <code>TS-ERR-02</code> means by remediation: an instruction, in the
+    imperative, written by someone who has thought about what goes wrong.
+  </p></ac:rich-text-body></ac:structured-macro>
+
+<!-- ==================== 24. COMPOSITION ==================== -->
