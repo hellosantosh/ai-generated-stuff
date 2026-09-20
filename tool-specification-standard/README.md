@@ -21,6 +21,7 @@ which keeps its systems-of-record spelling; Appendix D explains why.
 | Normative descriptor schema | [`schemas/tool-descriptor.schema.json`](schemas/tool-descriptor.schema.json) | CI, tooling, codegen |
 | Shared type library | [`schemas/common-types.schema.json`](schemas/common-types.schema.json) | Anyone writing a descriptor |
 | Reference catalog | [`catalog/`](catalog/) | Seven conformant brokerage descriptors |
+| Invocation sequence diagram | [`diagrams/anatomy-of-an-invocation.puml`](diagrams/anatomy-of-an-invocation.puml) | §3.2 as a PlantUML sequence diagram, editable and previewable in VS Code |
 | Conformance linter | [`tools/lint-descriptors.py`](tools/lint-descriptors.py) | CI gate; reports findings by rule identifier |
 
 ## Layout
@@ -32,6 +33,10 @@ tool-specification-standard/
 ├── *.html                   assembled HTML for each (build byproducts)
 ├── pdf-src/                 standard: source fragments, concatenated in filename order
 ├── quickref-src/            quick reference: same pipeline, denser stylesheet
+├── diagrams/
+│   ├── anatomy-of-an-invocation.puml   §3.2, the source of truth
+│   ├── anatomy-of-an-invocation.svg    generated, for viewing without PlantUML
+│   └── anatomy-of-an-invocation.png    generated, 144 dpi
 ├── schemas/
 │   ├── tool-descriptor.schema.json   Appendix A — the shape of a descriptor
 │   └── common-types.schema.json      Appendix B — Money, identifiers, completeness, errors
@@ -46,6 +51,8 @@ tool-specification-standard/
 └── tools/
     ├── build-pdf.sh         pdf-src/ → the standard (headless Chrome)
     ├── build-quickref.sh    quickref-src/ → the quick reference
+    ├── build-diagrams.sh    diagrams/*.puml → SVG and PNG
+    ├── check-diagram-sync.py  fails if the diagram drifts from §3.2
     ├── lint-descriptors.py  conformance rules, by rule identifier
     ├── extract-rules.py     pdf-src/ → the quick reference's rule index
     └── embed-catalog.py     expands catalog, file, and tool-card markers
@@ -73,6 +80,37 @@ markers in the fragments:
 the linter; the quick reference's rule index is generated from the book's own source, so a rule
 added to the standard appears in the card without anyone remembering to copy it; the brokerage
 tool card is read from the descriptors themselves.
+
+## Diagrams
+
+[`diagrams/anatomy-of-an-invocation.puml`](diagrams/anatomy-of-an-invocation.puml) draws §3.2 —
+the eleven steps of a single invocation across the five components of the reference
+architecture, with the trust boundary, the validation and entitlement branches, the tier-3
+approval alternative, and the audit write. Steps marked ◆ are the ones where a descriptor
+defect cannot be recovered downstream.
+
+**Viewing in VS Code.** Install the **PlantUML** extension (`jebbs.plantuml`), open the
+`.puml` file and press **Alt+D** (**Option+D** on macOS). Local rendering needs Java and
+Graphviz:
+
+```bash
+brew install plantuml graphviz        # or: apt-get install plantuml graphviz
+```
+
+The extension falls back to a remote PlantUML server if it cannot render locally; for a
+document describing internal architecture, install the local renderer instead. Markdown
+Preview Enhanced also renders `.puml` files.
+
+**Regenerating the exports:**
+
+```bash
+./tools/build-diagrams.sh             # checks §3.2 sync, then renders SVG and PNG
+python3 tools/check-diagram-sync.py   # just the drift check
+```
+
+The drift check compares the diagram's eleven step dividers against the table in
+`pdf-src/20-foundations.html` and fails if a step is renamed, added, or removed on either
+side — the same "generated, never retyped" discipline as the rule index and the tool card.
 
 ## Checking conformance
 

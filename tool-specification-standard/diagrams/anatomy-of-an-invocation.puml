@@ -1,0 +1,223 @@
+' =====================================================================
+'  Anatomy of an invocation
+'  EA-STD-TOOL-001 — Tool Specification Standard, section 3.2
+'
+'  The eleven steps of a single tool invocation, across the five
+'  components of the reference architecture (section 3.1, figure 2.1).
+'  Steps marked  ◆  are the ones where a defect in the descriptor
+'  causes a failure that no downstream engineering can recover.
+'
+'  Viewing in VS Code
+'    Install "PlantUML" (jebbs.plantuml), then Alt+D / Option+D to
+'    preview. Local rendering needs Java and Graphviz:
+'        brew install plantuml graphviz
+'    Markdown Preview Enhanced also renders .puml blocks.
+'
+'  Exporting
+'    plantuml -tsvg diagrams/anatomy-of-an-invocation.puml
+'    plantuml -tpng -SdpiScale=2 diagrams/anatomy-of-an-invocation.puml
+' =====================================================================
+
+@startuml anatomy-of-an-invocation
+
+title Anatomy of an invocation\nEA-STD-TOOL-001 §3.2
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam maxMessageSize 320
+skinparam wrapWidth 320
+skinparam roundCorner 4
+
+skinparam sequence {
+  ArrowColor                #4A5058
+  ArrowFontColor            #16181D
+  LifeLineBorderColor       #B8BFC8
+  LifeLineBackgroundColor   #F6F7F9
+  ParticipantBorderColor    #1F4F8F
+  ParticipantBackgroundColor #EEF3FA
+  ParticipantFontColor      #16181D
+  ActorBorderColor          #1D6B45
+  ActorBackgroundColor      #E9F5EE
+  DatabaseBorderColor       #1F4F8F
+  DatabaseBackgroundColor   #EEF3FA
+  BoxBorderColor            #767D87
+  BoxFontColor              #4A5058
+  DividerBackgroundColor    #1F4F8F
+  DividerBorderColor        #1F4F8F
+  DividerFontColor          #FFFFFF
+  GroupBackgroundColor      #FDF3E0
+  GroupBorderColor          #8A5A00
+  GroupHeaderFontColor      #8A5A00
+}
+skinparam note {
+  BackgroundColor #EEF3FA
+  BorderColor     #1F4F8F
+  FontColor       #16181D
+  FontSize        11
+}
+
+box "Untrusted — input, never authority" #FFFDF7
+  actor "Principal\ncustomer or adviser" as P
+  participant "Agent runtime\nmodel · orchestrator · tool client" as A
+end box
+
+box "Firm control plane" #FBFCFE
+  participant "Tool catalog" as C
+  participant "Tool gateway" as G
+end box
+
+box "Domain" #FBFDFB
+  participant "Tool implementation" as T
+  database "Systems of record" as S
+end box
+
+participant "Identity plane" as ID
+collections "Audit plane" as AUD
+
+== 1 · Catalog resolves the audience ==
+
+P -> A : "What do I own?"
+activate A
+A -> C : request the tool set for this principal
+activate C
+C -> ID : resolve entitlements
+ID --> C : scopes held
+C --> A : only the tools this principal may invoke
+deactivate C
+note over C
+  Visibility is an entitlement decision (§10.4), not a
+  convenience. Offering a tool the principal cannot use
+  wastes context and discloses that the capability exists.
+end note
+
+== 2 ◆ Descriptors enter context ==
+
+A -> A : render name, title, description and\ninput schema into the model's context
+note right of A
+  The standing token cost on every turn (§13.1).
+  Target ≤ 25 tools and ≤ 10% of the context window.
+end note
+
+== 3 ◆ Model selects a tool ==
+
+A -> A : choose **brokerage_positions_list**
+note right of A
+  The description must distinguish this tool from its
+  nearest neighbor and say when **not** to use it (§6.2).
+  Most misroutes are failures of discrimination, not
+  comprehension.
+end note
+
+== 4 ◆ Model composes arguments ==
+
+A -> A : {"accountId": "acct_01HQ8Z4M2X9K3P7R"}
+note right of A
+  The schema is tight enough that a plausible guess is a
+  valid value, and enums prevent invented ones (§7.3).
+end note
+
+== 5 · Gateway validates ==
+
+A -> G : invoke(tool, arguments, principal context)
+activate G
+G -> G : validate against inputSchema
+alt arguments invalid
+  G --> A : isError: true · INVALID_ARGUMENT\nremediation naming the offending field
+  note right of G
+    Structured and actionable, never a stack trace (§11.4).
+    Every violation is enumerated, not just the first.
+  end note
+end
+
+== 6 · Policy evaluates ==
+
+G -> C : fetch descriptor + governance block
+activate C
+C --> G : riskTier · entitlements · approval mode ·\nrate limit · descriptor hash
+deactivate C
+G -> G : verify the pinned descriptor hash
+note right of G
+  A descriptor that changed without a version bump is
+  refused, not tolerated (TS-SEC-09).
+end note
+G -> ID : authorize principal for the declared scopes
+ID --> G : decision
+alt not entitled
+  G --> A : isError: true · ENTITLEMENT_DENIED\n"ask the customer to grant access; do not retry"
+end
+
+== 7 · Approval, if required ==
+
+alt approval mode = confirm  (risk tier 3)
+  G -> P : render confirmationTemplate with the **validated** arguments\n"Buy 100 AAPL · ••••4471 Roth IRA · est. 24,875.00 USD · cannot be undone"
+  P --> G : approve or decline
+  G -> G : bind the approval to a hash of the exact arguments shown
+  note right of G
+    Single use, expires in 120 s (TS-ANN-05, TS-ANN-06).
+    An agent that could alter arguments after approval
+    would make the approval meaningless.
+  end note
+else approval denied
+  G --> A : isError: true · APPROVAL_DENIED · "stop; do not rephrase and retry"
+end
+
+== 8 · Implementation executes ==
+
+G -> T : invoke, carrying the principal's delegated authority
+activate T
+T -> T : re-check entitlement for **this specific resource**
+note right of T
+  TS-SEC-08. The check that stops one customer reading
+  another's account — and the one most often skipped
+  because the gateway check feels sufficient.
+end note
+T -> S : read positions and marks
+activate S
+S --> T : rows
+deactivate S
+T -> T : apply domain rules\n(signed quantity, contract multiplier, totals)
+
+== 9 ◆ Result is shaped ==
+
+T -> T : shape to outputSchema · truncate to budget ·\nneutralize untrusted text · set asOf, basis, completeness
+note right of T
+  Truncation is disclosed, never silent (TS-OUT-07).
+  Customer-supplied text — an account nickname — is
+  delimited and labeled as data (TS-SEC-11).
+end note
+T --> G : content[] + structuredContent + isError
+deactivate T
+
+== 10 ◆ Model reads the result ==
+
+G --> A : result envelope
+deactivate G
+A -> A : read both renderings — they must agree (§8.2)
+A -> P : "3 positions as of 14:32 UTC. AAPL 250 sh long …\nTSLA 400 sh **SHORT** … prices delayed up to 15 minutes."
+deactivate A
+note over P, A
+  Every domain convention the payload relies on was stated
+  somewhere (§18.3). Otherwise this step produces fluent
+  misinformation: nothing crashes, nothing is logged, and
+  no test fails.
+end note
+
+== 11 · Audit is written ==
+
+G -> AUD : traceId · conversationId · principal · agent ·\ntoolName · toolVersion · **descriptorHash** ·\narguments (PII masked) · outcome · resultDigest ·\napproval + argument hash · entitlements · latency
+note right of AUD
+  Retained to the tool's recordKeeping.retention (§16.1).
+  Without the descriptor hash you cannot reconstruct what
+  the model was told — the first question in any
+  investigation.
+end note
+
+legend right
+  | ◆ | A descriptor defect here cannot be recovered downstream |
+  | §n | Section of EA-STD-TOOL-001 |
+  | TS-xxx-nn | Normative rule identifier |
+endlegend
+
+@enduml
