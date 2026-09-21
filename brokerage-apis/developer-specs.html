@@ -415,6 +415,43 @@ hr { border: 0; border-top: 0.5px solid var(--rule); margin: 6mm 0; }
 .s-2xx { background: var(--green-bg); color: var(--green); }
 .s-4xx { background: var(--amber-bg); color: var(--amber); }
 .s-5xx { background: var(--red-bg);   color: var(--red); }
+
+/* --- on-screen reading ------------------------------------------- 
+   Everything above is a print stylesheet: @page supplies the margins and
+   the body sits flush against them, which in a browser leaves the text
+   running edge to edge. Screen media therefore gets its own measure — a
+   Letter-wide column, centred, with the same side margins the printed
+   page uses. None of this reaches the PDF, which Chrome renders through
+   print media, so the two stay in step without a second stylesheet. */
+
+@media screen {
+  html {
+    background: #e9ecf0;
+    padding: 28px 16px;
+  }
+  body {
+    max-width: 215.9mm;            /* one Letter page */
+    margin: 0 auto;
+    padding: 22mm 20mm 20mm;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(22, 24, 29, .10), 0 10px 30px rgba(22, 24, 29, .10);
+  }
+
+  /* Page breaks mean nothing on screen, so sections need their own air. */
+  h1 { margin-top: 16mm; }
+  h1:first-of-type { margin-top: 0; }
+
+  /* The cover is sized to fill a printed page; on screen it only needs
+     to hold its own content. */
+  .cover { height: auto; padding: 26mm 18mm 18mm; }
+}
+
+/* Below a page width, the page metaphor costs more than it gives. */
+@media screen and (max-width: 900px) {
+  html { padding: 0; background: #fff; }
+  body { padding: 22px 18px; border-radius: 0; box-shadow: none; }
+}
 </style>
 </head>
 <body>

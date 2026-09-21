@@ -240,6 +240,29 @@ pre.listing .x{ color:#9c5a08; }                      /* regex literals */
 .gloss h4{ margin:6pt 0 0; font-size:9.3pt; }
 .gloss h4:first-child{ margin-top:0; }
 .gloss p{ margin:0 0 2pt; }
+
+/* --- on-screen reading -------------------------------------------
+   This guide is fixed-layout: @page has no margin and each .page block
+   is exactly one Letter sheet, which supplies its own inner margins. In
+   a browser those sheets stack flush against the left edge with nothing
+   between them. Screen media centres them and sets them apart; print is
+   untouched. */
+
+@media screen {
+  html { background: #e9ecf0; padding: 28px 16px; }
+  body { background: transparent; }   /* the sheets are the pages, not the body */
+  .page {
+    margin: 0 auto 22px;
+    background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 10px 30px rgba(0, 0, 0, .10);
+  }
+}
+
+@media screen and (max-width: 900px) {
+  html { padding: 0; background: #fff; }
+  .page { width: 100%; height: auto; margin: 0 0 18px; border-radius: 0; box-shadow: none; }
+}
 </style>
 </head>
 <body>

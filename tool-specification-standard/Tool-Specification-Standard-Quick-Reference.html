@@ -272,6 +272,38 @@ ul.check li b { font-family: var(--mono); font-size: 7pt; color: var(--accent); 
 .small { font-size: 7.2pt; color: var(--ink-soft); }
 hr { border: 0; border-top: 0.5px solid var(--rule); margin: 4mm 0; }
 .avoid { page-break-inside: avoid; break-inside: avoid; }
+
+/* --- on-screen reading ------------------------------------------- 
+   Everything above is a print stylesheet: @page supplies the margins and
+   the body sits flush against them, which in a browser leaves the text
+   running edge to edge. Screen media therefore gets its own measure — a
+   Letter-wide column, centred, with the same side margins the printed
+   page uses. None of this reaches the PDF, which Chrome renders through
+   print media, so the two stay in step without a second stylesheet. */
+
+@media screen {
+  html {
+    background: #e9ecf0;
+    padding: 28px 16px;
+  }
+  body {
+    max-width: 215.9mm;            /* one Letter page */
+    margin: 0 auto;
+    padding: 14mm 13mm 13mm;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(22, 24, 29, .10), 0 10px 30px rgba(22, 24, 29, .10);
+  }
+
+  /* The card's section bands carry the structure once page breaks are gone. */
+  h1.newpage { margin-top: 12mm; }
+}
+
+/* Below a page width, the page metaphor costs more than it gives. */
+@media screen and (max-width: 900px) {
+  html { padding: 0; background: #fff; }
+  body { padding: 22px 18px; border-radius: 0; box-shadow: none; }
+}
 </style>
 </head>
 <body>
