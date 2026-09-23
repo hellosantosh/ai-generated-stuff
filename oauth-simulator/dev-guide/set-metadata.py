@@ -15,20 +15,40 @@ and it cannot corrupt the existing objects.
 """
 import re, sys, pathlib
 
-PDF = pathlib.Path(__file__).parent / "dev-guide.pdf"
+# Which book is being stamped. Defaults to the main guide so the original
+# build command keeps working.
+PDF = pathlib.Path(__file__).parent / (sys.argv[1] if len(sys.argv) > 1 else "dev-guide.pdf")
 
-META = {
-    "Title":    "The Ultimate Developer's Guide to OAUTH 2.1 and PKCE",
-    "Author":   "Smiroh Dev",
-    "Subject":  ("OAuth 2.1 and PKCE explained from first principles: the authorization "
-                 "code flow, proof key for code exchange, tokens and scopes, refresh "
-                 "rotation, and the attack each rule prevents."),
-    "Keywords": ("OAuth 2.1, PKCE, OAuth, authorization, delegated authorization, "
-                 "OpenID Connect, JWT, access token, refresh token, RFC 7636, RFC 9700, "
-                 "API security, web security, developer guide, ebook"),
-    "Creator":  "Smiroh Publishers",
-    "Producer": "Smiroh Publishers (rendered with Chromium/Skia)",
+PROFILES = {
+    "dev-guide.pdf": {
+        "Title":    "The Ultimate Developer's Guide to OAUTH 2.1 and PKCE",
+        "Author":   "Smiroh Dev",
+        "Subject":  ("OAuth 2.1 and PKCE explained from first principles: the authorization "
+                     "code flow, proof key for code exchange, tokens and scopes, refresh "
+                     "rotation, and the attack each rule prevents."),
+        "Keywords": ("OAuth 2.1, PKCE, OAuth, authorization, delegated authorization, "
+                     "OpenID Connect, JWT, access token, refresh token, RFC 7636, RFC 9700, "
+                     "API security, web security, developer guide, ebook"),
+        "Creator":  "Smiroh Publishers",
+        "Producer": "Smiroh Publishers (rendered with Chromium/Skia)",
+    },
+    "dev-guide-pkce.pdf": {
+        "Title":    "PKCE, from the Beginning",
+        "Author":   "Smiroh Dev",
+        "Subject":  ("A beginner's guide to Proof Key for Code Exchange: the authorization "
+                     "code interception attack it prevents, how the verifier and challenge "
+                     "work, and hands-on tutorials in seven languages."),
+        "Keywords": ("PKCE, RFC 7636, OAuth 2.1, code verifier, code challenge, S256, "
+                     "authorization code interception, public client, mobile app security, "
+                     "single page application, tutorial, beginner, developer guide, ebook"),
+        "Creator":  "Smiroh Publishers",
+        "Producer": "Smiroh Publishers (rendered with Chromium/Skia)",
+    },
 }
+
+if PDF.name not in PROFILES:
+    sys.exit(f"no metadata profile for {PDF.name}")
+META = PROFILES[PDF.name]
 
 
 def pdf_string(value):

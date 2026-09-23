@@ -32,6 +32,12 @@ server top to bottom in one sitting.
 diagrams — and **Part II prints the complete source of a working OAuth 2.1 server, API and
 client**, so every lab in the book runs without this repository at all.
 
+**Never heard of PKCE?** Start with the companion instead —
+[`dev-guide/dev-guide-pkce.pdf`](dev-guide/dev-guide-pkce.pdf), *PKCE, from the Beginning*.
+36 pages that assume no OAuth knowledge at all: what an authorization code is, how it gets
+stolen, the arithmetic that makes stealing it useless, worked examples in seven languages,
+and four failures to reproduce on purpose. It ends where the main book begins.
+
 ---
 
 ## Quick start
@@ -98,6 +104,8 @@ Identical behaviour — the services have no dependencies to install.
 | `make open` | Open the simulator in your browser |
 | `make policy` | Open the page where you break OAuth rules on purpose |
 | `make guide` | Rebuild `dev-guide/dev-guide.pdf` (and its metadata) from source |
+| `make guide-pkce` | Rebuild `dev-guide/dev-guide-pkce.pdf`, the beginner's PKCE companion |
+| `make guides` | Rebuild both books |
 | `make cover` | Re-export `dev-guide/cover.png` for a store listing |
 | `make clean` | Stop everything and remove run artifacts |
 | `make help` | List all targets |
@@ -269,13 +277,18 @@ oauth-simulator/
 │   ├── demo-flow.sh          the whole flow in curl
 │   └── run-local.sh          start/stop without Docker
 └── dev-guide/
-    ├── dev-guide.pdf         the book: 54 pages, 13 chapters + Part II labs  ← start here
+    ├── dev-guide.pdf         the book: 81 pages, 15 chapters + Part II labs  ← start here
+    ├── dev-guide-pkce.pdf    the companion: 36 pages on PKCE alone, for beginners
     ├── cover.png             the cover as a standalone image, for store listings
-    ├── build-guide.sh        rebuilds the PDF (needs Chrome or Chromium)
+    ├── build-guide.sh        rebuilds dev-guide.pdf      (needs Chrome or Chromium)
+    ├── build-pkce-guide.sh   rebuilds dev-guide-pkce.pdf (same pipeline)
+    ├── check-overflow.py     finds pages whose content is silently clipped
     ├── renumber.py           derives page numbers, so the contents never drifts
     ├── set-metadata.py       writes /Title, /Author, /Subject into the PDF
     ├── export-cover.py       re-exports cover.png at any resolution
-    └── src/dev-guide.html    the source: fixed-layout HTML with inline SVG diagrams
+    └── src/
+        ├── dev-guide.html        fixed-layout HTML with inline SVG diagrams
+        └── dev-guide-pkce.html   the companion, same design system
 ```
 
 ---

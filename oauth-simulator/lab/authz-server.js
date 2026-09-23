@@ -71,7 +71,7 @@ const SCOPES = ['openid', 'profile', 'email', 'accounts:read', 'payments:write']
 const policy = {
   require_pkce: true,        // PKCE for every authorization_code request
   exact_redirect_uri: true,  // string equality, no wildcards, no prefixes
-  single_use_codes: true,    // a replayed code is revoked, not honoured
+  single_use_codes: true,    // a replayed code is revoked, not honored
   rotate_refresh: true,      // a new refresh token on every refresh
   detect_reuse: true,        // a replayed refresh token kills the whole family
 };
@@ -263,7 +263,7 @@ const server = http.createServer(async (req, res) => {
   // logs and Referer headers, so nothing secret may travel on it.
   if (path === '/authorize') {
     const client = CLIENTS[q.get('client_id')];
-    // Step 1: identify the client. Not yet trusted - just recognised.
+    // Step 1: identify the client. Not yet trusted - just recognized.
     if (!client) return html(res,
       '<h2>invalid_client</h2><p>Unknown client_id. The authorization server will '
       + 'not redirect an error for an unknown client, because it has no registered '
@@ -382,7 +382,7 @@ const server = http.createServer(async (req, res) => {
     const out = new URL(r.uri);
     out.searchParams.set('code', code);
     if (r.state) out.searchParams.set('state', r.state);
-    out.searchParams.set('iss', ISSUER);   // RFC 9207: mix-up defence
+    out.searchParams.set('iss', ISSUER);   // RFC 9207: mix-up defense
     return redirect(res, out.toString());
   }
 

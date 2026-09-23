@@ -8,7 +8,10 @@ computes them instead. Run by build-guide.sh before rendering.
 """
 import re, sys, pathlib
 
-SRC = pathlib.Path(__file__).parent / "src" / "dev-guide.html"
+# The file to paginate. Defaults to the main guide so the original build
+# command keeps working; the PKCE companion passes its own path.
+SRC = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else (
+    pathlib.Path(__file__).parent / "src" / "dev-guide.html")
 html = SRC.read_text()
 
 sections = list(re.finditer(r'<section class="(page[^"]*)">(.*?)</section>', html, re.S))

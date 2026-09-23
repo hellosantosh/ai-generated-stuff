@@ -15,7 +15,8 @@ API := http://localhost:9010
 .DEFAULT_GOAL := help
 .PHONY: help up down restart rebuild build logs logs-as logs-api logs-client ps status \
         local local-stop local-restart local-status local-logs \
-        demo demo-attack demo-replay demo-refresh test open urls policy reset guide cover clean
+        demo demo-attack demo-replay demo-refresh test open urls policy reset guide \
+        guide-pkce guides cover clean
 
 ## ---------------------------------------------------------------- Docker
 
@@ -120,6 +121,11 @@ urls:
 
 guide: ## Rebuild dev-guide/dev-guide.pdf from its HTML source
 	@./dev-guide/build-guide.sh
+
+guide-pkce: ## Rebuild dev-guide/dev-guide-pkce.pdf, the beginner's PKCE companion
+	@./dev-guide/build-pkce-guide.sh
+
+guides: guide guide-pkce ## Rebuild both books
 
 cover: ## Re-export dev-guide/cover.png (the cover as a standalone image)
 	@./dev-guide/export-cover.py

@@ -664,7 +664,7 @@ LABS['agent-deputy'] = { title: 'A confused deputy tries to escalate',
   r.status === 403 ? pass('403 insufficient_scope at the API too')
                    : fail('expected 403, got ' + r.status);
   note('Two independent checks refused it: the AS would not widen the grant,');
-  note('and the API would not honour a scope the token never carried.');
+  note('and the API would not honor a scope the token never carried.');
 } };
 
 // ===========================================================================

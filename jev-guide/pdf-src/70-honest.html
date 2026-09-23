@@ -1,0 +1,127 @@
+<h1 id="honest"><span class="num">7</span>The honest picture</h1>
+
+<p class="lede">
+  Everything in this section is independent of TypeSafe. It is the part that a design document
+  should cite, and it is the part least represented in the coverage so far.
+</p>
+
+<h2 id="bench"><span class="num">7.1</span>The benchmark claims do not survive contact with a pipeline</h2>
+
+<table class="long">
+  <thead><tr><th style="width:28%">The claim</th><th>What closer reading shows</th></tr></thead>
+  <tbody>
+    <tr><td><span class="claim">193.6&times; faster</span></td>
+        <td>A single decision call against a frontier model, on workflows TypeSafe wrote. A
+            TypeSafe employee measured <span class="indep">15.9% faster on a real pipeline</span>
+            when swapping one step to Jev &mdash; cost fell 30.1%, but the other calls in the
+            pipeline still dominated. Component gains do not scale to system gains.</td></tr>
+    <tr><td><span class="claim">444.6&times; cheaper</span></td>
+        <td>Same basis. Independent field measurements range from
+            <span class="indep">1.16&times; to 6&times;</span>, the 6&times; coming from a
+            production tax-document pipeline.</td></tr>
+    <tr><td><span class="claim">76.0% accuracy</span></td>
+        <td>The reference answers are averages of GPT-6 Astra and Fable&nbsp;5.1 &mdash; which
+            creates a ceiling where <b>Jev cannot outperform the models used as the grading
+            key</b>. This is agreement with a model-derived reference, not independently
+            verified correctness.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="calibration"><span class="num">7.2</span>The calibration question</h2>
+
+<p>
+  Calibration is the whole proposition. If the probability is honest, you can route on it; if
+  it is not, the confidence score is decoration. An independent study tested Jev on 900
+  rule-generated support tickets it could not have seen, plus three public benchmarks, for
+  about $0.06 in API cost.
+</p>
+
+<div class="danger">
+  <span class="lbl">What it found</span>
+  <p>
+    <span class="indep">Measured calibration error was 4.4&times; the noise floor. The chosen
+    level carried 0.74 probability on average, and a temperature of 3.4 was required to make
+    the probabilities honest.</span> In plain terms: on that out-of-distribution task, Jev was
+    <b>overconfident</b>, and the raw numbers needed rescaling before they could be trusted as
+    probabilities.
+  </p>
+</div>
+
+<p>
+  TypeSafe has not published standard calibration metrics across independent ground-truth
+  tasks. If you intend to route on confidence &mdash; and that is the main reason to choose
+  this model &mdash; <b>measure calibration on your own data and fit your own temperature
+  before you trust a threshold.</b> The study is reproducible for pennies; there is no excuse
+  for skipping it.
+</p>
+
+<h2 id="moat"><span class="num">7.3</span>Is there a moat?</h2>
+
+<p>
+  An unusually large open-source response appeared within days: dozens of &ldquo;open System
+  One&rdquo; projects reproducing the interface on open-weight models &mdash; Qwen, Gemma,
+  ModernBERT, llama.cpp, MLX.
+</p>
+
+<p>
+  The most direct comparison so far: a community project reproduced Jev's interface and reached
+  <span class="indep">0.845 modal agreement against Jev's published 0.883</span>. The
+  interpretation offered, and it seems right, is that <b>the claimed moat is the training data
+  for calibration, not the architecture</b>. If that holds, the interface commoditizes quickly
+  and the differentiator is how honest the probabilities are &mdash; which is exactly the thing
+  &sect;7.2 says is not yet independently established.
+</p>
+
+<h2 id="risks"><span class="num">7.4</span>Adoption risks worth writing down</h2>
+
+<ul class="tight">
+  <li><b>Age.</b> Four weeks old, limited early access, waitlist-gated, one documented model
+      route (<code>jev-latest</code>) with no versioning story yet visible.</li>
+  <li><b>Single vendor, no weights.</b> No paper, no architecture, no self-hosting. Your
+      decision layer becomes an API dependency on a two-year-old company.</li>
+  <li><b>Subsidized pricing.</b> TypeSafe says the price may be subsidized. Model the
+      economics at a price that is not.</li>
+  <li><b>A moving <code>latest</code>.</b> If the route floats and your criteria strings are
+      the program, a silent model update is a silent logic change. Pin what you can, and keep
+      a regression set.</li>
+  <li><b>Criteria are load-bearing and fragile.</b> &sect;4.1 &mdash; below-random accuracy from
+      bad criteria strings is a failure mode with no analog in a rules engine.</li>
+</ul>
+
+<div class="tip">
+  <span class="lbl">A reasonable position</span>
+  <p>
+    The structural argument (&sect;2.2) is sound and does not depend on any contested number:
+    typed output, parallel evaluation, and a probability per option are real properties of the
+    design. The performance claims are unproven at pipeline level, and the calibration claim
+    &mdash; the one that matters most &mdash; has one independent study and it was not
+    flattering. Pilot it on a real workload, measure calibration yourself, and keep the
+    fallback path warm.
+  </p>
+</div>
+
+<h1 id="start"><span class="num">8</span>Getting started</h1>
+
+<table>
+  <thead><tr><th style="width:24%">&nbsp;</th><th>&nbsp;</th></tr></thead>
+  <tbody>
+    <tr><td><b>Access</b></td><td>Waitlist, then an API key from the TypeSafe dashboard.</td></tr>
+    <tr><td><b>Endpoint</b></td><td><code>POST https://api.typesafe.ai/v1/systemone</code></td></tr>
+    <tr><td><b>Model route</b></td><td><code>jev-latest</code> &mdash; the only one documented</td></tr>
+    <tr><td><b>Official SDKs</b></td><td><code>pip install typesafe-sdk</code> &middot; JavaScript/TypeScript</td></tr>
+    <tr><td><b>Without a key</b></td><td>Reachable through Vercel AI Gateway, Cloudflare Workers AI, Netlify AI Gateway and OpenRouter</td></tr>
+    <tr><td><b>Price</b></td><td><span class="claim">$0.042 / M input tokens; output free</span></td></tr>
+    <tr><td><b>Limits</b></td><td><code>Choice</code> supports up to 255 options; higher cardinality uses a two-stage approach</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">A sensible first project</span>
+  <p>
+    Take one classification you already run through an LLM. Keep the old path. Run both for a
+    week on live traffic, logging Jev's answer, its probability, and the incumbent's answer.
+    You will get three things at once: an accuracy comparison on <em>your</em> data, a
+    calibration curve you can fit a threshold to, and a cost figure that is a pipeline figure
+    rather than a component one.
+  </p>
+</div>

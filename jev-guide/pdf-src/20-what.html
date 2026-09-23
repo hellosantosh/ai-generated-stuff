@@ -1,0 +1,142 @@
+<h1 id="what"><span class="num">1</span>What Jev is</h1>
+
+<p class="lede">
+  A model that does not write. You hand it some state and a set of bounded questions; it
+  hands back typed answers, each with a probability. That is the entire surface area, and
+  nearly everything interesting follows from the things it gave up to get there.
+</p>
+
+<h2 id="one-para"><span class="num">1.1</span>The one-paragraph version</h2>
+
+<div class="tool">
+  <p style="margin:0">
+    <b>Jev</b> is a proprietary model from <b>TypeSafe AI</b>, a San Francisco company founded
+    in 2024 by <b>Diogo Almeida</b> (CEO, previously four years at OpenAI on RLHF, InstructGPT,
+    ChatGPT and GPT-4), <b>Erik Gafni</b> and <b>Sasha Sheng</b>. It entered limited early
+    access on <b>15 September 2026</b>, alongside a <b>$40&nbsp;million seed round led by
+    DCVC</b>. Unlike a large language model, it does not generate natural-language text. It
+    accepts a state and a dictionary of questions, and returns typed values with probability
+    estimates and confidence scores &mdash; output meant to be consumed by software, not read
+    by a person. TypeSafe calls it the first <b>&ldquo;System One model&rdquo;</b>, a new model
+    class rather than a variant of an existing one.
+  </p>
+</div>
+
+<h2 id="system-one"><span class="num">1.2</span>Why &ldquo;System One&rdquo;</h2>
+
+<p>
+  The name borrows Daniel Kahneman's split between System&nbsp;1 thinking &mdash; fast,
+  automatic, intuitive &mdash; and System&nbsp;2 &mdash; slow, effortful, deliberate. Frontier
+  reasoning models are System&nbsp;2: they think out loud, at length, expensively. A great deal
+  of what production software actually asks of a model is not that. It is
+  <i>is this relevant?</i>, <i>which bucket?</i>, <i>how urgent?</i>, <i>should this be
+  blocked?</i> &mdash; questions with a small, known set of possible answers, asked millions of
+  times.
+</p>
+
+<p>
+  TypeSafe's argument is that paying generation prices and generation latency for lookup-shaped
+  work is a category error, and that a model built only for the lookup-shaped half can be
+  faster and cheaper by orders of magnitude. The slogan version:
+  <b>unstructured state in, typed probabilistic decisions out</b>.
+</p>
+
+<p>
+  The model's own name comes from <b>William Stanley Jevons</b>, the 19th-century economist
+  whose paradox observes that making a resource cheaper tends to increase, not decrease, total
+  consumption of it. Almeida has said the name reflects an expectation that far cheaper machine
+  intelligence will be deployed far more widely &mdash; which is a thesis about the market, not
+  a claim about the model.
+</p>
+
+<h2 id="primitives"><span class="num">1.3</span>The three primitives</h2>
+
+<p>
+  Every question you can ask is one of three shapes. This is the whole vocabulary.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:16%">Primitive</th><th style="width:30%">Asks</th><th>Returns</th></tr></thead>
+  <tbody>
+    <tr><td><code>Choice</code></td>
+        <td>Pick one from a set of options you define. Up to 255 options.</td>
+        <td>The selection, a probability for <em>every</em> option, and a confidence score.</td></tr>
+    <tr><td><code>Score</code></td>
+        <td>Rate the state against an ordered rubric you define.</td>
+        <td>The score, a probability distribution across the levels, and a confidence score.</td></tr>
+    <tr><td><code>Noul</code></td>
+        <td>Evaluate a yes/no statement.</td>
+        <td>A single probability between 0 and 1.</td></tr>
+  </tbody>
+</table>
+
+<div class="tip">
+  <span class="lbl">The property that does the work</span>
+  <p>
+    All questions in a request are evaluated <b>independently and in parallel, in a single
+    forward pass</b> against the same state. Adding a question barely changes the response
+    time. This is the structural reason Jev is fast: it is not generating a sequence of tokens,
+    so there is no sequence to wait for.
+  </p>
+</div>
+
+<h2 id="shape"><span class="num">1.4</span>A request, and what comes back</h2>
+
+<p>
+  The API is one endpoint, <code>POST https://api.typesafe.ai/v1/systemone</code>, with one
+  documented model route, <code>jev-latest</code>. Official SDKs exist for Python and
+  JavaScript; the community has since written many more (&sect;9).
+</p>
+
+<pre><code><span class="c-com"># Python — the shape of every Jev call</span>
+<span class="c-key">from</span> typesafe_sdk <span class="c-key">import</span> Noul, TypeSafeClient
+
+jev = TypeSafeClient()
+
+r = jev.system_one(
+    state={<span class="c-str">"query"</span>: query, <span class="c-str">"page"</span>: page_markdown[:<span class="c-num">8000</span>]},
+    questions={
+        <span class="c-str">"answers_query"</span>: Noul(
+            instructions=<span class="c-str">"Does this page directly answer the query?"</span>,
+            criteria={
+                <span class="c-str">"true"</span>:  <span class="c-str">"Explains the specific behavior queried"</span>,
+                <span class="c-str">"false"</span>: <span class="c-str">"Related topic but doesn't answer"</span>,
+            },
+        ),
+    },
+)
+
+r.answers[<span class="c-str">"answers_query"</span>].noul   <span class="c-com"># → 0.0 … 1.0, a calibrated probability</span></code></pre>
+
+<p>
+  Note what is absent: no prompt template, no output parser, no retry-on-malformed-JSON, no
+  &ldquo;respond only with valid JSON and nothing else&rdquo;. The answer arrives typed because
+  the type is part of the request.
+</p>
+
+<h2 id="vs-llm"><span class="num">1.5</span>How it differs from a language model</h2>
+
+<table class="long">
+  <thead><tr><th style="width:24%">&nbsp;</th><th style="width:35%">Frontier LLM</th><th>Jev</th></tr></thead>
+  <tbody>
+    <tr><td><b>Output</b></td><td>Free-form text, token by token</td><td>Typed values from a schema you supplied, plus probabilities</td></tr>
+    <tr><td><b>Generation</b></td><td>Sequential &mdash; each token waits for the last</td><td>One parallel pass over all questions</td></tr>
+    <tr><td><b>Latency</b></td><td>Seconds to minutes for reasoning tasks</td><td><span class="claim">70&ndash;500&nbsp;ms end to end</span></td></tr>
+    <tr><td><b>Hallucination</b></td><td>Can invent anything, including malformed output</td><td><b>Cannot produce a value outside the schema.</b> It can still choose the wrong valid option</td></tr>
+    <tr><td><b>Confidence</b></td><td>Not natively available; must be inferred or elicited</td><td>A probability per option, by construction</td></tr>
+    <tr><td><b>Training</b></td><td>Human preference (RLHF) among others</td><td><span class="claim">Synthetic data only, via Reinforcement Learning for Calibrated Decisions (RLCD) &mdash; optimizing probabilities against outcomes rather than preferences</span></td></tr>
+    <tr><td><b>Price</b></td><td>Dollars per million tokens</td><td><span class="claim">$0.042 per million input tokens; output free, &ldquo;too cheap to meter&rdquo;</span></td></tr>
+    <tr><td><b>Good at</b></td><td>Writing, open-ended reasoning, multi-hop, arithmetic</td><td>Bounded decisions over a known answer space, at volume</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <span class="lbl">What TypeSafe has not published</span>
+  <p>
+    There is no technical paper, no architecture description, and no weights. Observers have
+    suggested it may be built on open-weight LLMs. The company describes the model as
+    transformer-based and trained exclusively on synthetic data, and that is roughly the limit
+    of what is public. Judge it as a black box with a measurable interface, because that is
+    what it currently is.
+  </p>
+</div>

@@ -1,0 +1,99 @@
+<h1 id="replacing"><span class="num">5</span>What it is replacing</h1>
+
+<p class="lede">
+  The displacement is economic and operational rather than capability-based. Nothing here was
+  impossible before; it was priced and timed such that you did it sparingly, or not in the
+  request path, or not at all.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Being displaced</th><th>The old arrangement, and what changes</th></tr></thead>
+  <tbody>
+    <tr><td><b>LLM classifiers</b></td>
+        <td>The dominant pattern for three years: prompt a frontier model, demand JSON, parse
+            it, retry when it comes back malformed. Jev removes the prompt engineering, the
+            parser, and the retry loop, and runs the same work
+            <span class="claim">40&ndash;200&times; faster at a small fraction of the cost</span>.
+            <b>This is the biggest single category.</b></td></tr>
+    <tr><td><b>Guardrail and safety models</b></td>
+        <td>A second expensive model watching the first one for jailbreaks, policy violations
+            and off-task behavior. That monitoring was often sampled rather than universal
+            because of cost. At Jev prices it can run on every call.</td></tr>
+    <tr><td><b>Rerankers</b></td>
+        <td>Cross-encoder rerankers do relevance well but take a fixed notion of relevance.
+            Jev accepts free-form instructions and can judge semantic relationships beyond
+            &ldquo;is this similar&rdquo; &mdash; <i>does this actually answer the question</i>,
+            <i>does this contradict the premise</i> &mdash; at latencies that fit inside a
+            request.</td></tr>
+    <tr><td><b>Rules engines and hand-written heuristics</b></td>
+        <td>Regexes, decision trees and keyword lists are fast and free but understand no
+            meaning, and they rot. Jev reads context. The trade is that you give up the exact
+            auditability of a rule.</td></tr>
+    <tr><td><b>Zero-shot and fine-tuned small classifiers</b></td>
+        <td>A trained classifier per task means a training set, a pipeline, and a retraining
+            cadence per task. Jev is zero-shot against instructions you can edit in place.</td></tr>
+    <tr><td><b>Doing nothing</b></td>
+        <td>The quiet one. Plenty of checks were never implemented because a model call per
+            item could not be justified. Screening every page, judging every tool call,
+            labeling every document &mdash; these were not rejected on principle but on
+            budget.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="not-replacing"><span class="num">5.1</span>What it is not replacing</h2>
+
+<div class="warn">
+  <span class="lbl">It is not an LLM replacement, and nobody serious is claiming it is</span>
+  <p>
+    The consistent framing from TypeSafe, from practitioners, and from independent reviewers is
+    that Jev works <b>in concert with</b> language models. It occupies the decision layer
+    &mdash; filtering, routing, judging, verifying &mdash; while generation, open-ended
+    reasoning and anything requiring explanation stay where they are.
+  </p>
+</div>
+
+<ul class="tight">
+  <li><b>Chat and assistants</b> &mdash; untouched. There is no text.</li>
+  <li><b>Agents</b> &mdash; untouched as planners. Jev is increasingly the thing <i>around</i>
+      the agent: its router, its guard, its context filter.</li>
+  <li><b>Code generation</b> &mdash; untouched, though Jev is being used to judge what
+      generated code is allowed to do.</li>
+  <li><b>Embeddings and vector search</b> &mdash; complementary. Retrieve with embeddings, then
+      rerank with Jev.</li>
+  <li><b>Deterministic code</b> &mdash; if a rule is genuinely fixed, code remains faster,
+      free, and auditable. Do not put a model where an <code>if</code> belongs.</li>
+</ul>
+
+<h1 id="architecture"><span class="num">6</span>Where it sits</h1>
+
+<p>
+  The architectural pattern that has emerged in the first weeks is task-specific routing: not
+  one model per company, but a mix of model types chosen per task.
+</p>
+
+<pre><code>                       ┌──────────────────────────────────────────┐
+   request  ──────────▶│  Jev — route, score difficulty, screen   │
+                       └────────────────┬─────────────────────────┘
+                                        │ typed decision + probability
+                    ┌───────────────────┼───────────────────┐
+                    ▼                   ▼                   ▼
+            ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+            │  Frontier LLM │   │  Cheap LLM    │   │  Pure code    │
+            │  hard, rare   │   │  easy, common │   │  deterministic│
+            └───────┬───────┘   └───────┬───────┘   └───────────────┘
+                    └─────────┬─────────┘
+                              ▼
+                       ┌──────────────────────────────────────────┐
+                       │  Jev — verify citations, judge tool calls │
+                       │        gate output, score confidence      │
+                       └──────────────────┬───────────────────────┘
+                                          ▼
+                                  low confidence ──▶ human review
+                                  high confidence ──▶ ship it</code></pre>
+
+<p>
+  Jev appears twice, and the second appearance is the more interesting one. Because the model
+  returns a probability rather than an assertion, the confidence score becomes a routing
+  primitive: automate the confident majority, escalate the tail. That is a shape you could not
+  easily build when the only available signal was text that claimed to be confident.
+</p>

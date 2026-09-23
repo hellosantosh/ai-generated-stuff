@@ -1,0 +1,73 @@
+<h1 id="not"><span class="num">4</span>When not to use it</h1>
+
+<p class="lede">
+  TypeSafe publishes a document it calls &ldquo;jaggedness&rdquo; &mdash; an unusually direct
+  list of the things its own model is bad at. It is the most useful page the company has
+  written, and it is summarized here because these failure modes are not obvious from the API.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Do not use it for</th><th>Why, and what to do instead</th></tr></thead>
+  <tbody>
+    <tr><td><b>Maths and counting</b></td>
+        <td>Jev recognizes the <i>shape</i> of an answer rather than tallying. Count in code and
+            pass the count in as state.</td></tr>
+    <tr><td><b>Date comparison</b></td>
+        <td>Dates are treated as text, not as ordered values. Extract and compare them
+            programmatically, then ask Jev about the result.</td></tr>
+    <tr><td><b>Indirection</b></td>
+        <td>Multi-hop questions &mdash; &ldquo;is the author of the linked document the same
+            person who filed the ticket?&rdquo; &mdash; lose accuracy. Reduce the hops, or name
+            the relevant state fields explicitly.</td></tr>
+    <tr><td><b>Large, noisy state</b></td>
+        <td>Unrelated detail distracts it. Filter before sending; do not paste the whole
+            document and hope.</td></tr>
+    <tr><td><b>Text generation</b></td>
+        <td>It is not trained to produce free-form text at all. This is not a weakness, it is
+            the design.</td></tr>
+    <tr><td><b>Adversarial input</b></td>
+        <td>Injected instructions can shift answers. Write precise criteria and test edge cases
+            &mdash; and note the irony that one of its best uses is <i>detecting</i> injection.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="criteria"><span class="num">4.1</span>The failure mode nobody expects</h2>
+
+<div class="danger">
+  <span class="lbl">With Jev, the question text is the program</span>
+  <p>
+    Independent testing found that <span class="indep">wrong criteria descriptions produced
+    16.7% accuracy &mdash; below the 25% random floor</span> on a four-option choice. A model
+    that does worse than chance is not being unlucky; it is being precisely misled. Your
+    <code>instructions</code> and <code>criteria</code> strings are not documentation or
+    flavor text. They are the logic, and they deserve the review, the tests and the version
+    control you would give any other logic.
+  </p>
+</div>
+
+<h2 id="decomposition"><span class="num">4.2</span>One big question, or several small ones</h2>
+
+<p>
+  A finding worth internalizing before you design anything. On a reproducible 2,000-email
+  phishing benchmark, Jev scored <span class="indep">62.6% when asked a single question</span>
+  &mdash; and <span class="indep">95.0% when the same judgment was split into five narrow
+  questions</span>, with weights fitted on 1,000 labeled examples.
+</p>
+
+<p>
+  Two things follow. First, decomposition is not a micro-optimization here; it is the
+  difference between unusable and good. Second, that second number required a labeled training
+  set and fitted weights &mdash; which is to say it was an <em>engineering project</em>, not a
+  prompt. Budget accordingly, and be suspicious of any quoted accuracy that does not say which
+  of the two regimes it came from.
+</p>
+
+<div class="tip">
+  <span class="lbl">Practical consequence</span>
+  <p>
+    Because all questions run in one parallel pass at roughly flat cost, asking five narrow
+    questions instead of one broad one is nearly free. The architecture actively rewards the
+    thing that also happens to improve accuracy. Design for many small questions from the
+    start.
+  </p>
+</div>

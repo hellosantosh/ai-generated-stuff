@@ -1,0 +1,73 @@
+<h1 id="glossary"><span class="num">10</span>Glossary and sources</h1>
+
+<h2 id="terms"><span class="num">10.1</span>Terms used in this document</h2>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Term</th><th>Meaning here</th></tr></thead>
+  <tbody>
+    <tr><td><b>System One model</b></td><td>TypeSafe's proposed model class: unstructured state in, typed probabilistic decisions out, no text generation. Named for Kahneman's fast, automatic System&nbsp;1 thinking.</td></tr>
+    <tr><td><b>Choice / Score / Noul</b></td><td>The three question primitives. Pick one of N; rate against a rubric; yes/no probability.</td></tr>
+    <tr><td><b>State</b></td><td>The context you pass in &mdash; a string, JSON, or array of text &mdash; that all questions are evaluated against.</td></tr>
+    <tr><td><b>Calibration</b></td><td>Whether a stated probability matches observed frequency. A model is calibrated if things it calls 70% likely happen about 70% of the time. The property Jev's value rests on.</td></tr>
+    <tr><td><b>Expected calibration error (ECE)</b></td><td>The standard measure of that gap. Meaningful only against a noise floor, which is why item 08 in the reading path computes one.</td></tr>
+    <tr><td><b>Temperature refit</b></td><td>Rescaling a model's probabilities after the fact so they become honest. A temperature of 3.4 means the raw outputs were substantially overconfident.</td></tr>
+    <tr><td><b>Decomposition</b></td><td>Splitting one broad question into several narrow ones. On the phishing benchmark this moved accuracy from 62.6% to 95.0%.</td></tr>
+    <tr><td><b>RLCD</b></td><td>Reinforcement Learning for Calibrated Decisions &mdash; TypeSafe's stated training approach, optimizing probabilities against outcomes rather than human preferences.</td></tr>
+    <tr><td><b>Jaggedness</b></td><td>TypeSafe's own term for the uneven capability surface: strong on bounded judgment, weak on maths, dates and indirection.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="sources"><span class="num">10.2</span>Sources</h2>
+
+<p class="small">
+  Everything in this document is drawn from the following, consulted September&nbsp;2026.
+  Where a figure is attributed to TypeSafe it is marked as a vendor claim in the text; where it
+  comes from a third party it is marked as an independent finding.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:38%">Source</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td>Wikipedia, <i>Jev (AI model)</i><br><span class="src">en.wikipedia.org/wiki/Jev_(AI_model)</span></td>
+        <td>Founders, funding, timeline, architecture summary, RLCD, the Jevons naming, the vendor's own caveat on its multipliers.</td></tr>
+    <tr><td>TechCrunch, 18 Sept 2026<br><span class="src">techcrunch.com/2026/09/18/&hellip;</span></td>
+        <td>Practitioner reports (Vercel, Gemini comparison), Almeida's framing, the agent-monitoring use.</td></tr>
+    <tr><td>Firecrawl, <i>What Is Jev?</i><br><span class="src">firecrawl.dev/blog/what-is-jev</span></td>
+        <td>API shape, code example, the six use cases and their measurements, comparisons against classifiers and rerankers, the jaggedness list, the openjev agreement figure.</td></tr>
+    <tr><td>TrueFoundry, <i>What &ldquo;System One Models&rdquo; Actually Are</i><br><span class="src">truefoundry.com/blog/typesafe-ai-jev</span></td>
+        <td>The category framing, the Kahneman derivation, the task-specific routing architecture.</td></tr>
+    <tr><td>DataCamp, <i>System One Models: Jev</i><br><span class="src">datacamp.com/blog/system-one-models-jev</span></td>
+        <td>Primitive examples, per-decision pricing, the displacement list.</td></tr>
+    <tr><td>Developers Digest, release guide<br><span class="src">developersdigest.tech/blog/typesafe-jev-system-one-models-release-guide-2026</span></td>
+        <td>Benchmark table against GPT-6 Sol, pricing, endpoint, SDKs, the 255-option limit.</td></tr>
+    <tr><td>Cherry Creek News, benchmark analysis<br><span class="src">thecherrycreeknews.com/jev-typesafe-benchmark-checked-explainer-wave-cherry_creek/</span></td>
+        <td>The 15.9% pipeline measurement, the 1.16&ndash;6&times; field range, the grading-key ceiling.</td></tr>
+    <tr><td><i>jev-ood-calibration</i><br><span class="src">github.com/scienthoon/jev-ood-calibration</span></td>
+        <td>The independent calibration study: 4.4&times; noise floor, 0.74 mean probability, temperature 3.4.</td></tr>
+    <tr><td>The D*AI*LY BRIEF<br><span class="src">beri.net/article/typesafe-jev-typed-decision-model-calibration-decomposition-shadow-eval</span></td>
+        <td>62.6% &rarr; 95.0% decomposition on 2,000 phishing emails; the 16.7% wrong-criteria result.</td></tr>
+    <tr><td>ScriptByAI, resource list<br><span class="src">scriptbyai.com/jev-resource-list/</span></td>
+        <td>The ecosystem map: SDKs, gateways, MCP servers, open reimplementations, benchmarks.</td></tr>
+    <tr><td>TypeSafe official<br><span class="src">typesafe.ai &middot; docs.typesafe.ai &middot; evals.typesafe.ai</span></td>
+        <td>Launch post, quickstart, API reference, jaggedness documentation, workflow evaluations.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">Shelf life</span>
+  <p>
+    This document describes a model four weeks old. Pricing, limits, the model route, the
+    availability of weights, and above all the independent evidence base will all change. The
+    reading path in &sect;9 is the durable part &mdash; those sources will keep being updated.
+    The numbers in &sect;2 and &sect;7 should be re-checked before they are quoted anywhere that
+    matters.
+  </p>
+</div>
+
+<hr>
+
+<p class="small">
+  <b>Understanding Jev</b> &middot; compiled September 2026 from the public record.
+  Vendor claims and independent findings are distinguished throughout; where they conflict,
+  both are given and neither is resolved for you.
+</p>

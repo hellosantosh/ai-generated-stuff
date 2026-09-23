@@ -1,0 +1,2327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PKCE, from the Beginning</title>
+<!--
+  Companion to "The Ultimate Developer's Guide to OAuth 2.1 and PKCE".
+  Same print-first design system, deliberately copied rather than shared so
+  that each book stays a single self-contained file. If you change the design
+  here, change it there too.
+
+  Build:  ./build-pkce-guide.sh
+-->
+<style>
+/* ==========================================================================
+   Print-first design system. Each .page is a fixed Letter-sized box so that
+   page breaks, footers and page numbers are exact rather than hopeful.
+   ========================================================================== */
+@page { size: Letter; margin: 0; }
+
+:root{
+  --ink:#14181f; --muted:#59617a; --faint:#8d95ab;
+  --accent:#2f4fd0; --accent-soft:#eaeeff;
+  --good:#0d7a52; --good-soft:#e6f6ee;
+  --warn:#a8620a; --warn-soft:#fdf1e0;
+  --bad:#c0203f;  --bad-soft:#fdeaee;
+  --panel:#f5f7fc; --panel-2:#eceff8; --line:#dbe1ef; --line-strong:#b9c2da;
+  --code-bg:#161b28; --code-ink:#e9edf7;
+  --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"SF Mono","Menlo","Consolas",monospace;
+}
+
+*{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+html,body{ margin:0; padding:0; background:#fff; }
+body{ font-family:var(--sans); color:var(--ink); font-size:10.4pt; line-height:1.55; }
+
+.page{
+  position:relative;
+  width:8.5in; height:11in;
+  padding:0.69in 0.78in 0.55in;
+  page-break-after:always; break-after:page;
+  overflow:hidden;
+}
+.page:last-child{ page-break-after:auto; break-after:auto; }
+
+/* running footer + page number */
+.pfoot{
+  position:absolute; left:0.78in; right:0.78in; bottom:0.25in;
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-size:7.6pt; color:var(--faint); letter-spacing:.04em;
+  border-top:0.5pt solid var(--line); padding-top:4pt;
+}
+.pfoot .ch{ text-transform:uppercase; }
+.pfoot .n{ font-family:var(--mono); font-weight:700; color:var(--muted); }
+
+/* ---------------- typography ---------------- */
+h1,h2,h3,h4{ margin:0; letter-spacing:-0.015em; }
+.chnum{
+  font-family:var(--mono); font-size:8.4pt; font-weight:700;
+  color:var(--accent); letter-spacing:.16em; text-transform:uppercase;
+  margin-bottom:5pt;
+}
+h1.title{ font-size:23pt; line-height:1.12; margin-bottom:6pt; }
+h2{ font-size:13.6pt; margin:16pt 0 5pt; }
+h2:first-of-type{ margin-top:0; }
+h3{ font-size:10.6pt; margin:12pt 0 3pt; }
+h4{ font-size:9.6pt; margin:9pt 0 2pt; }
+p{ margin:0 0 7pt; }
+.lede{ font-size:11.4pt; line-height:1.5; color:var(--muted); margin-bottom:11pt; }
+.small{ font-size:9pt; }
+.tiny{ font-size:8.2pt; line-height:1.45; }
+.muted{ color:var(--muted); }
+b,strong{ font-weight:700; }
+code,.mono{ font-family:var(--mono); font-size:0.9em; }
+p code,li code,td code,.icode{
+  background:var(--panel-2); padding:0.5pt 3pt; border-radius:3px;
+  font-size:8.9pt; color:#1d2433; white-space:nowrap;
+}
+a{ color:var(--accent); text-decoration:none; }
+
+ul,ol{ margin:0 0 7pt; padding-left:15pt; }
+li{ margin-bottom:3.5pt; }
+ul.tight li,ol.tight li{ margin-bottom:1.5pt; }
+ul.plain{ list-style:none; padding-left:0; }
+
+/* ---------------- blocks ---------------- */
+pre{
+  background:var(--code-bg); color:var(--code-ink);
+  padding:9pt 11pt; border-radius:5pt; margin:6pt 0;
+  font-family:var(--mono); font-size:8.3pt; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word;
+}
+pre .c{ color:#8b9bc4; }       /* comment */
+pre .k{ color:#ffcf70; }       /* key / keyword */
+pre .s{ color:#7fdba8; }       /* string / value */
+pre .r{ color:#ff9fb0; }       /* danger */
+
+.panel{ background:var(--panel); border:0.5pt solid var(--line); border-radius:6pt; padding:9pt 11pt; margin:8pt 0; }
+.panel.tight{ padding:7pt 9pt; }
+
+.callout{ border-left:2.5pt solid var(--accent); background:var(--accent-soft); padding:7pt 10pt; border-radius:0 5pt 5pt 0; margin:8pt 0; font-size:9.4pt; }
+.callout.good{ border-color:var(--good); background:var(--good-soft); }
+.callout.warn{ border-color:var(--warn); background:var(--warn-soft); }
+.callout.bad{ border-color:var(--bad); background:var(--bad-soft); }
+.callout .lbl{ font-weight:700; }
+
+.grid{ display:grid; gap:9pt; }
+.g2{ grid-template-columns:1fr 1fr; }
+.g3{ grid-template-columns:repeat(3,1fr); }
+.g21{ grid-template-columns:1.35fr 1fr; }
+.g12{ grid-template-columns:1fr 1.35fr; }
+
+table{ width:100%; border-collapse:collapse; font-size:8.9pt; margin:7pt 0; }
+th,td{ text-align:left; padding:4.5pt 6pt; border-bottom:0.5pt solid var(--line); vertical-align:top; }
+th{ font-size:7.6pt; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); border-bottom:1pt solid var(--line-strong); }
+td.k{ font-family:var(--mono); font-size:8.2pt; white-space:nowrap; }
+tr.hl td{ background:var(--accent-soft); }
+table.dense th,table.dense td{ padding:2.6pt 6pt; }
+
+.tag{ display:inline-block; font-size:7.4pt; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      padding:1pt 5pt; border-radius:8pt; vertical-align:1pt; }
+.tag.a{ background:var(--accent-soft); color:var(--accent); }
+.tag.g{ background:var(--good-soft); color:var(--good); }
+.tag.w{ background:var(--warn-soft); color:var(--warn); }
+.tag.b{ background:var(--bad-soft); color:var(--bad); }
+.tag.m{ background:var(--panel-2); color:var(--muted); }
+
+svg{ display:block; max-width:100%; }
+figure{ margin:9pt 0; }
+figcaption{ font-size:8pt; color:var(--muted); margin-top:4pt; line-height:1.45; }
+figcaption b{ color:var(--ink); }
+
+/* ---------------- book cover ---------------- */
+.bookcover{ padding:0; color:#f2f5ff; background:#0a0f1e; }
+.bookcover .bg{
+  position:absolute; inset:0;
+  background:
+    radial-gradient(1000px 640px at 50% 30%, rgba(91,140,255,.26), transparent 62%),
+    radial-gradient(680px 500px at 84% 90%, rgba(160,107,255,.20), transparent 66%),
+    linear-gradient(178deg,#0c1224 0%,#0a0f1e 48%,#06090f 100%);
+}
+.bookcover .grid{
+  position:absolute; inset:0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,.030) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.030) 1px, transparent 1px);
+  background-size:36px 36px;
+}
+.bookcover .spine{ position:absolute; left:0; top:0; bottom:0; width:16px;
+  background:linear-gradient(180deg,#5b8cff 0%,#a06bff 58%,#4ad3a6 100%); }
+.bookcover .hair{ position:absolute; left:16px; top:0; bottom:0; width:1px; background:rgba(255,255,255,.10); }
+.bookcover .inner{ position:relative; height:100%; display:flex; flex-direction:column;
+  padding:0.78in 0.72in 0.56in 0.9in; }
+
+.bookcover .imprint{ display:flex; align-items:center; gap:9pt;
+  font-family:var(--mono); font-size:8.2pt; letter-spacing:.2em; text-transform:uppercase; color:#8fa2d4; }
+.bookcover .kicker{ margin-top:26pt; font-family:var(--mono); font-size:9.6pt; font-weight:700;
+  letter-spacing:.17em; text-transform:uppercase; color:#7ea6ff; }
+.bookcover h1.bt{ margin:9pt 0 0; font-size:53pt; line-height:0.96; letter-spacing:-0.032em; font-weight:700; }
+.bookcover h1.bt .amp{ color:#9db4ff; font-weight:400; }
+.bookcover .trule{ width:1.55in; height:3.5pt; border-radius:2pt; margin:17pt 0 15pt;
+  background:linear-gradient(90deg,#5b8cff,#a06bff); }
+.bookcover .sub{ font-size:12.6pt; line-height:1.42; color:#b9c4e4; max-width:5.05in; font-weight:400; }
+.bookcover .art{ margin:auto 0 0; padding:6pt 0 0; display:flex; justify-content:center; }
+.bookcover .art svg{ width:4.24in; }
+.bookcover .artcap{ text-align:center; font-family:var(--mono); font-size:7.4pt;
+  letter-spacing:.13em; text-transform:uppercase; color:#7f8db8; margin:1pt 0 0; }
+.bookcover .badge{ margin:15pt auto 0; display:inline-flex; align-items:center; gap:7pt;
+  border:1px solid rgba(122,160,255,.42); background:rgba(91,140,255,.11);
+  border-radius:999px; padding:5pt 13pt; font-size:8.6pt; color:#cfdaf7; }
+.bookcover .badge b{ color:#fff; }
+.bookcover .byline{ margin-top:auto; padding-top:20pt; border-top:1px solid rgba(255,255,255,.13);
+  display:flex; align-items:flex-end; justify-content:space-between; }
+.bookcover .author-lbl{ font-family:var(--mono); font-size:7.6pt; letter-spacing:.2em;
+  text-transform:uppercase; color:#7f8db8; }
+.bookcover .author{ font-size:19.5pt; font-weight:700; letter-spacing:-0.015em; margin-top:3pt; }
+.bookcover .pubname{ text-align:right; font-size:9.6pt; font-weight:700; color:#cfdaf7; letter-spacing:.02em; }
+.bookcover .pubsub{ text-align:right; font-family:var(--mono); font-size:7.2pt;
+  letter-spacing:.14em; text-transform:uppercase; color:#7f8db8; margin-top:2pt; }
+
+/* ---------------- copyright page ---------------- */
+.copyright{ display:flex; flex-direction:column; }
+.copyright .cp-title{ font-size:15.5pt; line-height:1.22; font-weight:700; letter-spacing:-0.018em; margin:0; }
+.copyright .cp-by{ font-size:10.6pt; color:var(--muted); margin:6pt 0 0; }
+.copyright .cp-mark{ display:flex; align-items:center; gap:8pt; margin-bottom:26pt; }
+.copyright .cp-mark .nm{ font-family:var(--mono); font-size:8.4pt; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--muted); }
+.copyright dl{ margin:0; display:grid; grid-template-columns:1.32in 1fr; gap:3.5pt 0; font-size:9.2pt; }
+.copyright dt{ color:var(--muted); font-family:var(--mono); font-size:8pt; letter-spacing:.05em;
+  text-transform:uppercase; padding-top:1.4pt; }
+.copyright dd{ margin:0; }
+.copyright .legal{ font-size:8.5pt; line-height:1.52; color:#3f4658; }
+.copyright .legal p{ margin:0 0 6pt; }
+.copyright .legal h4{ font-size:8.2pt; text-transform:uppercase; letter-spacing:.09em;
+  color:var(--muted); margin:11pt 0 2pt; }
+.copyright .colophon{ margin-top:auto; padding-top:11pt; border-top:0.5pt solid var(--line);
+  font-size:7.8pt; line-height:1.5; color:var(--faint); }
+.rule{ height:3pt; width:1.5in; background:var(--accent); margin:18pt 0; border-radius:2pt; }
+
+/* ---------------- contents ---------------- */
+.toc{ list-style:none; padding:0; margin:0; }
+.toc li{ display:flex; align-items:baseline; gap:6pt; padding:1.9pt 0; border-bottom:0.5pt dotted var(--line); }
+.toc .num{ font-family:var(--mono); font-size:8.4pt; font-weight:700; color:var(--accent); width:26pt; flex:none; }
+.toc .t{ flex:1; font-size:10pt; font-weight:600; }
+.toc .d{ font-size:8.4pt; color:var(--muted); flex:2.1; }
+.toc .pg{ font-family:var(--mono); font-size:8.6pt; color:var(--muted); font-weight:700; }
+
+/* ---------------- code listing pages ---------------- */
+/* Light ground, not the dark inline style: two dozen dark pages would be
+   heavy in print and worse to read at this size. */
+.listing-page .chnum{ margin-bottom:3pt; }
+.lst-title{ font-size:15pt; letter-spacing:-0.015em; margin:0 0 4pt; }
+.lst-blurb{ font-size:9.2pt; line-height:1.45; color:var(--muted); margin:0 0 5pt;
+            max-width:64ch; }
+.lst-meta{ font-family:var(--mono); font-size:7.4pt; color:var(--faint);
+           letter-spacing:.06em; text-transform:uppercase; margin-bottom:3pt; }
+.lst-part{ font-family:var(--mono); color:var(--faint); text-transform:none;
+           letter-spacing:.04em; }
+pre.listing{
+  background:#fbfbfe; color:#1d2433;
+  border:0.5pt solid var(--line); border-radius:4pt;
+  padding:7pt 9pt; margin:0;
+  font-family:var(--mono); font-size:7.4pt; line-height:1.42;
+  white-space:pre; overflow:hidden;
+}
+pre.listing .ln{ color:#aab3cc; user-select:none; padding-right:9pt; }
+pre.listing .c{ color:#7a8496; font-style:italic; }   /* comments */
+pre.listing .s{ color:#0a6c4a; }                      /* strings */
+pre.listing .x{ color:#9c5a08; }                      /* regex literals */
+
+/* ---------------- part divider ---------------- */
+.partnum{ font-family:var(--mono); font-size:8.4pt; font-weight:700;
+          letter-spacing:.2em; text-transform:uppercase; color:var(--accent); }
+.lab-card{ border:0.5pt solid var(--line); border-radius:6pt; padding:9pt 11pt;
+           margin:0 0 8pt; background:var(--panel); }
+.lab-card h3{ text-transform:none; letter-spacing:-0.01em; color:var(--ink);
+              font-size:11pt; margin:0 0 1pt; }
+.lab-card .lab-no{ font-family:var(--mono); font-size:7.6pt; font-weight:700;
+                   color:var(--accent); letter-spacing:.12em; }
+.lab-card .cmd{ font-family:var(--mono); font-size:8.4pt; background:var(--code-bg);
+                color:var(--code-ink); padding:3pt 6pt; border-radius:3pt;
+                display:inline-block; margin:3pt 0; }
+.lab-card p{ font-size:8.8pt; line-height:1.48; margin:3pt 0 0; }
+.lab-card .expect{ font-family:var(--mono); font-size:7.6pt; color:var(--good);
+                   line-height:1.5; margin-top:3pt; }
+
+/* ---------------- glossary ---------------- */
+.gloss h4{ margin:6pt 0 0; font-size:9.3pt; }
+.gloss h4:first-child{ margin-top:0; }
+.gloss p{ margin:0 0 2pt; }
+
+/* --- on-screen reading -------------------------------------------
+   This guide is fixed-layout: @page has no margin and each .page block
+   is exactly one Letter sheet, which supplies its own inner margins. In
+   a browser those sheets stack flush against the left edge with nothing
+   between them. Screen media centres them and sets them apart; print is
+   untouched. */
+
+@media screen {
+  html { background: #e9ecf0; padding: 28px 16px; }
+  body { background: transparent; }   /* the sheets are the pages, not the body */
+  .page {
+    margin: 0 auto 22px;
+    background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 10px 30px rgba(0, 0, 0, .10);
+  }
+}
+
+@media screen and (max-width: 900px) {
+  html { padding: 0; background: #fff; }
+  .page { width: 100%; height: auto; margin: 0 0 18px; border-radius: 0; box-shadow: none; }
+}
+
+/* ---------------- additions for this volume ----------------
+   The contents run to 22 rows, which is more than the shared sheet's
+   default spacing fits on one page. */
+.toc.compact li{ padding:1.15pt 0; }
+.toc.compact .t{ font-size:9.5pt; }
+.toc.compact .d{ font-size:8.1pt; }
+.partnum.compact{ margin:6pt 0 3pt; }
+</style>
+</head>
+<body>
+
+<!-- ==================================================================== 1
+     COVER
+     ==================================================================== -->
+<section class="page bookcover front">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="spine"></div>
+  <div class="hair"></div>
+
+  <div class="inner">
+    <div class="imprint">
+      <svg width="17" height="19" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#8fa2d4" stroke-width="2"/>
+        <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#8fa2d4" opacity=".5"/>
+      </svg>
+      <span>Smiroh Publishers</span>
+    </div>
+
+    <div class="kicker">Start here &middot; no OAuth required</div>
+    <h1 class="bt">PKCE<span class="amp">,</span><br><span style="font-size:33pt;letter-spacing:-0.02em">from the Beginning</span></h1>
+    <div class="trule"></div>
+    <p class="sub">One attack, one fix, explained slowly. What an authorization code is,
+    how it gets stolen, and the five lines of code that make stealing it useless.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 420 176" xmlns="http://www.w3.org/2000/svg" font-family="SF Mono,Menlo,monospace">
+        <defs>
+          <linearGradient id="cg" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#a06bff"/>
+          </linearGradient>
+          <marker id="ca" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,4 L0,8 z" fill="#7ea6ff"/>
+          </marker>
+        </defs>
+
+        <rect x="2" y="44" width="116" height="52" rx="7" fill="rgba(91,140,255,.12)" stroke="#5b8cff" stroke-width="1.1"/>
+        <text x="60" y="64" text-anchor="middle" font-size="9" fill="#9db4ff" letter-spacing="1.4">SECRET</text>
+        <text x="60" y="80" text-anchor="middle" font-size="11.5" fill="#f2f5ff">code_verifier</text>
+        <text x="60" y="110" text-anchor="middle" font-size="8" fill="#7f8db8">43–128 random chars</text>
+        <text x="60" y="122" text-anchor="middle" font-size="8" fill="#7f8db8">never leaves the app</text>
+
+        <path d="M122,70 L160,70" stroke="#7ea6ff" stroke-width="1.5" marker-end="url(#ca)"/>
+        <rect x="164" y="52" width="92" height="36" rx="6" fill="rgba(160,107,255,.14)" stroke="#a06bff" stroke-width="1.1"/>
+        <text x="210" y="75" text-anchor="middle" font-size="12" fill="#e4d8ff">SHA&#8209;256</text>
+        <text x="210" y="106" text-anchor="middle" font-size="8" fill="#7f8db8">one way only</text>
+        <path d="M210,92 L210,100" stroke="#6b5a8f" stroke-width="1" stroke-dasharray="2 2"/>
+
+        <path d="M260,70 L298,70" stroke="#7ea6ff" stroke-width="1.5" marker-end="url(#ca)"/>
+        <rect x="302" y="44" width="116" height="52" rx="7" fill="rgba(74,211,166,.10)" stroke="#4ad3a6" stroke-width="1.1"/>
+        <text x="360" y="64" text-anchor="middle" font-size="9" fill="#7fdba8" letter-spacing="1.4">PUBLIC</text>
+        <text x="360" y="80" text-anchor="middle" font-size="11.5" fill="#f2f5ff">code_challenge</text>
+        <text x="360" y="110" text-anchor="middle" font-size="8" fill="#7f8db8">safe to send in the open</text>
+
+        <path d="M2,150 L418,150" stroke="url(#cg)" stroke-width="2" opacity=".55"/>
+        <text x="210" y="168" text-anchor="middle" font-size="8.4" fill="#8fa2d4" letter-spacing="1.8">
+          PROVE YOU STARTED THE FLOW YOU ARE FINISHING
+        </text>
+      </svg>
+    </div>
+    <p class="artcap">RFC 7636 &middot; required for every client in OAuth 2.1</p>
+
+    <div class="badge">
+      <span><b>For beginners.</b> Worked examples in 7 languages, and a lab you can break on purpose.</span>
+    </div>
+
+    <div class="byline">
+      <div>
+        <div class="author-lbl">Written by</div>
+        <div class="author">Smiroh Dev</div>
+      </div>
+      <div>
+        <div class="pubname">Smiroh Publishers</div>
+        <div class="pubsub">Companion volume</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================================================================== 2
+     COPYRIGHT
+     ==================================================================== -->
+<section class="page copyright front">
+
+  <div class="cp-mark">
+    <svg width="19" height="21" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#59617a" stroke-width="2"/>
+      <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#59617a" opacity=".5"/>
+    </svg>
+    <span class="nm">Smiroh Publishers</span>
+  </div>
+
+  <h1 class="cp-title">PKCE, from the Beginning</h1>
+  <p class="cp-by">Smiroh Dev</p>
+
+  <div style="margin:22pt 0 20pt">
+    <dl>
+      <dt>Publisher</dt><dd>Smiroh Publishers</dd>
+      <dt>Edition</dt><dd>First edition</dd>
+      <dt>Published</dt><dd><b>September 2026</b></dd>
+      <dt>Format</dt><dd>Electronic book (PDF), 36 pages</dd>
+      <dt>ISBN (ebook)</dt><dd>To be assigned</dd>
+      <dt>Subject</dt><dd>Computers / Security / Web Development</dd>
+      <dt>Companion to</dt><dd>The Ultimate Developer's Guide to OAuth&nbsp;2.1 and PKCE</dd>
+    </dl>
+  </div>
+
+  <div class="legal">
+    <p><b>Copyright &copy; 2026 Smiroh Dev. All rights reserved.</b></p>
+
+    <p>Published by Smiroh Publishers. No part of this publication may be reproduced,
+    distributed, or transmitted in any form or by any means &mdash; including photocopying,
+    recording, or other electronic or mechanical methods &mdash; without the prior written
+    permission of the publisher, except in the case of brief quotations embodied in critical
+    reviews and certain other noncommercial uses permitted by copyright law.</p>
+
+    <h4>Who this book is for</h4>
+    <p>Developers who have been told to &ldquo;add PKCE&rdquo; and would like to understand what
+    they are adding and why. No prior knowledge of OAuth is assumed. If you already know the
+    authorization code flow and want depth on tokens, scopes, rotation and OpenID Connect,
+    the companion volume is the better book &mdash; this one stays on a single subject and
+    takes its time.</p>
+
+    <h4>Standards referenced</h4>
+    <p>PKCE is defined by RFC&nbsp;7636. Its role in current practice is set by the OAuth&nbsp;2.1
+    draft and by RFC&nbsp;9700, <i>Best Current Practice for OAuth&nbsp;2.0 Security</i>. Those
+    documents are normative; where this book and a specification disagree, the specification
+    governs.</p>
+
+    <h4>Trademarks</h4>
+    <p>All trademarks and registered trademarks appearing in this book are the property of
+    their respective owners. They are used editorially, with no intention of infringement.</p>
+
+    <h4>Limit of liability and disclaimer of warranty</h4>
+    <p>The publisher and the author make no representations or warranties with respect to the
+    accuracy or completeness of the contents of this work and specifically disclaim all
+    warranties. The advice and strategies contained herein may not be suitable for every
+    situation. Neither the publisher nor the author shall be liable for damages arising
+    herefrom. The code in this book is illustrative: it is written for clarity, not for
+    production, and it has not been audited.</p>
+
+    <h4>Security notice</h4>
+    <p>The attack described in Chapter&nbsp;3 is presented so that you can defend against it.
+    Exercising it against systems you do not own or have permission to test is, in most
+    jurisdictions, a criminal offense.</p>
+  </div>
+
+  <div class="colophon">
+    Set in Helvetica Neue and SF Mono. Diagrams drawn as inline SVG. Rendered from a single
+    hand-written HTML source by headless Chromium; page numbers are computed from the document
+    at build time rather than maintained by hand.
+  </div>
+</section>
+
+<!-- ==================================================================== 3
+     CONTENTS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Contents</div>
+  <h1 class="title">What is in this book</h1>
+  <p class="lede">Why PKCE exists, how it works, typing it out yourself, and what people
+  get wrong.</p>
+
+  <div class="partnum compact">Part I &middot; Why PKCE exists</div>
+  <ul class="toc compact">
+    <li><span class="num">01</span><span class="t">The handoff</span><span class="d">What OAuth is doing, in plain words</span><span class="pg">4</span></li>
+    <li><span class="num">02</span><span class="t">The authorization code</span><span class="d">A one-time ticket, and the two channels it travels</span><span class="pg">6</span></li>
+    <li><span class="num">03</span><span class="t">How the code gets stolen</span><span class="d">The interception attack, step by step</span><span class="pg">7</span></li>
+    <li><span class="num">04</span><span class="t">Why a client secret will not save you</span><span class="d">Public clients, and what &ldquo;secret&rdquo; means in an app anyone can download</span><span class="pg">9</span></li>
+  </ul>
+
+  <div class="partnum compact">Part II &middot; How PKCE works</div>
+  <ul class="toc compact">
+    <li><span class="num">05</span><span class="t">The idea</span><span class="d">Prove you are the app that started the flow</span><span class="pg">10</span></li>
+    <li><span class="num">06</span><span class="t">The three parameters</span><span class="d">code_verifier, code_challenge, code_challenge_method</span><span class="pg">11</span></li>
+    <li><span class="num">07</span><span class="t">A complete run, with real values</span><span class="d">Every request and response, nothing elided</span><span class="pg">13</span></li>
+    <li><span class="num">08</span><span class="t">Why a hash, and what base64url is</span><span class="d">One-way functions for people who have not met one</span><span class="pg">15</span></li>
+    <li><span class="num">09</span><span class="t">The attack, defeated</span><span class="d">The same theft, now worthless</span><span class="pg">18</span></li>
+    <li><span class="num">10</span><span class="t">plain, S256, and the downgrade</span><span class="d">Why one of the two methods is a trap</span><span class="pg">19</span></li>
+  </ul>
+
+  <div class="partnum compact">Part III &middot; Do it yourself</div>
+  <ul class="toc compact">
+    <li><span class="num">11</span><span class="t">Generate the pair</span><span class="d">Shell, JavaScript, Python, Java, Kotlin, Swift, C#</span><span class="pg">21</span></li>
+    <li><span class="num">12</span><span class="t">Build the authorization request</span><span class="d">Every parameter, and what it is for</span><span class="pg">24</span></li>
+    <li><span class="num">13</span><span class="t">Exchange the code</span><span class="d">The one request that matters</span><span class="pg">25</span></li>
+    <li><span class="num">14</span><span class="t">Break it on purpose</span><span class="d">Four failures, and the exact errors they produce</span><span class="pg">26</span></li>
+    <li><span class="num">15</span><span class="t">Run it against the simulator</span><span class="d">The lab in this repository, end to end</span><span class="pg">28</span></li>
+  </ul>
+
+  <div class="partnum compact">Part IV &middot; Getting it right</div>
+  <ul class="toc compact">
+    <li><span class="num">16</span><span class="t">PKCE, state and nonce</span><span class="d">Three parameters, three different jobs</span><span class="pg">29</span></li>
+    <li><span class="num">17</span><span class="t">The mistakes beginners make</span><span class="d">Symptoms, causes, fixes</span><span class="pg">30</span></li>
+    <li><span class="num">18</span><span class="t">What PKCE does not do</span><span class="d">The gaps it was never meant to close</span><span class="pg">32</span></li>
+    <li><span class="num">19</span><span class="t">The checklist</span><span class="d">What to verify before you ship</span><span class="pg">33</span></li>
+    <li><span class="num">&mdash;</span><span class="t">Quick reference</span><span class="d">One page to keep open while you work</span><span class="pg">34</span></li>
+    <li><span class="num">&mdash;</span><span class="t">Glossary</span><span class="d">Every term this book uses</span><span class="pg">35</span></li>
+    <li><span class="num">&mdash;</span><span class="t">Questions people ask</span><span class="d">And where to read next</span><span class="pg">36</span></li>
+  </ul>
+
+  <div class="pfoot"><span class="ch">PKCE, from the Beginning</span><span class="n">3</span></div>
+</section>
+
+<!-- ==================================================================== 4 -->
+<section class="page">
+  <div class="chnum">Chapter 01</div>
+  <h1 class="title">The handoff</h1>
+  <p class="lede">Before PKCE can make sense, one thing has to: what is actually happening
+  when an app says &ldquo;Sign in with&nbsp;&hellip;&rdquo; and a different website appears.</p>
+
+  <p>You install a photo-printing app. It wants the photos in your cloud drive. There are
+  two ways it could get them, and only one of them is sane.</p>
+
+  <p>The first way is to ask for your cloud password and log in as you. This is a disaster
+  for reasons that are easy to list once you start: the app now has access to everything,
+  not just photos; the only way to take that access back is to change your password, which
+  breaks every other app at the same time; the cloud provider cannot tell the app's
+  requests from yours, so nothing can be audited; and your two-factor authentication has
+  nowhere to fit.</p>
+
+  <p>The second way is the one the whole industry settled on. The app never sees your
+  password. Instead you are sent to the cloud provider, you log in <em>there</em>, you are
+  asked whether this app may read your photos, and if you agree the provider hands the app
+  a <b>token</b> &mdash; a narrow, expiring credential that permits exactly that and nothing
+  else. That arrangement is called <b>delegated authorization</b>, and OAuth is the protocol
+  that performs it.</p>
+
+  <div class="callout">
+    <span class="lbl">The valet key.</span> Some cars come with a second key that opens the
+    door and starts the engine but will not open the boot and limits the car to 30&nbsp;miles
+    an hour. You hand it to someone you trust a little, for one job, and you can have it back.
+    A token is a valet key. Your password is the key to the house.
+  </div>
+
+  <h2>The four parties</h2>
+  <p>Every OAuth conversation has the same cast. Learning the names now makes the rest of
+  this book shorter.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.28in">Name</th><th style="width:1.5in">In our example</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Resource owner</td><td>You</td><td>Owns the data and is the only one who can agree to share it.</td></tr>
+      <tr><td class="k">Client</td><td>The printing app</td><td>Wants the data. Confusingly, &ldquo;client&rdquo; means the <em>application</em>, not you.</td></tr>
+      <tr><td class="k">Authorization&nbsp;server</td><td>Your cloud provider's login</td><td>Authenticates you, asks your consent, and issues tokens.</td></tr>
+      <tr><td class="k">Resource server</td><td>The cloud photo API</td><td>Holds the photos and accepts the token as permission to serve them.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Two of those often live at the same company but they are separate jobs, and keeping
+  them separate in your head matters later: the authorization server is the only party that
+  ever sees your password, and the resource server is the only party that ever sees your
+  photos.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 01 &middot; The handoff</span><span class="n">4</span></div>
+</section>
+
+<!-- ==================================================================== 5 -->
+<section class="page">
+  <div class="chnum">Chapter 01 &middot; continued</div>
+
+  <h2>What the handoff looks like</h2>
+  <p>The app cannot simply ask the authorization server for a token, because the
+  authorization server has no idea who you are until you have logged in &mdash; and you must
+  log in somewhere the app cannot watch you type. So the app steps aside. It sends your
+  browser to the authorization server, and waits.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 372" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="h1a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <!-- channel bands -->
+      <rect x="0" y="96" width="700" height="150" rx="6" fill="#eaeeff" opacity=".55"/>
+      <text x="694" y="112" text-anchor="end" font-size="8" font-weight="700" fill="#2f4fd0">THROUGH YOUR BROWSER &mdash; ANYONE WATCHING CAN SEE IT</text>
+      <rect x="0" y="252" width="700" height="52" rx="6" fill="#fdf1e0" opacity=".7"/>
+      <text x="694" y="268" text-anchor="end" font-size="8" font-weight="700" fill="#a8620a">APP TO SERVER, DIRECT &mdash; NOBODY ELSE SEES IT</text>
+
+      <!-- lanes -->
+      <g>
+        <rect x="26" y="8" width="108" height="34" rx="6" fill="#fff" stroke="#14181f" stroke-width="1.2"/>
+        <text x="80" y="24" text-anchor="middle" font-size="9.4" font-weight="700" fill="#14181f">You</text>
+        <text x="80" y="35" text-anchor="middle" font-size="7.4" fill="#59617a">+ your browser</text>
+
+        <rect x="196" y="8" width="108" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="250" y="24" text-anchor="middle" font-size="9.4" font-weight="700" fill="#14181f">Printing app</text>
+        <text x="250" y="35" text-anchor="middle" font-size="7.4" fill="#59617a">the client</text>
+
+        <rect x="386" y="8" width="128" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="450" y="24" text-anchor="middle" font-size="9.4" font-weight="700" fill="#14181f">Cloud login</text>
+        <text x="450" y="35" text-anchor="middle" font-size="7.4" fill="#59617a">authorization server</text>
+
+        <rect x="586" y="8" width="96" height="34" rx="6" fill="#fff" stroke="#b9c2da" stroke-width="1.2"/>
+        <text x="634" y="24" text-anchor="middle" font-size="9.4" font-weight="700" fill="#14181f">Photo API</text>
+        <text x="634" y="35" text-anchor="middle" font-size="7.4" fill="#59617a">resource server</text>
+      </g>
+
+      <g stroke="#b9c2da" stroke-width="1" stroke-dasharray="3 4">
+        <path d="M80,44 L80,352"/><path d="M250,44 L250,352"/>
+        <path d="M450,44 L450,352"/><path d="M634,44 L634,352"/>
+      </g>
+
+      <!-- steps -->
+      <g font-size="8.4">
+        <path d="M82,72 L246,72" stroke="#59617a" stroke-width="1.5" marker-end="url(#h1a)"/>
+        <text x="164" y="66" text-anchor="middle" fill="#59617a"><tspan font-weight="700">1</tspan>  &ldquo;print my photos&rdquo;</text>
+
+        <path d="M248,124 L84,124" stroke="#2f4fd0" stroke-width="1.5" marker-end="url(#h1a)"/>
+        <text x="166" y="118" text-anchor="middle" fill="#2f4fd0"><tspan font-weight="700">2</tspan>  go here, and take this with you</text>
+
+        <path d="M82,158 L446,158" stroke="#2f4fd0" stroke-width="1.5" marker-end="url(#h1a)"/>
+        <text x="264" y="152" text-anchor="middle" fill="#2f4fd0"><tspan font-weight="700">3</tspan>  your browser arrives at the login page</text>
+
+        <path d="M82,192 L446,192" stroke="#0d7a52" stroke-width="1.8" marker-end="url(#h1a)"/>
+        <text x="264" y="186" text-anchor="middle" font-weight="700" fill="#0d7a52"><tspan>4</tspan>  you log in and consent &mdash; here, and only here</text>
+
+        <path d="M448,228 L84,228" stroke="#2f4fd0" stroke-width="1.5" marker-end="url(#h1a)"/>
+        <text x="266" y="222" text-anchor="middle" fill="#2f4fd0"><tspan font-weight="700">5</tspan>  back to the app, carrying <tspan font-family="SF Mono,Menlo,monospace">?code=&hellip;</tspan></text>
+
+        <path d="M252,276 L446,276" stroke="#a8620a" stroke-width="1.8" marker-end="url(#h1a)"/>
+        <text x="349" y="270" text-anchor="middle" font-weight="700" fill="#a8620a"><tspan>6</tspan>  here is the code &mdash; give me a token</text>
+        <path d="M446,294 L252,294" stroke="#a8620a" stroke-width="1.8" marker-end="url(#h1a)" stroke-dasharray="5 3"/>
+        <text x="349" y="308" text-anchor="middle" fill="#a8620a">access token</text>
+
+        <path d="M252,336 L630,336" stroke="#14181f" stroke-width="1.5" marker-end="url(#h1a)"/>
+        <text x="441" y="330" text-anchor="middle" fill="#14181f"><tspan font-weight="700">7</tspan>  GET /photos, with the token</text>
+      </g>
+
+      <text x="6" y="366" font-size="7.8" fill="#59617a">Your password travels on arrow 4 only. The app never sees it, and never needs to.</text>
+    </svg>
+    <figcaption><b>The handoff, in order.</b> Time runs downwards. Steps 2 to 5 happen
+    <i>through your browser</i>, which means they appear in URLs, in history, and in anything
+    watching the device. Step&nbsp;6 is a direct call from the app to the server that nothing
+    else takes part in. That difference is the whole of this book.</figcaption>
+  </figure>
+
+  <p>Notice what arrives at step&nbsp;5. Not a token &mdash; a <b>code</b>. The app is not
+  trusted with a token just because a browser turned up carrying something. It has to
+  perform one more step, in private, to trade that code for the real credential. The next
+  chapter looks at why the protocol is built that way.</p>
+
+  <p>One word is worth being precise about. When we say the app &ldquo;redirects your
+  browser&rdquo;, nothing clever is happening: the app returns an ordinary HTTP redirect, or
+  opens a URL, and the browser goes there. Everything the app wants the authorization server
+  to know is simply part of that URL &mdash; and everything on arrows&nbsp;2 to&nbsp;5 is
+  therefore a URL that you, your browser, your operating system, and any software installed
+  alongside them can read.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 01 &middot; The handoff</span><span class="n">5</span></div>
+</section>
+
+<!-- ==================================================================== 6 -->
+<section class="page">
+  <div class="chnum">Chapter 02</div>
+  <h1 class="title">The authorization code</h1>
+  <p class="lede">A short string that is worth a token. Understanding why the protocol
+  bothers with it is the last thing you need before the attack makes sense.</p>
+
+  <p>At step&nbsp;5 the browser came back to the app carrying something like this:</p>
+
+  <pre><span class="c">// the browser lands back on the app's redirect URI</span>
+com.printingapp://callback?<span class="k">code</span>=<span class="s">SplxlOBeZQQYbYS6WxSbIA</span>&amp;<span class="k">state</span>=<span class="s">af0ifjsldkj</span></pre>
+
+  <p>That <code>code</code> is the authorization code. It has four properties worth
+  committing to memory, because every one of them exists for a reason:</p>
+
+  <table class="dense">
+    <tbody>
+      <tr><td class="k" style="width:1.25in">Short-lived</td><td>Typically valid for 30 to 60 seconds. It is meant to be used immediately.</td></tr>
+      <tr><td class="k">Single use</td><td>The server marks it spent the first time it is redeemed. A second attempt fails &mdash; and a good server also revokes any token it already issued for that code, on the assumption that two parties are fighting over it.</td></tr>
+      <tr><td class="k">Bound to one client</td><td>It was issued for a particular <code>client_id</code> and redirect URI.</td></tr>
+      <tr><td class="k">Not a credential</td><td>On its own it opens nothing. It has to be exchanged.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why not just send the token?</h2>
+  <p>An older version of OAuth did exactly that: the authorization server put the access
+  token straight into the redirect URL. It was called the <i>implicit flow</i>, and OAuth&nbsp;2.1
+  removes it. The reason is the one thing you now know about arrows&nbsp;2 to&nbsp;5: they
+  are URLs.</p>
+
+  <p>A URL is written into browser history. It is sent in the <code>Referer</code> header to
+  whatever the page loads next. It is logged by proxies, by the browser's own diagnostics,
+  and by any extension with permission to read tabs. Putting a token that is valid for an hour
+  into a URL means putting it into all of those places.</p>
+
+  <p>The authorization code exists so that the <em>valuable</em> thing &mdash; the token &mdash;
+  never travels that way. The code goes through the browser; the token comes back over a
+  direct, private connection from the app to the server. Even if the code leaks into a log,
+  it expires in under a minute and can only be spent once.</p>
+
+  <div class="callout good">
+    <span class="lbl">This is good design.</span> The code is deliberately a low-value,
+    fast-expiring bearer of a one-time right, precisely so that the channel that cannot be
+    kept private carries as little value as possible.
+  </div>
+
+  <h2>So where is the problem?</h2>
+  <p>Everything above is sound &mdash; as long as one assumption holds. The server hands the
+  token to whoever turns up with a valid code, so the whole design rests on the code reaching
+  <em>only</em> the app that started the flow.</p>
+
+  <p>On a web server that assumption is reasonable. On a phone, or in a single-page app, it
+  turns out not to be. That is the subject of the next chapter.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 02 &middot; The authorization code</span><span class="n">6</span></div>
+</section>
+
+<!-- ==================================================================== 7 -->
+<section class="page">
+  <div class="chnum">Chapter 03</div>
+  <h1 class="title">How the code gets stolen</h1>
+  <p class="lede">The authorization code has to be delivered back to the app somehow. On a
+  phone, &ldquo;somehow&rdquo; turns out to be a door that more than one app can stand behind.</p>
+
+  <p>A website's redirect URI is a URL: <code>https://app.example.com/callback</code>.
+  The browser resolves that name through DNS and TLS, so it is genuinely hard for another
+  party to receive it.</p>
+
+  <p>A mobile app has no domain name. For years the way an app said &ldquo;send the browser
+  back to me&rdquo; was to register a <b>custom URL scheme</b> with the operating system:</p>
+
+  <pre><span class="c">// the printing app claims this scheme at install time</span>
+com.printingapp://callback</pre>
+
+  <p>When the browser is told to go to a <code>com.printingapp://</code> address, the
+  operating system looks up which installed app claimed that scheme and hands it over.
+  Here is the problem, and it is embarrassingly simple: <b>on classic custom schemes, nothing
+  stops a second app from claiming the same one.</b> There is no registry, no proof of
+  ownership, and no check. An attacker publishes a free wallpaper app that quietly declares
+  <code>com.printingapp</code> in its manifest, and waits.</p>
+
+  <p>What happens when two apps claim one scheme is platform-specific and, from a security
+  point of view, all of the answers are bad: the system may pick the one installed first, or
+  last, or show the user a chooser they will not understand. The attacker does not need to win
+  every time. Winning sometimes is enough.</p>
+
+  <div class="callout bad">
+    <span class="lbl">This is not theoretical.</span> Authorization code interception through
+    custom-scheme collision is the attack RFC&nbsp;7636 was written to stop. Its abstract says
+    so in the first sentence. Every mitigation in this book exists because this worked.
+  </div>
+
+  <h2>Other doors into the same room</h2>
+  <p>The custom-scheme collision is the classic case, but the code is exposed anywhere the
+  redirect is visible:</p>
+
+  <ul class="tight">
+    <li>A malicious or compromised <b>browser extension</b> that can read tab URLs.</li>
+    <li>An <b>open redirector</b> on the client's own domain, which lets an attacker bounce
+        the code to a site they control.</li>
+    <li><b>Referer leakage</b>, where the callback page loads a third-party script and the
+        browser helpfully sends the full URL along.</li>
+    <li><b>Shoulder-level logging</b>: proxies, crash reporters, analytics tools and server
+        access logs that record full URLs by default.</li>
+    <li>On a shared or infected device, anything reading <b>browser history</b>.</li>
+  </ul>
+
+  <p>Notice that none of these require breaking TLS or guessing a secret. They require
+  only being somewhere the URL passes.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 03 &middot; How the code gets stolen</span><span class="n">7</span></div>
+</section>
+
+<!-- ==================================================================== 8 -->
+<section class="page">
+  <div class="chnum">Chapter 03 &middot; continued</div>
+
+  <h2>The theft, step by step</h2>
+  <p>Follow the code. Everything up to step&nbsp;4 is the normal, correct flow &mdash; which is
+  exactly what makes this attack unpleasant. Nothing has gone wrong yet at the point where
+  everything goes wrong.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 362" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="a3a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="186" width="700" height="150" rx="6" fill="#fdeaee" opacity=".75"/>
+      <text x="694" y="202" text-anchor="end" font-size="8" font-weight="700" fill="#c0203f">THE THEFT</text>
+
+      <g>
+        <rect x="14" y="8" width="120" height="34" rx="6" fill="#fff" stroke="#14181f" stroke-width="1.2"/>
+        <text x="74" y="24" text-anchor="middle" font-size="9.2" font-weight="700" fill="#14181f">You</text>
+        <text x="74" y="35" text-anchor="middle" font-size="7.2" fill="#59617a">browser + OS</text>
+
+        <rect x="196" y="8" width="118" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="255" y="24" text-anchor="middle" font-size="9.2" font-weight="700" fill="#14181f">Printing app</text>
+        <text x="255" y="35" text-anchor="middle" font-size="7.2" fill="#59617a">the real client</text>
+
+        <rect x="374" y="8" width="130" height="34" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.3"/>
+        <text x="439" y="24" text-anchor="middle" font-size="9.2" font-weight="700" fill="#c0203f">Wallpaper app</text>
+        <text x="439" y="35" text-anchor="middle" font-size="7.2" fill="#8a4453">claims the same scheme</text>
+
+        <rect x="566" y="8" width="120" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+        <text x="626" y="24" text-anchor="middle" font-size="9.2" font-weight="700" fill="#14181f">Cloud login</text>
+        <text x="626" y="35" text-anchor="middle" font-size="7.2" fill="#59617a">authorization server</text>
+      </g>
+
+      <g stroke="#b9c2da" stroke-width="1" stroke-dasharray="3 4">
+        <path d="M74,44 L74,348"/><path d="M255,44 L255,348"/>
+        <path d="M439,44 L439,348"/><path d="M626,44 L626,348"/>
+      </g>
+
+      <g font-size="8.3">
+        <path d="M253,68 L78,68" stroke="#59617a" stroke-width="1.4" marker-end="url(#a3a)"/>
+        <text x="166" y="62" text-anchor="middle" fill="#59617a"><tspan font-weight="700">1</tspan>  the real app starts the flow</text>
+
+        <path d="M76,102 L622,102" stroke="#2f4fd0" stroke-width="1.4" marker-end="url(#a3a)"/>
+        <text x="349" y="96" text-anchor="middle" fill="#2f4fd0"><tspan font-weight="700">2</tspan>  authorization request</text>
+
+        <path d="M76,136 L622,136" stroke="#0d7a52" stroke-width="1.6" marker-end="url(#a3a)"/>
+        <text x="349" y="130" text-anchor="middle" font-weight="700" fill="#0d7a52"><tspan>3</tspan>  you log in and consent &mdash; genuinely, to the real server</text>
+
+        <path d="M624,170 L78,170" stroke="#2f4fd0" stroke-width="1.4" marker-end="url(#a3a)"/>
+        <text x="349" y="164" text-anchor="middle" fill="#2f4fd0"><tspan font-weight="700">4</tspan>  redirect to <tspan font-family="SF Mono,Menlo,monospace">com.printingapp://callback?code=XYZ</tspan></text>
+
+        <path d="M78,224 L435,224" stroke="#c0203f" stroke-width="2" marker-end="url(#a3a)"/>
+        <text x="256" y="218" text-anchor="middle" font-weight="700" fill="#c0203f"><tspan>5</tspan>  the OS hands the redirect to the wrong app</text>
+        <text x="256" y="238" text-anchor="middle" font-size="7.6" fill="#8a4453">both registered the scheme; the OS has no way to know which is genuine</text>
+
+        <path d="M441,272 L622,272" stroke="#c0203f" stroke-width="2" marker-end="url(#a3a)"/>
+        <text x="531" y="266" text-anchor="middle" font-weight="700" fill="#c0203f"><tspan>6</tspan>  POST /token, code=XYZ</text>
+
+        <path d="M622,302 L441,302" stroke="#c0203f" stroke-width="2" marker-end="url(#a3a)" stroke-dasharray="5 3"/>
+        <text x="531" y="296" text-anchor="middle" font-weight="700" fill="#c0203f"><tspan>7</tspan>  access token</text>
+        <text x="531" y="318" text-anchor="middle" font-size="7.6" fill="#8a4453">a valid code arrived; the server has no reason to refuse</text>
+
+        <path d="M251,224 L80,224" stroke="#8d95ab" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="166" y="250" text-anchor="middle" font-size="7.6" fill="#8d95ab">the real app is still waiting, and never finds out</text>
+      </g>
+    </svg>
+    <figcaption><b>Authorization code interception.</b> You did nothing wrong. The
+    authorization server did nothing wrong. The code was valid, single-use and unexpired &mdash;
+    it was simply handed to the wrong hands, and nothing in the protocol so far lets the
+    server tell the difference.</figcaption>
+  </figure>
+
+  <p>Step&nbsp;7 is the one to sit with. The server is behaving correctly by its own rules. It
+  received a code it issued minutes ago, unexpired and unspent, for a registered client, and
+  it did what the specification says: it returned a token. <b>The server cannot distinguish the
+  thief from the app, because the code is the only evidence it has.</b></p>
+
+  <h2>Why the operating system cannot help</h2>
+  <p>It is natural to ask why the phone does not simply refuse to give the redirect to an app
+  that does not own the scheme. The answer is that, with a classic custom scheme, it has
+  nothing to check against.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.75in">Redirect mechanism</th><th>Can the platform verify the claim?</th></tr></thead>
+    <tbody>
+      <tr><td class="k">https:// (web)</td><td><b>Yes.</b> DNS and TLS prove who owns the domain.</td></tr>
+      <tr><td class="k">Custom scheme</td><td><b>No.</b> The string is declared in a manifest. Nothing anywhere states who is entitled to it.</td></tr>
+      <tr><td class="k">App Links (Android)<br>Universal Links (iOS)</td><td><b>Yes.</b> The app declares a domain, and the platform fetches a file from that domain to confirm the association before honoring the link.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Verified links are the right long-term answer, and worth adopting. But they are a
+  platform feature: they need a domain, a published association file, a recent OS, and an app
+  installed from a store. PKCE needs none of those and does not depend on the attacker's
+  environment being well behaved &mdash; which is why it is the mandatory part.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 03 &middot; How the code gets stolen</span><span class="n">8</span></div>
+</section>
+
+<!-- ==================================================================== 9 -->
+<section class="page">
+  <div class="chnum">Chapter 04</div>
+  <h1 class="title">Why a client secret will not save you</h1>
+  <p class="lede">There is an obvious objection: make the app prove who it is when it
+  redeems the code. It is a good instinct, and for a whole class of application it is
+  impossible.</p>
+
+  <p>Web applications already do this. When a server-side app exchanges a code it also
+  sends a <b>client secret</b>, issued at registration. The thief in the last chapter has the
+  code but not the secret, so step&nbsp;6 fails. Problem solved &mdash; for a server. For
+  anything the user installs or downloads, no, because of a distinction OAuth draws at the
+  start.</p>
+
+  <table>
+    <thead><tr><th style="width:1.35in">Client type</th><th>Definition, and what it means in practice</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Confidential</td><td>Can keep a secret, because the secret lives on a machine the developer controls. A server-side web app, a backend service, a daemon.</td></tr>
+      <tr><td class="k">Public</td><td><b>Cannot keep a secret.</b> The whole application is in the user's hands. A mobile app, a desktop app, a single-page app, a CLI tool.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>&ldquo;Cannot&rdquo; is a strong word. Is it really?</h2>
+  <p>It really is. Put a secret in a mobile app and it ships inside the binary. Anyone can
+  download that binary from the store, and the tools to look inside it are free, standard and
+  a single command:</p>
+
+  <pre><span class="c"># pull the strings out of an app bundle — no skill required</span>
+$ unzip -q PrintingApp.ipa -d x &amp;&amp; strings x/Payload/PrintingApp.app/PrintingApp \
+    | grep -iE <span class="s">'secret|client_id'</span>
+<span class="r">client_secret=7Fd2c9Ab...</span>      <span class="c">← there it is</span></pre>
+
+  <p>A single-page application is worse still: its &ldquo;secret&rdquo; is served to the
+  browser as JavaScript, one <kbd>View Source</kbd> away. Obfuscation changes nothing. The
+  secret must be present for the app to use it, so it is present for the attacker too. It is
+  not a secret; it is a slightly inconvenient constant.</p>
+
+
+  <h2>What we actually need</h2>
+  <p>So the requirement is sharper than &ldquo;prove who you are&rdquo;. A public client cannot
+  prove <em>who it is</em>, because any proof it carries can be copied out of it before the
+  flow even starts. What it can do is prove something narrower:</p>
+
+  <div class="panel">
+    <p style="margin:0"><b>Prove that the party redeeming this code is the same party that
+    requested it</b> &mdash; without shipping any long-lived secret at all.</p>
+  </div>
+
+  <p>That is a much smaller claim, and it has a neat solution: instead of using a secret the
+  developer baked in, the app <em>invents a fresh secret for every single login</em>. Nothing
+  is shipped, so nothing can be extracted. That idea is PKCE, and Part&nbsp;II is about how
+  four lines of arithmetic turn it into a working proof.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 04 &middot; Why a client secret will not save you</span><span class="n">9</span></div>
+</section>
+
+<!-- ==================================================================== 10 -->
+<section class="page">
+  <div class="chnum">Chapter 05</div>
+  <h1 class="title">The idea</h1>
+  <p class="lede">PKCE is one sentence long. Everything else &mdash; the parameter names, the
+  hashing, the base64 &mdash; is mechanics in service of that sentence.</p>
+
+  <div class="panel" style="margin:10pt 0 12pt">
+    <p style="margin:0;font-size:11.4pt;line-height:1.45"><b>Before starting a login, the app
+    invents a random secret. It sends a one-way fingerprint of that secret with the
+    authorization request, and the secret itself with the token request. The server checks
+    that they match.</b></p>
+  </div>
+
+  <p>The name is an acronym: <b>P</b>roof <b>K</b>ey for <b>C</b>ode <b>E</b>xchange. It is
+  said &ldquo;pixy&rdquo;. The &ldquo;proof key&rdquo; is the random secret; the
+  &ldquo;code exchange&rdquo; is step&nbsp;6, the moment the code becomes a token. PKCE attaches
+  a proof to that exchange.</p>
+
+  <p>Follow what that buys us against the thief in Chapter&nbsp;3. The fingerprint went out
+  in the authorization URL, so the attacker may well have seen it. The code came back through
+  the redirect, so the attacker has that too. But the secret itself never went anywhere near
+  the browser &mdash; it stayed in the app's memory the entire time. Without it, the code the
+  attacker stole cannot be redeemed.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 214" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="i5a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="0" width="700" height="214" rx="8" fill="#f5f7fc" stroke="#dbe1ef" stroke-width="0.8"/>
+
+      <rect x="18" y="30" width="150" height="58" rx="7" fill="#fff" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="93" y="48" text-anchor="middle" font-size="8" font-weight="700" fill="#2f4fd0" letter-spacing="1">STEP A &middot; IN THE APP</text>
+      <text x="93" y="66" text-anchor="middle" font-size="9.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">code_verifier</text>
+      <text x="93" y="80" text-anchor="middle" font-size="7.6" fill="#59617a">random, per login, kept</text>
+
+      <path d="M172,59 L214,59" stroke="#59617a" stroke-width="1.4" marker-end="url(#i5a)"/>
+      <text x="193" y="50" text-anchor="middle" font-size="7.4" fill="#59617a">hash</text>
+
+      <rect x="218" y="30" width="162" height="58" rx="7" fill="#fff" stroke="#0d7a52" stroke-width="1.3"/>
+      <text x="299" y="48" text-anchor="middle" font-size="8" font-weight="700" fill="#0d7a52" letter-spacing="1">STEP B &middot; SENT IN THE URL</text>
+      <text x="299" y="66" text-anchor="middle" font-size="9.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">code_challenge</text>
+      <text x="299" y="80" text-anchor="middle" font-size="7.6" fill="#59617a">public, useless on its own</text>
+
+      <path d="M384,59 L424,59" stroke="#59617a" stroke-width="1.4" marker-end="url(#i5a)"/>
+
+      <rect x="428" y="24" width="254" height="70" rx="7" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="555" y="42" text-anchor="middle" font-size="8" font-weight="700" fill="#2f4fd0" letter-spacing="1">THE SERVER WRITES IT DOWN</text>
+      <text x="555" y="60" text-anchor="middle" font-size="8.6" fill="#14181f">&ldquo;code XYZ belongs to whoever can</text>
+      <text x="555" y="74" text-anchor="middle" font-size="8.6" fill="#14181f">produce the secret behind this fingerprint&rdquo;</text>
+      <text x="555" y="88" text-anchor="middle" font-size="7.4" fill="#59617a">stored next to the code, for its 60-second life</text>
+
+      <path d="M93,94 L93,150" stroke="#2f4fd0" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#i5a)"/>
+      <text x="100" y="126" font-size="7.6" fill="#2f4fd0">stays in memory</text>
+
+      <rect x="18" y="154" width="150" height="46" rx="7" fill="#fff" stroke="#2f4fd0" stroke-width="1.3"/>
+      <text x="93" y="172" text-anchor="middle" font-size="8" font-weight="700" fill="#2f4fd0" letter-spacing="1">STEP C &middot; TOKEN REQUEST</text>
+      <text x="93" y="189" text-anchor="middle" font-size="9.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">code + verifier</text>
+
+      <path d="M172,177 L424,177" stroke="#a8620a" stroke-width="1.8" marker-end="url(#i5a)"/>
+      <text x="298" y="170" text-anchor="middle" font-size="8.2" font-weight="700" fill="#a8620a">private channel &mdash; the attacker is not on it</text>
+
+      <rect x="428" y="154" width="254" height="46" rx="7" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.3"/>
+      <text x="555" y="172" text-anchor="middle" font-size="8" font-weight="700" fill="#0d7a52" letter-spacing="1">THE CHECK</text>
+      <text x="555" y="189" text-anchor="middle" font-size="8.8" font-family="SF Mono,Menlo,monospace" fill="#14181f">hash(verifier) == stored challenge ?</text>
+    </svg>
+    <figcaption><b>One secret, two halves, one comparison.</b> The fingerprint travels where
+    an attacker can see it. The secret travels only where they cannot. The server never needs
+    to know which app is genuine &mdash; only that whoever is finishing the flow is whoever
+    started it.</figcaption>
+  </figure>
+
+  <div class="pfoot"><span class="ch">Chapter 05 &middot; The idea</span><span class="n">10</span></div>
+</section>
+
+<!-- ==================================================================== 11 -->
+<section class="page">
+  <div class="chnum">Chapter 06</div>
+  <h1 class="title">The three parameters</h1>
+  <p class="lede">PKCE adds two parameters to the authorization request and one to the token
+  request. That is the entire protocol change.</p>
+
+  <table>
+    <thead><tr><th style="width:1.55in">Parameter</th><th style="width:0.95in">Sent in</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td class="k">code_verifier</td><td>token request</td>
+          <td>The secret. A high-entropy random string, 43 to 128 characters, from the set
+              <code>A&ndash;Z a&ndash;z 0&ndash;9 - . _ ~</code>. Generated fresh for every
+              authorization attempt and never reused.</td></tr>
+      <tr class="hl"><td class="k">code_challenge</td><td>authorization request</td>
+          <td>The fingerprint. With <code>S256</code>, the base64url encoding of the SHA-256
+              hash of the verifier.</td></tr>
+      <tr><td class="k">code_challenge_method</td><td>authorization request</td>
+          <td>How the challenge was derived: <code>S256</code> or <code>plain</code>.
+              Always send <code>S256</code>. Chapter&nbsp;10 explains why the other one is a
+              trap.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The rules, precisely</h2>
+
+  <h3>Length and alphabet</h3>
+  <p>The verifier must be at least 43 and at most 128 characters, drawn from the unreserved
+  URL characters. The lower bound is not arbitrary: 43 base64url characters carry 256 bits of
+  entropy, which is the point. The alphabet is chosen so the value survives being placed in a
+  URL or a form body without any escaping.</p>
+
+  <div class="callout warn">
+    <span class="lbl">43 characters, not 43 bytes.</span> The usual mistake is to generate 43
+    random <i>bytes</i> and base64url-encode them, producing a 58-character verifier. That is
+    perfectly legal and slightly stronger than required. The mistake that bites is the reverse:
+    generating 32 bytes, encoding them to 43 characters, and then assuming the <i>bytes</i> are
+    the verifier. The verifier is the text you produced, and it is that text you must hash and
+    that text you must send later.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 06 &middot; The three parameters</span><span class="n">11</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 06 &middot; continued</div>
+
+  <h3>The derivation</h3>
+  <pre><span class="c">// S256 — the only method you should use</span>
+code_challenge = BASE64URL-ENCODE( SHA256( ASCII( code_verifier ) ) )
+
+<span class="c">// plain — permitted by the RFC, and a bad idea (chapter 10)</span>
+code_challenge = code_verifier</pre>
+
+  <p>Three details hide in that one line, and each of them is a source of bugs:</p>
+  <ul class="tight">
+    <li><b>Hash the characters, not a decoding of them.</b> SHA-256 runs over the ASCII bytes
+        of the verifier string exactly as you will later transmit it.</li>
+    <li><b>The hash is 32 raw bytes.</b> Hash them, do not hex-encode them first. A
+        hex string base64s to 64 characters, and a 64-character challenge is the classic
+        symptom of this bug &mdash; the correct length is 43.</li>
+    <li><b>base64<i>url</i>, without padding.</b> That means <code>-</code> and <code>_</code>
+        instead of <code>+</code> and <code>/</code>, and no trailing <code>=</code>.
+        Chapter&nbsp;8 shows what that means concretely.</li>
+  </ul>
+
+  <h3>What the server does</h3>
+  <p>The server's side is three lines of logic, and it is worth knowing them because every
+  error message you will meet comes from one of them:</p>
+  <ol class="tight">
+    <li>At the authorization request: store <code>code_challenge</code> and
+        <code>code_challenge_method</code> alongside the code it is about to issue.</li>
+    <li>At the token request: take the <code>code_verifier</code> the app sent, apply the
+        stored method to it, and compare the result to the stored challenge.</li>
+    <li>Equal, and the code is valid and unspent? Issue the token. Otherwise refuse, and
+        do not say why in any detail.</li>
+  </ol>
+
+  <div class="pfoot"><span class="ch">Chapter 06 &middot; The three parameters</span><span class="n">12</span></div>
+</section>
+
+<!-- ==================================================================== 12 -->
+<section class="page">
+  <div class="chnum">Chapter 07</div>
+  <h1 class="title">A complete run, with real values</h1>
+  <p class="lede">Every request and response of one successful login, with nothing left out
+  and nothing abbreviated. These values are genuine: you can reproduce the hash yourself.</p>
+
+  <h2>Step 1 &mdash; the app invents a secret</h2>
+  <p>The app generates 43 random bytes and base64url-encodes them. Count the result: it is
+  <b>58</b> characters, not 43. That is the distinction from the last chapter &mdash; the
+  RFC's minimum of 43 is a count of <i>characters</i>, and 43 bytes of randomness comfortably
+  exceeds it.</p>
+
+  <pre><span class="c">// code_verifier — 58 characters, kept in memory, never transmitted yet</span>
+<span class="s">M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag</span></pre>
+
+  <h2>Step 2 &mdash; the app derives the fingerprint</h2>
+  <p>SHA-256 over the ASCII of that string, base64url-encoded, unpadded.</p>
+
+  <pre><span class="c">// code_challenge — 43 characters, safe to publish</span>
+<span class="s">qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</span></pre>
+
+
+  <h2>Step 3 &mdash; the authorization request</h2>
+  <p>The app opens this URL in the system browser. The two PKCE parameters are the last two.</p>
+
+  <pre>GET https://login.example.com/authorize
+  ?<span class="k">response_type</span>=<span class="s">code</span>
+  &amp;<span class="k">client_id</span>=<span class="s">printing-app</span>
+  &amp;<span class="k">redirect_uri</span>=<span class="s">com.printingapp%3A%2F%2Fcallback</span>
+  &amp;<span class="k">scope</span>=<span class="s">photos.read</span>
+  &amp;<span class="k">state</span>=<span class="s">af0ifjsldkj</span>
+  &amp;<span class="k">code_challenge</span>=<span class="s">qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</span>
+  &amp;<span class="k">code_challenge_method</span>=<span class="s">S256</span></pre>
+
+  <p>You log in and consent. The server stores the challenge and the method against the code
+  it is about to mint.</p>
+
+  <h2>Step 4 &mdash; the redirect back</h2>
+  <pre>HTTP/1.1 302 Found
+Location: com.printingapp://callback?<span class="k">code</span>=<span class="s">SplxlOBeZQQYbYS6WxSbIA</span>&amp;<span class="k">state</span>=<span class="s">af0ifjsldkj</span></pre>
+
+  <p>The app checks that <code>state</code> is the value it sent, then proceeds. Note what is
+  <em>not</em> in this URL: the verifier. It has not left the app.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 07 &middot; A complete run, with real values</span><span class="n">13</span></div>
+</section>
+
+<!-- ==================================================================== 13 -->
+<section class="page">
+  <div class="chnum">Chapter 07 &middot; continued</div>
+
+  <h2>Step 5 &mdash; the token request</h2>
+  <p>Now the private call, app to server over TLS. The verifier appears for the first and
+  only time.</p>
+
+  <pre>POST /token HTTP/1.1
+Host: login.example.com
+Content-Type: application/x-www-form-urlencoded
+
+<span class="k">grant_type</span>=<span class="s">authorization_code</span>
+&amp;<span class="k">code</span>=<span class="s">SplxlOBeZQQYbYS6WxSbIA</span>
+&amp;<span class="k">redirect_uri</span>=<span class="s">com.printingapp%3A%2F%2Fcallback</span>
+&amp;<span class="k">client_id</span>=<span class="s">printing-app</span>
+&amp;<span class="k">code_verifier</span>=<span class="s">M25iVXpKU3puUjFaYWg3T1NDTDQtcW1ROUY5YXlwalNoc0hhakxifmZHag</span></pre>
+
+  <h2>Step 6 &mdash; the server checks, and answers</h2>
+  <p>The server hashes what it received and compares it with what it stored in step&nbsp;3.</p>
+
+  <pre><span class="c">// server side, in effect</span>
+BASE64URL(SHA256(verifier_received)) == stored_challenge   <span class="c">→ true</span></pre>
+
+  <pre>HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-store
+
+{
+  <span class="k">"access_token"</span>: <span class="s">"eyJhbGciOiJSUzI1NiIsImtpZCI6IjIwMjYtMDkifQ..."</span>,
+  <span class="k">"token_type"</span>: <span class="s">"Bearer"</span>,
+  <span class="k">"expires_in"</span>: <span class="s">3600</span>,
+  <span class="k">"scope"</span>: <span class="s">"photos.read"</span>
+}</pre>
+
+  <h2>And if the verifier is wrong</h2>
+  <p>Change one character and the comparison fails. The answer is deliberately terse: it will
+  not tell an attacker which part they got wrong.</p>
+
+  <pre>HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  <span class="k">"error"</span>: <span class="r">"invalid_grant"</span>,
+  <span class="k">"error_description"</span>: <span class="s">"PKCE verification failed"</span>
+}</pre>
+
+  <div class="callout good">
+    <span class="lbl">That is the entire protocol.</span> Two extra query parameters, one
+    extra form field, one hash comparison. The rest of this book is about doing it correctly
+    and knowing what it does not cover.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 07 &middot; A complete run, with real values</span><span class="n">14</span></div>
+</section>
+
+<!-- ==================================================================== 14 -->
+<section class="page">
+  <div class="chnum">Chapter 08</div>
+  <h1 class="title">Why a hash, and what base64url is</h1>
+  <p class="lede">Two pieces of machinery that everything above depends on, explained for
+  someone who has not met either.</p>
+
+  <h2>A one-way function</h2>
+  <p>SHA-256 takes any input and produces 32 bytes. It has one property that makes PKCE work:
+  computing the output from the input is instant, and computing the input from the output is,
+  as far as anyone knows, impossible.</p>
+
+  <p>Watch how completely the output changes when the input barely does:</p>
+
+  <pre><span class="c">// one character different</span>
+SHA256(<span class="s">"hello"</span>) = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e7304<span class="c">…</span>
+SHA256(<span class="s">"hellp"</span>) = fdd7585e08c4e2afd71dcabdb4636c89d557a3f42db9e2040c8b<span class="c">…</span></pre>
+
+  <p>There is no partial credit and no gradient to climb. An attacker holding a challenge has
+  no better strategy than guessing verifiers and hashing each one, and the verifier has at
+  least 256 bits of entropy. The number of guesses required is not large; it is
+  <em>unreachable</em> &mdash; more operations than there are atoms available to perform them.</p>
+
+  <div class="callout">
+    <span class="lbl">This is why the challenge is safe in a URL.</span> Publishing the
+    fingerprint gives an attacker nothing they can use, because the only way back to the
+    secret is through a door that does not exist.
+  </div>
+
+  <h2>Why not send the secret both times?</h2>
+  <p>A fair question. If the app sent the same random string in the authorization request and
+  again in the token request, the server could compare them directly &mdash; no hashing at all.
+  That is exactly what <code>plain</code> does, and it is broken for one reason: the
+  authorization request travels through the browser. An attacker who can read the redirect
+  can read the authorization URL too. They would capture the secret on its way out, and use it
+  on the way back.</p>
+
+  <p>The hash exists so that the thing sent through the untrusted channel is <em>not</em> the
+  thing needed to redeem the code.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 08 &middot; Why a hash, and what base64url is</span><span class="n">15</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 08 &middot; continued</div>
+
+  <h2>base64url, concretely</h2>
+  <p>Hashes are raw bytes, most of which are not printable characters. base64 is the standard
+  way to write arbitrary bytes as text: it takes three bytes at a time and emits four
+  characters from a 64-character alphabet.</p>
+
+  <p>Ordinary base64 uses <code>+</code> and <code>/</code> as its last two characters and pads
+  the end with <code>=</code>. All three are hostile inside a URL: <code>+</code> means a space
+  in a form body, <code>/</code> is a path separator, and <code>=</code> separates a parameter
+  from its value. base64<b>url</b> is the same encoding with those three problems removed.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.5in">Character</th><th style="width:1.2in">base64</th><th>base64url</th></tr></thead>
+    <tbody>
+      <tr><td>62nd</td><td class="k">+</td><td class="k">-</td></tr>
+      <tr><td>63rd</td><td class="k">/</td><td class="k">_</td></tr>
+      <tr><td>padding</td><td class="k">= (kept)</td><td class="k">= (removed entirely)</td></tr>
+    </tbody>
+  </table>
+
+  <pre><span class="c">// the same 32 bytes, both ways</span>
+base64     <span class="s">qjrzSW9gMiUgpUvqgEPE4/+8swvyCtfOVvg55o5S/es=</span>
+base64url  <span class="s">qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</span>
+                                <span class="r">^^</span>                 <span class="r">^</span>  <span class="c">← and no trailing =</span></pre>
+
+  <h3>Three bytes in, four characters out</h3>
+  <p>base64 works in blocks. It takes 24 bits &mdash; three bytes &mdash; and re-cuts them
+  into four groups of six bits, because a 6-bit number has 64 possible values, one per
+  character of the alphabet.</p>
+
+  <pre><span class="c">// the three bytes 0xAA 0x3B 0xF3</span>
+bytes    10101010  00111011  11110011
+regroup  101010 100011 101111 110011
+value        42     35     47     51
+base64        q      j      v      z</pre>
+
+  <p>Since three bytes always become four characters, a 32-byte hash is not a multiple of
+  three: 32 bytes is ten full blocks with two bytes left over. Those two bytes produce three
+  characters, giving 43 in total. Standard base64 then adds one <code>=</code> to round the
+  final block up to four; base64url drops it. That is the whole reason the number 43 keeps
+  appearing in this book.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 08 &middot; Why a hash, and what base64url is</span><span class="n">16</span></div>
+</section>
+
+<!-- ==================================================================== 15 -->
+<section class="page">
+  <div class="chnum">Chapter 08 &middot; continued</div>
+
+  <h2>Getting it wrong, and how you will know</h2>
+  <p>Almost every PKCE bug a beginner hits is an encoding bug, and each has a distinctive
+  fingerprint. Learn to read the length of a challenge and you can diagnose most of them at a
+  glance.</p>
+
+  <table>
+    <thead><tr><th style="width:0.7in">Length</th><th style="width:1.7in">What you produced</th><th>The mistake</th></tr></thead>
+    <tbody>
+      <tr class="hl"><td class="k">43</td><td>base64url of 32 raw bytes</td><td><b>Correct.</b> This is what a valid <code>S256</code> challenge always looks like.</td></tr>
+      <tr><td class="k">44</td><td>base64 with padding kept</td><td>You left the trailing <code>=</code> on. Strip it.</td></tr>
+      <tr><td class="k">64</td><td>base64url of a 64-character hex string</td><td>You hex-encoded the hash before base64ing it. Hash to bytes, then encode the bytes.</td></tr>
+      <tr><td class="k">58</td><td>the verifier itself</td><td>You sent the verifier as the challenge &mdash; that is <code>plain</code>, while claiming <code>S256</code>. It will fail.</td></tr>
+      <tr><td class="k">86</td><td>base64url of a SHA-512 hash</td><td>Wrong algorithm. <code>S256</code> means SHA-256, always.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <span class="lbl">The one that is hardest to see.</span> If your challenge contains a
+    <code>+</code>, a <code>/</code> or an <code>=</code>, you used standard base64. It may
+    even work in testing, because some servers tolerate URL-encoded forms of those characters
+    &mdash; and then fail in production behind a proxy that normalizes them differently. The
+    character set is part of the specification, not a formatting preference.
+  </div>
+
+  <h2>A note on randomness</h2>
+  <p>The verifier must come from a cryptographically secure random source. The distinction
+  matters more than it sounds:</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:2.1in">Do not use</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Math.random()</td><td class="k">crypto.getRandomValues()</td></tr>
+      <tr><td class="k">random.random()</td><td class="k">secrets.token_urlsafe()</td></tr>
+      <tr><td class="k">new Random()</td><td class="k">SecureRandom</td></tr>
+      <tr><td class="k">rand()</td><td class="k">/dev/urandom, arc4random_buf()</td></tr>
+    </tbody>
+  </table>
+
+  <p>An ordinary random number generator is built to be fast and statistically even, not
+  unpredictable. Given a few of its outputs, its internal state &mdash; and therefore every
+  future output &mdash; can often be reconstructed. An attacker who can predict your next
+  verifier does not need to steal it.</p>
+
+  <p>Do not derive the verifier from anything else either: not the time, not a session
+  identifier, not a hash of the user's name. It has exactly one job, which is to be
+  unguessable.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 08 &middot; Why a hash, and what base64url is</span><span class="n">17</span></div>
+</section>
+
+<!-- ==================================================================== 16 -->
+<section class="page">
+  <div class="chnum">Chapter 09</div>
+  <h1 class="title">The attack, defeated</h1>
+  <p class="lede">The same thief, the same stolen code, the same server. One field has been
+  added to the token request, and the theft is now worth nothing.</p>
+
+  <p>Run Chapter&nbsp;3 again with PKCE in place. Steps&nbsp;1 to&nbsp;5 are unchanged &mdash;
+  the attacker still wins the race for the custom scheme and still ends up holding a
+  perfectly valid authorization code. The difference is entirely in what happens next.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="d9a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="0" width="340" height="250" rx="8" fill="#fdeaee" stroke="#f0b8c4" stroke-width="0.8"/>
+      <text x="16" y="22" font-size="10.5" font-weight="700" fill="#c0203f">THE ATTACKER TRIES</text>
+
+      <rect x="16" y="36" width="308" height="66" rx="5" fill="#fff" stroke="#f0b8c4"/>
+      <text x="26" y="52" font-size="7.6" fill="#8a4453">POST /token</text>
+      <text x="26" y="68" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">code=<tspan fill="#c0203f">SplxlOBeZQQYbYS6WxSbIA</tspan></text>
+      <text x="26" y="82" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">client_id=printing-app</text>
+      <text x="26" y="96" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#c0203f">code_verifier=???</text>
+
+      <text x="26" y="124" font-size="8.6" fill="#14181f">They have the code. They saw the challenge</text>
+      <text x="26" y="137" font-size="8.6" fill="#14181f">go past in the URL. Neither helps:</text>
+
+      <g font-size="8.4" fill="#14181f">
+        <text x="26" y="160">&#10007;  Guessing the verifier: 2<tspan dy="-3" font-size="6">256</tspan><tspan dy="3"> attempts</tspan></text>
+        <text x="26" y="178">&#10007;  Reversing the hash: no known method</text>
+        <text x="26" y="196">&#10007;  Replaying the challenge: it is not the</text>
+        <text x="40" y="208">verifier, and the server hashes what</text>
+        <text x="40" y="220">it is given before comparing</text>
+      </g>
+      <text x="26" y="240" font-size="8.6" font-weight="700" fill="#c0203f">Result: invalid_grant. The code dies unspent.</text>
+
+      <rect x="360" y="0" width="340" height="250" rx="8" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="0.8"/>
+      <text x="376" y="22" font-size="10.5" font-weight="700" fill="#0d7a52">THE REAL APP SUCCEEDS</text>
+
+      <rect x="376" y="36" width="308" height="66" rx="5" fill="#fff" stroke="#a8d9c1"/>
+      <text x="386" y="52" font-size="7.6" fill="#3e6d5b">POST /token</text>
+      <text x="386" y="68" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">code=<tspan fill="#8d95ab">&mdash; never received it &mdash;</tspan></text>
+      <text x="386" y="82" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">client_id=printing-app</text>
+      <text x="386" y="96" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">code_verifier=M25iVXpKU3pu…</text>
+
+      <text x="386" y="124" font-size="8.6" fill="#14181f">In this run the real app lost the race, so</text>
+      <text x="386" y="137" font-size="8.6" fill="#14181f">it simply times out and starts again.</text>
+      <text x="386" y="155" font-size="8.6" fill="#14181f">When it <tspan font-style="italic">does</tspan> receive the redirect, it is the</text>
+      <text x="386" y="168" font-size="8.6" fill="#14181f">only party in the world holding the</text>
+      <text x="386" y="181" font-size="8.6" fill="#14181f">verifier for that code &mdash; so the hash</text>
+      <text x="386" y="194" font-size="8.6" fill="#14181f">matches and the token is issued.</text>
+
+      <path d="M386,206 L664,206" stroke="#a8d9c1" stroke-width="1"/>
+      <text x="386" y="224" font-size="8.6" font-weight="700" fill="#0d7a52">The user notices nothing. The attacker gets</text>
+      <text x="386" y="238" font-size="8.6" font-weight="700" fill="#0d7a52">an error page and an unusable string.</text>
+    </svg>
+    <figcaption><b>Same theft, different ending.</b> PKCE does not stop the code being
+    stolen. It makes a stolen code useless, which is a better goal: it does not depend on the
+    operating system, the browser, or the user behaving correctly.</figcaption>
+  </figure>
+
+  <div class="callout good">
+    <span class="lbl">Worth saying plainly.</span> PKCE is not a lock on the door the code
+    came through. It is the rule that the code is only redeemable by whoever knows a secret
+    that never went through that door at all.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 09 &middot; The attack, defeated</span><span class="n">18</span></div>
+</section>
+
+<!-- ==================================================================== 17 -->
+<section class="page">
+  <div class="chnum">Chapter 10</div>
+  <h1 class="title">plain, S256, and the downgrade</h1>
+  <p class="lede">RFC&nbsp;7636 defines two methods. Only one of them is worth using, and the
+  existence of the other creates an attack of its own.</p>
+
+  <h2>What plain does</h2>
+  <pre><span class="c">// plain: the challenge IS the verifier</span>
+code_challenge = code_verifier
+code_challenge_method = <span class="r">plain</span></pre>
+
+  <p>Now re-read Chapter&nbsp;3. The attacker who can intercept the redirect can almost always
+  also observe the authorization request &mdash; they are the same channel, often the same URL
+  bar, the same history file, the same proxy log. With <code>plain</code>, that request
+  contains the verifier in clear text. The attacker copies it, waits for the code, and
+  redeems both together.</p>
+
+  <div class="callout bad">
+    <span class="lbl">plain restores the original attack.</span> It satisfies the letter of
+    &ldquo;we implemented PKCE&rdquo; while removing the property that made PKCE work. The RFC
+    itself says clients must use S256 if they can, and that they can unless the platform
+    genuinely has no SHA-256 &mdash; a condition that has not meaningfully existed for years.
+  </div>
+
+  <h3>So why is it in the specification?</h3>
+  <p>RFC&nbsp;7636 was published in 2015, when it was still plausible that some constrained
+  device had no SHA-256 available. <code>plain</code> was the concession that let such a
+  client participate at all, on the reasoning that a weak binding is better than none: it
+  still defeats an attacker who sees the redirect but not the original request.</p>
+
+  <p>That reasoning has not aged well, because the two are usually the same channel. Current
+  guidance is unambiguous &mdash; the OAuth&nbsp;2.1 draft and RFC&nbsp;9700 both expect
+  <code>S256</code>, and a server built today has no reason to offer the alternative.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.5in">If you can see&hellip;</th><th style="width:1.1in">plain</th><th>S256</th></tr></thead>
+    <tbody>
+      <tr><td>only the redirect</td><td><span class="tag g">safe</span></td><td><span class="tag g">safe</span></td></tr>
+      <tr><td>the authorization request too</td><td><span class="tag b">broken</span></td><td><span class="tag g">safe</span></td></tr>
+      <tr><td>and you can rewrite it</td><td><span class="tag b">broken</span></td><td><span class="tag w">depends on the server</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="pfoot"><span class="ch">Chapter 10 &middot; plain, S256, and the downgrade</span><span class="n">19</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 10 &middot; continued</div>
+
+  <h2>The downgrade attack</h2>
+  <p>Here is the subtler problem, and it is a <em>server</em> bug rather than a client one.
+  Suppose an app correctly sends <code>S256</code>. An attacker intercepts the authorization
+  request, and rewrites two parameters before it reaches the server:</p>
+
+  <pre><span class="c">// what the app sent</span>
+code_challenge=<span class="s">qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</span>&amp;code_challenge_method=<span class="s">S256</span>
+
+<span class="c">// what the attacker rewrites it to</span>
+code_challenge=<span class="r">attacker-picked-value</span>&amp;code_challenge_method=<span class="r">plain</span></pre>
+
+  <p>The server now stores the attacker's own value with the method <code>plain</code>. When
+  the attacker later presents <code>code_verifier=attacker-picked-value</code>, it matches
+  perfectly &mdash; and the real app's carefully generated secret was never involved.</p>
+
+  <h3>How a server must prevent it</h3>
+  <ul class="tight">
+    <li><b>Support only S256</b>, and reject <code>plain</code> outright. This is what the
+        OAuth&nbsp;2.1 draft expects of a new server, and it closes the hole completely.</li>
+    <li>If <code>plain</code> must be supported for a legacy client, <b>record per client
+        whether it is permitted</b>, and refuse a downgrade for any client that has ever
+        used S256.</li>
+    <li><b>Reject a token request with no <code>code_verifier</code></b> when a challenge was
+        stored. Silently ignoring the missing field is the same bug wearing a different hat:
+        the attacker just omits the parameter.</li>
+  </ul>
+
+  <h3>How a client can tell</h3>
+  <p>An authorization server publishes what it supports in its discovery document. Look for
+  this before you trust it:</p>
+
+  <pre>GET /.well-known/oauth-authorization-server
+
+{
+  <span class="k">"code_challenge_methods_supported"</span>: [<span class="s">"S256"</span>]      <span class="c">← good</span>
+  <span class="k">"code_challenge_methods_supported"</span>: [<span class="s">"plain"</span>, <span class="s">"S256"</span>]   <span class="c">← usable, but ask why</span>
+  <span class="c">// field absent entirely → the server may not support PKCE at all</span>
+}</pre>
+
+  <div class="pfoot"><span class="ch">Chapter 10 &middot; plain, S256, and the downgrade</span><span class="n">20</span></div>
+</section>
+
+<!-- ==================================================================== 18 -->
+<section class="page">
+  <div class="chnum">Chapter 11</div>
+  <h1 class="title">Generate the pair</h1>
+  <p class="lede">The whole of PKCE on the client side is these few lines. Each example
+  produces a 58-character verifier and its 43-character challenge.</p>
+
+  <h3>At a shell prompt</h3>
+  <p>Useful for poking at a server by hand, and the quickest way to convince yourself the
+  arithmetic is nothing special.</p>
+  <pre><span class="c"># generate a verifier, then derive its challenge</span>
+VERIFIER=$(openssl rand -base64 43 | tr <span class="s">'+/'</span> <span class="s">'-_'</span> | tr -d <span class="s">'=\n'</span>)
+CHALLENGE=$(printf %s <span class="s">"$VERIFIER"</span> | openssl dgst -binary -sha256 \
+            | openssl base64 | tr <span class="s">'+/'</span> <span class="s">'-_'</span> | tr -d <span class="s">'=\n'</span>)
+
+echo <span class="s">"verifier  ${#VERIFIER}"</span>    <span class="c"># 58</span>
+echo <span class="s">"challenge ${#CHALLENGE}"</span>   <span class="c"># 43</span></pre>
+
+  <div class="callout warn">
+    <span class="lbl">Note <code>printf %s</code>, not <code>echo</code>.</span>
+    <code>echo</code> appends a newline, and hashing that newline gives a different, wrong
+    challenge. This single byte is one of the most common sources of
+    <code>invalid_grant</code> when testing by hand.
+  </div>
+
+  <h3>JavaScript &mdash; Node 16 and later</h3>
+  <pre><span class="k">import</span> { randomBytes, createHash } <span class="k">from</span> <span class="s">"node:crypto"</span>;
+
+<span class="k">const</span> b64url = (buf) =&gt; buf.toString(<span class="s">"base64url"</span>);
+
+<span class="k">const</span> verifier  = b64url(randomBytes(<span class="s">43</span>));
+<span class="k">const</span> challenge = b64url(createHash(<span class="s">"sha256"</span>).update(verifier).digest());</pre>
+
+  <h3>JavaScript &mdash; the browser</h3>
+  <p>There is no <code>base64url</code> convenience in the browser, so the conversion is
+  explicit. <code>crypto.subtle</code> is asynchronous and is only available on a secure
+  origin.</p>
+  <pre><span class="k">const</span> b64url = (bytes) =&gt;
+  btoa(String.fromCharCode(...<span class="k">new</span> Uint8Array(bytes)))
+    .replace(<span class="s">/\+/g</span>, <span class="s">"-"</span>).replace(<span class="s">/\//g</span>, <span class="s">"_"</span>).replace(<span class="s">/=+$/</span>, <span class="s">""</span>);
+
+<span class="k">const</span> verifier = b64url(crypto.getRandomValues(<span class="k">new</span> Uint8Array(<span class="s">43</span>)));
+<span class="k">const</span> digest   = <span class="k">await</span> crypto.subtle.digest(
+                   <span class="s">"SHA-256"</span>, <span class="k">new</span> TextEncoder().encode(verifier));
+<span class="k">const</span> challenge = b64url(digest);
+
+sessionStorage.setItem(<span class="s">"pkce_verifier"</span>, verifier);  <span class="c">// survives the redirect</span></pre>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; Generate the pair</span><span class="n">21</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 11 &middot; continued</div>
+
+  <h3>Python 3.6 and later</h3>
+  <pre><span class="k">import</span> base64, hashlib, secrets
+
+<span class="k">def</span> b64url(b): <span class="k">return</span> base64.urlsafe_b64encode(b).rstrip(<span class="s">b"="</span>).decode()
+
+verifier  = b64url(secrets.token_bytes(<span class="s">43</span>))
+challenge = b64url(hashlib.sha256(verifier.encode(<span class="s">"ascii"</span>)).digest())</pre>
+
+  <h3>Java 8 and later</h3>
+  <pre><span class="k">import</span> java.nio.charset.StandardCharsets;
+<span class="k">import</span> java.security.MessageDigest;
+<span class="k">import</span> java.security.SecureRandom;
+<span class="k">import</span> java.util.Base64;
+
+Base64.Encoder b64url = Base64.getUrlEncoder().withoutPadding();
+
+<span class="k">byte</span>[] random = <span class="k">new byte</span>[<span class="s">43</span>];
+<span class="k">new</span> SecureRandom().nextBytes(random);
+String verifier = b64url.encodeToString(random);
+
+<span class="k">byte</span>[] digest = MessageDigest.getInstance(<span class="s">"SHA-256"</span>)
+        .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+String challenge = b64url.encodeToString(digest);</pre>
+
+  <h3>Kotlin &mdash; Android</h3>
+  <p>The same JVM primitives. Note <code>NO_WRAP</code>: without it Android's encoder inserts
+  line breaks, which will silently corrupt the value.</p>
+  <pre><span class="k">import</span> android.util.Base64
+<span class="k">import</span> java.security.MessageDigest
+<span class="k">import</span> java.security.SecureRandom
+
+<span class="k">val</span> flags = Base64.URL_SAFE <span class="k">or</span> Base64.NO_PADDING <span class="k">or</span> Base64.NO_WRAP
+
+<span class="k">val</span> random = ByteArray(<span class="s">43</span>).also { SecureRandom().nextBytes(it) }
+<span class="k">val</span> verifier = Base64.encodeToString(random, flags)
+
+<span class="k">val</span> digest = MessageDigest.getInstance(<span class="s">"SHA-256"</span>)
+    .digest(verifier.toByteArray(Charsets.US_ASCII))
+<span class="k">val</span> challenge = Base64.encodeToString(digest, flags)</pre>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; Generate the pair</span><span class="n">22</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 11 &middot; continued</div>
+
+  <h3>Swift &mdash; iOS and macOS</h3>
+  <pre><span class="k">import</span> CryptoKit
+
+<span class="k">func</span> base64url(_ data: Data) -&gt; String {
+    data.base64EncodedString()
+        .replacingOccurrences(of: <span class="s">"+"</span>, with: <span class="s">"-"</span>)
+        .replacingOccurrences(of: <span class="s">"/"</span>, with: <span class="s">"_"</span>)
+        .replacingOccurrences(of: <span class="s">"="</span>, with: <span class="s">""</span>)
+}
+
+<span class="k">var</span> bytes = [UInt8](repeating: <span class="s">0</span>, count: <span class="s">43</span>)
+_ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &amp;bytes)
+
+<span class="k">let</span> verifier  = base64url(Data(bytes))
+<span class="k">let</span> challenge = base64url(Data(SHA256.hash(data: Data(verifier.utf8))))</pre>
+
+  <h3>C# &mdash; .NET</h3>
+  <pre><span class="k">using</span> System.Security.Cryptography;
+<span class="k">using</span> System.Text;
+
+<span class="k">static string</span> B64Url(<span class="k">byte</span>[] b) =&gt; Convert.ToBase64String(b)
+    .Replace(<span class="s">'+'</span>, <span class="s">'-'</span>).Replace(<span class="s">'/'</span>, <span class="s">'_'</span>).TrimEnd(<span class="s">'='</span>);
+
+<span class="k">var</span> verifier  = B64Url(RandomNumberGenerator.GetBytes(<span class="s">43</span>));
+<span class="k">var</span> challenge = B64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)));</pre>
+
+  <div class="callout good">
+    <span class="lbl">These were run, not typed from memory.</span> The shell, Node, browser,
+    Python, Java and Swift examples were executed against the fixed verifier from
+    Chapter&nbsp;7 and each reproduced
+    <code>qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</code> exactly. The Kotlin example uses
+    the same JVM primitives as the Java one, and the C# example the .NET equivalents. Whatever
+    language you are in, that vector is how you check your own implementation.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; Generate the pair</span><span class="n">23</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 12</div>
+  <h1 class="title">Build the authorization request</h1>
+  <p class="lede">Where the challenge goes, what every other parameter is for, and the two
+  values you must keep hold of while the browser is away.</p>
+
+  <pre><span class="c">// the URL you open in the system browser (line-broken for reading only)</span>
+https://login.example.com/authorize
+  ?<span class="k">response_type</span>=<span class="s">code</span>
+  &amp;<span class="k">client_id</span>=<span class="s">printing-app</span>
+  &amp;<span class="k">redirect_uri</span>=<span class="s">com.printingapp%3A%2F%2Fcallback</span>
+  &amp;<span class="k">scope</span>=<span class="s">photos.read</span>
+  &amp;<span class="k">state</span>=<span class="s">af0ifjsldkj</span>
+  &amp;<span class="k">code_challenge</span>=<span class="s">qjrzSW9gMiUgpUvqgEPE4_-8swvyCtfOVvg55o5S_es</span>
+  &amp;<span class="k">code_challenge_method</span>=<span class="s">S256</span></pre>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.6in">Parameter</th><th>What it is for</th></tr></thead>
+    <tbody>
+      <tr><td class="k">response_type=code</td><td>Asks for the authorization code flow. In OAuth&nbsp;2.1 this is effectively the only value you should ever send.</td></tr>
+      <tr><td class="k">client_id</td><td>Which application is asking. Public, not secret.</td></tr>
+      <tr><td class="k">redirect_uri</td><td>Where to send the browser afterwards. Must exactly match one the server has pre-registered, character for character. URL-encode it.</td></tr>
+      <tr><td class="k">scope</td><td>What you are asking permission for. Ask for the least you need.</td></tr>
+      <tr><td class="k">state</td><td>Random, per-request. Protects against a different attack; Chapter&nbsp;16.</td></tr>
+      <tr class="hl"><td class="k">code_challenge</td><td>The fingerprint. 43 characters for S256.</td></tr>
+      <tr class="hl"><td class="k">code_challenge_method</td><td>Always <code>S256</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Two things to keep, and where</h2>
+  <p>While the browser is away, the app must remember the <b>verifier</b> and the
+  <b>state</b>; losing either means the login cannot be completed. A mobile app keeps them in
+  memory, a single-page app in <code>sessionStorage</code>, and a server-side web app in the
+  user's session.</p>
+
+  <div class="callout warn">
+    <span class="lbl">Not <code>localStorage</code>, and not a cookie you can read from
+    JavaScript.</span> <code>localStorage</code> persists indefinitely and is shared across
+    every tab on the origin, so a verifier left there outlives the login it belonged to.
+    Use <code>sessionStorage</code>, and delete the value the moment the token request
+    returns.
+  </div>
+
+  <h2>Opening the browser</h2>
+  <p>Do not open this URL inside an embedded web view you control. A web view is a window the
+  app can read &mdash; including the password the user types into it &mdash; which gives back
+  exactly the property OAuth existed to remove. Use the platform's
+  <span class="tag a">in-app browser tab</span> API instead:
+  <code>ASWebAuthenticationSession</code> on iOS, <code>Custom Tabs</code> on Android. They
+  render the real browser, with its real address bar and its real cookie jar.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 12 &middot; Build the authorization request</span><span class="n">24</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 13</div>
+  <h1 class="title">Exchange the code</h1>
+  <p class="lede">One POST. If you get this request right, PKCE is done.</p>
+
+  <h3>curl &mdash; for trying it by hand</h3>
+  <pre>curl -s -X POST https://login.example.com/token \
+  -H <span class="s">'Content-Type: application/x-www-form-urlencoded'</span> \
+  -d <span class="s">'grant_type=authorization_code'</span> \
+  -d <span class="s">"code=$CODE"</span> \
+  -d <span class="s">'redirect_uri=com.printingapp://callback'</span> \
+  -d <span class="s">'client_id=printing-app'</span> \
+  -d <span class="s">"code_verifier=$VERIFIER"</span></pre>
+
+  <h3>JavaScript &mdash; and, field for field, any other language</h3>
+  <pre><span class="k">const</span> body = <span class="k">new</span> URLSearchParams({
+  grant_type:    <span class="s">"authorization_code"</span>,
+  code,                                      <span class="c">// from the redirect</span>
+  redirect_uri:  <span class="s">"https://app.example.com/callback"</span>,
+  client_id:     <span class="s">"printing-app"</span>,
+  code_verifier: sessionStorage.getItem(<span class="s">"pkce_verifier"</span>),
+});
+
+<span class="k">const</span> res = <span class="k">await</span> fetch(<span class="s">"https://login.example.com/token"</span>, {
+  method: <span class="s">"POST"</span>,
+  headers: { <span class="s">"Content-Type"</span>: <span class="s">"application/x-www-form-urlencoded"</span> },
+  body,
+});
+
+sessionStorage.removeItem(<span class="s">"pkce_verifier"</span>);   <span class="c">// used once, then gone</span>
+<span class="k">const</span> tokens = <span class="k">await</span> res.json();</pre>
+
+  <div class="callout">
+    <span class="lbl">Four things to get right.</span>
+    Send it as <code>application/x-www-form-urlencoded</code>, not JSON &mdash; the token
+    endpoint takes a form.
+    Send <code>redirect_uri</code> again even though it looks redundant; the server compares
+    it with the one from the authorization request.
+    Send the verifier as the <em>text</em> you generated, not a re-encoding of it.
+    And do this over HTTPS only: this request carries the one secret in the whole flow.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 13 &middot; Exchange the code</span><span class="n">25</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 14</div>
+  <h1 class="title">Break it on purpose</h1>
+  <p class="lede">The fastest way to trust a security control is to watch it refuse. Four
+  deliberate failures, and the exact response each one produces.</p>
+
+  <p>Run these against any conformant server, or the simulator in the next chapter. Start
+  from a working flow, then change one thing.</p>
+
+  <h3>1 &mdash; The wrong verifier</h3>
+  <p>Complete the flow normally, but send a verifier you made up.</p>
+  <pre>-d <span class="s">"code_verifier=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"</span>
+
+HTTP/1.1 400 Bad Request
+{ <span class="k">"error"</span>: <span class="r">"invalid_grant"</span>,
+  <span class="k">"error_description"</span>: <span class="s">"PKCE verification failed"</span> }</pre>
+  <p class="small muted">This is the attack from Chapter&nbsp;3, failing. The attacker is in
+  exactly this position: a valid code, and no verifier.</p>
+
+  <h3>2 &mdash; No verifier at all</h3>
+  <p>Omit <code>code_verifier</code> entirely. A server that lets this through has the bug
+  from Chapter&nbsp;10 &mdash; an attacker would simply leave the field out.</p>
+  <pre>HTTP/1.1 400 Bad Request
+{ <span class="k">"error"</span>: <span class="r">"invalid_grant"</span>,
+  <span class="k">"error_description"</span>: <span class="s">"code_verifier required"</span> }</pre>
+
+  <h3>3 &mdash; The code used twice</h3>
+  <p>Exchange a code successfully, then exchange the same code again with the same, correct
+  verifier.</p>
+  <pre>HTTP/1.1 400 Bad Request
+{ <span class="k">"error"</span>: <span class="r">"invalid_grant"</span>,
+  <span class="k">"error_description"</span>: <span class="s">"authorization code already used"</span> }</pre>
+  <p class="small muted">A good server also revokes the tokens it issued the first time:
+  two parties redeeming one code means one is a thief, and the server cannot tell which.</p>
+
+  <h3>4 &mdash; The challenge that is really the verifier</h3>
+  <p>Send <code>code_challenge_method=S256</code> but put the raw verifier in
+  <code>code_challenge</code>. The commonest beginner bug, and it fails one step later than
+  you expect: the authorization request succeeds, the token request does not.</p>
+  <pre>HTTP/1.1 400 Bad Request
+{ <span class="k">"error"</span>: <span class="r">"invalid_grant"</span>,
+  <span class="k">"error_description"</span>: <span class="s">"PKCE verification failed"</span> }</pre>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Break it on purpose</span><span class="n">26</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 14 &middot; continued</div>
+
+  <h2>Reading the error you actually got</h2>
+  <p>Every PKCE failure comes back as <code>invalid_grant</code>: the server will not help
+  an attacker narrow things down. That makes <code>error_description</code> your only clue,
+  and some servers offer none. This is the decision tree to run in your head.</p>
+
+  <table class="long">
+    <thead><tr><th style="width:1.9in">What you observe</th><th>Almost always</th></tr></thead>
+    <tbody>
+      <tr><td>Fails every time, from the first attempt</td>
+          <td>A derivation bug. Check the challenge is 43 characters (Chapter&nbsp;8) and
+              compare against the fixed vector.</td></tr>
+      <tr><td>Works in curl, fails in the app</td>
+          <td>The app is hashing something different from what it sends &mdash; usually a
+              trailing newline, or bytes where the text was meant.</td></tr>
+      <tr><td>Works on the first login, fails on later ones</td>
+          <td>The verifier is being reused or cached. Generate a new one per attempt.</td></tr>
+      <tr><td>Works for one user, fails when two log in at once</td>
+          <td>The verifier is stored somewhere shared &mdash; a module-level variable, a
+              singleton, a global. It belongs to the attempt, not the process.</td></tr>
+      <tr><td>Intermittent, especially on mobile</td>
+          <td>The app was suspended during the browser step and lost the verifier from memory.
+              Persist it for the duration of the flow.</td></tr>
+      <tr><td><code>invalid_request</code>, not <code>invalid_grant</code></td>
+          <td>Not PKCE. Usually a <code>redirect_uri</code> mismatch or a missing parameter.</td></tr>
+      <tr><td>Everything is correct and it still fails</td>
+          <td>Log the challenge your app sent and the challenge derived from the verifier it
+              later sent, and compare them character by character. They differ; the question
+              is only where.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="lbl">A debugging trick worth knowing.</span> Temporarily hard-code the
+    verifier and challenge from Chapter&nbsp;7 in your client. If the flow then succeeds, your
+    generation code is the problem. If it still fails, your <em>transmission</em> is &mdash;
+    something between your variable and the wire is altering the value.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Break it on purpose</span><span class="n">27</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 15</div>
+  <h1 class="title">Run it against the simulator</h1>
+  <p class="lede">This book ships next to a working OAuth&nbsp;2.1 authorization server, API
+  and client, built so that you can turn the safety rules off and watch what happens.</p>
+
+  <p>From the repository root:</p>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 1</div>
+    <h3>Watch a correct flow</h3>
+    <div class="cmd">make up &amp;&amp; make open</div>
+    <p>Starts the authorization server, the API and the client, and opens the client in your
+    browser. Run a login. Every screen shows the parameters actually in play, including the
+    verifier and the challenge derived from it.</p>
+    <p class="expect">expect: a 43-character challenge in the authorization request, and the
+    verifier appearing only in the token request</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 2</div>
+    <h3>Steal a code, and fail to use it</h3>
+    <div class="cmd">make demo-attack</div>
+    <p>Runs Chapter&nbsp;3 and Chapter&nbsp;9 on the command line: a code is intercepted and
+    redeemed by a second party that never had the verifier.</p>
+    <p class="expect">expect: invalid_grant, and the real client completing normally afterwards</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 3</div>
+    <h3>Turn PKCE off and try again</h3>
+    <div class="cmd">make policy</div>
+    <p>Opens the page where the server's OAuth&nbsp;2.1 rules can be disabled one at a time.
+    Switch PKCE enforcement off, then run the same attack.</p>
+    <p class="expect">expect: the stolen code now works, and the attacker holds a token</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 4</div>
+    <h3>Replay a code</h3>
+    <div class="cmd">make demo-replay</div>
+    <p>Exchanges one code twice, with the correct verifier both times.</p>
+    <p class="expect">expect: the second exchange refused, and the first token revoked</p>
+  </div>
+
+  <p class="small muted">No Docker? <code>make local</code> runs the same three services on
+  plain Node. <code>make test</code> runs every scenario as a smoke test, and
+  <code>make help</code> lists the rest.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 15 &middot; Run it against the simulator</span><span class="n">28</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 16</div>
+  <h1 class="title">PKCE, state and nonce</h1>
+  <p class="lede">Three random values in one flow, doing three unrelated jobs. Confusing
+  them is the most common conceptual mistake in OAuth, and it leads people to skip one.</p>
+
+  <table class="long">
+    <thead><tr><th style="width:0.95in">Parameter</th><th style="width:1.65in">Answers the question</th><th>Protects against</th></tr></thead>
+    <tbody>
+      <tr><td class="k">code_verifier<br>code_challenge</td>
+          <td><b>Is the app redeeming this code the app that requested it?</b></td>
+          <td>Authorization code interception. Checked by the <b>authorization server</b>, at
+              the token endpoint.</td></tr>
+      <tr><td class="k">state</td>
+          <td><b>Did this response come back to a request I actually made?</b></td>
+          <td>Cross-site request forgery on the redirect &mdash; an attacker tricking your
+              browser into completing <i>their</i> login, so your app ends up holding a token
+              for the attacker's account. Checked by the <b>client</b>.</td></tr>
+      <tr><td class="k">nonce</td>
+          <td><b>Was this ID token minted for this particular login?</b></td>
+          <td>ID token replay. An OpenID&nbsp;Connect concept, not an OAuth one. Checked by the
+              <b>client</b>, inside the ID token.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why you need more than one</h2>
+  <p>The tempting conclusion is that PKCE, being the strongest, makes the others redundant.
+  It does not, because they defend different directions.</p>
+
+  <ul class="tight">
+    <li><b>PKCE protects the server from issuing a token to the wrong app.</b> It says nothing
+        about whether the <em>user</em> at the browser is the user who started the flow.</li>
+    <li><b>state protects the user from being logged into someone else's account.</b> An
+        attacker starts a login with their own credentials, captures the redirect containing
+        <em>their</em> code, and feeds that URL to your browser. With PKCE alone, your app
+        holds a valid verifier, redeems the attacker's code successfully, and now stores your
+        photos in the attacker's account. <code>state</code> is what makes your app notice
+        that it never started this flow.</li>
+    <li><b>nonce protects the identity claim.</b> PKCE secures the code; it does not bind an
+        ID token to a login.</li>
+  </ul>
+
+  <div class="callout warn">
+    <span class="lbl">Both, always.</span> The RFCs and the current security best-practice
+    document are explicit: PKCE does not replace <code>state</code>. Generate both, from the
+    same secure random source, per attempt. If you are doing OpenID&nbsp;Connect and asking
+    for an ID token, generate a <code>nonce</code> as well.
+  </div>
+
+  <h3>Do not reuse one value for two jobs</h3>
+  <p>It is occasionally suggested that <code>state</code> can be derived from the verifier, or
+  that the challenge can serve as the state. Do not. <code>state</code> comes back through the
+  browser in clear text, so anything derived from it is public &mdash; and the verifier's
+  entire value is that it is not.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 16 &middot; PKCE, state and nonce</span><span class="n">29</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 17</div>
+  <h1 class="title">The mistakes beginners make</h1>
+  <p class="lede">Ten of them, in roughly the order you are likely to meet them. Most cost an
+  afternoon; two of them cost the security property entirely.</p>
+
+  <h3>1 &nbsp;Hashing the wrong thing</h3>
+  <p>Hashing raw random bytes instead of the verifier <em>text</em>. The authorization request
+  then carries a challenge that has nothing to do with the string you later send.
+  <span class="tag m">symptom</span> fails every time, from the very first attempt.</p>
+
+  <h3>2 &nbsp;Standard base64 instead of base64url</h3>
+  <p><code>+</code>, <code>/</code> and <code>=</code> in a challenge.
+  <span class="tag m">symptom</span> works locally, fails behind a proxy, or fails only for
+  roughly one attempt in four &mdash; whenever the hash happens to contain one of those
+  characters.</p>
+
+  <h3>3 &nbsp;The trailing newline</h3>
+  <p><code>echo</code> instead of <code>printf %s</code> in a shell script; a text editor
+  adding a final newline to a fixture file.
+  <span class="tag m">symptom</span> consistently wrong challenge with obviously correct code.</p>
+
+  <h3>4 &nbsp;Reusing the verifier</h3>
+  <p>Generating it once at start-up rather than once per login.
+  <span class="tag b">security</span> a leaked verifier then compromises every future login,
+  not one. <span class="tag m">symptom</span> often none &mdash; it keeps working, which is
+  what makes it dangerous.</p>
+
+  <h3>5 &nbsp;Storing the verifier somewhere shared</h3>
+  <p>A module-level variable, a singleton, a global. Two concurrent logins overwrite each
+  other. <span class="tag m">symptom</span> works in development, fails under load, fails when
+  the user opens two tabs.</p>
+
+  <h3>6 &nbsp;Losing the verifier across the redirect</h3>
+  <p>Keeping it only in memory in a single-page app, so a full page load wipes it; or on
+  mobile, the app being suspended while the browser is in front.
+  <span class="tag m">symptom</span> intermittent, and worse on slow networks and older
+  phones.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 17 &middot; The mistakes beginners make</span><span class="n">30</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 17 &middot; continued</div>
+
+  <h3>7 &nbsp;Using <code>plain</code> because it worked first</h3>
+  <p>It is easier to get right, so it is what people reach for when debugging &mdash; and then
+  it stays. <span class="tag b">security</span> restores the original attack in full
+  (Chapter&nbsp;10). <span class="tag m">symptom</span> none whatsoever.</p>
+
+  <h3>8 &nbsp;Sending the verifier in the authorization request</h3>
+  <p>Adding <code>code_verifier</code> to the URL &ldquo;so the server has it&rdquo;.
+  <span class="tag b">security</span> publishes the secret in the one channel it must never
+  travel in. <span class="tag m">symptom</span> the flow works perfectly, which is precisely
+  the problem.</p>
+
+  <h3>9 &nbsp;An ordinary random number generator</h3>
+  <p><code>Math.random()</code>, <code>random.random()</code>, <code>new Random()</code>.
+  <span class="tag b">security</span> a predictable verifier is not a secret.
+  <span class="tag m">symptom</span> none. This one is only ever found by reading the code.</p>
+
+  <h3>10 &nbsp;Assuming the server checks</h3>
+  <p>Sending a challenge and trusting that it is enforced. Some servers accept the parameter
+  and never verify it, and some accept a token request with the verifier omitted.
+  <span class="tag m">symptom</span> Chapter&nbsp;14, tests&nbsp;1 and&nbsp;2, pass when they
+  should fail.</p>
+
+  <div class="callout">
+    <span class="lbl">Test for number 10 before you ship.</span> Send a deliberately wrong
+    verifier, and then no verifier at all. If either is accepted, you do not have PKCE &mdash;
+    you have a parameter. This is a five-minute test and it is the only one that checks the
+    property you actually care about.
+  </div>
+
+  <h2>The two that are not bugs</h2>
+  <p>Two things look like mistakes and are not, so that you do not go looking for them:</p>
+  <ul class="tight">
+    <li><b>The challenge appears in logs and browser history.</b> That is expected and safe.
+        It is a hash, and Chapter&nbsp;8 explains why publishing it costs nothing.</li>
+    <li><b>The verifier is longer than the challenge.</b> Also expected. The challenge is a
+        43-character hash; the verifier is whatever length you generated, commonly 58.</li>
+  </ul>
+
+  <div class="pfoot"><span class="ch">Chapter 17 &middot; The mistakes beginners make</span><span class="n">31</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 18</div>
+  <h1 class="title">What PKCE does not do</h1>
+  <p class="lede">Knowing a control's limits is part of using it. PKCE is narrow on purpose,
+  and several things people expect of it belong to someone else.</p>
+
+  <table class="long">
+    <thead><tr><th style="width:2.2in">It does not&hellip;</th><th>Which means</th></tr></thead>
+    <tbody>
+      <tr><td><b>Authenticate the user</b></td>
+          <td>PKCE says nothing about who is at the keyboard. That is the authorization
+              server's login, and if your app needs to know <i>who</i> the user is, that is
+              OpenID&nbsp;Connect and an ID token.</td></tr>
+      <tr><td><b>Authenticate the client</b></td>
+          <td>It proves the redeemer started the flow, not that it is the genuine app. A
+              malicious app can run its own complete PKCE flow perfectly well &mdash; with its
+              own verifier, and the user's explicit consent on screen.</td></tr>
+      <tr><td><b>Protect the access token</b></td>
+          <td>Once issued, the token is a bearer credential: whoever holds it can use it. PKCE
+              protects the <i>exchange</i>, not what comes out of it. Binding a token to a
+              client key is a separate mechanism (DPoP, or mTLS).</td></tr>
+      <tr><td><b>Stop a malicious app being installed</b></td>
+          <td>Scheme hijacking is still possible; PKCE only makes the stolen code worthless.
+              Preventing the interception itself needs verified redirects &mdash; App Links on
+              Android, Universal Links on iOS &mdash; which are worth adopting as well.</td></tr>
+      <tr><td><b>Replace <code>state</code></b></td>
+          <td>Different attack, different direction, different checker. Chapter&nbsp;16.</td></tr>
+      <tr><td><b>Help if the server does not enforce it</b></td>
+          <td>It is a two-party protocol. A client doing PKCE perfectly against a server that
+              ignores it has achieved nothing at all.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What to add alongside it</h2>
+  <ul class="tight">
+    <li><b>Exact redirect URI matching</b> on the server &mdash; no wildcards, no prefix
+        matching. A sloppy match is an open redirector by another name.</li>
+    <li><b>Verified redirects</b> on mobile: App Links and Universal Links prove domain
+        ownership, so the collision in Chapter&nbsp;3 cannot happen in the first place.</li>
+    <li><b>Short code lifetimes and one-time use</b>, with token revocation on reuse.</li>
+    <li><b>Refresh token rotation</b>, so a stolen refresh token is detected on second use.</li>
+    <li><b>A real browser</b>, never an embedded web view (Chapter&nbsp;12).</li>
+  </ul>
+
+  <p class="small muted">Each of those has a chapter in the companion volume; this book stops
+  at the boundary of PKCE on purpose.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 18 &middot; What PKCE does not do</span><span class="n">32</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 19</div>
+  <h1 class="title">The checklist</h1>
+  <p class="lede">What to verify before you ship. The client half takes ten minutes; the
+  server half is the one people skip.</p>
+
+  <h2>In the client</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:0.3in">&#9744;</td><td>The verifier comes from a <b>cryptographically secure</b> random source.</td></tr>
+      <tr><td>&#9744;</td><td>A <b>new</b> verifier for every authorization attempt &mdash; never cached, never reused.</td></tr>
+      <tr><td>&#9744;</td><td>Length between 43 and 128 <b>characters</b>, from the unreserved set.</td></tr>
+      <tr><td>&#9744;</td><td><code>code_challenge_method=S256</code>. Never <code>plain</code>.</td></tr>
+      <tr><td>&#9744;</td><td>The challenge is <b>43 characters</b> and contains no <code>+</code>, <code>/</code> or <code>=</code>.</td></tr>
+      <tr><td>&#9744;</td><td>The verifier is stored per-attempt, survives the redirect, and is <b>deleted</b> after the token request.</td></tr>
+      <tr><td>&#9744;</td><td>The verifier appears in the <b>token request only</b> &mdash; never in a URL.</td></tr>
+      <tr><td>&#9744;</td><td><code>state</code> is also generated, also per attempt, and <b>checked</b> on return.</td></tr>
+      <tr><td>&#9744;</td><td>The authorization URL opens in a <b>real browser</b>, not an embedded web view.</td></tr>
+      <tr><td>&#9744;</td><td>The token request goes over <b>HTTPS</b>, as a form body.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>In the server</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:0.3in">&#9744;</td><td>The challenge and method are stored <b>with the code</b>, and both are checked at the token endpoint.</td></tr>
+      <tr><td>&#9744;</td><td>A token request with <b>no</b> <code>code_verifier</code> is <b>rejected</b> when a challenge was stored.</td></tr>
+      <tr><td>&#9744;</td><td><code>plain</code> is refused, or at minimum cannot be downgraded to.</td></tr>
+      <tr><td>&#9744;</td><td>Codes are single-use, short-lived, and reuse <b>revokes</b> the tokens already issued.</td></tr>
+      <tr><td>&#9744;</td><td><code>redirect_uri</code> is matched <b>exactly</b>, with no wildcards.</td></tr>
+      <tr><td>&#9744;</td><td>The comparison is constant-time, and failures return a terse <code>invalid_grant</code>.</td></tr>
+      <tr><td>&#9744;</td><td><code>code_challenge_methods_supported</code> is published in discovery metadata.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <span class="lbl">The one test that matters.</span> Send a wrong verifier, then none at
+    all. Both must fail. If either succeeds, everything above is decoration.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 19 &middot; The checklist</span><span class="n">33</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Quick reference</h1>
+  <p class="lede">One page to keep open while you work.</p>
+
+  <div class="grid g2">
+    <div>
+      <h3>Generate</h3>
+      <pre style="margin-top:3pt">verifier  = base64url(random(43 bytes))
+          <span class="c">// 58 chars, unreserved set</span>
+
+challenge = base64url(sha256(ascii(verifier)))
+          <span class="c">// always 43 chars</span></pre>
+
+      <h3>Authorization request</h3>
+      <pre style="margin-top:3pt">GET /authorize
+  ?response_type=code
+  &amp;client_id=...
+  &amp;redirect_uri=...
+  &amp;scope=...
+  &amp;state=<span class="c">&lt;random, per attempt&gt;</span>
+  &amp;<span class="k">code_challenge</span>=<span class="c">&lt;43 chars&gt;</span>
+  &amp;<span class="k">code_challenge_method</span>=<span class="k">S256</span></pre>
+
+      <h3>Token request</h3>
+      <pre style="margin-top:3pt">POST /token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&amp;code=...
+&amp;redirect_uri=...
+&amp;client_id=...
+&amp;<span class="k">code_verifier</span>=<span class="c">&lt;the secret&gt;</span></pre>
+    </div>
+
+    <div>
+      <h3>Test vector</h3>
+      <pre style="margin-top:3pt"><span class="c">verifier</span>
+M25iVXpKU3puUjFaYWg3T1NDTDQt
+cW1ROUY5YXlwalNoc0hhakxifmZHag
+
+<span class="c">challenge</span>
+qjrzSW9gMiUgpUvqgEPE4_-8swvy
+CtfOVvg55o5S_es</pre>
+      <p class="tiny muted">Line-broken to fit; both are single strings with no whitespace.</p>
+
+      <h3>Challenge length says what went wrong</h3>
+      <table class="dense" style="margin-top:3pt">
+        <tbody>
+          <tr><td class="k" style="width:0.42in">43</td><td class="tiny">correct</td></tr>
+          <tr><td class="k">44</td><td class="tiny">padding <code>=</code> left on</td></tr>
+          <tr><td class="k">58</td><td class="tiny">you sent the verifier</td></tr>
+          <tr><td class="k">64</td><td class="tiny">hex-encoded before base64</td></tr>
+          <tr><td class="k">86</td><td class="tiny">SHA-512, not SHA-256</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Shell one-liner</h3>
+      <pre style="margin-top:3pt">V=$(openssl rand -base64 43 \
+  | tr <span class="s">'+/'</span> <span class="s">'-_'</span> | tr -d <span class="s">'=\n'</span>)
+
+C=$(printf %s <span class="s">"$V"</span> \
+  | openssl dgst -binary -sha256 \
+  | openssl base64 \
+  | tr <span class="s">'+/'</span> <span class="s">'-_'</span> | tr -d <span class="s">'=\n'</span>)</pre>
+
+      <h3>Every failure</h3>
+      <pre style="margin-top:3pt">{ <span class="k">"error"</span>: <span class="r">"invalid_grant"</span> }</pre>
+      <p class="tiny muted">Deliberately uninformative. Chapter&nbsp;14 is the decision tree.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Quick reference</span><span class="n">34</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Glossary</h1>
+  <p class="lede">Every term this book uses, in the sense this book uses it.</p>
+
+  <div class="gloss grid g2">
+    <div>
+      <h4>Access token</h4>
+      <p class="tiny">The credential the app finally gets. Presented to the API to prove it may act. Short-lived, narrow, and a bearer credential &mdash; whoever holds it can use it.</p>
+
+      <h4>Authorization code</h4>
+      <p class="tiny">A short-lived, single-use string returned through the browser, exchanged at the token endpoint for tokens. Worth stealing; that is what PKCE addresses.</p>
+
+      <h4>Authorization server</h4>
+      <p class="tiny">The party that authenticates the user, asks consent, issues codes and tokens, and verifies the PKCE challenge.</p>
+
+      <h4>base64url</h4>
+      <p class="tiny">base64 with <code>-</code> and <code>_</code> in place of <code>+</code> and <code>/</code>, and padding removed, so the result is safe in a URL.</p>
+
+      <h4>Bearer token</h4>
+      <p class="tiny">A token that requires no further proof of identity to use. Its holder is its owner, which is why tokens must not travel through the browser.</p>
+
+      <h4>Client</h4>
+      <p class="tiny">The application asking for access. Not the user.</p>
+
+      <h4>code_challenge</h4>
+      <p class="tiny">The public fingerprint of the verifier, sent in the authorization request. 43 characters under S256.</p>
+
+      <h4>code_verifier</h4>
+      <p class="tiny">The per-login secret, 43&ndash;128 characters, sent only in the token request.</p>
+
+      <h4>Confidential client</h4>
+      <p class="tiny">A client that can keep a secret, because it runs on a machine the developer controls.</p>
+
+      <h4>Front channel / back channel</h4>
+      <p class="tiny">The front channel goes through the user's browser and is visible; the back channel is a direct call between app and server and is not.</p>
+    </div>
+
+    <div>
+      <h4>ID token</h4>
+      <p class="tiny">An OpenID&nbsp;Connect artifact describing who logged in. Not an access token, and not something PKCE protects.</p>
+
+      <h4>Implicit flow</h4>
+      <p class="tiny">An older flow that returned the access token directly in the redirect. Removed by OAuth&nbsp;2.1.</p>
+
+      <h4>invalid_grant</h4>
+      <p class="tiny">The error returned for every PKCE failure, and for several other things. Deliberately uninformative.</p>
+
+      <h4>nonce</h4>
+      <p class="tiny">A random value binding an ID token to one login. OpenID&nbsp;Connect, not OAuth, and not a substitute for anything else.</p>
+
+      <h4>PKCE</h4>
+      <p class="tiny">Proof Key for Code Exchange, RFC&nbsp;7636, said &ldquo;pixy&rdquo;. Proves the party redeeming a code is the party that requested it.</p>
+
+      <h4>plain</h4>
+      <p class="tiny">The PKCE method where the challenge is the verifier, unhashed. Permitted by the RFC and effectively broken; use S256.</p>
+
+      <h4>Public client</h4>
+      <p class="tiny">A client that cannot keep a secret: mobile, desktop, single-page, CLI. Everything shipped to a user is public.</p>
+
+      <h4>Redirect URI</h4>
+      <p class="tiny">Where the authorization server sends the browser afterwards. Must be pre-registered and matched exactly.</p>
+
+      <h4>Refresh token</h4>
+      <p class="tiny">A longer-lived credential for getting new access tokens without another login. Should rotate on every use.</p>
+
+      <h4>S256</h4>
+      <p class="tiny">The PKCE method where the challenge is the base64url of the SHA-256 of the verifier. The one to use.</p>
+
+      <h4>Scope</h4>
+      <p class="tiny">What the app is asking permission to do. Ask for the least that works.</p>
+
+      <h4>state</h4>
+      <p class="tiny">A random per-request value the client sends and checks on return, defending against a forged redirect. Not replaced by PKCE.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Glossary</span><span class="n">35</span></div>
+</section>
+
+<!-- ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Questions people ask</h1>
+  <p class="lede">The ones that come up every time, and where to read next.</p>
+
+  <h3>My client has a client secret. Do I still need PKCE?</h3>
+  <p>Yes. OAuth&nbsp;2.1 requires PKCE for <em>all</em> clients using the authorization code
+  flow, confidential ones included. The secret proves which application is calling; PKCE
+  proves the call finishes the flow it started. They are different guarantees, and the second
+  one also protects against a leaked code inside your own infrastructure.</p>
+
+  <h3>Is PKCE only for mobile apps?</h3>
+  <p>No. It was written with mobile in mind and is now the baseline for every client type.
+  Single-page apps need it most acutely, since they are public clients whose redirect is a
+  plain browser URL.</p>
+
+  <h3>Can I reuse one verifier for a session?</h3>
+  <p>No. One per authorization attempt. A reused verifier turns a single leak into a
+  permanent one, and if two flows run concurrently they will overwrite each other.</p>
+
+  <h3>The challenge shows up in my server logs. Is that a problem?</h3>
+  <p>No. It is a hash, and it is useless without the verifier. That is exactly why PKCE hashes
+  it. The <em>verifier</em> in a log would be a problem &mdash; check that your token endpoint
+  does not log request bodies.</p>
+
+  <h3>What if the authorization server does not support PKCE?</h3>
+  <p>Then you do not have this protection, and no amount of client-side correctness supplies
+  it. Check <code>code_challenge_methods_supported</code> in the discovery document. If it is
+  absent, raise it with whoever runs the server; if it is your server, Chapter&nbsp;19 lists
+  what it must do.</p>
+
+  <h3>Does PKCE mean I can put a token in a single-page app safely?</h3>
+  <p>It means the code exchange is safe. What happens to the token afterwards is a separate
+  question with a separate answer &mdash; token storage, XSS, and rotation are all covered in
+  the companion volume.</p>
+
+  <h2>Where to read next</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td class="k" style="width:1.35in">RFC 7636</td><td>PKCE itself. Short, readable, and the normative source for everything in this book.</td></tr>
+      <tr><td class="k">RFC 9700</td><td>Best Current Practice for OAuth&nbsp;2.0 Security. Why PKCE is now required everywhere, plus the attacks it does not cover.</td></tr>
+      <tr><td class="k">OAuth 2.1 draft</td><td>The consolidation: PKCE mandatory, implicit flow removed, exact redirect matching.</td></tr>
+      <tr><td class="k">RFC 8252</td><td>OAuth for Native Apps. Custom schemes, verified redirects, and why not to use a web view.</td></tr>
+      <tr><td class="k">The companion volume</td><td><i>The Ultimate Developer's Guide to OAuth&nbsp;2.1 and PKCE</i> &mdash; tokens, scopes, refresh rotation, OpenID&nbsp;Connect, and the simulator's source in full.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout good">
+    <span class="lbl">If you remember one thing.</span> PKCE does not stop the authorization
+    code being stolen. It makes a stolen code useless, by requiring a secret that never
+    traveled through the channel the thief was listening to.
+  </div>
+
+  <div class="pfoot"><span class="ch">Questions people ask</span><span class="n">36</span></div>
+</section>
+
+</body>
+</html>

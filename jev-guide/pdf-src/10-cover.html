@@ -1,0 +1,72 @@
+<section class="cover">
+  <div class="eyebrow">A reading path and a technical briefing</div>
+  <h1>Understanding<br>Jev</h1>
+  <p class="sub">
+    The decision-only model class that returns typed answers and calibrated probabilities
+    instead of text &mdash; what it is, why people are excited, when to reach for it, and
+    what it is quietly displacing.
+  </p>
+  <div class="cover-rule"></div>
+  <div class="scope">
+    <b>Inside</b>
+    A sequenced reading list, from launch announcement to independent critique<br>
+    The three primitives &middot; the request and response, in full<br>
+    Six proven uses &middot; six documented failure modes<br>
+    What it replaces, what it augments, and what it cannot touch<br>
+    The vendor's numbers, and what independent testing found instead
+  </div>
+  <div class="meta">
+    <strong>Subject</strong> TypeSafe AI's Jev, released in limited early access 15 September 2026<br>
+    <strong>Compiled</strong> September 2026, from the public record &middot; every claim attributed<br>
+    <strong>Caution</strong> Jev is weeks old. Treat performance figures as provisional and
+    re-check them before they reach a design document.
+  </div>
+</section>
+
+<h1 id="how"><span class="num">0</span>How to use this document</h1>
+
+<p class="lede">
+  Jev was announced on 15 September 2026. Almost everything written about it is younger than
+  a month, much of it is by the vendor, and the independent work is only now arriving. This
+  document is organized so that you can form your own view rather than inherit one.
+</p>
+
+<table>
+  <thead><tr><th style="width:26%">If you want</th><th>Read</th></tr></thead>
+  <tbody>
+    <tr><td><b>The idea in five minutes</b></td>
+        <td>&sect;1 and &sect;2. That is enough to follow a conversation about it.</td></tr>
+    <tr><td><b>To decide whether to try it</b></td>
+        <td>&sect;3 (when to use it), &sect;4 (when not to), and &sect;7 &mdash; the honest picture.
+            &sect;7 matters more than the marketing.</td></tr>
+    <tr><td><b>To explain it to your team</b></td>
+        <td>&sect;5 (what it is replacing) and &sect;6 (where it sits in an architecture).</td></tr>
+    <tr><td><b>To go deep</b></td>
+        <td>&sect;9, the reading path &mdash; twelve pieces in the order that builds understanding
+            fastest, with a note on what each one adds and how far to trust it.</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <span class="lbl">On the state of the evidence</span>
+  <p>
+    Three kinds of claim appear in this document and they are marked differently throughout.
+    <span class="claim">Vendor claims</span> come from TypeSafe's own materials and
+    benchmarks, which the company itself describes as designed by its own team.
+    <span class="indep">Independent findings</span> come from third parties reproducing or
+    testing those claims. Everything else is either directly observable from the API or is
+    this document's own framing, and is flagged as such. Where the two disagree, both are
+    given.
+  </p>
+</div>
+
+<div class="note">
+  <span class="lbl">A note on what this document is not</span>
+  <p>
+    It is not a tutorial &mdash; the official quickstart is better at that and is the first
+    entry in the reading path. It is not a recommendation to adopt. A model four weeks old,
+    behind a waitlist, from a company two years old, with vendor-designed benchmarks and one
+    published independent calibration study, is a thing to <em>evaluate</em>, on a workload
+    you own, against a baseline you already trust.
+  </p>
+</div>

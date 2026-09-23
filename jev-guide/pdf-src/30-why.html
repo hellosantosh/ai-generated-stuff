@@ -1,0 +1,125 @@
+<h1 id="why"><span class="num">2</span>Why it matters</h1>
+
+<p class="lede">
+  Three arguments are being made for Jev. One is economic, one is structural, and one is about
+  what you can build when a decision costs a fraction of a cent. They are not equally strong.
+</p>
+
+<h2 id="economics"><span class="num">2.1</span>The economic argument</h2>
+
+<p>
+  The headline numbers are striking and they are the vendor's own. TypeSafe publishes workflow
+  evaluations at <code>evals.typesafe.ai</code>:
+</p>
+
+<table>
+  <thead><tr><th style="width:30%">On TypeSafe's decision tasks</th><th style="width:22%">Jev</th><th>GPT-6 Sol</th></tr></thead>
+  <tbody>
+    <tr><td>Accuracy</td><td><span class="claim">76.0%</span></td><td>79.1%</td></tr>
+    <tr><td>Cost per call</td><td><span class="claim">$0.0001</span></td><td>$0.2152</td></tr>
+    <tr><td>Latency</td><td><span class="claim">0.4&nbsp;s</span></td><td>34.3&nbsp;s</td></tr>
+  </tbody>
+</table>
+
+<p>
+  From figures like these TypeSafe derives its headline multipliers:
+  <span class="claim">193.6&times; faster and 444.6&times; cheaper</span> at the extreme. The
+  company is unusually candid about the caveat, noting the benchmarks were
+  &ldquo;designed by TypeSafe's own capabilities team&rdquo; and that such multipliers
+  represent &ldquo;the higher end of real world gains&rdquo;.
+</p>
+
+<div class="danger">
+  <span class="lbl">Read &sect;7 before you quote any of these numbers</span>
+  <p>
+    A TypeSafe employee measured a <span class="indep">15.9% speed improvement</span> on a real
+    pipeline when substituting one step with Jev, with cost down 30.1%. Component speed-ups do
+    not become pipeline speed-ups when the other calls in the pipeline are unchanged. The
+    number that decides an adoption is the pipeline number, and it is not the one in the
+    headline.
+  </p>
+</div>
+
+<h2 id="structural"><span class="num">2.2</span>The structural argument</h2>
+
+<p>
+  This one is more durable than the benchmarks, because it follows from the design rather than
+  from a measurement.
+</p>
+
+<ul>
+  <li><b>The output cannot be malformed.</b> Values outside the supplied schema are not
+      representable, so the entire category of parse-retry-reprompt logic that surrounds
+      LLM classification simply is not needed. TypeSafe quotes a
+      <span class="claim">0% structured-output error rate</span>; structurally, it is hard to
+      see how it could be otherwise.</li>
+  <li><b>Confidence arrives with the answer.</b> Not a self-reported &ldquo;I am 90%
+      sure&rdquo; in prose, which is famously unreliable, but a probability per option. That
+      makes <i>abstention</i> a first-class option: route the confident 95% automatically and
+      send the rest to a human or a bigger model.</li>
+  <li><b>Latency is bounded and roughly flat in the number of questions.</b> A single parallel
+      pass means you can ask twelve questions about a document for approximately the price and
+      time of asking one.</li>
+</ul>
+
+<div class="tip">
+  <span class="lbl">The honest framing of &ldquo;cannot hallucinate&rdquo;</span>
+  <p>
+    It cannot hallucinate <em>outside your schema</em>. It can absolutely pick the wrong option
+    inside it. &ldquo;Structural correctness is not semantic correctness&rdquo; is the most
+    useful sentence written about this model so far, and it belongs in any summary you give a
+    colleague who has only heard the marketing.
+  </p>
+</div>
+
+<h2 id="jevons"><span class="num">2.3</span>The Jevons argument</h2>
+
+<p>
+  The third argument is the one the model is named after. At roughly
+  <span class="claim">$0.0004 per decision</span> against $0.03&ndash;$0.18 for a frontier
+  model, some things stop being projects and become defaults:
+</p>
+
+<ul class="tight">
+  <li>Screening every fetched page for prompt injection, rather than the suspicious ones.</li>
+  <li>Judging every tool call a coding agent proposes, rather than sampling them.</li>
+  <li>Classifying an entire documentation site &mdash; TypeSafe demonstrates 500+ pages for
+      <span class="claim">under ten cents</span>.</li>
+  <li>Reranking search results inside a request, where three seconds of LLM latency was
+      previously prohibitive.</li>
+</ul>
+
+<p>
+  Whether that is transformative or merely convenient depends entirely on whether the
+  decisions are good enough at that price, which is the question &sect;7 is about. But the
+  direction is real: TypeSafe notes the pricing &ldquo;may be subsidized&rdquo; and that it
+  expects prices &ldquo;to go down, not up&rdquo;.
+</p>
+
+<h2 id="reception"><span class="num">2.4</span>What practitioners are reporting</h2>
+
+<table class="long">
+  <thead><tr><th style="width:26%">Source</th><th>Reported</th></tr></thead>
+  <tbody>
+    <tr><td>Vercel engineer Pranit Sharma</td>
+        <td><span class="indep">5&ndash;18&times; faster results with greater accuracy</span> than
+            OpenAI's Luna 5.6 on his workload.</td></tr>
+    <tr><td>An unnamed developer, via TechCrunch</td>
+        <td><span class="indep">10&ndash;20&times; less expensive than Gemini</span>, with
+            confidence scores usable for workflow automation.</td></tr>
+    <tr><td>Every's evaluation</td>
+        <td><span class="indep">580&times; cheaper, but slightly less accurate</span> &mdash; 6 of
+            7 planted defects caught, against 7 of 7 for Fable&nbsp;5.1.</td></tr>
+    <tr><td>Independent field measurements</td>
+        <td><span class="indep">1.16&times; to 6&times; faster</span> across scenarios; the 6&times;
+            figure came from a production tax-document pipeline.</td></tr>
+    <tr><td>The <code>pi-warden</code> project</td>
+        <td>Over <span class="indep">17,000 recorded tool calls, Jev held 42, and about 88% of
+            those holds were correct</span>.</td></tr>
+  </tbody>
+</table>
+
+<p class="small">
+  Note the spread: 1.16&times; to 580&times; depending on what is being measured and against
+  what. That spread is the single most important fact in this section.
+</p>

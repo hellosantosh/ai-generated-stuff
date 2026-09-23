@@ -1,0 +1,75 @@
+<h1 id="when"><span class="num">3</span>When to use it</h1>
+
+<p class="lede">
+  The test is simple: can you write down every acceptable answer before you ask the question?
+  If yes, Jev is a candidate. If no, it is not.
+</p>
+
+<h2 id="six"><span class="num">3.1</span>Six uses that have been demonstrated</h2>
+
+<p>
+  These are not hypotheticals &mdash; each has a published implementation or measurement behind
+  it.
+</p>
+
+<table class="long">
+  <thead><tr><th style="width:24%">Use</th><th>What it looks like, and what was measured</th></tr></thead>
+  <tbody>
+    <tr><td><b>Rerank retrieval results</b></td>
+        <td>Score each candidate page for whether it actually answers the query, before any of
+            it reaches an agent's context. On TypeSafe's legal retrieval benchmark this moved
+            <span class="claim">top-1 accuracy from 5% to 18%</span> after an initial BM25
+            ranking, at negligible cost.</td></tr>
+    <tr><td><b>Verify agent citations</b></td>
+        <td>Ask whether a quoted passage supports, contradicts, or simply ignores the claim
+            made from it. A published test verified four accurate citations and caught four
+            planted failures <span class="claim">at 0.99 confidence</span>.</td></tr>
+    <tr><td><b>Judge a coding agent's tool calls</b></td>
+        <td>Before executing a command, ask whether it is irreversible, off-task, out of scope,
+            or mismatched with stated intent. <code>pi-warden</code> reports
+            <span class="indep">42 holds over 17,000 calls, ~88% of them correct</span>.</td></tr>
+    <tr><td><b>Screen fetched pages for prompt injection</b></td>
+        <td>Four yes/no questions gating whatever enters an agent's context: relevance,
+            evidence quality, premise contradiction, injection attempt. Caught an injected
+            instruction while preserving legitimate corrective information.</td></tr>
+    <tr><td><b>Route between models</b></td>
+        <td>Estimate task difficulty and whether web access is needed, then send easy work to a
+            cheap model. Vercel's AI SDK 7 exposes this directly through an
+            <code>evaluate</code> method.</td></tr>
+    <tr><td><b>Classify at scale</b></td>
+        <td>Label an entire crawled site &mdash; page type, deprecation status, presence of code
+            examples. <span class="claim">500+ pages for under ten cents</span> at list price.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="pattern"><span class="num">3.2</span>The pattern underneath them</h2>
+
+<div class="tool">
+  <p style="margin:0">
+    Every one of those is <b>a filter, a gate, a router, or a judge</b> &mdash; a decision
+    <i>about</i> content, made at high volume, where the answer space is small and known in
+    advance, and where being slightly wrong occasionally is survivable because the decision is
+    cheap enough to check or repeat.
+  </p>
+</div>
+
+<p>
+  Notice what none of them is: the thing that produces the final answer for a user. Jev sits
+  in the layer <em>around</em> the model that does that.
+</p>
+
+<h2 id="decision"><span class="num">3.3</span>A decision table</h2>
+
+<table class="long">
+  <thead><tr><th style="width:34%">Your situation</th><th>Reach for</th></tr></thead>
+  <tbody>
+    <tr><td>Bounded answer space, high volume, latency matters</td><td><b>Jev</b></td></tr>
+    <tr><td>You need a confidence number to decide whether to escalate</td><td><b>Jev</b> &mdash; this is its distinguishing feature</td></tr>
+    <tr><td>You are currently prompting an LLM for JSON and parsing it</td><td><b>Jev</b>, if the JSON is a classification rather than content</td></tr>
+    <tr><td>The rule is genuinely fixed and expressible in code</td><td><b>Code.</b> A regex is faster, free, and auditable</td></tr>
+    <tr><td>You need prose, a summary, an explanation, or an argument</td><td><b>An LLM.</b> Jev is not trained to produce text</td></tr>
+    <tr><td>Multi-hop reasoning, arithmetic, or date maths</td><td><b>An LLM</b>, or code &mdash; see &sect;4</td></tr>
+    <tr><td>Low volume, and a single error is expensive</td><td><b>An LLM</b>, or a human. The economics that justify Jev are not present</td></tr>
+    <tr><td>You cannot enumerate the acceptable answers</td><td><b>Not Jev.</b> This is the disqualifying condition</td></tr>
+  </tbody>
+</table>

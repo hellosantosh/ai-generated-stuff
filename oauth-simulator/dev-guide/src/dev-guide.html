@@ -354,7 +354,7 @@ pre.listing .x{ color:#9c5a08; }                      /* regex literals */
         <text x="394" y="210" font-family="SF Mono,Menlo,monospace" font-size="7.6"
               letter-spacing="1" fill="#7f8db8">SERVER + IDP</text>
 
-        <!-- the proof key at the centre -->
+        <!-- the proof key at the center -->
         <path d="M240,136 L295.4,168 L295.4,232 L240,264 L184.6,232 L184.6,168 Z"
               fill="#0d1428" stroke="#7ea6ff" stroke-width="2.4"/>
         <path d="M240,148 L285,174 L285,226 L240,252 L195,226 L195,174 Z"
@@ -1262,7 +1262,7 @@ Host: localhost:9000</pre>
       <tr><td class="k">client_id</td><td>Which application is asking. Public, not a credential.</td></tr>
       <tr><td class="k">redirect_uri</td><td>Where to send the code. Compared by <b>exact string match</b> against registration.</td></tr>
       <tr><td class="k">scope</td><td>What the application wants to be allowed to do. Ask for the least you need.</td></tr>
-      <tr><td class="k">state</td><td>Random, per-request. Echoed back so the client can recognise its own callback.</td></tr>
+      <tr><td class="k">state</td><td>Random, per-request. Echoed back so the client can recognize its own callback.</td></tr>
       <tr class="hl"><td class="k">code_challenge</td><td>The hash from step&nbsp;1. The server stores it against this request.</td></tr>
       <tr class="hl"><td class="k">code_challenge_method</td><td><code>S256</code>. Send it explicitly &mdash; omitting it means <code>plain</code>, which protects nothing.</td></tr>
     </tbody>
@@ -1737,7 +1737,7 @@ challenge = b64(hashlib.sha256(verifier).digest())</pre>
 
   <figure style="margin:4pt 0 8pt">
     <svg viewBox="0 0 700 152" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
-      <!-- the encoded token, in three colours -->
+      <!-- the encoded token, in three colors -->
       <text x="6" y="24" font-size="8.2" font-family="SF Mono,Menlo,monospace">
         <tspan fill="#2f4fd0">eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCIsImtpZCI6InNpbS1FYXJIZkNO</tspan><tspan fill="#14181f" font-weight="700">.</tspan>
       </text>
@@ -2573,7 +2573,7 @@ GET /api/accounts/ACC-7100        <span class="c"># <- an account belonging to u
     <span class="lbl">The operational catch.</span> If a client crashes after sending a refresh
     but before storing the new token, it will replay the old one and get the whole family
     revoked &mdash; logging the user out for no good reason. Persist the rotated token before you
-    use the access token that came with it, and serialise refreshes so two tabs cannot race.
+    use the access token that came with it, and serialize refreshes so two tabs cannot race.
   </div>
 
   <div class="pfoot"><span class="ch">Chapter 10 &middot; Refresh tokens and rotation</span><span class="n">25</span></div>
@@ -2596,7 +2596,7 @@ GET /api/accounts/ACC-7100        <span class="c"># <- an account belonging to u
   <table>
     <thead><tr><th style="width:1.65in">OAuth 2.0 (2012)</th><th style="width:1.5in">OAuth 2.1</th><th>Why it changed</th></tr></thead>
     <tbody>
-      <tr class="hl"><td>PKCE optional, recommended for mobile</td><td><b>Required for every authorization code request</b></td><td>Codes leak in ways nobody predicted, the defence costs almost nothing, and a universal rule cannot be misapplied.</td></tr>
+      <tr class="hl"><td>PKCE optional, recommended for mobile</td><td><b>Required for every authorization code request</b></td><td>Codes leak in ways nobody predicted, the defense costs almost nothing, and a universal rule cannot be misapplied.</td></tr>
       <tr><td>Implicit grant (<code>response_type=token</code>)</td><td><b>Removed</b></td><td>It put an access token in the URL fragment: browser history, <code>Referer</code> headers, any script on the page &mdash; and the client could not be authenticated at all.</td></tr>
       <tr><td>Password grant (<code>grant_type=password</code>)</td><td><b>Removed</b></td><td>The application handled the real password, so there was no consent, no MFA, no federation, and no way for a user to tell a real app from a phishing one.</td></tr>
       <tr><td><code>redirect_uri</code> matching left to the server</td><td><b>Exact string comparison</b></td><td>Wildcards and prefix rules let an attacker append a path and have codes delivered to themselves.</td></tr>
@@ -2735,7 +2735,7 @@ GET /api/accounts/ACC-7100        <span class="c"># <- an account belonging to u
     </div>
   </div>
   <p class="small">This trade-off is the real reason access tokens are short-lived: a five-minute
-  window is the compromise between not calling the AS on every request and not honouring a
+  window is the compromise between not calling the AS on every request and not honoring a
   revocation for too long. Lab&nbsp;13 in the simulator revokes a token and then calls both kinds
   of endpoint, so you can watch one accept it and the other refuse.</p>
 
@@ -3006,9 +3006,9 @@ node client.js happy     <span class="c"># Lab 1 - the correct flow, end to end<
   <h2>Pattern B, and when it is actually right</h2>
   <p class="small">It takes a paragraph rather than a page because the only hard part
   is knowing when it applies. <b>It is correct when the agent touches nobody's
-  data</b> &mdash; rotating certificates, reindexing a catalogue, pruning logs. There
+  data</b> &mdash; rotating certificates, reindexing a catalog, pruning logs. There
   is no resource owner, so nothing to delegate and nobody to consent:
-  <code>client_credentials</code> is right, and Pattern&nbsp;A would be theatre.</p>
+  <code>client_credentials</code> is right, and Pattern&nbsp;A would be theater.</p>
   <div class="callout">
     <span class="lbl">The test that settles it.</span> Ask <i>whose</i> data the
     agent touches. If the answer names a person, Pattern&nbsp;B is wrong however
@@ -3787,7 +3787,7 @@ node client.js happy</pre>
     <div class="expect">PASS  REFUSED: invalid_scope<br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cannot widen scope on exchange: payments:write<br>
       PASS  403 insufficient_scope at the API too</div>
-    <p><b>Notice the defence in depth:</b> the authorization server refused to widen
+    <p><b>Notice the defense in depth:</b> the authorization server refused to widen
     the grant, and the API independently refused a scope the token never carried.
     Either check alone would have held.</p>
   </div>
@@ -4028,7 +4028,7 @@ node client.js happy</pre>
 <span class="ln"> 71</span>const policy = {
 <span class="ln"> 72</span>  require_pkce: true,        <span class="c">// PKCE for every authorization_code request</span>
 <span class="ln"> 73</span>  exact_redirect_uri: true,  <span class="c">// string equality, no wildcards, no prefixes</span>
-<span class="ln"> 74</span>  single_use_codes: true,    <span class="c">// a replayed code is revoked, not honoured</span>
+<span class="ln"> 74</span>  single_use_codes: true,    <span class="c">// a replayed code is revoked, not honored</span>
 <span class="ln"> 75</span>  rotate_refresh: true,      <span class="c">// a new refresh token on every refresh</span>
 <span class="ln"> 76</span>  detect_reuse: true,        <span class="c">// a replayed refresh token kills the whole family</span>
 <span class="ln"> 77</span>};
@@ -4241,7 +4241,7 @@ node client.js happy</pre>
 <span class="ln">263</span>  <span class="c">// logs and Referer headers, so nothing secret may travel on it.</span>
 <span class="ln">264</span>  if (path === <span class="s">&#x27;/authorize&#x27;</span>) {
 <span class="ln">265</span>    const client = CLIENTS[q.get(<span class="s">&#x27;client_id&#x27;</span>)];
-<span class="ln">266</span>    <span class="c">// Step 1: identify the client. Not yet trusted - just recognised.</span>
+<span class="ln">266</span>    <span class="c">// Step 1: identify the client. Not yet trusted - just recognized.</span>
 <span class="ln">267</span>    if (!client) return html(res,
 <span class="ln">268</span>      <span class="s">&#x27;&lt;h2&gt;invalid_client&lt;/h2&gt;&lt;p&gt;Unknown client_id. The authorization server will &#x27;</span>
 <span class="ln">269</span>      + <span class="s">&#x27;not redirect an error for an unknown client, because it has no registered &#x27;</span>
@@ -4374,7 +4374,7 @@ node client.js happy</pre>
 <span class="ln">382</span>    const out = new URL(r.uri);
 <span class="ln">383</span>    out.searchParams.set(<span class="s">&#x27;code&#x27;</span>, code);
 <span class="ln">384</span>    if (r.state) out.searchParams.set(<span class="s">&#x27;state&#x27;</span>, r.state);
-<span class="ln">385</span>    out.searchParams.set(<span class="s">&#x27;iss&#x27;</span>, ISSUER);   <span class="c">// RFC 9207: mix-up defence</span>
+<span class="ln">385</span>    out.searchParams.set(<span class="s">&#x27;iss&#x27;</span>, ISSUER);   <span class="c">// RFC 9207: mix-up defense</span>
 <span class="ln">386</span>    return redirect(res, out.toString());
 <span class="ln">387</span>  }
 <span class="ln">388</span>
@@ -5940,7 +5940,7 @@ node client.js happy</pre>
 <span class="ln">664</span>  r.status === 403 ? pass(<span class="s">&#x27;403 insufficient_scope at the API too&#x27;</span>)
 <span class="ln">665</span>                   : fail(<span class="s">&#x27;expected 403, got &#x27;</span> + r.status);
 <span class="ln">666</span>  note(<span class="s">&#x27;Two independent checks refused it: the AS would not widen the grant,&#x27;</span>);
-<span class="ln">667</span>  note(<span class="s">&#x27;and the API would not honour a scope the token never carried.&#x27;</span>);
+<span class="ln">667</span>  note(<span class="s">&#x27;and the API would not honor a scope the token never carried.&#x27;</span>);
 <span class="ln">668</span>} };
 <span class="ln">669</span>
 <span class="ln">670</span><span class="c">// ===========================================================================</span>
@@ -6059,7 +6059,7 @@ node client.js happy</pre>
       capped by registration and entitlement, then approved by the user.</p>
       <h4>state</h4>
       <p class="tiny">A random per-request value echoed back on the callback, so a client can
-      recognise a flow it started.</p>
+      recognize a flow it started.</p>
     </div>
   </div>
 

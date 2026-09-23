@@ -1,0 +1,144 @@
+<h1 id="reading"><span class="num">9</span>The reading path</h1>
+
+<p class="lede">
+  Twelve pieces, in the order that builds understanding fastest. Each entry says what it adds
+  that the previous one did not, and how far to trust it. Stages 1 and 2 are about two hours;
+  stage 3 is the one that will change how you design.
+</p>
+
+<h2 id="stage1"><span class="num">9.1</span>Stage one &mdash; orientation</h2>
+
+<div class="read">
+  <h4><span class="readnum">01</span>Introducing System One Models and Jev &mdash; TypeSafe</h4>
+  <div class="u">typesafe.ai/blog/introducing-system-one-models-and-jev</div>
+  <p><b>Start here.</b> The primary source: the claim in the company's own words, the
+  System&nbsp;One framing, and the headline numbers. Read it first so you recognize later which
+  parts of the discourse are the vendor's framing being repeated.
+  <span class="src">Vendor. Take the argument, not the multipliers.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">02</span>A new kind of AI model from a ChatGPT inventor is thrilling developers &mdash; TechCrunch</h4>
+  <div class="u">techcrunch.com/2026/09/18/a-new-kind-of-ai-model-from-a-chatgpt-inventor-is-thrilling-developers/</div>
+  <p>The outside view, and the first practitioner numbers &mdash; the Vercel engineer reporting
+  5&ndash;18&times;, another developer reporting 10&ndash;20&times; cheaper than Gemini. Also the
+  clearest statement of Almeida's motivation: &ldquo;computers speak a different language&rdquo;.
+  <span class="src">Press. Light on skepticism.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">03</span>TypeSafe AI's Jev: What &ldquo;System One Models&rdquo; Actually Are &mdash; TrueFoundry</h4>
+  <div class="u">truefoundry.com/blog/typesafe-ai-jev</div>
+  <p>The best explanation of the <i>category</i> rather than the product: the Kahneman framing,
+  the three properties traded for giving up text, and the task-specific routing architecture
+  that &sect;6 of this document is drawn from.
+  <span class="src">Independent vendor blog. Conceptually strong.</span></p>
+</div>
+
+<h2 id="stage2"><span class="num">9.2</span>Stage two &mdash; how it actually works</h2>
+
+<div class="read">
+  <h4><span class="readnum">04</span>What Is Jev? Inside TypeSafe's Decision-Only AI Model &mdash; Firecrawl</h4>
+  <div class="u">firecrawl.dev/blog/what-is-jev</div>
+  <p><b>The single most useful third-party piece.</b> Real code, the API shape, six worked use
+  cases with measurements, and honest comparisons against LLMs, classical classifiers and
+  embedding rerankers. If you read only one thing after the launch post, read this.
+  <span class="src">Independent, technical, balanced.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">05</span>Quickstart, primitives and cookbooks &mdash; TypeSafe docs</h4>
+  <div class="u">docs.typesafe.ai/introduction/quickstart</div>
+  <p>Where to actually learn the three primitives properly and see the patterns the vendor
+  recommends. Pair it with the API reference at <code>docs.typesafe.ai/api</code> when you start
+  writing calls. <span class="src">Vendor. Reference material; reliable for mechanics.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">06</span>Jev: TypeSafe's System One Model Explained &mdash; DataCamp</h4>
+  <div class="u">datacamp.com/blog/system-one-models-jev</div>
+  <p>The gentlest treatment of the primitives with worked examples, and the clearest list of
+  what Jev displaces &mdash; LLM classifiers, guardrail models, rules engines, rerankers.
+  Useful if you need to explain this to someone who does not write code.
+  <span class="src">Educational. Repeats vendor numbers uncritically.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">07</span>The jaggedness documentation &mdash; TypeSafe docs</h4>
+  <div class="u">docs.typesafe.ai &mdash; the limitations page</div>
+  <p>The six documented failure modes summarized in &sect;4: maths, dates, indirection, noisy
+  state, generation, adversarial input. A vendor publishing this is unusual and it should raise
+  your trust in the rest of their documentation.
+  <span class="src">Vendor, self-critical. Read before designing anything.</span></p>
+</div>
+
+<h2 id="stage3"><span class="num">9.3</span>Stage three &mdash; the limits</h2>
+
+<div class="warn">
+  <span class="lbl">This is the stage most readers skip</span>
+  <p>
+    Stages 1 and 2 will leave you enthusiastic. Stage 3 is what turns enthusiasm into a design
+    that survives contact with production. Do not stop before it.
+  </p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">08</span>Independent calibration test on out-of-distribution tasks &mdash; <code>scienthoon/jev-ood-calibration</code></h4>
+  <div class="u">github.com/scienthoon/jev-ood-calibration</div>
+  <p><b>The most important item on this list.</b> 900 rule-generated support tickets Jev cannot
+  have seen, plus three public benchmarks, with raw responses, expected calibration error
+  against a noise floor, and a temperature refit. Found calibration error 4.4&times; the noise
+  floor and a required temperature of 3.4. <b>Reproducible for about $0.06</b> &mdash; so
+  reproduce it, on your data.
+  <span class="src">Independent, reproducible, adversarial in the good sense.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">09</span>TypeSafe Claims Its Model Is 193.6&times; Faster. Its Own Employee Measured 15.9% &mdash; Cherry Creek News</h4>
+  <div class="u">thecherrycreeknews.com/jev-typesafe-benchmark-checked-explainer-wave-cherry_creek/</div>
+  <p>Why component benchmarks mislead: swapping one pipeline step gave 15.9% speed and 30.1%
+  cost, not 193.6&times;. Also spots that the reference answers are averages of the very models
+  Jev is compared against, creating a ceiling it cannot exceed.
+  <span class="src">Independent, skeptical. The counterweight to item 01.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">10</span>62.6% Asked Once and 95% Split Five Ways &mdash; The D*AI*LY BRIEF</h4>
+  <div class="u">beri.net/article/typesafe-jev-typed-decision-model-calibration-decomposition-shadow-eval</div>
+  <p>The decomposition finding, on 2,000 phishing emails, and the below-random 16.7% result from
+  wrong criteria strings. Between them these two numbers are the strongest practical design
+  guidance available: <b>ask many narrow questions, and treat criteria as code</b>.
+  <span class="src">Independent, quantitative.</span></p>
+</div>
+
+<h2 id="stage4"><span class="num">9.4</span>Stage four &mdash; the ecosystem</h2>
+
+<div class="read">
+  <h4><span class="readnum">11</span>The Ultimate Jev Resource List 2026 &mdash; ScriptByAI</h4>
+  <div class="u">scriptbyai.com/jev-resource-list/</div>
+  <p>A remarkable map of what appeared in weeks: official and community SDKs in a dozen
+  languages, gateways, dozens of MCP servers and agent skills, browser and computer-use agents,
+  benchmarks, and a long list of open-weight &ldquo;System One&rdquo; reimplementations. Skim
+  it for the shape of the ecosystem, then mine it for the three projects nearest your problem.
+  <span class="src">Link directory. Unvetted; treat as an index.</span></p>
+</div>
+
+<div class="read">
+  <h4><span class="readnum">12</span>Official workflow evaluations &mdash; <code>evals.typesafe.ai</code></h4>
+  <div class="u">evals.typesafe.ai</div>
+  <p>Read this <em>after</em> items 08 to 10, not before. With the caveats in hand you can see
+  what the evaluation is actually measuring &mdash; agreement with a model-derived reference on
+  vendor-designed workflows &mdash; and read the numbers for what they are worth, which is not
+  nothing.
+  <span class="src">Vendor. Now readable critically.</span></p>
+</div>
+
+<div class="tip">
+  <span class="lbl">If you only have an hour</span>
+  <p>
+    Items <b>04</b> (Firecrawl, how it works), <b>08</b> (the calibration study) and <b>09</b>
+    (the benchmark critique). That combination gives you the mechanism, the strongest
+    independent evidence, and the correct level of skepticism &mdash; and it is enough to hold
+    your own in an architecture review.
+  </p>
+</div>
