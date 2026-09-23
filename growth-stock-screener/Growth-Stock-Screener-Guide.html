@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+<meta charset="utf-8">
+<title>Growth Stock Screener Guide</title>
+<style>
+/* Print stylesheet. US Letter via headless Chrome.
+   Regenerate with tools/build-pdf.sh */
+
+@page { size: letter; margin: 16mm 18mm 16mm 18mm; }
+
+:root {
+  --ink: #16181d;
+  --ink-soft: #4a5058;
+  --ink-faint: #767d87;
+  --rule: #d9dde3;
+  --rule-soft: #eaedf1;
+  --accent: #2b5f4f;
+  --accent-bg: #e8f2ee;
+  --amber: #8a5a00;
+  --amber-bg: #fdf3e0;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: var(--serif); font-size: 10.2pt; line-height: 1.5; color: var(--ink); margin: 0; }
+
+.masthead {
+  padding: 9mm 11mm 7mm;
+  background: linear-gradient(158deg, #0d1f1a 0%, #2b5f4f 54%, #3f8a6e 100%);
+  border-radius: 5px;
+  color: #fff;
+  margin-bottom: 6mm;
+}
+.masthead .eyebrow { font-family: var(--sans); font-size: 8.5pt; letter-spacing: .2em; text-transform: uppercase; opacity: .75; margin-bottom: 4mm; }
+.masthead h1 { font-family: var(--sans); font-size: 26pt; line-height: 1.1; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 4mm; }
+.masthead p { margin: 0; font-size: 11pt; opacity: .92; max-width: 150mm; }
+.masthead .meta { margin-top: 6mm; font-family: var(--sans); font-size: 8.5pt; opacity: .8; border-top: 1px solid rgba(255,255,255,.25); padding-top: 3mm; }
+
+h2 {
+  font-family: var(--sans); font-size: 13.5pt; font-weight: 620; letter-spacing: -0.01em;
+  margin: 6mm 0 2.5mm; padding-bottom: 1.5mm; border-bottom: 1px solid var(--rule);
+  break-after: avoid;
+}
+h2 .num { color: var(--accent); margin-right: 3mm; }
+p { margin: 0 0 3mm; }
+h3 { font-family: var(--sans); font-size: 11pt; font-weight: 620; margin: 5mm 0 2mm; break-after: avoid; }
+.newpage, .newpage-soft { break-before: page; margin-top: 0; }
+table.split { break-inside: auto; }
+table.split tr { break-inside: avoid; }
+.formula { font-family: var(--sans); font-size: 10.5pt; font-weight: 600; text-align: center; color: var(--accent); background: var(--accent-bg); border-radius: 3px; padding: 3mm; margin: 0 0 4mm; }
+table.data { font-size: 8.8pt; margin-bottom: 3mm; }
+table.data td { padding: 1.1mm 2.2mm; }
+table.data th { padding: 1.3mm 2.2mm; white-space: nowrap; }
+table.data td:nth-child(2) { font-family: var(--serif); font-weight: normal; color: var(--ink); white-space: normal; }
+table.data td:first-child { font-family: var(--sans); font-weight: 600; color: var(--accent); white-space: nowrap; }
+table.data td:nth-child(n+3), table.data th:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; }
+table.compact:not(.tickers) td:first-child { font-family: var(--serif); font-weight: normal; color: var(--ink); white-space: normal; }
+table.compact td:nth-child(n+3), table.compact th:nth-child(n+3) { text-align: left; }
+table.tickers td:nth-child(2) { font-family: var(--sans); font-size: 8.6pt; }
+.note { font-family: var(--sans); font-size: 8.4pt; color: var(--ink-faint); }
+.stats { display: flex; gap: 6mm; margin: 2mm 0 4mm; }
+.stats div { flex: 1; border: 1px solid var(--rule); border-radius: 4px; padding: 3mm 4mm; font-family: var(--sans); font-size: 9pt; color: var(--ink-soft); }
+.stats span { display: block; font-size: 20pt; font-weight: 650; color: var(--accent); line-height: 1.1; }
+
+.panel { font-family: var(--sans); font-size: 8.8pt; color: var(--ink-soft); margin: -1mm 0 3mm; }
+.panel b { color: var(--accent); }
+
+table { width: 100%; border-collapse: collapse; margin: 0 0 4mm; font-size: 9.3pt; break-inside: avoid; }
+th {
+  font-family: var(--sans); font-size: 8.2pt; font-weight: 650; text-transform: uppercase; letter-spacing: .05em;
+  text-align: left; color: var(--ink-soft); background: var(--rule-soft); padding: 1.6mm 2.5mm; border-bottom: 1.5px solid var(--rule);
+}
+td { padding: 1.5mm 2.5mm; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+td:nth-child(2) { font-family: var(--sans); font-weight: 600; color: var(--accent); white-space: nowrap; }
+.path { font-family: var(--sans); font-size: 8.6pt; color: var(--ink-faint); }
+
+.callout { border-left: 3px solid var(--accent); background: var(--accent-bg); padding: 3mm 4mm; margin: 0 0 4mm; border-radius: 0 3px 3px 0; break-inside: avoid; }
+.callout.warn { border-color: var(--amber); background: var(--amber-bg); }
+.callout b:first-child { font-family: var(--sans); }
+
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin-bottom: 1.5mm; }
+
+.checklist { columns: 2; column-gap: 8mm; font-size: 9.5pt; }
+.checklist li { break-inside: avoid; }
+
+.footer { margin-top: 8mm; font-family: var(--sans); font-size: 8pt; color: var(--ink-faint); border-top: 1px solid var(--rule); padding-top: 2mm; }
+</style>
+</head>
+<body>
+
+<section class="masthead">
+  <div class="eyebrow">Fidelity Stock Screener &middot; Filter recipe</div>
+  <h1>Screening for Five-Year Growth Stocks</h1>
+  <p>How to set the screener's filters to find companies that are growing fast, are profitable
+     or on their way to profitability, generate positive cash flow, and have strong analyst support.
+     Includes why forward P/E matters and sample results from public data.</p>
+  <div class="meta">Compiled September 2026 &middot; Educational guidance, not personalized financial advice</div>
+</section>
+
+<p>
+  Most of the filters you need are in the <b>Company Growth</b> and <b>Management &amp; Growth</b>
+  panels. Analyst ratings are not in those top panels. Scroll further down the screener to the
+  category named something like <b>Analyst Opinions</b> or <b>Equity Summary Score</b>.
+</p>
+<p>
+  The values below are reasonable starting points, not fixed rules. A screen narrows the list,
+  so loosen or tighten the values based on how many stocks come back.
+</p>
+
+<div class="callout">
+  <b>Quick start: the 8 core filters</b>
+  <ul class="checklist" style="margin-top:2mm">
+    <li>Revenue Growth TTM vs. Prior TTM &ge; 15%</li>
+    <li>Revenue Growth 3 Year &ge; 15%</li>
+    <li>EPS Forward Long Term Growth &ge; 15%</li>
+    <li>Gross Profit Margin (TTM) &ge; 40%</li>
+    <li>Free Cash Flow &gt; 0</li>
+    <li>P/E Next Year Estimate 0&ndash;60</li>
+    <li>Equity Summary Score Bullish or better</li>
+    <li>Market Capitalization &ge; $2B</li>
+  </ul>
+</div>
+
+<h2><span class="num">1</span>Growth (the main filter)</h2>
+<div class="panel">Panel: <b>Company Growth</b></div>
+<table>
+  <thead><tr><th style="width:44%">Filter</th><th style="width:17%">Value</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td><span class="path">Revenue Growth &rarr;</span> TTM vs. Prior TTM</td><td>&ge; 15%</td><td>Growing now</td></tr>
+    <tr><td><span class="path">Revenue Growth &rarr;</span> 3 Year</td><td>&ge; 15%</td><td>Growth has lasted several years</td></tr>
+    <tr><td><span class="path">EPS Growth &rarr;</span> Forward Long Term Growth (3-5 Yrs)</td><td>&ge; 15%</td><td>Analysts' view of the next five years, which matches the time frame</td></tr>
+    <tr><td><span class="path">EPS Growth &rarr;</span> Proj Next Yr vs. This Yr</td><td>&ge; 15%</td><td>Earnings expected to keep rising</td></tr>
+    <tr><td><span class="path">Cash Flow Growth Rate &rarr;</span> TTM vs. Prior TTM</td><td>&gt; 0%</td><td>Cash generation is getting better</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">2</span>Profitable, or getting there</h2>
+<div class="panel">Panels: <b>Management &amp; Growth</b>, and P/E in <b>Company Value</b></div>
+<table>
+  <thead><tr><th style="width:44%">Filter</th><th style="width:17%">Value</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Gross Profit Margin (TTM)</td><td>&ge; 40%</td><td>A strong business model even before it turns profitable</td></tr>
+    <tr><td><span class="path">Operating Margin &rarr;</span> TTM</td><td>&gt; 0%</td><td>Already profitable (strict screen only)</td></tr>
+    <tr><td><span class="path">Operating Margin &rarr;</span> TTM/5 Year Average</td><td>&gt; 1</td><td>Margins are improving, which catches companies on the way to profitability</td></tr>
+    <tr><td><span class="path">Profit Margin &rarr;</span> Most Recent Qtr</td><td>&gt; 0%</td><td>Profitable in the latest quarter, even if the TTM figure is still negative</td></tr>
+    <tr><td><span class="path">P/E &rarr;</span> Next Year Estimate</td><td>0&ndash;60</td><td>A positive forward P/E means analysts expect profits next year. A simple way to find companies close to profitability.</td></tr>
+  </tbody>
+</table>
+<div class="callout">
+  <b>Run two screens.</b> The <i>strict</i> screen uses Operating Margin TTM &gt; 0. The
+  <i>emerging</i> screen drops that filter and keeps only Most Recent Qtr profit margin &gt; 0 and
+  Next Year P/E &gt; 0.
+</div>
+
+<h2><span class="num">3</span>Positive cash flow</h2>
+<table>
+  <thead><tr><th style="width:44%">Filter</th><th style="width:17%">Value</th><th>Panel</th></tr></thead>
+  <tbody>
+    <tr><td>Free Cash Flow</td><td>&gt; 0</td><td>Management &amp; Growth</td></tr>
+    <tr><td>Price/Cash Flow Ratio</td><td>0&ndash;40</td><td>Company Value</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">4</span>Analyst ratings</h2>
+<div class="panel">Scroll down on the screener page, plus the <b>Earnings</b> panel</div>
+<table>
+  <thead><tr><th style="width:44%">Filter</th><th style="width:17%">Value</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Equity Summary Score</td><td>Bullish or Very Bullish</td><td>Fidelity's combined analyst score from LSEG StarMine</td></tr>
+    <tr><td>Analyst consensus rating (if listed)</td><td>Buy / Strong Buy</td><td>Broad analyst support</td></tr>
+    <tr><td>Number of analysts</td><td>&ge; 5</td><td>The rating isn't based on one or two opinions</td></tr>
+    <tr><td><span class="path">Positive Earnings Surprises &rarr;</span> 90 Days</td><td>Checked</td><td>Beating estimates is a good sign</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">5</span>Quality and safety checks</h2>
+<table>
+  <thead><tr><th style="width:44%">Filter</th><th style="width:17%">Value</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Market Capitalization</td><td>&ge; $2B</td><td>Avoids very small, thinly covered stocks (use &ge; $500M if you accept more risk)</td></tr>
+    <tr><td>Debt to Capital Ratio (Most Recent Qtr)</td><td>&lt; 50%</td><td>Growth isn't paid for with heavy debt</td></tr>
+    <tr><td>Current Ratio (Most Recent Qtr)</td><td>&gt; 1.2</td><td>Enough short-term cash to pay short-term bills</td></tr>
+    <tr><td>Interest Coverage (Most Recent Qtr)</td><td>&gt; 5</td><td>Can comfortably cover interest payments</td></tr>
+    <tr><td><span class="path">% of Institutional Ownership &rarr;</span> Current</td><td>&ge; 40%</td><td>Large investors hold it</td></tr>
+    <tr><td><span class="path">Volume &rarr;</span> 90 Day Average</td><td>&ge; 500K</td><td>Easy to buy and sell</td></tr>
+    <tr><td>PEG Ratio</td><td>&lt; 2</td><td>Keeps you from overpaying for the growth</td></tr>
+  </tbody>
+</table>
+
+<h2><span class="num">6</span>Optional momentum check</h2>
+<ul>
+  <li><b>Technicals:</b> price above its 50-day or 200-day SMA (the moving average of the closing price over that many days).</li>
+  <li><b>Performance &amp; Volatility:</b> % Below 52 Week High &lt; 25%.</li>
+</ul>
+
+<h2><span class="num">7</span>How to use it</h2>
+<ol>
+  <li><b>Start small.</b> Begin with the 8 core filters in the quick-start box. If you check everything at once, you'll probably get zero results.</li>
+  <li><b>Adjust until you have 20&ndash;50 stocks.</b> Too few: lower growth to 10% or market cap to $500M. Too many: raise growth to 20&ndash;25%.</li>
+  <li><b>Research the list by hand.</b> A screen only produces candidates. For each one, read the latest earnings report, the company's competitive advantages, how fast margins are improving, and how much the share count is being diluted (check the Shares Outstanding trend and stock-based compensation).</li>
+  <li><b>Re-run the screen quarterly</b> after earnings season, because growth figures change.</li>
+</ol>
+
+<h2 class="newpage"><span class="num">8</span>Why P/E (Next Year's Estimate) matters for growth stocks</h2>
+<p>
+  <b>P/E (Next Year's Estimate)</b>, also called the <b>forward P/E</b>, is the current share
+  price divided by the earnings per share (EPS) that analysts, on average, expect the company to
+  earn in its next fiscal year:
+</p>
+<div class="formula">Forward P/E = Share price &divide; Analysts' consensus EPS estimate for next year</div>
+<p>
+  The usual P/E (<i>Price/TTM Earnings</i>) divides by the last twelve months of earnings,
+  which have already happened. The forward P/E divides by earnings that are expected. For a slow,
+  steady company the two are close. For a growth company they can be very different, and the
+  forward P/E is usually the more useful number.
+</p>
+
+<h3>1. The trailing P/E makes fast growers look too expensive</h3>
+<p>
+  When earnings grow quickly, last year's earnings understate what the company earns now. Take
+  a $100 stock that earned $2 per share last year and is expected to earn $3.33 next year. Its
+  trailing P/E is 50, which looks expensive, but its forward P/E is 30. The gap between the two
+  shows how much growth the market expects. The screen results in section 9 show this clearly:
+</p>
+<table class="data compact">
+  <thead><tr><th>Stock</th><th>Trailing P/E</th><th>Forward P/E</th><th>What it means</th></tr></thead>
+  <tbody>
+    <tr><td>Samsara (IOT)</td><td>248.4</td><td>40.3</td><td>Looks very expensive on past earnings, much less so on expected earnings</td></tr>
+    <tr><td>Shopify (SHOP)</td><td>99.7</td><td>59.9</td><td>Earnings expected to rise about two-thirds</td></tr>
+    <tr><td>HubSpot (HUBS)</td><td>77.1</td><td>12.9</td><td>Very large gap. Part of it is accounting (see limitations below)</td></tr>
+    <tr><td>Microsoft (MSFT)</td><td>27.8</td><td>21.2</td><td>Mature grower: a small gap</td></tr>
+  </tbody>
+</table>
+
+<h3>2. It identifies companies "on their way to profitability"</h3>
+<p>
+  A company that lost money over the last year has no meaningful trailing P/E. If analysts expect
+  a profit next year, its forward P/E is positive. That is why the screen uses
+  <b>Next Year Estimate &gt; 0</b>: it lets in companies that are just becoming profitable and
+  keeps out companies with no profit in sight. <b>Zeta Global (ZETA)</b> in section 9 is an example:
+  it has no trailing P/E because it was not profitable over the last twelve months, but its
+  forward P/E is 25.1.
+</p>
+
+<h3>3. It is a guardrail against overpaying</h3>
+<p>
+  Growth stocks often trade at high prices. Capping the forward P/E (at 60 in this screen)
+  removes stocks priced so high that even strong growth may not justify the price. The
+  <b>PEG ratio</b> takes this a step further by dividing the P/E by the expected growth rate, so
+  a PEG under 2 means the price is reasonable for the growth expected.
+</p>
+
+<h3>4. It shows what the market is betting on</h3>
+<p>
+  Trailing P/E &divide; forward P/E is roughly 1 + next year's expected earnings growth. Samsara's
+  248 &divide; 40 &asymp; 6 means analysts expect earnings to rise about six-fold. That is only
+  worth paying for if the company delivers, so the forward P/E also tells you what has to go right.
+</p>
+
+<div class="callout warn">
+  <b>Limitations of the forward P/E</b>
+  <ul style="margin-top:2mm">
+    <li><b>It is an estimate.</b> Analysts are often too optimistic, and estimates get cut. Check whether estimates have been rising or falling over the last 90 days.</li>
+    <li><b>Estimates are usually "adjusted" EPS,</b> which leaves out costs such as stock-based compensation. This is why some software companies (like HubSpot above) show a very large gap between trailing and forward P/E.</li>
+    <li><b>It covers only one year.</b> For a five-year view, use it together with PEG and Forward Long Term EPS Growth (3&ndash;5 Yrs).</li>
+    <li><b>Compare within an industry.</b> A forward P/E of 25 is cheap for fast-growing software and expensive for a utility.</li>
+    <li><b>Cyclical companies can be a trap.</b> Miners and chipmakers show their lowest forward P/E at the <i>peak</i> of a cycle, when earnings are temporarily high.</li>
+  </ul>
+</div>
+
+<h2><span class="num">9</span>Sample results: running the screen on public data</h2>
+<p>
+  To show what the screen produces, Claude (an AI assistant) ran it on the free, public
+  <b>Finviz stock screener</b> (finviz.com) on <b>September 22, 2026</b>. These results come from
+  publicly available data, not from Fidelity. They are a point-in-time snapshot, not
+  recommendations.
+</p>
+
+<div class="stats">
+  <div><span>92</span>stocks pass the 8 core filters</div>
+  <div><span>32</span>stocks pass the full screen</div>
+</div>
+
+<h3>How the Fidelity filters were mapped</h3>
+<p>
+  Finviz does not have every Fidelity filter, so the closest equivalent was used where needed:
+</p>
+<table class="data compact split">
+  <thead><tr><th>Fidelity filter (this guide)</th><th>Finviz filter used</th></tr></thead>
+  <tbody>
+    <tr><td>Revenue Growth TTM vs. Prior TTM &ge; 15%; 3 Year &ge; 15%</td><td>Sales growth TTM &gt; 15%; Sales growth 3Y &gt; 15%</td></tr>
+    <tr><td>EPS Forward Long Term Growth &ge; 15%; Proj Next Yr vs. This Yr &ge; 15%</td><td>EPS growth next 5Y &gt; 15%; EPS growth next year &gt; 15%</td></tr>
+    <tr><td>Gross Profit Margin &ge; 40%; Operating Margin TTM &gt; 0</td><td>Gross margin &gt; 40%; Operating margin positive</td></tr>
+    <tr><td>Free Cash Flow &gt; 0</td><td>Price/FCF under 100 (implies positive free cash flow)</td></tr>
+    <tr><td>P/E Next Year Estimate 0&ndash;60</td><td>Forward P/E under 60</td></tr>
+    <tr><td>Equity Summary Score Bullish or better</td><td>Analyst recommendation Buy or better (Finviz has no Equity Summary Score)</td></tr>
+    <tr><td>Positive earnings surprise</td><td>EPS surprise positive (last quarter)</td></tr>
+    <tr><td>Market cap &ge; $2B</td><td>Market cap mid-cap and over (&ge; $2B)</td></tr>
+    <tr><td>Debt to Capital &lt; 50%</td><td>Debt/Equity under 1 (equivalent)</td></tr>
+    <tr><td>Current Ratio &gt; 1.2</td><td>Current ratio over 1 (closest option)</td></tr>
+    <tr><td>Institutional ownership &ge; 40%; 90-day volume &ge; 500K; PEG &lt; 2</td><td>Same thresholds</td></tr>
+    <tr><td>Interest Coverage &gt; 5</td><td><i>Not applied</i> (no Finviz filter)</td></tr>
+  </tbody>
+</table>
+
+<h3>The 32 stocks that pass the full screen</h3>
+<p class="note">
+  P/E = trailing twelve months. Fwd P/E = next year's estimate. EPS next 5Y = analysts' estimated
+  annual EPS growth. Sales past 5Y = actual annual sales growth. "&ndash;" = not available.
+</p>
+<h3>Semiconductors, hardware and solar</h3>
+<table class="data">
+  <thead><tr><th>Ticker</th><th>Company</th><th>Mkt cap</th><th>P/E</th><th>Fwd P/E</th><th>PEG</th><th>EPS next 5Y</th><th>Sales past 5Y</th></tr></thead>
+  <tbody>
+    <tr><td>NVDA</td><td>NVIDIA Corp</td><td>$5.52T</td><td>28.93</td><td>14.54</td><td>0.22</td><td>64.79%</td><td>66.90%</td></tr>
+    <tr><td>AVGO</td><td>Broadcom Inc</td><td>$1.74T</td><td>46.54</td><td>18.94</td><td>0.29</td><td>64.81%</td><td>21.74%</td></tr>
+    <tr><td>SNDK</td><td>Sandisk Corp</td><td>$276B</td><td>25.89</td><td>7.23</td><td>0.13</td><td>54.54%</td><td>-</td></tr>
+    <tr><td>ANET</td><td>Arista Networks Inc</td><td>$259B</td><td>64.69</td><td>39.25</td><td>1.35</td><td>28.98%</td><td>31.19%</td></tr>
+    <tr><td>CRDO</td><td>Credo Technology Group Holding Ltd</td><td>$36.2B</td><td>68.72</td><td>19.96</td><td>0.38</td><td>52.78%</td><td>86.80%</td></tr>
+    <tr><td>NVMI</td><td>Nova Ltd</td><td>$11.8B</td><td>46.13</td><td>26.98</td><td>1.11</td><td>24.38%</td><td>26.73%</td></tr>
+    <tr><td>RMBS</td><td>Rambus Inc</td><td>$11.4B</td><td>48.17</td><td>27.79</td><td>1.15</td><td>24.26%</td><td>23.50%</td></tr>
+    <tr><td>FSLR</td><td>First Solar Inc</td><td>$21.6B</td><td>12.38</td><td>8.59</td><td>0.31</td><td>27.55%</td><td>14.00%</td></tr>
+  </tbody>
+</table>
+<h3>Software and internet</h3>
+<table class="data">
+  <thead><tr><th>Ticker</th><th>Company</th><th>Mkt cap</th><th>P/E</th><th>Fwd P/E</th><th>PEG</th><th>EPS next 5Y</th><th>Sales past 5Y</th></tr></thead>
+  <tbody>
+    <tr><td>MSFT</td><td>Microsoft Corp</td><td>$3.70T</td><td>27.75</td><td>21.21</td><td>1.15</td><td>18.41%</td><td>14.57%</td></tr>
+    <tr><td>SHOP</td><td>Shopify Inc</td><td>$190B</td><td>99.66</td><td>59.92</td><td>1.81</td><td>33.06%</td><td>31.58%</td></tr>
+    <tr><td>RDDT</td><td>Reddit Inc</td><td>$29.9B</td><td>36.19</td><td>21.94</td><td>0.43</td><td>50.81%</td><td>57.27%</td></tr>
+    <tr><td>IOT</td><td>Samsara Inc</td><td>$22.4B</td><td>248.44</td><td>40.29</td><td>1.42</td><td>28.34%</td><td>45.30%</td></tr>
+    <tr><td>GWRE</td><td>Guidewire Software Inc</td><td>$12.3B</td><td>92.35</td><td>28.19</td><td>1.09</td><td>25.88%</td><td>14.70%</td></tr>
+    <tr><td>HUBS</td><td>HubSpot Inc</td><td>$10.9B</td><td>77.12</td><td>12.91</td><td>0.47</td><td>27.63%</td><td>28.81%</td></tr>
+    <tr><td>ZETA</td><td>Zeta Global Holdings Corp</td><td>$7.6B</td><td>-</td><td>25.11</td><td>1.00</td><td>25.23%</td><td>28.80%</td></tr>
+    <tr><td>GLBE</td><td>Global E Online Ltd</td><td>$7.0B</td><td>47.40</td><td>25.54</td><td>0.32</td><td>79.73%</td><td>47.81%</td></tr>
+    <tr><td>YOU</td><td>Clear Secure Inc</td><td>$5.3B</td><td>26.64</td><td>17.77</td><td>0.48</td><td>36.75%</td><td>31.30%</td></tr>
+    <tr><td>MNDY</td><td>Monday.Com Ltd</td><td>$3.6B</td><td>36.22</td><td>12.71</td><td>0.58</td><td>21.83%</td><td>50.21%</td></tr>
+  </tbody>
+</table>
+<h3>Healthcare</h3>
+<table class="data">
+  <thead><tr><th>Ticker</th><th>Company</th><th>Mkt cap</th><th>P/E</th><th>Fwd P/E</th><th>PEG</th><th>EPS next 5Y</th><th>Sales past 5Y</th></tr></thead>
+  <tbody>
+    <tr><td>DXCM</td><td>Dexcom Inc</td><td>$33.8B</td><td>35.34</td><td>28.69</td><td>1.35</td><td>21.18%</td><td>19.33%</td></tr>
+    <tr><td>PODD</td><td>Insulet Corp</td><td>$9.7B</td><td>27.63</td><td>18.08</td><td>0.78</td><td>23.16%</td><td>24.53%</td></tr>
+    <tr><td>KNSA</td><td>Kiniksa Pharmaceuticals International Plc</td><td>$6.1B</td><td>79.31</td><td>38.02</td><td>0.70</td><td>54.65%</td><td>-</td></tr>
+    <tr><td>VCEL</td><td>Vericel Corp</td><td>$2.1B</td><td>87.02</td><td>46.48</td><td>0.76</td><td>61.02%</td><td>17.34%</td></tr>
+  </tbody>
+</table>
+<h3>Consumer, industrials and financials</h3>
+<table class="data">
+  <thead><tr><th>Ticker</th><th>Company</th><th>Mkt cap</th><th>P/E</th><th>Fwd P/E</th><th>PEG</th><th>EPS next 5Y</th><th>Sales past 5Y</th></tr></thead>
+  <tbody>
+    <tr><td>SN</td><td>SharkNinja Inc</td><td>$23.8B</td><td>34.53</td><td>22.27</td><td>1.31</td><td>16.96%</td><td>18.37%</td></tr>
+    <tr><td>ONON</td><td>On Holding AG</td><td>$9.7B</td><td>19.70</td><td>14.60</td><td>0.41</td><td>35.49%</td><td>51.61%</td></tr>
+    <tr><td>ATAT</td><td>Atour Lifestyle Holdings Ltd ADR</td><td>$3.8B</td><td>16.37</td><td>11.82</td><td>0.59</td><td>20.20%</td><td>43.10%</td></tr>
+    <tr><td>LOAR</td><td>Loar Holdings Inc</td><td>$6.0B</td><td>90.34</td><td>39.68</td><td>1.78</td><td>22.26%</td><td>-</td></tr>
+    <tr><td>SEZL</td><td>Sezzle Inc</td><td>$3.7B</td><td>23.92</td><td>16.48</td><td>0.54</td><td>30.32%</td><td>50.26%</td></tr>
+  </tbody>
+</table>
+<h3>Mining (see the caution below)</h3>
+<table class="data">
+  <thead><tr><th>Ticker</th><th>Company</th><th>Mkt cap</th><th>P/E</th><th>Fwd P/E</th><th>PEG</th><th>EPS next 5Y</th><th>Sales past 5Y</th></tr></thead>
+  <tbody>
+    <tr><td>AGI</td><td>Alamos Gold Inc</td><td>$15.2B</td><td>13.06</td><td>12.78</td><td>0.33</td><td>38.19%</td><td>19.31%</td></tr>
+    <tr><td>HL</td><td>Hecla Mining Co</td><td>$12.8B</td><td>24.40</td><td>18.41</td><td>0.70</td><td>26.41%</td><td>14.97%</td></tr>
+    <tr><td>ARIS</td><td>Aris Mining Corp</td><td>$4.1B</td><td>14.43</td><td>6.48</td><td>0.17</td><td>38.02%</td><td>18.87%</td></tr>
+    <tr><td>ERO</td><td>Ero Copper Corp</td><td>$3.9B</td><td>12.59</td><td>7.94</td><td>0.29</td><td>27.54%</td><td>19.38%</td></tr>
+    <tr><td>SVM</td><td>Silvercorp Metals Inc</td><td>$2.7B</td><td>119.11</td><td>8.69</td><td>0.24</td><td>36.45%</td><td>17.93%</td></tr>
+  </tbody>
+</table>
+
+<h3>What stands out</h3>
+<ul>
+  <li><b>Technology dominates.</b> 17 of the 32 are chip, hardware, software or internet companies, many of them tied to AI spending, which is where fast, profitable growth is concentrated in 2026. A portfolio built only from this list would be heavily concentrated in one theme.</li>
+  <li><b>The miners probably don't belong.</b> Gold, silver and copper miners pass because metal prices are high, not because the businesses are structurally growing. Their earnings can fall sharply when prices drop. To exclude them, add a sector filter that removes Basic Materials.</li>
+  <li><b>Some estimates are extreme.</b> Very low PEG ratios (SNDK 0.13, NVDA 0.22, AVGO 0.29) come from analysts projecting 50%+ yearly EPS growth, which rarely lasts five years. Treat these numbers with extra caution.</li>
+  <li><b>Well-known names are missing from the full screen.</b> Companies such as Meta, Eli Lilly, ServiceNow and MercadoLibre pass the core filters but fail at least one of the stricter ones (for example PEG, debt, or the last quarter's earnings surprise). Failing a filter doesn't disqualify a company. It just means you should look at why it failed.</li>
+</ul>
+
+<h3>The other 60 stocks that pass only the 8 core filters</h3>
+<table class="data compact tickers">
+  <tbody>
+    <tr><td>Technology (24)</td><td>TSM, SKHY, ASML, STX, NOW, SNOW, DDOG, MDB, ZS, DT, SAIL, FROG, ESTC, PCOR, APPF, TTAN, KVYO, DAVE, RELY, WK, BRZE, GRND, AVPT, FLYW</td></tr>
+    <tr><td>Healthcare (11)</td><td>LLY, ISRG, ARGX, ONC, ALNY, GMAB, NBIX, HALO, HNGE, WAY, HRMY</td></tr>
+    <tr><td>Basic Materials (9)</td><td>NEM, B, GFI, KGC, PAAS, IAG, AG, AUGO, BTG</td></tr>
+    <tr><td>Financial (7)</td><td>KKR, BAM, AJG, IBKR, NP, WT, SII</td></tr>
+    <tr><td>Communication Services (3)</td><td>META, APP, TKO</td></tr>
+    <tr><td>Consumer Cyclical (3)</td><td>MELI, DASH, BIRK</td></tr>
+    <tr><td>Industrials (2)</td><td>HEI, HEI-A</td></tr>
+    <tr><td>Energy (1)</td><td>VNOM</td></tr>
+  </tbody>
+</table>
+<p class="note">
+  Source: Finviz.com stock screener, data retrieved September 22, 2026. Market data changes
+  daily; re-run the screen before acting on any of these names.
+</p>
+
+<div class="callout warn">
+  <b>Disclaimer.</b> This is educational guidance, not personalized financial advice. Check it
+  against your own risk tolerance and diversification.
+</div>
+
+<div class="footer">Growth Stock Screener Guide &middot; September 2026</div>
+
+</body>
+</html>
