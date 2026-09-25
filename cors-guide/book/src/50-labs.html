@@ -1,0 +1,244 @@
+
+<!-- ====================================================================
+     PART V PLATE
+     ==================================================================== -->
+<section class="page plate front">
+  <div class="bg" style="background:radial-gradient(900px 600px at 70% 20%, rgba(74,211,166,.20), transparent 60%),radial-gradient(700px 520px at 15% 95%, rgba(91,140,255,.18), transparent 65%),linear-gradient(178deg,#08140f 0%,#0a0f1e 55%,#06090f 100%)"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno" style="color:#7fe3c2">Part V</div>
+    <h1>The Labs</h1>
+    <p class="pl">One small server, two origins on your own machine, and your browser's
+    DevTools. Each lab changes one line of the CORS policy and asks you to predict what the
+    browser will do before you look. By the end, the error messages from Chapter&nbsp;11 will
+    read like plain English.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="SF Mono,Menlo,monospace">
+        <!-- a DevTools-style network panel -->
+        <rect x="50" y="20" width="500" height="250" rx="12" fill="#0e1630" stroke="#2c3a66" stroke-width="1.5"/>
+        <rect x="50" y="20" width="500" height="30" rx="12" fill="#141e3e"/><rect x="50" y="40" width="500" height="10" fill="#141e3e"/>
+        <text x="70" y="40" font-size="10" fill="#dfe7ff" font-weight="700">Network</text>
+        <text x="140" y="40" font-size="10" fill="#7f8db8">Console</text>
+        <text x="210" y="40" font-size="10" fill="#7f8db8">Application</text>
+        <g font-size="9">
+          <text x="70" y="76" fill="#7f8db8">NAME</text><text x="250" y="76" fill="#7f8db8">METHOD</text><text x="330" y="76" fill="#7f8db8">STATUS</text><text x="410" y="76" fill="#7f8db8">TYPE</text>
+          <line x1="66" y1="84" x2="534" y2="84" stroke="#2c3a66"/>
+          <text x="70" y="106" fill="#dfe7ff">rates</text><text x="250" y="106" fill="#dfe7ff">GET</text><text x="330" y="106" fill="#4ad3a6">200</text><text x="410" y="106" fill="#9fb3e6">fetch</text>
+          <rect x="62" y="116" width="476" height="22" fill="#1a2750"/>
+          <text x="70" y="131" fill="#f6dcae">notes</text><text x="250" y="131" fill="#f6dcae">OPTIONS</text><text x="330" y="131" fill="#4ad3a6">204</text><text x="410" y="131" fill="#e0a84a">preflight</text>
+          <text x="70" y="156" fill="#dfe7ff">notes</text><text x="250" y="156" fill="#dfe7ff">POST</text><text x="330" y="156" fill="#4ad3a6">201</text><text x="410" y="156" fill="#9fb3e6">fetch</text>
+          <text x="70" y="181" fill="#dfe7ff">profile</text><text x="250" y="181" fill="#dfe7ff">GET</text><text x="330" y="181" fill="#ff9fb0">CORS error</text><text x="410" y="181" fill="#9fb3e6">fetch</text>
+          <line x1="66" y1="196" x2="534" y2="196" stroke="#2c3a66"/>
+          <text x="70" y="218" fill="#7f8db8">access-control-allow-origin:</text><text x="266" y="218" fill="#bff3e0">http://localhost:8080</text>
+          <text x="70" y="236" fill="#7f8db8">access-control-allow-methods:</text><text x="266" y="236" fill="#bff3e0">GET, POST, PUT, DELETE</text>
+          <text x="70" y="254" fill="#7f8db8">vary:</text><text x="266" y="254" fill="#bff3e0">Origin</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis" style="color:#9fcbb9">
+      <b>Setup</b> &nbsp;&#183;&nbsp; <b>1&ndash;3</b> First contact &nbsp;&#183;&nbsp; <b>4&ndash;6</b> Credentials and headers &nbsp;&#183;&nbsp;
+      <b>7&ndash;8</b> Caching and allowlists<br><b>Listing A</b> lab/server.js, complete
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     LAB SETUP
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Part V &middot; The Labs</div>
+  <h1 class="title">The lab server</h1>
+  <p class="lede">Everything runs on your own machine. Nothing is installed, nothing is
+  downloaded, and nothing listens beyond <code>localhost</code>.</p>
+
+  <h2>What you need</h2>
+  <ul class="tight">
+    <li><b>Node.js 18 or later.</b> Check with <code>node --version</code>.</li>
+    <li><b>A modern browser</b> with DevTools, open to the <b>Network</b> and <b>Console</b> tabs.</li>
+    <li><b>The file <code>server.js</code></b>, from this book's companion folder or typed in from
+    Listing&nbsp;A at the end of this part. It is a single file with no dependencies.</li>
+  </ul>
+
+  <h2>Start it</h2>
+<pre>$ node server.js
+Harbor Pay app  http://localhost:8080
+Harbor Pay API  http://localhost:8081   (request log: /log)
+Allowed origins: http://localhost:8080</pre>
+
+  <h2>What is running</h2>
+  <table>
+    <thead><tr><th style="width:30%">Address</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td class="k">http://localhost:8080</td><td>The <b>app origin</b>: one page with four buttons, each making a different cross-origin <code>fetch()</code> to the API.</td></tr>
+      <tr><td class="k">http://localhost:8081</td><td>The <b>API origin</b>: <code>/api/rates</code> (public), <code>/api/profile</code> (needs a session cookie), <code>/api/notes</code> (JSON <code>POST</code>), and <code>/login</code>, which sets the cookie.</td></tr>
+      <tr><td class="k">http://localhost:8081/log</td><td>The last 40 requests the API <i>received</i>: your proof of what really reached the server.</td></tr>
+    </tbody>
+  </table>
+  <p>The two addresses differ only in port: <b>different origins</b> but the <b>same site</b>
+  (Chapter&nbsp;3), so no third-party cookie settings get in the way.</p>
+
+  <h2>How every lab works</h2>
+  <ol class="tight">
+    <li>Open the file and find the <code>POLICY</code> object near the top.</li>
+    <li>Make the lab's one-line change and restart (<span class="kbd">Ctrl</span>+<span class="kbd">C</span>, <code>node server.js</code>).</li>
+    <li><b>Predict</b> the result, then press the button and check the page, Console, Network tab
+    and <code>/log</code>. Undo the change before the next lab.</li>
+  </ol>
+  <p><code>node server.js check</code> shows the policy without a browser: it sends preflights from
+  an allowed and an unlisted origin and prints the headers each receives.</p>
+
+  <p class="small muted"><b>For learning only:</b> plain HTTP, in-memory data and a deliberately
+  simple sign-in. Never expose it to a network or reuse it as production code.</p>
+
+  <div class="pfoot"><span class="ch">Part V &middot; The lab server</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     LABS 1-3
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Part V &middot; The Labs</div>
+  <h1 class="title">Labs 1&ndash;3: first contact</h1>
+  <p class="lede">Watch the basic exchange from Chapter&nbsp;6, the preflight from Chapter&nbsp;8,
+  and the single most important fact about CORS: a blocked request still arrives.</p>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 1 &middot; CHAPTER 6</div>
+    <h3>The permission slip</h3>
+    <span class="cmd">open http://localhost:8080 &#8594; press &ldquo;Lab 1&rdquo;</span>
+    <p>In the Network tab, select the <code>rates</code> request. Under <b>Request Headers</b>, find
+    <code>Origin: http://localhost:8080</code>, added by the browser. Under <b>Response
+    Headers</b>, find <code>Access-Control-Allow-Origin</code> naming the same origin. The page shows:</p>
+    <div class="expect">Lab 1: status 200<br>x-request-id visible to script: req-6abac081<br>{ "USD": 1, "EUR": 0.92, "GBP": 0.79 }</div>
+    <p><b>Notice:</b> there is no <code>OPTIONS</code> row. A plain <code>GET</code> is a simple request
+    (Chapter&nbsp;7).</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 2 &middot; CHAPTER 8</div>
+    <h3>The preflight</h3>
+    <span class="cmd">press &ldquo;Lab 2&rdquo; &#8594; then open http://localhost:8081/log</span>
+    <p>This button sends a JSON <code>POST</code>. The Network tab now shows <b>two</b> rows for
+    <code>notes</code>: an <code>OPTIONS</code> preflight (status 204) and then the <code>POST</code>
+    (status 201). Compare the preflight's <code>Access-Control-Request-Headers: content-type</code>
+    with the answer's <code>Access-Control-Allow-Headers</code>. The log (newest first) confirms the order:</p>
+    <div class="expect">POST    /api/notes   origin http://localhost:8080<br>OPTIONS /api/notes   origin http://localhost:8080   preflightFor POST</div>
+    <p><b>Try this:</b> in the Network tab, check that the preflight carried no <code>Cookie</code>
+    header, even after Lab&nbsp;4 has signed you in.</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 3 &middot; CHAPTERS 4 AND 10</div>
+    <h3>Blocked, but delivered</h3>
+    <span class="cmd">open http://127.0.0.1:8080 &#8594; press &ldquo;Lab 1&rdquo;</span>
+    <p><code>127.0.0.1</code> and <code>localhost</code> reach the same server, but they are different
+    hosts, so this page has a <b>different origin</b> that is not on the allowlist. The page
+    reports only a generic failure:</p>
+    <div class="expect" style="color:var(--bad)">Lab 1: TypeError: Failed to fetch<br>The script cannot tell why. Check the Console and Network tabs.</div>
+    <p>The Console explains that no <code>Access-Control-Allow-Origin</code> header was present. Now
+    open <code>/log</code>: the <code>GET /api/rates</code> from <code>http://127.0.0.1:8080</code>
+    <b>is there</b>. The server received it and answered; the browser withheld the answer.</p>
+    <p><b>Why it matters:</b> this is Chapter&nbsp;16 in one screen. Had this request changed data,
+    the change would have happened.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Part V &middot; Labs 1&ndash;3</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     LABS 4-6
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Part V &middot; The Labs</div>
+  <h1 class="title">Labs 4&ndash;6: credentials and headers</h1>
+  <p class="lede">The strict rules of Chapter&nbsp;9, and the two header lists that trip up almost
+  every team at least once.</p>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 4 &middot; CHAPTER 9</div>
+    <h3>Two opt-ins for credentials</h3>
+    <span class="cmd">press &ldquo;Lab 3&rdquo; &#8594; visit http://localhost:8081/login &#8594; press &ldquo;Lab 3&rdquo; again</span>
+    <p>The first press returns <code>401 not signed in</code> &mdash; readable, because the policy
+    allows this origin. After visiting <code>/login</code>, the browser holds a session cookie for
+    the API, and the page's <code>credentials: 'include'</code> sends it:</p>
+    <div class="expect">Lab 3: status 200<br>{ "user": "demo-user", "plan": "Harbor Pay Plus" }</div>
+    <p><b>Now change</b> <code>allowCredentials: true</code> to <code>false</code> and restart. The
+    same button fails, and the Console says <code>Access-Control-Allow-Credentials</code> must be
+    <code>'true'</code>. The cookie was sent and the server answered; the browser refused to share a
+    credentialed response the server hadn't agreed to share.</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 5 &middot; CHAPTER 10</div>
+    <h3>Visible in DevTools, invisible to code</h3>
+    <span class="cmd">press &ldquo;Lab 4&rdquo;, then set exposeHeaders: [] and press it again</span>
+    <p>With the default policy the page prints <code>x-request-id visible to script: req-&hellip;</code>.
+    After emptying <code>exposeHeaders</code> and restarting, it prints:</p>
+    <div class="expect">x-request-id visible to script: (null)</div>
+    <p>Yet the Network tab still shows <code>x-request-id</code> in the response headers. The browser
+    received it; the page was not allowed to read it.</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 6 &middot; CHAPTERS 8 AND 11</div>
+    <h3>A header the preflight didn't approve</h3>
+    <span class="cmd">remove 'content-type' from allowHeaders &#8594; press &ldquo;Lab 2&rdquo;</span>
+    <p>The preflight still returns 204, but its <code>Access-Control-Allow-Headers</code> no longer
+    lists <code>content-type</code>. The browser stops there: the <code>POST</code> is <b>never
+    sent</b>, and <code>/log</code> shows only the <code>OPTIONS</code> row. The Console names the
+    header that wasn't allowed.</p>
+    <p><b>Compare with Lab&nbsp;3:</b> there, a simple request arrived anyway. Here, the preflight
+    protected the server from a request it hadn't agreed to receive. That difference is the
+    whole reason preflights exist.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Part V &middot; Labs 4&ndash;6</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     LABS 7-8
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Part V &middot; The Labs</div>
+  <h1 class="title">Labs 7&ndash;8: caching and allowlists</h1>
+  <p class="lede">Measure what a preflight costs, then change the allowlist the right way and put
+  it under test.</p>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 7 &middot; CHAPTER 8</div>
+    <h3>Counting preflights</h3>
+    <span class="cmd">press &ldquo;Lab 2&rdquo; five times &#8594; count OPTIONS rows in /log</span>
+    <p>With <code>maxAgeSeconds: 600</code>, you should see a single <code>OPTIONS</code> followed by
+    five <code>POST</code>s: the browser cached the preflight answer. Now set
+    <code>maxAgeSeconds: 0</code>, restart, open the page in a fresh private window, and repeat. Every <code>POST</code> is now
+    preceded by its own <code>OPTIONS</code> &mdash; twice the round trips.</p>
+    <p><b>Tip:</b> the preflight cache belongs to the browser session. If results look stale, use
+    a fresh private window; and leave DevTools' <i>Disable cache</i> setting off for this lab so
+    you are measuring the browser's normal behavior.</p>
+  </div>
+
+  <div class="lab-card">
+    <div class="lab-no">LAB 8 &middot; CHAPTERS 13, 17 AND 20</div>
+    <h3>Adding an origin, properly</h3>
+    <span class="cmd">node server.js check</span>
+    <p>First read the output: the preflight from <code>http://localhost:8080</code> gets the full set
+    of permission headers; the one from <code>http://127.0.0.1:8080</code> gets only
+    <code>Vary: Origin</code>. Now add <code>'http://127.0.0.1:8080'</code> to
+    <code>allowedOrigins</code>, restart, and repeat Lab&nbsp;3: it succeeds.</p>
+    <div class="expect">Preflight from an origin not on the list<br>&nbsp;&nbsp;OPTIONS /api/notes  Origin: http://127.0.0.1:8080<br>&nbsp;&nbsp;-&gt; 204<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vary: Origin<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(no Access-Control-Allow-Origin: the browser will not share the response)</div>
+    <p><b>Extend it:</b> turn the <code>check</code> function into the test suite from
+    Chapter&nbsp;20. Add probes for <code>Origin: null</code> and for an <code>https</code> version of
+    the app origin, and make the script exit with an error if any of them receives an
+    <code>Access-Control-Allow-Origin</code> header. You have just written the CI check that ended
+    Harbor Pay's story.</p>
+  </div>
+
+  <h2>Where to go next</h2>
+  <p>Put the lab server behind a reverse proxy that serves both the page and the API from
+  <code>http://localhost:8080</code> (architecture A from Chapter&nbsp;20). Watch every CORS header
+  and every preflight disappear from the Network tab &mdash; the most satisfying lab of all.</p>
+
+  <div class="pfoot"><span class="ch">Part V &middot; Labs 7&ndash;8</span><span class="n">0</span></div>
+</section>
+
+<!-- LAB_LISTINGS -->

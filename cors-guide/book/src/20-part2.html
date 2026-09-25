@@ -1,0 +1,648 @@
+
+<!-- ====================================================================
+     PART II PLATE
+     ==================================================================== -->
+<section class="page plate front">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part II</div>
+    <h1>How CORS Works</h1>
+    <p class="pl">CORS is a short conversation in HTTP headers. The browser says who is
+    asking; the server says who may read. For anything unusual, the browser asks permission
+    first. This part walks through that conversation one header at a time, and ends with the
+    launch-night bug fixed properly.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="SF Mono,Menlo,monospace">
+        <!-- two speech bubbles: request and response -->
+        <rect x="30" y="30" width="330" height="112" rx="14" fill="#101b3a" stroke="#4ad3a6" stroke-width="2"/>
+        <path d="M70,142 L60,172 L102,142 Z" fill="#101b3a" stroke="#4ad3a6" stroke-width="2" stroke-linejoin="round"/>
+        <rect x="72" y="138" width="28" height="6" fill="#101b3a"/>
+        <text x="52" y="60" font-size="9" font-weight="700" letter-spacing="1.6" fill="#4ad3a6">BROWSER</text>
+        <text x="52" y="86" font-size="11" fill="#dfe7ff">OPTIONS /v1/transfers</text>
+        <text x="52" y="106" font-size="11" fill="#9fb3e6">Origin: https://app&#8230;</text>
+        <text x="52" y="126" font-size="11" fill="#9fb3e6">Access-Control-Request-Method: PUT</text>
+
+        <rect x="240" y="176" width="330" height="112" rx="14" fill="#101b3a" stroke="#e0a84a" stroke-width="2"/>
+        <path d="M530,176 L540,146 L498,176 Z" fill="#101b3a" stroke="#e0a84a" stroke-width="2" stroke-linejoin="round"/>
+        <rect x="500" y="173" width="28" height="6" fill="#101b3a"/>
+        <text x="262" y="206" font-size="9" font-weight="700" letter-spacing="1.6" fill="#e0a84a">SERVER</text>
+        <text x="262" y="232" font-size="11" fill="#dfe7ff">204 No Content</text>
+        <text x="262" y="252" font-size="11" fill="#f6dcae">Access-Control-Allow-Origin: https://app&#8230;</text>
+        <text x="262" y="272" font-size="11" fill="#f6dcae">Access-Control-Allow-Methods: PUT</text>
+        <text x="130" y="232" text-anchor="middle" font-size="9" letter-spacing="1.2" fill="#8f9cc4">&#8220;may I?&#8221;</text>
+        <text x="470" y="136" text-anchor="middle" font-size="9" letter-spacing="1.2" fill="#8f9cc4">&#8220;you may.&#8221;</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>06</b> Enter CORS &nbsp;&#183;&nbsp; <b>07</b> Simple requests &nbsp;&#183;&nbsp; <b>08</b> The preflight &nbsp;&#183;&nbsp;
+      <b>09</b> Credentials and cookies<br><b>10</b> Reading the response &nbsp;&#183;&nbsp; <b>11</b> Debugging CORS like a pro
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 6 - ENTER CORS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 6</div>
+  <h1 class="title">Enter CORS</h1>
+  <p class="lede">CORS does not tear down the wall. It gives the <i>server</i> a way to hand the
+  browser a permission slip: &ldquo;responses from me may be read by this origin.&rdquo;</p>
+
+  <figure>
+    <svg viewBox="0 0 700 262" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="m6a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker>
+      </defs>
+      <!-- lanes -->
+      <rect x="10" y="0" width="150" height="34" rx="6" fill="#fff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="85" y="15" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Page (JavaScript)</text>
+      <text x="85" y="27" text-anchor="middle" font-size="7.6" fill="#59617a" font-family="SF Mono,Menlo,monospace">app.harborpay.example</text>
+      <rect x="275" y="0" width="150" height="34" rx="6" fill="#eaeeff" stroke="#2f4fd0" stroke-width="1.2"/>
+      <text x="350" y="21" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Browser</text>
+      <rect x="540" y="0" width="150" height="34" rx="6" fill="#fff" stroke="#a8620a" stroke-width="1.2"/>
+      <text x="615" y="15" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">API server</text>
+      <text x="615" y="27" text-anchor="middle" font-size="7.6" fill="#59617a" font-family="SF Mono,Menlo,monospace">api.harborpay.example</text>
+      <g stroke="#dbe1ef" stroke-width="1" stroke-dasharray="3 3">
+        <line x1="85" y1="34" x2="85" y2="258"/><line x1="350" y1="34" x2="350" y2="258"/><line x1="615" y1="34" x2="615" y2="258"/>
+      </g>
+      <!-- 1 -->
+      <path d="M85,58 L346,58" stroke="#14181f" stroke-width="1.4" marker-end="url(#m6a)"/>
+      <text x="96" y="52" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">fetch('https://api&#8230;/v1/rates')</text>
+      <!-- 2 -->
+      <path d="M350,94 L611,94" stroke="#2f4fd0" stroke-width="1.4" marker-end="url(#m6a)"/>
+      <text x="362" y="80" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#2f4fd0">GET /v1/rates</text>
+      <text x="362" y="90" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#2f4fd0" font-weight="700">Origin: https://app.harborpay.example</text>
+      <!-- 3 -->
+      <path d="M615,140 L354,140" stroke="#a8620a" stroke-width="1.4" marker-end="url(#m6a)"/>
+      <text x="604" y="118" text-anchor="end" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#a8620a">200 OK  {"USD":1,&#8230;}</text>
+      <text x="604" y="130" text-anchor="end" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#a8620a" font-weight="700">Access-Control-Allow-Origin: https://app&#8230;</text>
+      <!-- 4 check -->
+      <rect x="282" y="156" width="136" height="42" rx="6" fill="#e6f6ee" stroke="#0d7a52"/>
+      <text x="350" y="173" text-anchor="middle" font-size="8.6" font-weight="700" fill="#0d7a52">CORS check</text>
+      <text x="350" y="187" text-anchor="middle" font-size="7.8" fill="#14181f">does the header name me?</text>
+      <!-- 5 -->
+      <path d="M346,226 L89,226" stroke="#0d7a52" stroke-width="1.4" marker-end="url(#m6a)"/>
+      <text x="98" y="220" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">yes: the promise resolves with the data</text>
+      <text x="98" y="246" font-size="8.4" font-family="SF Mono,Menlo,monospace" fill="#c0203f">no:  TypeError, and the body is discarded</text>
+      <g font-size="8" font-weight="700" fill="#fff" font-family="SF Mono,Menlo,monospace">
+        <circle cx="262" cy="58" r="7" fill="#14181f"/><text x="262" y="61" text-anchor="middle">1</text>
+        <circle cx="498" cy="94" r="7" fill="#2f4fd0"/><text x="498" y="97" text-anchor="middle">2</text>
+        <circle cx="440" cy="140" r="7" fill="#a8620a"/><text x="440" y="143" text-anchor="middle">3</text>
+        <circle cx="270" cy="177" r="7" fill="#0d7a52"/><text x="270" y="180" text-anchor="middle">4</text>
+        <circle cx="262" cy="226" r="7" fill="#0d7a52"/><text x="262" y="229" text-anchor="middle">5</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 6.1</b> &mdash; The basic CORS exchange. Notice step 3: the server's
+    response arrives at the browser <i>whether or not</i> it is allowed. The decision in step 4
+    is made by the browser, about whether to hand it to the page.</figcaption>
+  </figure>
+
+  <h2>The core idea, in three sentences</h2>
+  <ol>
+    <li>On every cross-origin request, the browser sends an <code>Origin</code> header naming the
+    page's origin.</li>
+    <li>The server answers normally, and adds <code>Access-Control-Allow-Origin</code> naming the
+    origin it is willing to share with &mdash; or <code>*</code> for anyone.</li>
+    <li>The browser compares the two. If they match, the page may read the response; if not, the
+    page gets an error and never sees the body.</li>
+  </ol>
+
+  <div class="callout"><span class="lbl">Opt-in by design.</span> A server that has never heard
+  of CORS sends no <code>Access-Control-*</code> headers, so its responses stay unreadable to
+  other origins &mdash; exactly as they were before CORS existed. Nothing old became less safe
+  when CORS arrived.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 6 &middot; Enter CORS</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 6 &middot; continued</div>
+  <h2 style="margin-top:0">The whole vocabulary on one page</h2>
+  <p>Three headers are sent by the browser, six by the server. Every chapter in this part is
+  about some subset of this table.</p>
+
+  <table>
+    <thead><tr><th style="width:39%">Header</th><th style="width:14%">Sent by</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Origin</td><td>Browser</td><td>The origin of the page making the request. Always present on cross-origin requests.</td></tr>
+      <tr><td class="k">Access-Control-Request-Method</td><td>Browser</td><td>In a preflight: the method the real request will use.</td></tr>
+      <tr><td class="k">Access-Control-Request-Headers</td><td>Browser</td><td>In a preflight: the non-simple headers the real request will carry.</td></tr>
+      <tr class="hl"><td class="k">Access-Control-Allow-Origin</td><td>Server</td><td>The one origin allowed to read this response, or <code>*</code>. The heart of CORS.</td></tr>
+      <tr><td class="k">Access-Control-Allow-Credentials</td><td>Server</td><td><code>true</code> if a request with cookies may be read. Only valid with an exact origin.</td></tr>
+      <tr><td class="k">Access-Control-Allow-Methods</td><td>Server</td><td>In a preflight response: methods the real request may use.</td></tr>
+      <tr><td class="k">Access-Control-Allow-Headers</td><td>Server</td><td>In a preflight response: request headers the real request may carry.</td></tr>
+      <tr><td class="k">Access-Control-Max-Age</td><td>Server</td><td>In a preflight response: how many seconds the answer may be cached.</td></tr>
+      <tr><td class="k">Access-Control-Expose-Headers</td><td>Server</td><td>Response headers, beyond a small safe set, that the page's script may read.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Where CORS lives today</h2>
+  <p>CORS became a W3C Recommendation in January 2014; in 2017 the W3C marked it obsolete
+  because the living definition had moved into the <b>WHATWG Fetch Standard</b>, today's
+  authority for every edge case. The origin itself is defined in <b>RFC&nbsp;6454</b> (2011).</p>
+
+  <h2>Three myths to drop now</h2>
+  <div class="grid g3">
+    <div class="panel tight"><h4 style="margin-top:0">&ldquo;CORS protects my API.&rdquo;</h4>
+      <p class="tiny" style="margin:0">It protects <i>browser users</i> of your API. Scripts and
+      command-line tools ignore it; your API still needs real authorization.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">&ldquo;A CORS error means the request failed.&rdquo;</h4>
+      <p class="tiny" style="margin:0">Often the request reached the server and succeeded. The
+      browser only refused to show the page the response. Lab&nbsp;3 proves it.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">&ldquo;I fix CORS in the front end.&rdquo;</h4>
+      <p class="tiny" style="margin:0">Permission comes from the server's response headers.
+      No option in <code>fetch()</code> can grant a page access the server didn't give.</p></div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 6 &middot; Enter CORS</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 7 - SIMPLE REQUESTS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 7</div>
+  <h1 class="title">Simple requests</h1>
+  <p class="lede">Some cross-origin requests go straight to the server with no questions asked.
+  The reason is historical, and once you see it, the rules stop looking arbitrary.</p>
+
+  <h2>The logic: nothing a form couldn't already do</h2>
+  <p>Long before CORS, any page could build an HTML form that submitted a <code>GET</code> or a
+  <code>POST</code> to any server, with a handful of content types. Servers already had to live
+  with those requests arriving from anywhere. So CORS reasoned: if a script sends a request that
+  a form <i>could have sent</i>, letting it through creates no new danger. Such a request is
+  called <b>simple</b> (the Fetch Standard's term is a request that needs no
+  <i>CORS-preflight</i>).</p>
+
+  <h2>What makes a request simple</h2>
+  <table>
+    <thead><tr><th style="width:24%">Part</th><th style="width:38%">Allowed values</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><b>Method</b></td><td class="k">GET, HEAD, POST</td><td>Anything else (PUT, PATCH, DELETE&hellip;) needs a preflight.</td></tr>
+      <tr><td><b>Headers set by the page</b></td><td class="k">Accept, Accept-Language,<br>Content-Language, Content-Type</td><td>The CORS-safelisted request headers (plus a simple <code>Range</code>). Any other header, such as <code>Authorization</code> or <code>X-Request-Id</code>, needs a preflight.</td></tr>
+      <tr><td><b>Content-Type</b></td><td class="k">application/x-www-form-urlencoded<br>multipart/form-data<br>text/plain</td><td>The three types a form can send. <code>application/json</code> is <i>not</i> on the list.</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">There are a few rarer conditions too (for example, safelisted header
+  values have length limits, and upload progress listeners force a preflight). Browsers apply
+  them for you; the three rows above cover almost every real case.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 7 &middot; Simple requests</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 7 &middot; continued</div>
+  <h2 style="margin-top:0">Simple or not? Five fetch calls</h2>
+  <table class="dense">
+    <thead><tr><th style="width:62%">Call</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td class="k">fetch(url)</td><td><span class="tag g">Simple</span> a plain GET</td></tr>
+      <tr><td class="k">fetch(url, {method:'POST', body: formData})</td><td><span class="tag g">Simple</span> multipart/form-data</td></tr>
+      <tr><td class="k">fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, &#8230;})</td><td><span class="tag w">Preflight</span> JSON content type</td></tr>
+      <tr><td class="k">fetch(url, {headers:{'Authorization':'Bearer &#8230;'}})</td><td><span class="tag w">Preflight</span> non-safelisted header</td></tr>
+      <tr><td class="k">fetch(url, {method:'DELETE'})</td><td><span class="tag w">Preflight</span> non-simple method</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><span class="lbl">The consequence to remember.</span> A simple
+  request is <b>sent before any permission is checked</b>. If it changes data on the server,
+  the change happens even when the browser then refuses to show the response. CORS decides who
+  may <i>read</i>; it was never designed to decide who may <i>write</i> with a form-like request.
+  Chapter&nbsp;16 turns this into concrete defenses.</div>
+
+  <h2>Designing with simple requests in mind</h2>
+  <p>Knowing the rule lets you choose deliberately. Read-only public endpoints can stay simple and
+  fast. Endpoints that change data should <i>require</i> something a form cannot send &mdash; a JSON
+  body or a custom header &mdash; so that browsers must preflight them, and your policy gets a say
+  before anything happens. The lab server's notes endpoint does exactly this: it refuses any
+  request that is not <code>application/json</code>.</p>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 1:05 a.m.</div>
+    <p>You check the dashboard's code. The balance call is a plain <code>GET</code> &mdash; a simple
+    request. The browser sent it, the API answered with the balance, and the browser threw the
+    answer away because no <code>Access-Control-Allow-Origin</code> came back. <span class="said">&ldquo;So
+    our API has been doing the work all night,&rdquo;</span> you murmur, <span class="said">&ldquo;and the
+    browser has been shredding it.&rdquo;</span></p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 7 &middot; Simple requests</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 8 - THE PREFLIGHT
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 8</div>
+  <h1 class="title">The preflight</h1>
+  <p class="lede">For any request a form couldn't send, the browser asks first. The question is
+  an <code>OPTIONS</code> request, and nothing else is sent until the server says yes.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="m8a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker>
+      </defs>
+      <rect x="40" y="0" width="160" height="30" rx="6" fill="#eaeeff" stroke="#2f4fd0"/>
+      <text x="120" y="19" text-anchor="middle" font-size="9.5" font-weight="700">Browser (for the page)</text>
+      <rect x="500" y="0" width="160" height="30" rx="6" fill="#fff" stroke="#a8620a"/>
+      <text x="580" y="19" text-anchor="middle" font-size="9.5" font-weight="700">api.harborpay.example</text>
+      <g stroke="#dbe1ef" stroke-dasharray="3 3"><line x1="120" y1="30" x2="120" y2="296"/><line x1="580" y1="30" x2="580" y2="296"/></g>
+
+      <rect x="232" y="38" width="236" height="18" rx="9" fill="#fdf1e0"/>
+      <text x="350" y="51" text-anchor="middle" font-size="8.4" font-weight="700" fill="#a8620a">PHASE 1 &#183; THE PREFLIGHT (no cookies, no body)</text>
+      <path d="M120,110 L576,110" stroke="#2f4fd0" stroke-width="1.4" marker-end="url(#m8a)"/>
+      <g font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#2f4fd0">
+        <text x="136" y="72" font-weight="700">OPTIONS /v1/transfers</text>
+        <text x="136" y="84">Origin: https://app.harborpay.example</text>
+        <text x="136" y="96">Access-Control-Request-Method: PUT</text>
+        <text x="136" y="106">Access-Control-Request-Headers: content-type</text>
+      </g>
+      <path d="M580,176 L124,176" stroke="#a8620a" stroke-width="1.4" marker-end="url(#m8a)"/>
+      <g font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#a8620a" text-anchor="end">
+        <text x="566" y="126" font-weight="700">204 No Content</text>
+        <text x="566" y="138">Access-Control-Allow-Origin: https://app.harborpay.example</text>
+        <text x="566" y="150">Access-Control-Allow-Methods: GET, POST, PUT</text>
+        <text x="566" y="162">Access-Control-Allow-Headers: content-type</text>
+        <text x="566" y="172">Access-Control-Max-Age: 600</text>
+      </g>
+
+      <rect x="232" y="190" width="236" height="18" rx="9" fill="#e6f6ee"/>
+      <text x="350" y="203" text-anchor="middle" font-size="8.4" font-weight="700" fill="#0d7a52">PHASE 2 &#183; THE ACTUAL REQUEST (only if allowed)</text>
+      <path d="M120,244 L576,244" stroke="#2f4fd0" stroke-width="1.4" marker-end="url(#m8a)"/>
+      <g font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#2f4fd0">
+        <text x="136" y="226" font-weight="700">PUT /v1/transfers   {"amount": 40}</text>
+        <text x="136" y="238">Origin: https://app.harborpay.example</text>
+      </g>
+      <path d="M580,284 L124,284" stroke="#a8620a" stroke-width="1.4" marker-end="url(#m8a)"/>
+      <g font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#a8620a" text-anchor="end">
+        <text x="566" y="264" font-weight="700">200 OK   {"status":"scheduled"}</text>
+        <text x="566" y="276">Access-Control-Allow-Origin: https://app.harborpay.example</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 8.1</b> &mdash; A preflighted request. If the phase-1 answer does not grant
+    the method, every header, and the origin, phase 2 is never sent and the page receives a
+    network error.</figcaption>
+  </figure>
+
+  <h2>What the browser checks in the preflight answer</h2>
+  <ul class="tight">
+    <li>The status is a success (2xx). A redirect or a 401 fails the preflight.</li>
+    <li><code>Access-Control-Allow-Origin</code> matches the page's origin (or is <code>*</code> when
+    no credentials are involved).</li>
+    <li>The requested method appears in <code>Access-Control-Allow-Methods</code>. Simple methods
+    are always allowed.</li>
+    <li>Every header in <code>Access-Control-Request-Headers</code> appears in
+    <code>Access-Control-Allow-Headers</code>.</li>
+  </ul>
+
+  <div class="pfoot"><span class="ch">Chapter 8 &middot; The preflight</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 8 &middot; continued</div>
+  <h2 style="margin-top:0">Why the preflight carries no credentials</h2>
+  <p>The preflight is sent <b>without cookies</b> and without a body, even when the real request
+  will include them. It is a question about <i>policy</i> (&ldquo;would you accept this kind of
+  request from this origin?&rdquo;), not about any user. Two practical consequences follow:</p>
+  <ul>
+    <li><b>Don't require authentication on <code>OPTIONS</code>.</b> An API gateway that answers
+    unauthenticated preflights with 401 breaks every non-simple request from the browser. Answer
+    the preflight from policy alone, then authenticate the actual request.</li>
+    <li><b>A preflight never performs the action.</b> Your handler for the real
+    <code>PUT</code> should not run for an <code>OPTIONS</code> request. Most frameworks route
+    preflights to CORS middleware automatically; hand-written servers must do it themselves, as
+    the lab server's <code>applyCors</code> function does.</li>
+  </ul>
+
+  <h2>Wildcards in a preflight answer</h2>
+  <p>The Fetch Standard allows <code>*</code> in <code>Access-Control-Allow-Methods</code> and
+  <code>Access-Control-Allow-Headers</code>, meaning &ldquo;any&rdquo; &mdash; but only for requests
+  <b>without credentials</b>. With credentials, <code>*</code> is treated as a literal name that
+  matches nothing useful. One more exception: the wildcard in <code>Allow-Headers</code> never
+  covers <code>Authorization</code>, which must always be listed by name. Listing exactly what
+  you use is clearer anyway, and it documents your API's contract.</p>
+
+  <h2>Caching the answer</h2>
+  <p>A preflight costs a full round trip before every non-simple request. <code>Access-Control-Max-Age</code>
+  lets the browser remember a successful answer, keyed on the origin, the URL, and the
+  method or header being allowed.</p>
+  <table class="dense">
+    <thead><tr><th style="width:36%">Situation</th><th>Effective cache lifetime</th></tr></thead>
+    <tbody>
+      <tr><td>No <code>Max-Age</code> header</td><td>5 seconds (the Fetch Standard's default)</td></tr>
+      <tr><td><code>Max-Age: 600</code></td><td>10 minutes</td></tr>
+      <tr><td><code>Max-Age: 86400</code></td><td>Capped by the browser: Chromium limits it to 2 hours, Firefox to 24 hours</td></tr>
+    </tbody>
+  </table>
+  <p>A value of a few minutes to an hour is a sensible default. Long caches mean a policy
+  change takes that long to reach browsers that already asked; short ones cost latency.
+  Lab&nbsp;7 lets you count preflights as you change the value.</p>
+
+  <div class="callout"><span class="lbl">Performance tip.</span> Preflights are cached per URL, so
+  an API with identifiers in its paths pays for a fresh preflight on every new URL. Serving the
+  API from the app's own origin (Chapter&nbsp;20) removes the cost entirely.</div>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 1:20 a.m.</div>
+    <p>The transfer screen will be worse than the balance card: it sends JSON with
+    <code>PUT</code>, so the browser won't even send it until a preflight succeeds. You add
+    <code>PUT</code> and <code>content-type</code> to your notes.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 8 &middot; The preflight</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 9 - CREDENTIALS AND COOKIES
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 9</div>
+  <h1 class="title">Credentials and cookies</h1>
+  <p class="lede">Reading public data across origins is easy. Reading data that belongs to a
+  signed-in user is where CORS gets strict &mdash; deliberately, because that is where the
+  danger is.</p>
+
+  <h2>Two opt-ins, from two different parties</h2>
+  <p>By default, <code>fetch()</code> sends cookies only to the page's own origin. For a
+  cross-origin request to carry the user's cookies <i>and</i> have its response readable, both
+  sides must opt in:</p>
+
+  <figure>
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <rect x="0" y="0" width="300" height="150" rx="8" fill="#eaeeff" stroke="#c6d0f5"/>
+      <text x="16" y="24" font-size="10.5" font-weight="700" fill="#2f4fd0">THE PAGE ASKS</text>
+      <text x="16" y="52" font-size="9.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">fetch(url, {</text>
+      <text x="16" y="66" font-size="9.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">  credentials: <tspan fill="#0d7a52" font-weight="700">'include'</tspan></text>
+      <text x="16" y="80" font-size="9.4" font-family="SF Mono,Menlo,monospace" fill="#14181f">})</text>
+      <text x="16" y="108" font-size="8.4" fill="#59617a">Without this, no cookies are attached</text>
+      <text x="16" y="120" font-size="8.4" fill="#59617a">to a cross-origin request. (XMLHttpRequest</text>
+      <text x="16" y="132" font-size="8.4" fill="#59617a">spells it withCredentials = true.)</text>
+
+      <text x="350" y="80" text-anchor="middle" font-size="26" font-weight="700" fill="#b9c2da">+</text>
+
+      <rect x="400" y="0" width="300" height="150" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+      <text x="416" y="24" font-size="10.5" font-weight="700" fill="#a8620a">THE SERVER AGREES</text>
+      <text x="416" y="52" font-size="8.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">Access-Control-Allow-Origin:</text>
+      <text x="428" y="64" font-size="8.6" font-family="SF Mono,Menlo,monospace" fill="#0d7a52" font-weight="700">https://app.harborpay.example</text>
+      <text x="416" y="80" font-size="8.6" font-family="SF Mono,Menlo,monospace" fill="#14181f">Access-Control-Allow-Credentials: <tspan fill="#0d7a52" font-weight="700">true</tspan></text>
+      <text x="416" y="108" font-size="8.4" fill="#7c5a2a">An exact origin, never *, and the</text>
+      <text x="416" y="120" font-size="8.4" fill="#7c5a2a">credentials flag. Miss either one and</text>
+      <text x="416" y="132" font-size="8.4" fill="#7c5a2a">the page cannot read the response.</text>
+    </svg>
+    <figcaption><b>Figure 9.1</b> &mdash; Credentialed CORS needs consent from both ends. The
+    page must ask for cookies; the server must name the exact origin and say
+    <code>true</code>.</figcaption>
+  </figure>
+
+  <h2>The rules with credentials</h2>
+  <table class="dense">
+    <thead><tr><th style="width:44%">Header</th><th>With credentials</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Access-Control-Allow-Origin: *</td><td><span class="tag b">Rejected</span> must be the exact origin</td></tr>
+      <tr><td class="k">Access-Control-Allow-Credentials</td><td><span class="tag a">Required</span> exactly the string <code>true</code></td></tr>
+      <tr><td class="k">Allow-Methods / Allow-Headers: *</td><td><span class="tag b">No wildcard</span> list the names</td></tr>
+      <tr><td class="k">Access-Control-Expose-Headers: *</td><td><span class="tag b">No wildcard</span> list the names</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Why &ldquo;*&rdquo; and credentials may never meet</h2>
+  <p>A <code>*</code> says &ldquo;this response is fit for anyone.&rdquo; That is safe only for a
+  response that is the same for everyone. A response computed from a user's cookies is, by
+  definition, not for anyone &mdash; it is for that user, in pages that the server trusts. The
+  browser enforces the distinction so that a single careless header cannot publish every
+  signed-in user's data to every website. Chapter&nbsp;13 shows the tempting workaround that
+  defeats this protection, and why it must be avoided.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 9 &middot; Credentials and cookies</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 9 &middot; continued</div>
+  <h2 style="margin-top:0">Cookies have rules of their own</h2>
+  <p>CORS decides whether a page may read a credentialed response. Whether the cookie is
+  <i>attached</i> in the first place is decided separately, by cookie attributes and browser
+  privacy settings:</p>
+  <ul>
+    <li><b><code>SameSite</code></b> limits cookies on cross-<i>site</i> requests (Chapter&nbsp;3's
+    &ldquo;site,&rdquo; not origin). <code>Strict</code> never sends them cross-site, <code>Lax</code>
+    sends them only on top-level navigations such as following a link, and <code>None</code> sends
+    them everywhere but requires <code>Secure</code>. Chrome treats a cookie without the attribute as
+    <code>Lax</code>.</li>
+    <li><b>Third-party cookie restrictions</b> in Safari and Firefox block or partition cookies
+    for cross-site requests by default, and other browsers let users choose. If your app and API
+    are on unrelated sites, credentialed CORS may work in one browser and silently lose its
+    cookie in another.</li>
+  </ul>
+  <p>Harbor Pay is lucky: <code>app.harborpay.example</code> and <code>api.harborpay.example</code>
+  are the <b>same site</b>, so a <code>SameSite=Lax</code> session cookie is attached to the
+  dashboard's credentialed requests. If your front end and API live on different registrable
+  domains, prefer serving the API from the app's own origin (Chapter&nbsp;20), or use tokens in an
+  <code>Authorization</code> header instead of cookies.</p>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 1:48 a.m.</div>
+    <p>You write the fix. It is not a one-liner, and that is the point. The API gets an
+    explicit list containing a single origin, <code>https://app.harborpay.example</code>. When a
+    request's <code>Origin</code> is on that list, the server names it exactly, adds
+    <code>Allow-Credentials: true</code>, and answers preflights with the three methods and one
+    header the dashboard actually uses. Every other origin gets no CORS headers at all.</p>
+    <p>Ren reads the diff twice. <span class="said">&ldquo;Ship it.&rdquo;</span> At 2:03 a.m. the
+    balance card fills in. Nobody cheers; everyone is too tired. But you notice Ren adding a
+    ticket to the backlog titled <b>Audit every CORS policy we have</b>.</p>
+  </div>
+
+<pre><span class="c">// The launch-night fix, in outline (the lab server implements it in full)</span>
+<span class="k">const</span> ALLOWED = [<span class="s">'https://app.harborpay.example'</span>];
+
+<span class="k">if</span> (ALLOWED.includes(req.headers.origin)) {           <span class="c">// exact match, nothing clever</span>
+  res.setHeader(<span class="s">'Access-Control-Allow-Origin'</span>, req.headers.origin);
+  res.setHeader(<span class="s">'Access-Control-Allow-Credentials'</span>, <span class="s">'true'</span>);
+}
+res.setHeader(<span class="s">'Vary'</span>, <span class="s">'Origin'</span>);                          <span class="c">// Chapter 17 explains why</span></pre>
+
+  <div class="callout good"><span class="lbl">Why this is safe.</span> The server only ever repeats
+  an origin it has already decided to trust, compared as a whole string against a list someone
+  wrote down and reviewed. There is no pattern to get wrong and no way for a caller to talk its
+  way onto the list.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 9 &middot; Credentials and cookies</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 10 - READING THE RESPONSE
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 10</div>
+  <h1 class="title">Reading the response</h1>
+  <p class="lede">Even when CORS allows a response, the page does not see all of it. And when
+  CORS refuses, the page is told almost nothing &mdash; on purpose.</p>
+
+  <h2>Only some headers are visible</h2>
+  <p>A script reading a cross-origin response can see the body and the status, but only a
+  small set of <b>CORS-safelisted response headers</b>:</p>
+  <p class="mono small" style="background:var(--panel);padding:6pt 9pt;border-radius:4pt">Cache-Control &#183; Content-Language &#183; Content-Length &#183; Content-Type &#183; Expires &#183; Last-Modified &#183; Pragma</p>
+  <p>Anything else &mdash; a request ID, a rate-limit counter, a pagination link &mdash; is
+  hidden from <code>res.headers.get()</code> unless the server lists it:</p>
+<pre><span class="k">Access-Control-Expose-Headers:</span> <span class="s">X-Request-Id, X-RateLimit-Remaining, Link</span></pre>
+  <p>DevTools will still show the header in the Network tab, which makes this one of the most
+  confusing CORS behaviors: you can <i>see</i> it, but your code gets <code>null</code>. Lab&nbsp;5
+  reproduces exactly that.</p>
+
+  <h2>Opaque responses and <code>mode: 'no-cors'</code></h2>
+  <p>Developers fighting a CORS error sometimes discover <code>fetch(url, {mode: 'no-cors'})</code>
+  and think the problem is solved, because the error disappears. It isn't. A no-cors request
+  returns an <b>opaque response</b>: status <code>0</code>, no headers, and an empty body. The
+  browser may <i>use</i> it (a service worker can cache it for an image tag), but your script can
+  never read it. <code>no-cors</code> is how the browser keeps old embedding behavior working
+  &mdash; not a way around the same-origin policy.</p>
+
+  <h2>Why the error says so little</h2>
+  <p>When a CORS check fails, <code>fetch()</code> rejects with a generic error &mdash;
+  <code>TypeError: Failed to fetch</code> in Chromium, <code>NetworkError when attempting to
+  fetch resource</code> in Firefox, <code>Load failed</code> in Safari. The script cannot learn
+  the status code, whether the server was reachable, or which header was wrong.</p>
+  <p>That vagueness is a security feature. If a page could distinguish &ldquo;server said 404&rdquo;
+  from &ldquo;server said 200 but CORS refused,&rdquo; it could probe other origins &mdash;
+  including servers on your private network &mdash; and learn about them without ever being
+  allowed to read them. The detailed explanation is written only to the DevTools console, for
+  the human at the keyboard.</p>
+
+  <div class="callout"><span class="lbl">Debugging rule of thumb.</span> Never debug CORS from
+  your application's error handler. Open the Console for the reason and the Network tab for
+  the raw headers; the next chapter shows how to read them.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 10 &middot; Reading the response</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 11 - DEBUGGING
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 11</div>
+  <h1 class="title">Debugging CORS like a pro</h1>
+  <p class="lede">Every CORS failure is one of a handful of mismatches between what the browser
+  asked and what the server said. Find which, and the fix is usually a single header.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="m11" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#8d95ab"/></marker>
+      </defs>
+      <g font-size="8.8">
+        <!-- questions column -->
+        <rect x="170" y="0" width="250" height="34" rx="17" fill="#14181f"/>
+        <text x="295" y="21" text-anchor="middle" fill="#fff" font-weight="700">A CORS error in the Console</text>
+
+        <rect x="170" y="54" width="250" height="36" rx="6" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="295" y="76" text-anchor="middle" font-weight="700">Is there an OPTIONS request first?</text>
+
+        <rect x="170" y="116" width="250" height="36" rx="6" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="295" y="132" text-anchor="middle" font-weight="700">Did the preflight return 2xx with</text>
+        <text x="295" y="145" text-anchor="middle" font-weight="700">Allow-Origin, -Methods, -Headers?</text>
+
+        <rect x="170" y="178" width="250" height="36" rx="6" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="295" y="194" text-anchor="middle" font-weight="700">Does the actual response carry</text>
+        <text x="295" y="207" text-anchor="middle" font-weight="700">Allow-Origin equal to your origin?</text>
+
+        <rect x="170" y="240" width="250" height="36" rx="6" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="295" y="256" text-anchor="middle" font-weight="700">Credentials included? Then no *,</text>
+        <text x="295" y="269" text-anchor="middle" font-weight="700">and Allow-Credentials: true?</text>
+
+        <rect x="170" y="296" width="250" height="32" rx="16" fill="#e6f6ee" stroke="#0d7a52"/>
+        <text x="295" y="316" text-anchor="middle" font-weight="700" fill="#0d7a52">Readable. Check exposed headers.</text>
+
+        <g stroke="#8d95ab" stroke-width="1.3">
+          <line x1="295" y1="34" x2="295" y2="50" marker-end="url(#m11)"/>
+          <line x1="295" y1="90" x2="295" y2="112" marker-end="url(#m11)"/>
+          <line x1="295" y1="152" x2="295" y2="174" marker-end="url(#m11)"/>
+          <line x1="295" y1="214" x2="295" y2="236" marker-end="url(#m11)"/>
+          <line x1="295" y1="276" x2="295" y2="292" marker-end="url(#m11)"/>
+        </g>
+        <g font-size="7.8" fill="#59617a" font-weight="700">
+          <text x="301" y="104">yes</text><text x="301" y="166">yes</text><text x="301" y="228">yes</text><text x="301" y="288">yes</text>
+        </g>
+
+        <!-- side notes -->
+        <path d="M170,72 L130,72 L130,196 L166,196" fill="none" stroke="#8d95ab" stroke-width="1.1" stroke-dasharray="3 3" marker-end="url(#m11)"/>
+        <text x="8" y="100" font-size="8" fill="#59617a">no preflight:</text>
+        <text x="8" y="112" font-size="8" fill="#59617a">a simple request,</text>
+        <text x="8" y="124" font-size="8" fill="#59617a">skip to the</text>
+        <text x="8" y="136" font-size="8" fill="#59617a">response check</text>
+
+        <g font-size="8.2">
+          <rect x="450" y="116" width="250" height="36" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+          <text x="462" y="131" fill="#c0203f" font-weight="700">No &#8594; fix the OPTIONS handler</text>
+          <text x="462" y="144" fill="#14181f">401/404/redirect? Answer it from policy.</text>
+          <rect x="450" y="178" width="250" height="36" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+          <text x="462" y="193" fill="#c0203f" font-weight="700">No &#8594; header missing or different</text>
+          <text x="462" y="206" fill="#14181f">Error pages and proxies often drop it.</text>
+          <rect x="450" y="240" width="250" height="36" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+          <text x="462" y="255" fill="#c0203f" font-weight="700">No &#8594; exact origin + true</text>
+          <text x="462" y="268" fill="#14181f">Or stop sending credentials.</text>
+          <g stroke="#c0203f" stroke-width="1.1"><line x1="420" y1="134" x2="446" y2="134" marker-end="url(#m11)"/><line x1="420" y1="196" x2="446" y2="196" marker-end="url(#m11)"/><line x1="420" y1="258" x2="446" y2="258" marker-end="url(#m11)"/></g>
+        </g>
+      </g>
+    </svg>
+    <figcaption><b>Figure 11.1</b> &mdash; A debugging path for any CORS error. Work top to
+    bottom in the Network tab; the first &ldquo;no&rdquo; is your bug.</figcaption>
+  </figure>
+
+  <h2>Tools that tell the truth</h2>
+  <ul class="tight">
+    <li><b>Console</b>: the browser's exact reason, in plain language (next page).</li>
+    <li><b>Network tab</b>: filter by the API's host; look for the <code>OPTIONS</code> row and
+    compare request and response headers side by side.</li>
+    <li><b>curl</b>: replay what the browser sent, to see exactly what the server returns. It
+    ignores CORS itself, so use it to inspect headers, never to conclude &ldquo;it works.&rdquo;</li>
+  </ul>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; Debugging CORS like a pro</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 11 &middot; continued</div>
+  <h2 style="margin-top:0">The Console messages, decoded</h2>
+  <p>Chromium's wording, abbreviated; Firefox and Safari phrase the same conditions differently.</p>
+  <table>
+    <thead><tr><th style="width:48%">The message says&hellip;</th><th>What it means, and the usual fix</th></tr></thead>
+    <tbody>
+      <tr><td>No 'Access-Control-Allow-Origin' header is present</td><td>The server didn't opt in &mdash; or an error page, proxy or CDN stripped the header. Check the actual response, including 4xx/5xx ones.</td></tr>
+      <tr><td>&hellip;has a value 'X' that is not equal to the supplied origin</td><td>The server named a different origin: a typo, a missing port, <code>http</code> vs <code>https</code>, or a cached response for another origin (Chapter&nbsp;17).</td></tr>
+      <tr><td>&hellip;must not be the wildcard '*' when the request's credentials mode is 'include'</td><td>Name the exact origin and add <code>Allow-Credentials: true</code>, or stop sending credentials if the data is public.</td></tr>
+      <tr><td>&hellip;'Access-Control-Allow-Credentials' header&hellip; must be 'true'</td><td>The page sent credentials; the server didn't agree. Add the header for trusted origins only.</td></tr>
+      <tr><td>Response to preflight request&hellip; does not have HTTP ok status</td><td>The <code>OPTIONS</code> request hit authentication, a 404, or a redirect. Answer preflights before auth.</td></tr>
+      <tr><td>Request header field X is not allowed by Access-Control-Allow-Headers</td><td>Add the header name to <code>Allow-Headers</code> &mdash; or stop sending it if you don't need it.</td></tr>
+      <tr><td>Method X is not allowed by Access-Control-Allow-Methods</td><td>Add the method to <code>Allow-Methods</code> for the routes that accept it.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Inspecting headers with curl</h2>
+  <p>Replay a preflight exactly as the browser would send it, and read what comes back:</p>
+<pre>curl -i -X OPTIONS https://api.harborpay.example/v1/transfers \
+  -H <span class="s">'Origin: https://app.harborpay.example'</span> \
+  -H <span class="s">'Access-Control-Request-Method: PUT'</span> \
+  -H <span class="s">'Access-Control-Request-Headers: content-type'</span></pre>
+  <p>Repeat it with an origin that should <i>not</i> be allowed: a correct policy answers only the
+  first with permission headers. <code>node server.js check</code> prints this comparison.</p>
+
+  <h2>Four traps that waste an afternoon</h2>
+  <div class="grid g2">
+    <ul class="tight small">
+      <li><b>Only the error path fails.</b> The framework adds CORS headers on success but not on
+      the 500 page, so real errors look like CORS errors.</li>
+      <li><b>Two layers both add headers.</b> The app and the proxy each send
+      <code>Allow-Origin</code>; two values are invalid and the browser rejects both.</li>
+    </ul>
+    <ul class="tight small">
+      <li><b>A redirect in the middle.</b> <code>http</code>&#8594;<code>https</code> or a missing
+      trailing slash redirects the preflight, which fails.</li>
+      <li><b>A trailing slash in the allowlist.</b> <code>https://app.example/</code> is not an
+      origin; <code>https://app.example</code> is.</li>
+    </ul>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 11 &middot; Debugging CORS like a pro</span><span class="n">0</span></div>
+</section>

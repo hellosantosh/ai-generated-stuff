@@ -1,0 +1,256 @@
+
+<!-- ====================================================================
+     FRONT COVER
+     ==================================================================== -->
+<section class="page bookcover front">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="spine" style="background:linear-gradient(180deg,#4ad3a6 0%,#5b8cff 55%,#e0a84a 100%)"></div>
+  <div class="hair"></div>
+
+  <div class="inner">
+    <div class="imprint">
+      <svg width="17" height="19" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#8fa2d4" stroke-width="2"/>
+        <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#8fa2d4" opacity=".55"/>
+      </svg>
+      <span>Smiroh Publishers</span>
+    </div>
+
+    <div class="kicker">The Ultimate Developer's Guide to</div>
+    <h1 class="bt">CORS<br><span class="amp" style="font-size:34pt">Border Control for the Web</span></h1>
+    <div class="trule" style="background:linear-gradient(90deg,#4ad3a6,#5b8cff)"></div>
+    <p class="sub">Cross-Origin Resource Sharing from first principles &mdash; the same-origin
+    policy it relaxes, the conversation between browser and server, the mistakes that turn it
+    into a security incident, and how to get it right.</p>
+
+    <div class="art">
+      <svg style="width:5.7in" viewBox="0 0 560 330" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="Two origins on either side of a checkpoint run by the browser">
+        <defs>
+          <linearGradient id="cvL" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#4ad3a6"/><stop offset="100%" stop-color="#5b8cff"/>
+          </linearGradient>
+          <linearGradient id="cvR" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#5b8cff"/><stop offset="100%" stop-color="#e0a84a"/>
+          </linearGradient>
+          <radialGradient id="cvG" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#5b8cff" stop-opacity=".36"/>
+            <stop offset="100%" stop-color="#5b8cff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="280" cy="160" r="150" fill="url(#cvG)"/>
+
+        <!-- left origin -->
+        <g transform="translate(70,160)">
+          <circle r="58" fill="#0e1630" stroke="#4ad3a6" stroke-width="2.2"/>
+          <circle r="46" fill="none" stroke="#fff" stroke-opacity=".08"/>
+          <rect x="-30" y="-20" width="60" height="40" rx="5" fill="none" stroke="#4ad3a6" stroke-width="1.8"/>
+          <line x1="-30" y1="-10" x2="30" y2="-10" stroke="#4ad3a6" stroke-width="1.4"/>
+          <circle cx="-24" cy="-15" r="1.8" fill="#4ad3a6"/><circle cx="-18" cy="-15" r="1.8" fill="#4ad3a6"/>
+          <text y="80" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="10" font-weight="700" letter-spacing="1.6" fill="#bff3e0">APP ORIGIN</text>
+          <text y="94" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8" letter-spacing="1" fill="#7f8db8">app.harborpay.example</text>
+        </g>
+
+        <!-- right origin -->
+        <g transform="translate(490,160)">
+          <circle r="58" fill="#0e1630" stroke="#e0a84a" stroke-width="2.2"/>
+          <circle r="46" fill="none" stroke="#fff" stroke-opacity=".08"/>
+          <g fill="none" stroke="#e0a84a" stroke-width="1.8">
+            <ellipse cx="0" cy="-16" rx="22" ry="7"/>
+            <path d="M-22,-16 v30 a22,7 0 0 0 44,0 v-30"/>
+            <path d="M-22,-1 a22,7 0 0 0 44,0"/>
+          </g>
+          <text y="80" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="10" font-weight="700" letter-spacing="1.6" fill="#f6dcae">API ORIGIN</text>
+          <text y="94" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8" letter-spacing="1" fill="#7f8db8">api.harborpay.example</text>
+        </g>
+
+        <!-- request and response lanes -->
+        <path d="M132,138 L228,138" stroke="url(#cvL)" stroke-width="2.4" stroke-dasharray="8 6"/>
+        <path d="M332,138 L426,138" stroke="url(#cvR)" stroke-width="2.4" stroke-dasharray="8 6"/>
+        <path d="M419,132 L428,138 L419,144 Z" fill="#e0a84a"/>
+        <path d="M426,182 L332,182" stroke="#e0a84a" stroke-width="2.4"/>
+        <path d="M228,182 L132,182" stroke="#4ad3a6" stroke-width="2.4"/>
+        <path d="M141,176 L131,182 L141,188 Z" fill="#4ad3a6"/>
+        <text x="180" y="128" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#9fb3e6">Origin:</text>
+        <text x="380" y="128" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#9fb3e6">request</text>
+        <text x="380" y="200" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#9fb3e6">response</text>
+        <text x="180" y="200" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8.4" fill="#9fb3e6">if allowed</text>
+
+        <!-- the checkpoint: the browser -->
+        <g transform="translate(280,160)">
+          <path d="M0,-86 L62,-50 L62,50 L0,86 L-62,50 L-62,-50 Z" fill="#0d1428" stroke="#7ea6ff" stroke-width="2.4"/>
+          <path d="M0,-72 L50,-43 L50,43 L0,72 L-50,43 L-50,-43 Z" fill="none" stroke="#fff" stroke-opacity=".1"/>
+          <!-- barrier gate -->
+          <rect x="-4" y="-34" width="8" height="58" rx="2" fill="#c7d6ff"/>
+          <rect x="-36" y="-40" width="72" height="9" rx="4.5" fill="#7ea6ff"/>
+          <rect x="-24" y="-40" width="10" height="9" fill="#0d1428" opacity=".55"/>
+          <rect x="6" y="-40" width="10" height="9" fill="#0d1428" opacity=".55"/>
+          <text y="44" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="9" font-weight="700" letter-spacing="1.6" fill="#7ea6ff">BROWSER</text>
+          <text y="57" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="7.4" letter-spacing="1" fill="#7f8db8">CHECKPOINT</text>
+        </g>
+
+        <text x="280" y="304" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="10" fill="#dfe7ff">Access-Control-Allow-Origin: https://app.harborpay.example</text>
+      </svg>
+    </div>
+    <p class="artcap">Same-Origin Policy &#183; Preflight &#183; Credentials &#183; Secure Configuration</p>
+
+    <div style="text-align:center">
+      <span class="badge"><b>8 hands-on labs</b> &#183; a zero-dependency lab server &#183; real incidents &#183; secure patterns</span>
+    </div>
+
+    <div class="byline">
+      <div>
+        <div class="author-lbl">Author</div>
+        <div class="author">Smiroh Dev</div>
+      </div>
+      <div>
+        <div class="pubname">Smiroh Publishers</div>
+        <div class="pubsub">First Edition</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     COPYRIGHT / EDITION NOTICE
+     ==================================================================== -->
+<section class="page copyright front">
+  <div class="cp-mark">
+    <svg width="19" height="21" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#59617a" stroke-width="2"/>
+      <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#59617a" opacity=".5"/>
+    </svg>
+    <span class="nm">Smiroh Publishers</span>
+  </div>
+
+  <h1 class="cp-title">The Ultimate Developer's Guide to<br>CORS: Border Control for the Web</h1>
+  <p class="cp-by">Smiroh Dev</p>
+
+  <div style="margin:22pt 0 20pt">
+    <dl>
+      <dt>Publisher</dt><dd>Smiroh Publishers</dd>
+      <dt>Edition</dt><dd>First edition</dd>
+      <dt>Published</dt><dd><b>September 2026</b></dd>
+      <dt>Format</dt><dd>Electronic book (PDF), <span id="pagecount">__PAGES__</span> pages</dd>
+      <dt>ISBN (ebook)</dt><dd>To be assigned</dd>
+      <dt>Subject</dt><dd>Computers / Security / Web Development</dd>
+    </dl>
+  </div>
+
+  <div class="legal">
+    <p><b>Copyright &copy; 2026 Smiroh Dev. All rights reserved.</b></p>
+
+    <p>Published by Smiroh Publishers. No part of this publication may be reproduced,
+    distributed, or transmitted in any form or by any means &mdash; including photocopying,
+    recording, or other electronic or mechanical methods &mdash; without the prior written
+    permission of the publisher, except in the case of brief quotations embodied in critical
+    reviews and certain other noncommercial uses permitted by copyright law.</p>
+
+    <h4>Trademarks</h4>
+    <p>All trademarks and registered trademarks appearing in this book are the property of
+    their respective owners. They are used editorially, with no intention of infringement.
+    The publisher is not associated with any product, vendor, or organization mentioned in
+    this book. Harbor Pay and every character in the story passages are fictional.</p>
+
+    <h4>Standards referenced</h4>
+    <p>CORS is defined today in the WHATWG Fetch Living Standard, and the origin concept in
+    RFC&nbsp;6454. Those documents are the normative sources; where this book and a
+    specification disagree, the specification governs. A reading list appears at the end.</p>
+
+    <h4>About the case studies</h4>
+    <p>The real-world incidents in Chapter&nbsp;15 are summarized from public disclosures,
+    advisories and published research, and are told at the level of what went wrong and how
+    it was fixed. Details are as reported at the time; consult the original sources before
+    citing them.</p>
+
+    <h4>Limit of liability and disclaimer of warranty</h4>
+    <p>The information in this book is provided on an &ldquo;as is&rdquo; basis, without warranty
+    of any kind, express or implied. While every precaution has been taken in its preparation,
+    neither the author nor the publisher shall have any liability to any person or entity with
+    respect to any loss or damage caused, or alleged to have been caused, directly or
+    indirectly by the information contained in it. Browser behavior changes: verify any
+    practice described here against current browser documentation before relying on it.</p>
+
+    <h4>About the lab server</h4>
+    <p>The lab server is a teaching tool. It serves plain HTTP on <span class="mono">localhost</span>,
+    keeps all state in memory, and must never be exposed to a network or used to protect
+    anything real.</p>
+  </div>
+
+  <div class="colophon">
+    Set in Helvetica Neue and Charter, with SF&nbsp;Mono for code. All diagrams and
+    illustrations are original vector artwork created for this edition.<br>
+    First edition &middot; September 2026 &middot; Smiroh Publishers
+  </div>
+</section>
+
+<!-- ====================================================================
+     CONTENTS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Contents</div>
+  <h1 class="title">What is in this guide</h1>
+
+  <h2 style="margin:6pt 0 2pt">Part I &mdash; A Web Without Walls</h2>
+  <ol class="toc">
+    <li><span class="num">01</span><span class="t">The launch that went dark</span><span class="d">A story, a red error, and the question this book answers</span><span class="pg">0</span></li>
+    <li><span class="num">02</span><span class="t">Why browsers built walls</span><span class="d">Cookies, ambient authority, and the birth of the same-origin policy</span><span class="pg">0</span></li>
+    <li><span class="num">03</span><span class="t">What exactly is an origin?</span><span class="d">Scheme, host, port &mdash; and why &ldquo;site&rdquo; is something else</span><span class="pg">0</span></li>
+    <li><span class="num">04</span><span class="t">What the wall blocks, and what it doesn't</span><span class="d">Sending, embedding, reading: the one rule that matters</span><span class="pg">0</span></li>
+    <li><span class="num">05</span><span class="t">Life before CORS</span><span class="d">JSONP, proxies, document.domain, and the lessons they taught</span><span class="pg">0</span></li>
+  </ol>
+
+  <h2 style="margin:10pt 0 2pt">Part II &mdash; How CORS Works</h2>
+  <ol class="toc">
+    <li><span class="num">06</span><span class="t">Enter CORS</span><span class="d">A permission slip written in HTTP headers</span><span class="pg">0</span></li>
+    <li><span class="num">07</span><span class="t">Simple requests</span><span class="d">Why some requests go straight through</span><span class="pg">0</span></li>
+    <li><span class="num">08</span><span class="t">The preflight</span><span class="d">Asking permission before acting</span><span class="pg">0</span></li>
+    <li><span class="num">09</span><span class="t">Credentials and cookies</span><span class="d">The strictest rules in CORS, and why they exist</span><span class="pg">0</span></li>
+    <li><span class="num">10</span><span class="t">Reading the response</span><span class="d">Exposed headers, opaque responses, and silent errors</span><span class="pg">0</span></li>
+    <li><span class="num">11</span><span class="t">Debugging CORS like a pro</span><span class="d">A flowchart, the error messages, and the tools</span><span class="pg">0</span></li>
+  </ol>
+
+  <div class="pfoot"><span class="ch">The Ultimate Developer's Guide to CORS</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Contents &middot; continued</div>
+  <h2 style="margin:0 0 2pt">Part III &mdash; When the Wall Has Holes</h2>
+  <ol class="toc">
+    <li><span class="num">12</span><span class="t">Why CORS is a security priority</span><span class="d">One header between a hostile page and your users' data</span><span class="pg">0</span></li>
+    <li><span class="num">13</span><span class="t">Configuration mistakes that matter</span><span class="d">Six patterns that turn a policy into a hole, and their fixes</span><span class="pg">0</span></li>
+    <li><span class="num">14</span><span class="t">Attack patterns, drawn</span><span class="d">Seven attack shapes, where to break each chain, and how to prepare</span><span class="pg">0</span></li>
+    <li><span class="num">15</span><span class="t">Case studies from the real world</span><span class="d">Public incidents and research, and what each one teaches</span><span class="pg">0</span></li>
+    <li><span class="num">16</span><span class="t">CORS is not CSRF protection</span><span class="d">What CORS never promised, and what does protect you</span><span class="pg">0</span></li>
+  </ol>
+
+  <h2 style="margin:10pt 0 2pt">Part IV &mdash; Advanced Territory</h2>
+  <ol class="toc">
+    <li><span class="num">17</span><span class="t">Caches and Vary: Origin</span><span class="d">The one-line header behind &ldquo;it works sometimes&rdquo;</span><span class="pg">0</span></li>
+    <li><span class="num">18</span><span class="t">The local network</span><span class="d">Localhost services, routers, and Local Network Access</span><span class="pg">0</span></li>
+    <li><span class="num">19</span><span class="t">Beyond CORS</span><span class="d">CORP, COEP, COOP, Fetch Metadata and cross-origin isolation</span><span class="pg">0</span></li>
+    <li><span class="num">20</span><span class="t">Designing a secure CORS policy</span><span class="d">Architecture patterns, reference configurations, a checklist</span><span class="pg">0</span></li>
+    <li><span class="num">21</span><span class="t">Epilogue: the review</span><span class="d">How the story ends, and what to carry with you</span><span class="pg">0</span></li>
+  </ol>
+
+  <h2 style="margin:10pt 0 2pt">Part V &mdash; The Labs</h2>
+  <div class="grid g2" style="gap:0 20pt">
+    <ol class="toc">
+      <li data-ref="The lab server"><span class="num">&mdash;</span><span class="t">Setup</span><span class="pg">0</span></li>
+      <li data-ref="Labs 1-3: first contact"><span class="num">1&ndash;3</span><span class="t">First contact</span><span class="pg">0</span></li>
+      <li data-ref="Labs 4-6: credentials and headers"><span class="num">4&ndash;6</span><span class="t">Credentials and headers</span><span class="pg">0</span></li>
+    </ol>
+    <ol class="toc">
+      <li data-ref="Labs 7-8: caching and allowlists"><span class="num">7&ndash;8</span><span class="t">Caching and allowlists</span><span class="pg">0</span></li>
+      <li data-ref="The lab server, complete"><span class="num">A</span><span class="t">lab/server.js listing</span><span class="pg">0</span></li>
+    </ol>
+  </div>
+
+  <ol class="toc" style="margin-top:8pt">
+    <li data-ref="Glossary"><span class="num">&mdash;</span><span class="t">Glossary</span><span class="d">Every term in one place</span><span class="pg">0</span></li>
+    <li data-ref="Further reading"><span class="num">&mdash;</span><span class="t">Further reading</span><span class="d">The specifications, and the research behind the case studies</span><span class="pg">0</span></li>
+  </ol>
+
+  <div class="pfoot"><span class="ch">The Ultimate Developer's Guide to CORS</span><span class="n">0</span></div>
+</section>

@@ -1,0 +1,519 @@
+
+<!-- ====================================================================
+     PART IV PLATE
+     ==================================================================== -->
+<section class="page plate front">
+  <div class="bg" style="background:radial-gradient(900px 600px at 70% 20%, rgba(224,168,74,.18), transparent 60%),radial-gradient(700px 520px at 15% 95%, rgba(91,140,255,.18), transparent 65%),linear-gradient(178deg,#141008 0%,#0c0f1a 55%,#06090f 100%)"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno" style="color:#f6c77a">Part IV</div>
+    <h1>Advanced Territory</h1>
+    <p class="pl">Beyond the basics lie the places where CORS meets the rest of the platform:
+    shared caches, the devices on your home and office networks, and a family of newer headers
+    built after Spectre changed how browsers think about isolation. Then we put it all together
+    into a design you can defend in any review.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="SF Mono,Menlo,monospace">
+        <!-- concentric layers of defense -->
+        <g fill="none">
+          <circle cx="300" cy="150" r="138" stroke="#e0a84a" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 6"/>
+          <circle cx="300" cy="150" r="104" stroke="#7ea6ff" stroke-opacity=".55" stroke-width="2"/>
+          <circle cx="300" cy="150" r="70" stroke="#4ad3a6" stroke-opacity=".75" stroke-width="2"/>
+        </g>
+        <circle cx="300" cy="150" r="38" fill="#0e1630" stroke="#dfe7ff" stroke-width="2"/>
+        <text x="300" y="147" text-anchor="middle" font-size="9" font-weight="700" fill="#dfe7ff">YOUR</text>
+        <text x="300" y="160" text-anchor="middle" font-size="9" font-weight="700" fill="#dfe7ff">DATA</text>
+        <text x="300" y="72" text-anchor="middle" font-size="8.4" letter-spacing="1.4" fill="#4ad3a6">CORS</text>
+        <text x="300" y="38" text-anchor="middle" font-size="8.4" letter-spacing="1.4" fill="#7ea6ff">CORP &#183; COEP &#183; COOP</text>
+        <text x="300" y="20" text-anchor="middle" font-size="8.4" letter-spacing="1.4" fill="#e0a84a">FETCH METADATA &#183; LOCAL NETWORK ACCESS</text>
+        <g fill="#8f9cc4" font-size="8">
+          <text x="92" y="262">caches</text><text x="480" y="262">local devices</text>
+          <text x="60" y="80">isolation</text><text x="490" y="80">design</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis" style="color:#c9b89a">
+      <b>17</b> Caches and Vary: Origin &nbsp;&#183;&nbsp; <b>18</b> The local network &nbsp;&#183;&nbsp; <b>19</b> Beyond CORS<br>
+      <b>20</b> Designing a secure CORS policy &nbsp;&#183;&nbsp; <b>21</b> Epilogue: the review
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 16 - CACHES AND VARY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 17</div>
+  <h1 class="title">Caches and <code style="font-size:.9em">Vary: Origin</code></h1>
+  <p class="lede">The bug that makes CORS &ldquo;work sometimes&rdquo; is usually not in your
+  CORS code at all. It is in a cache that doesn't know your answer depends on who asked.</p>
+
+  <h2>How a correct policy goes wrong</h2>
+  <p>Suppose Harbor Pay allows two origins, the dashboard and a partner portal. The API names
+  whichever one is asking &mdash; a correct policy. Now put a CDN or reverse-proxy cache in
+  front of it, keyed only on the URL:</p>
+
+  <figure>
+    <svg viewBox="0 0 700 210" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="m16" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <rect x="0" y="20" width="150" height="46" rx="6" fill="#fff" stroke="#2f4fd0"/>
+      <text x="75" y="40" text-anchor="middle" font-size="9" font-weight="700">Dashboard</text>
+      <text x="75" y="54" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#59617a">app.harborpay.example</text>
+      <rect x="0" y="140" width="150" height="46" rx="6" fill="#fff" stroke="#2f4fd0"/>
+      <text x="75" y="160" text-anchor="middle" font-size="9" font-weight="700">Partner portal</text>
+      <text x="75" y="174" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#59617a">partners.harborpay.example</text>
+      <rect x="275" y="70" width="150" height="70" rx="6" fill="#fdf1e0" stroke="#a8620a"/>
+      <text x="350" y="96" text-anchor="middle" font-size="9.5" font-weight="700">Shared cache</text>
+      <text x="350" y="111" text-anchor="middle" font-size="7.8" fill="#7c5a2a">key = URL only</text>
+      <text x="350" y="124" text-anchor="middle" font-size="7.8" fill="#7c5a2a">(no Vary: Origin)</text>
+      <rect x="550" y="80" width="150" height="50" rx="6" fill="#fff" stroke="#b9c2da"/>
+      <text x="625" y="109" text-anchor="middle" font-size="9.5" font-weight="700">API</text>
+      <path d="M150,40 L271,86" stroke="#2f4fd0" stroke-width="1.3" marker-end="url(#m16)"/>
+      <text x="170" y="30" font-size="7.8" font-family="SF Mono,Menlo,monospace" fill="#2f4fd0">1. first request</text>
+      <path d="M425,98 L546,98" stroke="#2f4fd0" stroke-width="1.3" marker-end="url(#m16)"/>
+      <path d="M546,114 L429,114" stroke="#a8620a" stroke-width="1.3" marker-end="url(#m16)"/>
+      <text x="432" y="150" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#a8620a">2. Allow-Origin: app&#8230;</text>
+      <text x="432" y="161" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#a8620a">   stored by the cache</text>
+      <path d="M150,160 L271,124" stroke="#c0203f" stroke-width="1.3" marker-end="url(#m16)"/>
+      <text x="164" y="200" font-size="7.8" font-family="SF Mono,Menlo,monospace" fill="#c0203f">3. partner asks the same URL, gets the</text>
+      <text x="164" y="210" font-size="7.8" font-family="SF Mono,Menlo,monospace" fill="#c0203f">   stored answer naming app&#8230;: CORS error</text>
+    </svg>
+    <figcaption><b>Figure 17.1</b> &mdash; A correct policy broken by a cache. Whichever origin
+    asks first &ldquo;wins,&rdquo; so the bug comes and goes with cache expiry &mdash; the classic
+    works-on-my-machine CORS report.</figcaption>
+  </figure>
+
+  <h2>The fix: tell every cache what the answer depends on</h2>
+<pre><span class="k">Vary:</span> <span class="s">Origin</span></pre>
+  <p><code>Vary</code> lists the request headers a response depends on. With <code>Vary: Origin</code>,
+  a cache stores a separate copy per origin, and each origin gets its own correct answer. The
+  rules are short:</p>
+  <ul class="tight">
+    <li>Send <code>Vary: Origin</code> whenever <code>Access-Control-Allow-Origin</code> can differ
+    between requests &mdash; that is, on <b>every</b> response from a dynamic policy, including the
+    ones where you send no CORS headers at all.</li>
+    <li>A fixed <code>Access-Control-Allow-Origin: *</code> does not vary, so it doesn't need it.</li>
+    <li>If your response already varies on other headers, combine them: <code>Vary: Origin, Accept-Encoding</code>.</li>
+  </ul>
+
+  <div class="callout warn"><span class="lbl">Why it is a security issue too.</span> The same
+  mechanism can serve a response containing one user's data, or one origin's permission, to a
+  different requester. Caches in front of personalized, credentialed responses need
+  <code>Cache-Control: private</code> (or <code>no-store</code>) as well as correct <code>Vary</code>.
+  The 2018 study in Chapter&nbsp;15 found missing <code>Vary: Origin</code> to be widespread.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 17 &middot; Caches and Vary: Origin</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 17 - THE LOCAL NETWORK
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 18</div>
+  <h1 class="title">The local network</h1>
+  <p class="lede">Your browser sits on two networks at once: the public internet, and the
+  private one around you &mdash; your router, your printer, services on <code>localhost</code>.
+  For most of the web's history, public pages could send requests to both.</p>
+
+  <h2>Why the local network is special</h2>
+  <p>Devices and apps on private networks were often built on the assumption that &ldquo;only
+  people on my network can reach me.&rdquo; But every web page you open runs inside your
+  browser, which <i>is</i> on your network. The Zoom and Transmission cases in Chapter&nbsp;15
+  both followed from this. CORS helps only partly: it stops a public page from <i>reading</i> a
+  local service's responses, but simple requests still arrive, and a local service that acts on
+  them can be driven from any website.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 170" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <rect x="0" y="0" width="210" height="170" rx="8" fill="#f5f7fc" stroke="#dbe1ef"/>
+      <text x="105" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#14181f">Public</text>
+      <text x="105" y="40" text-anchor="middle" font-size="8" fill="#59617a">websites on the internet</text>
+      <rect x="245" y="0" width="210" height="170" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+      <text x="350" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#14181f">Local network</text>
+      <text x="350" y="40" text-anchor="middle" font-size="8" fill="#7c5a2a">10.x, 192.168.x, .local names</text>
+      <rect x="490" y="0" width="210" height="170" rx="8" fill="#fdeaee" stroke="#f0b8c4"/>
+      <text x="595" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="#14181f">Loopback</text>
+      <text x="595" y="40" text-anchor="middle" font-size="8" fill="#8a4453">localhost, 127.0.0.1, ::1</text>
+      <g font-size="8.4" fill="#14181f">
+        <text x="16" y="72">&#8226; news, shops, search</text><text x="16" y="90">&#8226; ad and analytics scripts</text><text x="16" y="108">&#8226; any page a user opens</text>
+        <text x="261" y="72">&#8226; routers and printers</text><text x="261" y="90">&#8226; NAS boxes, cameras</text><text x="261" y="108">&#8226; internal dashboards</text>
+        <text x="506" y="72">&#8226; desktop app helpers</text><text x="506" y="90">&#8226; developer servers</text><text x="506" y="108">&#8226; local daemons and agents</text>
+      </g>
+      <text x="350" y="148" text-anchor="middle" font-size="8.4" font-weight="700" fill="#a8620a">more private &#8594;</text>
+    </svg>
+    <figcaption><b>Figure 18.1</b> &mdash; Address spaces. Requests that move from a less private
+    space to a more private one are the ones browsers now treat with extra suspicion.</figcaption>
+  </figure>
+
+  <h2>What browsers did about it</h2>
+  <p>Chromium first proposed <b>Private Network Access</b>: before a public page could reach a
+  private address, the browser would send a special preflight
+  (<code>Access-Control-Request-Private-Network: true</code>) and require the device to opt in.
+  Deployment revealed compatibility problems, and the design evolved into <b>Local Network
+  Access</b>. Beginning with Chrome&nbsp;142 in October 2025, a public site that tries to reach
+  the local network or loopback triggers a <b>permission prompt</b>: the user, not the device,
+  decides whether that site may talk to local devices. Other browsers have been evaluating
+  similar protections; check current documentation for each.</p>
+
+  <div class="callout"><span class="lbl">What this means for you.</span> If your product
+  legitimately talks to a local device from a web page (a printer setup page, a hardware wallet
+  bridge, a developer tool), expect a permission prompt in Chromium browsers, explain it to your
+  users, and never rely on the prompt as your only defense.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 18 &middot; The local network</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 18 &middot; continued</div>
+  <h2 style="margin-top:0">DNS rebinding, and why names are not enough</h2>
+  <p>The same-origin policy compares <i>names</i>. DNS decides what machine a name refers to, and
+  a domain's owner can change that answer at any time, even to a private address. That lets a
+  hostname that began as an ordinary public site later point at <code>127.0.0.1</code>, while the
+  browser still treats both as one origin. This is <b>DNS rebinding</b>, the issue behind the
+  Transmission fix in Chapter&nbsp;15. Browser-level defenses such as Local Network Access help,
+  but the reliable fixes live in the local service itself.</p>
+
+  <h2>Building a local service that is safe to run</h2>
+  <table>
+    <thead><tr><th style="width:30%">Practice</th><th>Why it matters</th></tr></thead>
+    <tbody>
+      <tr><td><b>Validate the <code>Host</code> header</b></td><td>Answer only requests addressed to names you expect (<code>localhost</code>, <code>127.0.0.1</code>, your device name). A rebound hostname arrives with the attacker's domain in <code>Host</code>, so this check defeats DNS rebinding.</td></tr>
+      <tr><td><b>Require authentication</b></td><td>A random secret generated at install time, known to the legitimate client, turns &ldquo;anyone who can reach me&rdquo; into &ldquo;anyone who holds the key.&rdquo;</td></tr>
+      <tr><td><b>Never act on simple requests</b></td><td>Require JSON bodies or a custom header for anything with side effects, so browsers must preflight &mdash; and then refuse preflights from origins you don't expect.</td></tr>
+      <tr><td><b>Confirm with the user</b></td><td>Actions with real consequences (joining a call, sending a file, changing settings) should need a click inside your own app, not just a request.</td></tr>
+      <tr><td><b>Bind to loopback, and remove on uninstall</b></td><td>Listen on <code>127.0.0.1</code>, not all interfaces, and make sure uninstalling the product really removes the service.</td></tr>
+      <tr><td><b>Check <code>Origin</code> and Fetch Metadata</b></td><td>Refuse browser requests whose <code>Origin</code> or <code>Sec-Fetch-Site</code> shows they came from an unexpected website.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 2:10 p.m.</div>
+    <p>Harbor Pay ships a desktop helper for card readers at its retail partners. It listens on
+    <code>localhost</code>. It has no authentication, because <span class="said">&ldquo;it's only
+    local.&rdquo;</span> The room goes quiet for the second time that day. Ticket ten:
+    <b>Host validation, install-time secret, user confirmation for pairing.</b></p>
+  </div>
+
+  <div class="callout good"><span class="lbl">Principle.</span> &ldquo;Only reachable locally&rdquo; is
+  a statement about the network. Every web page the user opens is, in effect, local too. Design
+  local services as if they were on the internet, because through the browser, they are.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 18 &middot; The local network</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 18 - BEYOND CORS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 19</div>
+  <h1 class="title">Beyond CORS</h1>
+  <p class="lede">CORS controls what a page may read through <code>fetch()</code>. A newer family of
+  headers controls everything else: what may embed you, what you may embed, and who may share
+  your process.</p>
+
+  <h2>The turning point: Spectre</h2>
+  <p>In January 2018, researchers disclosed <b>Spectre</b>, a class of CPU vulnerabilities that let
+  code infer data from memory it was never allowed to read. For browsers the implication was
+  stark: if a cross-origin resource was loaded into the same process as a hostile page &mdash;
+  even as an &ldquo;embedded&rdquo; image or script it could not officially read &mdash; its bytes
+  might be exposed. Browsers responded with <b>Site Isolation</b> (separate processes per site)
+  and by blocking sensitive responses from ever reaching the wrong process: first
+  <b>Cross-Origin Read Blocking</b> (CORB), now specified as <b>Opaque Response Blocking</b> (ORB)
+  in the Fetch Standard. Servers got new headers to state their intentions explicitly.</p>
+
+  <table>
+    <thead><tr><th style="width:28%">Header</th><th style="width:34%">Question it answers</th><th>Typical value</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Cross-Origin-<br>Resource-Policy<br>(CORP)</td><td>Who may <b>embed</b> this resource with a no-cors load, such as an image or script tag?</td><td><code>same-origin</code> for private resources; <code>same-site</code>; or <code>cross-origin</code> for public assets.</td></tr>
+      <tr><td class="k">Cross-Origin-<br>Embedder-Policy<br>(COEP)</td><td>May this page load cross-origin resources that haven't opted in?</td><td><code>require-corp</code> (every subresource must allow it via CORS or CORP), or <code>credentialless</code>.</td></tr>
+      <tr><td class="k">Cross-Origin-<br>Opener-Policy<br>(COOP)</td><td>May cross-origin windows I open, or that open me, keep a reference to me?</td><td><code>same-origin</code> isolates the page into its own browsing context group.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Cross-origin isolation</h2>
+  <p>A page served with both <code>Cross-Origin-Opener-Policy: same-origin</code> and
+  <code>Cross-Origin-Embedder-Policy: require-corp</code> (or <code>credentialless</code>) becomes
+  <b>cross-origin isolated</b>: <code>self.crossOriginIsolated</code> is <code>true</code>. Browsers
+  then unlock powerful features they otherwise restrict, such as <code>SharedArrayBuffer</code> and
+  more precise timers, because nothing from another origin can end up in the page's process
+  without having agreed to it.</p>
+
+  <div class="callout"><span class="lbl">How CORS fits.</span> Under <code>COEP: require-corp</code>, a
+  cross-origin resource is accepted if it either sends a suitable CORP header or is fetched in
+  CORS mode and passes the CORS check. CORS and CORP are the two ways a resource can say
+  &ldquo;yes, you may have me.&rdquo;</div>
+
+  <div class="pfoot"><span class="ch">Chapter 19 &middot; Beyond CORS</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 19 &middot; continued</div>
+  <h2 style="margin-top:0">Fetch Metadata: the browser tells you the context</h2>
+  <p>Modern browsers attach <b>Fetch Metadata</b> request headers that describe how a request
+  came about. A page cannot forge them.</p>
+  <table class="dense">
+    <thead><tr><th style="width:24%">Header</th><th>Tells the server</th></tr></thead>
+    <tbody>
+      <tr><td class="k">Sec-Fetch-Site</td><td>The relationship between the requesting page and the target: <code>same-origin</code>, <code>same-site</code>, <code>cross-site</code>, or <code>none</code> (typed in the address bar, a bookmark).</td></tr>
+      <tr><td class="k">Sec-Fetch-Mode</td><td><code>navigate</code>, <code>cors</code>, <code>no-cors</code>, <code>same-origin</code> or <code>websocket</code>.</td></tr>
+      <tr><td class="k">Sec-Fetch-Dest</td><td>What the response will become: <code>document</code>, <code>image</code>, <code>script</code>, <code>empty</code> (fetch), and so on.</td></tr>
+      <tr><td class="k">Sec-Fetch-User</td><td><code>?1</code> when a navigation was triggered by a user action.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>A resource isolation policy</h2>
+  <p>With these headers, a server can refuse unexpected cross-site traffic before it reaches
+  any business logic &mdash; a strong complement to CORS (which governs reading) and to CSRF
+  defenses (which govern writing):</p>
+<pre><span class="c">// Allow same-origin and same-site requests, browser navigations, and old browsers</span>
+<span class="c">// that don't send the header. Refuse everything else from other sites.</span>
+<span class="k">function</span> allowRequest(req) {
+  <span class="k">const</span> site = req.headers[<span class="s">'sec-fetch-site'</span>];
+  <span class="k">if</span> (!site) <span class="k">return</span> <span class="k">true</span>;                               <span class="c">// older browser</span>
+  <span class="k">if</span> ([<span class="s">'same-origin'</span>, <span class="s">'same-site'</span>, <span class="s">'none'</span>].includes(site)) <span class="k">return</span> <span class="k">true</span>;
+  <span class="k">if</span> (req.headers[<span class="s">'sec-fetch-mode'</span>] === <span class="s">'navigate'</span> &amp;&amp; req.method === <span class="s">'GET'</span>) <span class="k">return</span> <span class="k">true</span>;
+  <span class="k">return</span> isPublicEndpoint(req.url);                     <span class="c">// explicit exceptions</span>
+}</pre>
+
+  <h2>Cross-site leaks: the frontier</h2>
+  <p>Even when a page cannot read a response, it can sometimes observe side effects: how long a
+  load took, whether a frame loaded, how many windows a site opened. The research community calls
+  these <b>cross-site leaks</b> (XS-Leaks). They are the reason browsers keep adding isolation
+  features and keep CORS errors deliberately vague (Chapter&nbsp;10). The defenses are the ones
+  in this chapter: <code>SameSite</code> cookies, Fetch Metadata checks, COOP, and CORP.</p>
+
+  <div class="grid g3" style="margin-top:6pt">
+    <div class="panel tight"><h4 style="margin-top:0">For APIs</h4><p class="tiny" style="margin:0">Precise CORS allowlist, <code>Vary: Origin</code>, Fetch Metadata policy, <code>CORP: same-site</code> on private JSON.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">For apps</h4><p class="tiny" style="margin:0"><code>COOP: same-origin</code>, a strict content security policy, and <code>SameSite</code> session cookies.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">For public assets</h4><p class="tiny" style="margin:0"><code>Allow-Origin: *</code> without credentials, and <code>CORP: cross-origin</code> so isolated pages can use them.</p></div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 19 &middot; Beyond CORS</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 19 - DESIGNING A SECURE POLICY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 20</div>
+  <h1 class="title">Designing a secure CORS policy</h1>
+  <p class="lede">The safest CORS policy is the one you never need. The next safest is short,
+  explicit, and boring. Here is how to choose, and how to write it.</p>
+
+  <h2>Three architectures</h2>
+  <figure>
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <g>
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#e6f6ee" stroke="#a8d9c1"/>
+        <text x="14" y="22" font-size="8.4" font-weight="700" fill="#0d7a52" font-family="SF Mono,Menlo,monospace" letter-spacing="1">A &#183; PREFERRED</text>
+        <text x="14" y="40" font-size="11" font-weight="700">Same origin</text>
+        <rect x="14" y="54" width="194" height="30" rx="5" fill="#fff" stroke="#0d7a52"/>
+        <text x="111" y="73" text-anchor="middle" font-size="8.2" font-family="SF Mono,Menlo,monospace">app.harborpay.example</text>
+        <text x="60" y="102" text-anchor="middle" font-size="8" fill="#3e6d5b">/ &#8594; the app</text>
+        <text x="160" y="102" text-anchor="middle" font-size="8" fill="#3e6d5b">/api/ &#8594; the API</text>
+        <text x="14" y="130" font-size="8.2" fill="#14181f">A reverse proxy or a back end for</text>
+        <text x="14" y="142" font-size="8.2" fill="#14181f">the front end serves both from one</text>
+        <text x="14" y="154" font-size="8.2" fill="#14181f">origin. No CORS at all; cookies are</text>
+        <text x="14" y="166" font-size="8.2" fill="#14181f">first-party; no preflight latency.</text>
+      </g>
+      <g transform="translate(239,0)">
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#eaeeff" stroke="#c6d0f5"/>
+        <text x="14" y="22" font-size="8.4" font-weight="700" fill="#2f4fd0" font-family="SF Mono,Menlo,monospace" letter-spacing="1">B &#183; PUBLIC API</text>
+        <text x="14" y="40" font-size="11" font-weight="700">Anyone, no cookies</text>
+        <rect x="14" y="54" width="194" height="30" rx="5" fill="#fff" stroke="#2f4fd0"/>
+        <text x="111" y="73" text-anchor="middle" font-size="8.2" font-family="SF Mono,Menlo,monospace">Allow-Origin: *</text>
+        <text x="111" y="102" text-anchor="middle" font-size="8" fill="#2f4fd0">tokens in Authorization, if any</text>
+        <text x="14" y="130" font-size="8.2" fill="#14181f">For data that is the same for every</text>
+        <text x="14" y="142" font-size="8.2" fill="#14181f">caller, or APIs authenticated with</text>
+        <text x="14" y="154" font-size="8.2" fill="#14181f">explicit bearer tokens. The browser</text>
+        <text x="14" y="166" font-size="8.2" fill="#14181f">never attaches those automatically.</text>
+      </g>
+      <g transform="translate(478,0)">
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+        <text x="14" y="22" font-size="8.4" font-weight="700" fill="#a8620a" font-family="SF Mono,Menlo,monospace" letter-spacing="1">C &#183; WHEN NEEDED</text>
+        <text x="14" y="40" font-size="11" font-weight="700">Credentialed allowlist</text>
+        <rect x="14" y="54" width="194" height="30" rx="5" fill="#fff" stroke="#a8620a"/>
+        <text x="111" y="73" text-anchor="middle" font-size="8.2" font-family="SF Mono,Menlo,monospace">exact origins + credentials</text>
+        <text x="111" y="102" text-anchor="middle" font-size="8" fill="#a8620a">Vary: Origin on every response</text>
+        <text x="14" y="130" font-size="8.2" fill="#14181f">For a few known front ends that must</text>
+        <text x="14" y="142" font-size="8.2" fill="#14181f">call a cookie-authenticated API on</text>
+        <text x="14" y="154" font-size="8.2" fill="#14181f">another origin. Every entry is a</text>
+        <text x="14" y="166" font-size="8.2" fill="#14181f">reviewed security decision.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 20.1</b> &mdash; Choose the architecture first; the headers follow from it.
+    Harbor Pay's dashboard used C on launch night and moved to A the following quarter.</figcaption>
+  </figure>
+
+  <h2>Rules for a credentialed allowlist</h2>
+  <ol class="tight">
+    <li><b>Exact strings only.</b> Full origins (<code>https://host</code>, plus port if not default),
+    compared with equality. No substring, prefix, suffix or regular-expression checks.</li>
+    <li><b>Never <code>null</code>, never <code>http</code></b> in production, and no development
+    origins in production configuration.</li>
+    <li><b>Headers only on a match.</b> Unknown origins get no <code>Access-Control-*</code> headers
+    at all &mdash; not an error message, not a default origin.</li>
+    <li><b><code>Vary: Origin</code> on every response</b> the policy touches, allowed or not.</li>
+    <li><b>Minimal methods and headers</b>, listed by name; <code>Max-Age</code> of minutes to an hour.</li>
+    <li><b>Preflights answered before authentication</b>, and never running business logic.</li>
+    <li><b>Expose only what the client needs</b> in <code>Access-Control-Expose-Headers</code>.</li>
+    <li><b>Configured in one place</b> &mdash; app <i>or</i> gateway, not both.</li>
+  </ol>
+
+  <div class="pfoot"><span class="ch">Chapter 20 &middot; Designing a secure CORS policy</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 20 &middot; continued</div>
+  <h2 style="margin-top:0">Reference configurations</h2>
+  <p>Three stacks, one allowlist. Check your framework version's documentation first.</p>
+
+  <h3 style="margin-top:8pt">Node.js with Express and the <code>cors</code> package</h3>
+<pre style="font-size:7.7pt;line-height:1.42;margin:4pt 0"><span class="k">const</span> cors = require(<span class="s">'cors'</span>);
+app.use(<span class="s">'/api'</span>, cors({
+  origin: [<span class="s">'https://app.harborpay.example'</span>],   <span class="c">// an exact list, never true or '*'</span>
+  credentials: <span class="k">true</span>,
+  methods: [<span class="s">'GET'</span>, <span class="s">'POST'</span>, <span class="s">'PUT'</span>],
+  allowedHeaders: [<span class="s">'Content-Type'</span>],
+  exposedHeaders: [<span class="s">'X-Request-Id'</span>],
+  maxAge: 600,
+}));</pre>
+
+  <h3 style="margin-top:8pt">Spring (Java) with <code>WebMvcConfigurer</code></h3>
+<pre style="font-size:7.7pt;line-height:1.42;margin:4pt 0">@Override
+<span class="k">public void</span> addCorsMappings(CorsRegistry registry) {
+  registry.addMapping(<span class="s">"/api/**"</span>)
+      .allowedOrigins(<span class="s">"https://app.harborpay.example"</span>)
+      .allowedMethods(<span class="s">"GET"</span>, <span class="s">"POST"</span>, <span class="s">"PUT"</span>)
+      .allowedHeaders(<span class="s">"Content-Type"</span>)
+      .exposedHeaders(<span class="s">"X-Request-Id"</span>)
+      .allowCredentials(<span class="k">true</span>)
+      .maxAge(600);
+}</pre>
+
+  <h3 style="margin-top:8pt">nginx in front of any application</h3>
+<pre style="font-size:7.7pt;line-height:1.42;margin:4pt 0"><span class="c"># Unknown origins map to "", and nginx omits empty headers.</span>
+map $http_origin $cors_origin {
+    default                          <span class="s">""</span>;
+    <span class="s">"https://app.harborpay.example"</span>  $http_origin;
+}
+location /api/ {
+    add_header Access-Control-Allow-Origin      $cors_origin always;
+    add_header Access-Control-Allow-Credentials <span class="s">"true"</span> always;
+    add_header Vary                             Origin always;
+    <span class="k">if</span> ($request_method = OPTIONS) {
+        add_header Access-Control-Allow-Origin      $cors_origin always;
+        add_header Access-Control-Allow-Credentials <span class="s">"true"</span> always;
+        add_header Access-Control-Allow-Methods     <span class="s">"GET, POST, PUT"</span> always;
+        add_header Access-Control-Allow-Headers     <span class="s">"Content-Type"</span> always;
+        add_header Access-Control-Max-Age           600 always;
+        add_header Vary                             Origin always;
+        <span class="k">return</span> 204;
+    }
+    proxy_pass http://api_backend;
+}</pre>
+  <p class="small muted" style="margin:0">Inner <code>add_header</code> blocks replace inherited ones, hence the repetition.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 20 &middot; Designing a secure CORS policy</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 20 &middot; continued</div>
+  <h2 style="margin-top:0">Test the policy like code</h2>
+  <p>Policies drift: a new front end is added in a hurry, a gateway is upgraded, someone
+  &ldquo;temporarily&rdquo; adds a test origin. Put the policy under automated tests so drift
+  fails a build instead of reaching production. A useful suite sends preflight and actual
+  requests with a range of <code>Origin</code> values and asserts on the headers that come back:</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:44%">Request with Origin&hellip;</th><th>The policy must respond with&hellip;</th></tr></thead>
+    <tbody>
+      <tr><td>each origin on the allowlist</td><td>that exact origin, <code>Allow-Credentials: true</code> if used, <code>Vary: Origin</code></td></tr>
+      <tr><td>an origin <i>not</i> on the list</td><td>no <code>Access-Control-Allow-Origin</code> at all, and still <code>Vary: Origin</code></td></tr>
+      <tr><td>the <code>http://</code> form of an allowed origin</td><td>no <code>Access-Control-Allow-Origin</code></td></tr>
+      <tr><td><code>null</code></td><td>no <code>Access-Control-Allow-Origin</code></td></tr>
+      <tr><td>an allowed origin, on a 404 or 500 response</td><td>the same CORS headers as on success</td></tr>
+      <tr><td>an allowed origin, preflight with an unlisted header</td><td>no permission for that header</td></tr>
+    </tbody>
+  </table>
+  <p>The lab server's <code>node server.js check</code> is the smallest possible version of this
+  idea; Lab&nbsp;8 asks you to extend it.</p>
+
+  <h2>The design-review checklist</h2>
+  <div class="grid g2" style="gap:0 18pt">
+    <ul class="tight small">
+      <li>&#9744; Could this be same-origin instead (architecture A)?</li>
+      <li>&#9744; Does any response depend on cookies or network location?</li>
+      <li>&#9744; If <code>*</code> is used, are responses identical for every caller?</li>
+      <li>&#9744; Is every allowed origin a full, exact <code>https</code> string?</li>
+      <li>&#9744; No <code>null</code>, no <code>http</code>, no dev origins in production?</li>
+      <li>&#9744; Does every trusted origin have XSS defenses and a named owner?</li>
+      <li>&#9744; <code>Vary: Origin</code> on every response of a dynamic policy?</li>
+    </ul>
+    <ul class="tight small">
+      <li>&#9744; Preflights answered before authentication, no side effects?</li>
+      <li>&#9744; Methods, headers and exposed headers listed minimally, by name?</li>
+      <li>&#9744; CORS headers present on error responses too?</li>
+      <li>&#9744; Configured in exactly one layer?</li>
+      <li>&#9744; State-changing endpoints protected against CSRF (Chapter&nbsp;16)?</li>
+      <li>&#9744; Local services validate <code>Host</code> and authenticate (Chapter&nbsp;18)?</li>
+      <li>&#9744; Automated tests cover allowed and refused origins?</li>
+    </ul>
+  </div>
+
+  <div class="callout good"><span class="lbl">If you remember one design rule.</span> Let the browser
+  say no by default, and make every yes a named, reviewed, tested decision. That is what
+  <code>Access-Control-Allow-Origin</code> was designed to express.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 20 &middot; Designing a secure CORS policy</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 20 - EPILOGUE
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 21</div>
+  <h1 class="title">Epilogue: the review</h1>
+  <p class="lede">Every story about security ends the same way: not with a dramatic rescue, but
+  with a list of boring things done well.</p>
+
+  <div class="story">
+    <div class="slug">Harbor Pay &#183; Six weeks after launch</div>
+    <p>The ten tickets are closed. The five services that checked whether an origin <i>ended
+    with</i> the company domain now compare against exact lists. The two that trusted
+    <code>null</code> have lost their decade-old test harness. The reporting service that echoed
+    every origin turned out to need exactly one: the finance dashboard. The transfer endpoint
+    accepts only JSON and checks <code>Origin</code> on every write. The card-reader helper asks the
+    cashier to confirm pairing and ignores requests addressed to any unexpected host name.</p>
+    <p>The bigger change is quieter. The dashboard team has moved the API behind the app's own
+    origin, at <code>app.harborpay.example/api</code>. For the dashboard, CORS is simply gone
+    &mdash; no preflights, no allowlist to maintain, first-party cookies. The build pipeline now runs a
+    CORS test suite against every service, and a failing test names the origin and the header.</p>
+    <p>On a Friday afternoon, a new engineer posts in the team channel: <span class="said">&ldquo;Getting
+    a CORS error on the partner portal &mdash; can I just set Allow-Origin to star?&rdquo;</span></p>
+    <p>You smile, and start typing. <span class="said">&ldquo;Before anybody touches that header,&rdquo;</span>
+    you write, <span class="said">&ldquo;can you tell me what it actually protects?&rdquo;</span></p>
+  </div>
+
+  <h2>Seven things to carry with you</h2>
+  <ol>
+    <li><b>The same-origin policy is the default;</b> CORS is a set of exceptions to it, granted by
+    servers and enforced by browsers.</li>
+    <li><b>It governs reading, not sending.</b> Simple requests reach the server regardless; protect
+    state changes separately.</li>
+    <li><b>An origin is scheme, host and port.</b> Sibling subdomains and different ports are
+    different origins.</li>
+    <li><b>Credentials raise the bar:</b> an exact origin, <code>Allow-Credentials: true</code>, and
+    no wildcards &mdash; and that bar exists for good reason.</li>
+    <li><b>Compare origins with exact equality</b> against a reviewed list. Every clever rule is a
+    future incident.</li>
+    <li><b>Send <code>Vary: Origin</code></b> whenever the answer depends on the asker.</li>
+    <li><b>The best CORS policy is often none at all:</b> serve the API from the app's origin.</li>
+  </ol>
+
+  <div class="callout"><span class="lbl">Now run it.</span> Part&nbsp;V turns each of these ideas into
+  an experiment you can watch in your own browser's DevTools. Eight labs, one small server, about
+  an hour.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 21 &middot; Epilogue: the review</span><span class="n">0</span></div>
+</section>

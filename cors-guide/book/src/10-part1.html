@@ -1,0 +1,622 @@
+
+<!-- ====================================================================
+     PART I PLATE
+     ==================================================================== -->
+<section class="page plate front">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part I</div>
+    <h1>A Web Without Walls</h1>
+    <p class="pl">Before a single CORS header makes sense, you need the thing it relaxes: the
+    same-origin policy, the oldest and most important security boundary in your browser.
+    This part tells the story of why it exists, what it guards, and the clever, dangerous
+    hacks developers used before CORS arrived.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 330" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="p1w" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7ea6ff"/><stop offset="100%" stop-color="#3b5bd6"/>
+          </linearGradient>
+        </defs>
+        <!-- a browser window as a walled city -->
+        <rect x="40" y="20" width="520" height="290" rx="14" fill="#0e1630" stroke="#3a4a7a" stroke-width="1.5"/>
+        <rect x="40" y="20" width="520" height="34" rx="14" fill="#141e3e"/>
+        <rect x="40" y="44" width="520" height="10" fill="#141e3e"/>
+        <circle cx="64" cy="37" r="5" fill="#e06a6a"/><circle cx="82" cy="37" r="5" fill="#e0a84a"/><circle cx="100" cy="37" r="5" fill="#4ad3a6"/>
+        <rect x="130" y="28" width="300" height="18" rx="9" fill="#0a1128" stroke="#2c3a66"/>
+        <text x="146" y="41" font-family="SF Mono,Menlo,monospace" font-size="9" fill="#8fa2d4">https://your-browser</text>
+
+        <!-- three districts (origins), each walled -->
+        <g font-family="SF Mono,Menlo,monospace" text-anchor="middle">
+          <rect x="70" y="90" width="140" height="170" rx="10" fill="#101b3a" stroke="url(#p1w)" stroke-width="3"/>
+          <text x="140" y="120" font-size="10" font-weight="700" fill="#bff3e0">MAIL</text>
+          <text x="140" y="134" font-size="7.5" fill="#7f8db8">mail.example</text>
+          <rect x="95" y="150" width="90" height="10" rx="3" fill="#2a3a6a"/>
+          <rect x="95" y="168" width="70" height="10" rx="3" fill="#2a3a6a"/>
+          <rect x="95" y="186" width="80" height="10" rx="3" fill="#2a3a6a"/>
+          <rect x="120" y="222" width="40" height="38" rx="3" fill="#0a1128" stroke="#4ad3a6"/>
+
+          <rect x="230" y="90" width="140" height="170" rx="10" fill="#101b3a" stroke="url(#p1w)" stroke-width="3"/>
+          <text x="300" y="120" font-size="10" font-weight="700" fill="#f6dcae">BANK</text>
+          <text x="300" y="134" font-size="7.5" fill="#7f8db8">bank.example</text>
+          <text x="300" y="178" font-size="22" font-weight="700" fill="#e0a84a">$</text>
+          <rect x="280" y="222" width="40" height="38" rx="3" fill="#0a1128" stroke="#e0a84a"/>
+
+          <rect x="390" y="90" width="140" height="170" rx="10" fill="#101b3a" stroke="url(#p1w)" stroke-width="3"/>
+          <text x="460" y="120" font-size="10" font-weight="700" fill="#ffb4c0">UNKNOWN</text>
+          <text x="460" y="134" font-size="7.5" fill="#7f8db8">some-site.example</text>
+          <text x="460" y="182" font-size="26" font-weight="700" fill="#e06a6a">?</text>
+          <rect x="440" y="222" width="40" height="38" rx="3" fill="#0a1128" stroke="#e06a6a"/>
+        </g>
+        <!-- a blocked glance across the wall -->
+        <path d="M390,190 C360,190 350,170 322,170" fill="none" stroke="#e06a6a" stroke-width="2" stroke-dasharray="5 4"/>
+        <circle cx="380" cy="160" r="11" fill="#0a1128" stroke="#e06a6a" stroke-width="2"/>
+        <path d="M373,153 L387,167 M387,153 L373,167" stroke="#e06a6a" stroke-width="2.2"/>
+        <text x="300" y="292" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="9" letter-spacing="1.4" fill="#8f9cc4">ONE BROWSER &#183; MANY ORIGINS &#183; WALLS BETWEEN THEM</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>01</b> The launch that went dark &nbsp;&#183;&nbsp; <b>02</b> Why browsers built walls &nbsp;&#183;&nbsp;
+      <b>03</b> What exactly is an origin?<br><b>04</b> What the wall blocks, and what it doesn't &nbsp;&#183;&nbsp; <b>05</b> Life before CORS
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 1 - THE LAUNCH THAT WENT DARK
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 1</div>
+  <h1 class="title">The launch that went dark</h1>
+  <p class="lede">Every developer meets CORS the same way: as a red line in the console, at the
+  worst possible moment. This book starts there, too.</p>
+
+  <div class="story">
+    <div class="slug">Harbor Pay &#183; Launch night &#183; 11:52 p.m.</div>
+    <p>You have been at Harbor Pay for six weeks. Tonight the new customer dashboard goes live:
+    a fast single-page app at <b>app.harborpay.example</b>, talking to the company's API at
+    <b>api.harborpay.example</b>. It worked perfectly on your laptop. It passed every test.</p>
+    <p>At 11:52 the deploy finishes. You open the dashboard. The balance card spins, and spins.
+    You open DevTools and the console is a wall of red:</p>
+  </div>
+
+  <pre><span class="r">Access to fetch at 'https://api.harborpay.example/v1/balance' from origin
+'https://app.harborpay.example' has been blocked by CORS policy: No
+'Access-Control-Allow-Origin' header is present on the requested resource.</span></pre>
+
+  <div class="story">
+    <p>In the team channel, the suggestions arrive fast. <span class="said">&ldquo;Just add
+    <code>Access-Control-Allow-Origin: *</code>.&rdquo;</span> Then: <span class="said">&ldquo;Star
+    won't work with cookies. Make the server copy back whatever Origin it receives &mdash; that
+    always works.&rdquo;</span> Someone pastes a one-line middleware snippet from a forum.</p>
+    <p>Your cursor hovers over the merge button. Then Ren, the security lead, joins the call.
+    <span class="said">&ldquo;Before anybody touches that header,&rdquo;</span> Ren says,
+    <span class="said">&ldquo;can someone tell me what it actually protects?&rdquo;</span></p>
+    <p>Nobody answers. The launch waits.</p>
+  </div>
+
+  <h2>The question this book answers</h2>
+  <p>That silence is the reason this book exists. The error message tells you what is missing;
+  it does not tell you what the missing thing <i>means</i>. The two &ldquo;quick fixes&rdquo;
+  offered on the call make opposite trade-offs. The first shares public data with everyone,
+  which is often fine. The second, copying back any Origin with cookies allowed, can hand every
+  website on the internet the ability to read your signed-in customers' data. Both make the
+  red line disappear. Neither is the right answer for a bank.</p>
+
+  <div class="callout">
+    <span class="lbl">CORS in one sentence.</span> Cross-Origin Resource Sharing is the protocol
+    a server uses to tell the browser which <i>other</i> websites may read its responses &mdash;
+    a controlled exception to a rule the browser otherwise enforces without mercy.
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 1 &middot; The launch that went dark</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 1 &middot; continued</div>
+  <h2 style="margin-top:0">How this book is organized</h2>
+  <p>We will follow the Harbor Pay team from that launch night to a security review three weeks
+  later. Each chapter opens with a scene, then turns the scene into principles, diagrams, and
+  a lab you can run on your own machine.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 190" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="m1a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#b9c2da"/></marker>
+      </defs>
+      <g>
+        <rect x="0" y="30" width="124" height="120" rx="8" fill="#eaeeff" stroke="#c6d0f5"/>
+        <text x="62" y="54" text-anchor="middle" font-size="8.5" font-weight="700" fill="#2f4fd0" font-family="SF Mono,Menlo,monospace" letter-spacing="1.2">PART I</text>
+        <text x="62" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#14181f">The wall</text>
+        <text x="62" y="98" text-anchor="middle" font-size="8.4" fill="#59617a">origins and the</text>
+        <text x="62" y="110" text-anchor="middle" font-size="8.4" fill="#59617a">same-origin policy</text>
+
+        <rect x="144" y="30" width="124" height="120" rx="8" fill="#e6f6ee" stroke="#a8d9c1"/>
+        <text x="206" y="54" text-anchor="middle" font-size="8.5" font-weight="700" fill="#0d7a52" font-family="SF Mono,Menlo,monospace" letter-spacing="1.2">PART II</text>
+        <text x="206" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#14181f">The gate</text>
+        <text x="206" y="98" text-anchor="middle" font-size="8.4" fill="#59617a">how CORS opens</text>
+        <text x="206" y="110" text-anchor="middle" font-size="8.4" fill="#59617a">it, header by header</text>
+
+        <rect x="288" y="30" width="124" height="120" rx="8" fill="#fdeaee" stroke="#f0b8c4"/>
+        <text x="350" y="54" text-anchor="middle" font-size="8.5" font-weight="700" fill="#c0203f" font-family="SF Mono,Menlo,monospace" letter-spacing="1.2">PART III</text>
+        <text x="350" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#14181f">The holes</text>
+        <text x="350" y="98" text-anchor="middle" font-size="8.4" fill="#59617a">mistakes, incidents,</text>
+        <text x="350" y="110" text-anchor="middle" font-size="8.4" fill="#59617a">and what CORS is not</text>
+
+        <rect x="432" y="30" width="124" height="120" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+        <text x="494" y="54" text-anchor="middle" font-size="8.5" font-weight="700" fill="#a8620a" font-family="SF Mono,Menlo,monospace" letter-spacing="1.2">PART IV</text>
+        <text x="494" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#14181f">The frontier</text>
+        <text x="494" y="98" text-anchor="middle" font-size="8.4" fill="#59617a">caches, local networks,</text>
+        <text x="494" y="110" text-anchor="middle" font-size="8.4" fill="#59617a">isolation, design</text>
+
+        <rect x="576" y="30" width="124" height="120" rx="8" fill="#f5f7fc" stroke="#dbe1ef"/>
+        <text x="638" y="54" text-anchor="middle" font-size="8.5" font-weight="700" fill="#59617a" font-family="SF Mono,Menlo,monospace" letter-spacing="1.2">PART V</text>
+        <text x="638" y="76" text-anchor="middle" font-size="11" font-weight="700" fill="#14181f">The labs</text>
+        <text x="638" y="98" text-anchor="middle" font-size="8.4" fill="#59617a">eight experiments</text>
+        <text x="638" y="110" text-anchor="middle" font-size="8.4" fill="#59617a">in your own browser</text>
+
+        <path d="M124,90 L141,90" stroke="#b9c2da" stroke-width="1.6" marker-end="url(#m1a)"/>
+        <path d="M268,90 L285,90" stroke="#b9c2da" stroke-width="1.6" marker-end="url(#m1a)"/>
+        <path d="M412,90 L429,90" stroke="#b9c2da" stroke-width="1.6" marker-end="url(#m1a)"/>
+        <path d="M556,90 L573,90" stroke="#b9c2da" stroke-width="1.6" marker-end="url(#m1a)"/>
+        <text x="350" y="178" text-anchor="middle" font-size="9" fill="#59617a">basic concepts &#8594; protocol &#8594; security &#8594; advanced design &#8594; hands-on</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 1.1</b> &mdash; The route through the book. Each part builds on the one
+    before it; the labs can be run at any point after Chapter&nbsp;6.</figcaption>
+  </figure>
+
+  <h2>What you need</h2>
+  <div class="grid g3">
+    <div class="panel tight"><h4 style="margin-top:0">To read it</h4>
+      <p class="tiny" style="margin:0">Comfort with HTTP requests and responses, and enough
+      JavaScript to read a <code>fetch()</code> call. No security background is assumed.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">To run the labs</h4>
+      <p class="tiny" style="margin:0">Node.js 18 or later and any modern browser. The lab server
+      has zero dependencies and prints its full source in Part&nbsp;V.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">To use it at work</h4>
+      <p class="tiny" style="margin:0">Chapter&nbsp;20's checklist and reference configurations are
+      written to be copied into a design review.</p></div>
+  </div>
+
+  <h2>Three conventions</h2>
+  <ul>
+    <li><b>Story passages</b> appear on a warm background, like the one on the previous page.
+    Harbor Pay and its people are fictional; the technology and the incidents are real.</li>
+    <li><b>Example domains</b> end in <code>.example</code>, a name reserved for documentation, so
+    nothing in this book points at a real system.</li>
+    <li><b>Header names</b> are case-insensitive in HTTP. The book writes them in their usual
+    capitalization, <code>Access-Control-Allow-Origin</code>, and lowercase in code, where
+    Node.js presents them that way.</li>
+  </ul>
+
+  <div class="callout good"><span class="lbl">Where the story goes.</span> Tonight's launch is
+  fixed in Chapter&nbsp;9. The harder question Ren asked &mdash; what the header protects
+  &mdash; takes until Chapter&nbsp;13 to answer fully, and it changes how the whole team
+  designs APIs.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 1 &middot; The launch that went dark</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 2 - WHY BROWSERS BUILT WALLS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 2</div>
+  <h1 class="title">Why browsers built walls</h1>
+  <p class="lede">Your browser is the most trusting program you run. It carries your
+  identity to every site you are signed in to &mdash; automatically, on every request. That
+  generosity is why the wall has to exist.</p>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 12:10 a.m.</div>
+    <p>Ren shares a screen with two browser tabs. One is Harbor Pay's dashboard, signed in.
+    The other is a recipe blog. <span class="said">&ldquo;Both of these pages run code in the
+    same program, on the same machine, with the same cookies,&rdquo;</span> Ren says.
+    <span class="said">&ldquo;So why can't the recipe blog read your bank balance?&rdquo;</span></p>
+  </div>
+
+  <h2>Ambient authority: the browser's great convenience</h2>
+  <p>When you sign in to a website, it usually hands your browser a <b>session cookie</b>.
+  From then on, the browser attaches that cookie to every request it sends to that site
+  &mdash; no matter which page, tab, or script caused the request. Security engineers call
+  this <b>ambient authority</b>: your credentials are simply in the air, applied
+  automatically.</p>
+  <p>It is what makes the web feel seamless. It is also a loaded gun. If any page could send
+  a request to your bank <i>and read the answer</i>, then every page you visit could read
+  your statements, your email, your medical portal &mdash; using your own cookies.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="m2a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker>
+      </defs>
+      <!-- left: no wall -->
+      <rect x="0" y="0" width="336" height="250" rx="8" fill="#fdeaee" stroke="#f0b8c4" stroke-width="0.8"/>
+      <text x="16" y="22" font-size="11" font-weight="700" fill="#c0203f">A WEB WITHOUT THE WALL</text>
+      <text x="16" y="37" font-size="8.6" fill="#8a4453">any page may read any response</text>
+      <rect x="20" y="62" width="120" height="96" rx="6" fill="#fff" stroke="#b9c2da"/>
+      <rect x="20" y="62" width="120" height="16" rx="6" fill="#eceff8"/>
+      <text x="80" y="74" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#59617a">recipes.example</text>
+      <text x="80" y="104" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">Recipe blog</text>
+      <text x="80" y="118" text-anchor="middle" font-size="7.8" fill="#c0203f">runs a script</text>
+      <rect x="200" y="62" width="120" height="96" rx="6" fill="#fff" stroke="#b9c2da"/>
+      <text x="260" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Your bank</text>
+      <text x="260" y="112" text-anchor="middle" font-size="7.8" fill="#59617a">sees your cookie,</text>
+      <text x="260" y="123" text-anchor="middle" font-size="7.8" fill="#59617a">trusts the request</text>
+      <path d="M140,92 L195,92" stroke="#c0203f" stroke-width="1.6" marker-end="url(#m2a)"/>
+      <text x="168" y="86" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">+ cookie</text>
+      <path d="M198,128 L143,128" stroke="#c0203f" stroke-width="1.6" marker-end="url(#m2a)"/>
+      <text x="170" y="142" text-anchor="middle" font-size="7" font-family="SF Mono,Menlo,monospace" fill="#c0203f">balance</text>
+      <text x="18" y="192" font-size="8.6" fill="#14181f">&#10007;  Every site you visit can read every site</text>
+      <text x="30" y="204" font-size="8.6" fill="#14181f">you are signed in to.</text>
+      <text x="18" y="222" font-size="8.6" fill="#14181f">&#10007;  Your cookies do the work for them.</text>
+
+      <!-- right: the wall -->
+      <g transform="translate(364,0)">
+        <rect x="0" y="0" width="336" height="250" rx="8" fill="#e6f6ee" stroke="#a8d9c1" stroke-width="0.8"/>
+        <text x="16" y="22" font-size="11" font-weight="700" fill="#0d7a52">THE SAME-ORIGIN POLICY</text>
+        <text x="16" y="37" font-size="8.6" fill="#3e6d5b">a page reads only its own origin's responses</text>
+        <rect x="20" y="62" width="120" height="96" rx="6" fill="#fff" stroke="#b9c2da"/>
+        <rect x="20" y="62" width="120" height="16" rx="6" fill="#eceff8"/>
+        <text x="80" y="74" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#59617a">recipes.example</text>
+        <text x="80" y="104" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">Recipe blog</text>
+        <text x="80" y="118" text-anchor="middle" font-size="7.8" fill="#0d7a52">sees nothing</text>
+        <rect x="200" y="62" width="120" height="96" rx="6" fill="#fff" stroke="#b9c2da"/>
+        <text x="260" y="104" text-anchor="middle" font-size="9.5" font-weight="700" fill="#14181f">Your bank</text>
+        <rect x="163" y="56" width="10" height="110" rx="2" fill="#0d7a52"/>
+        <path d="M140,92 L158,92" stroke="#59617a" stroke-width="1.6" marker-end="url(#m2a)"/>
+        <path d="M198,128 L178,128" stroke="#0d7a52" stroke-width="1.6"/>
+        <text x="168" y="182" text-anchor="middle" font-size="7.6" font-family="SF Mono,Menlo,monospace" fill="#0d7a52">the browser withholds it</text>
+        <text x="18" y="206" font-size="8.6" fill="#14181f">&#10003;  Pages from one origin cannot read</text>
+        <text x="30" y="218" font-size="8.6" fill="#14181f">responses from another.</text>
+        <text x="18" y="236" font-size="8.6" fill="#14181f">&#10003;  Enforced by the browser, for you.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 2.1</b> &mdash; Why the wall exists. Cookies make requests
+    <i>authoritative</i>; the same-origin policy makes sure only the right page can read what
+    those requests return.</figcaption>
+  </figure>
+
+  <div class="pfoot"><span class="ch">Chapter 2 &middot; Why browsers built walls</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 2 &middot; continued</div>
+  <h2 style="margin-top:0">The rule arrives</h2>
+  <p>JavaScript shipped in Netscape Navigator&nbsp;2 in the mid-1990s, and within months the
+  browser makers faced the problem in Figure&nbsp;2.1. Their answer was the <b>same-origin
+  policy</b> (SOP): a script may freely read data that comes from its own origin, and is
+  cut off from data that comes from anywhere else. Every browser since has adopted it, and
+  every later web feature &mdash; frames, XMLHttpRequest, <code>fetch()</code>, canvas,
+  service workers &mdash; has had to answer the question &ldquo;how does this respect the
+  same-origin policy?&rdquo;</p>
+
+  <div class="pull">The same-origin policy is not a feature you turn on. It is the default
+  state of the web, and every cross-origin capability is an exception carved out of it.</div>
+
+  <h2>Who enforces it, and against whom</h2>
+  <p>Three facts about the same-origin policy explain almost every surprise you will meet
+  with CORS:</p>
+  <div class="grid g3">
+    <div class="panel tight"><h4 style="margin-top:0">1 &middot; The browser enforces it</h4>
+      <p class="tiny" style="margin:0">Not the server, not the network. A server cannot enforce
+      the SOP, and tools like <code>curl</code>, Postman or a Node script ignore it entirely.
+      This is why &ldquo;it works in Postman&rdquo; tells you nothing about CORS.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">2 &middot; It protects the user</h4>
+      <p class="tiny" style="margin:0">The SOP protects <i>the person at the keyboard</i>
+      from hostile pages misusing their signed-in sessions. It does not protect your
+      server from anyone who can send HTTP requests directly.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">3 &middot; It is about reading</h4>
+      <p class="tiny" style="margin:0">Browsers still <i>send</i> many cross-origin requests
+      &mdash; images, forms, links. What the policy withholds is the ability of a script to
+      <i>read</i> the response. Chapter&nbsp;4 makes this precise.</p></div>
+  </div>
+
+  <h2>Why this matters in 2026 more than in 1996</h2>
+  <p>In the 1990s a website was mostly one server rendering HTML. Today a typical product is a
+  constellation: a single-page app on one origin, APIs on others, an authentication provider,
+  a CDN, analytics, payment widgets. Legitimate cross-origin reads are everywhere, which
+  means exceptions to the same-origin policy are everywhere &mdash; and each one is a small
+  security decision written in a response header.</p>
+
+  <div class="callout warn"><span class="lbl">The stakes.</span> When a CORS exception is written
+  too broadly, the same-origin policy stops protecting the users of that API. Nothing crashes
+  and no alarm sounds. The wall simply has a door in it that nobody meant to install.</div>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 12:24 a.m.</div>
+    <p><span class="said">&ldquo;So the error isn't the bug,&rdquo;</span> you say slowly.
+    <span class="said">&ldquo;The error is the wall working.&rdquo;</span></p>
+    <p>Ren nods. <span class="said">&ldquo;Exactly. Our job is to open a door for
+    <i>our</i> app &mdash; and only for our app.&rdquo;</span></p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 2 &middot; Why browsers built walls</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 3 - WHAT EXACTLY IS AN ORIGIN?
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 3</div>
+  <h1 class="title">What exactly is an origin?</h1>
+  <p class="lede">Three parts of a URL decide which side of the wall a page lives on. Get this
+  definition exactly right and half of CORS debugging disappears.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="SF Mono,Menlo,monospace">
+      <rect x="0" y="0" width="700" height="150" rx="8" fill="#f5f7fc" stroke="#dbe1ef"/>
+      <text x="40" y="64" font-size="17" fill="#2f4fd0" font-weight="700">https</text>
+      <text x="96" y="64" font-size="17" fill="#8d95ab">://</text>
+      <text x="126" y="64" font-size="17" fill="#0d7a52" font-weight="700">app.harborpay.example</text>
+      <text x="358" y="64" font-size="17" fill="#8d95ab">:</text>
+      <text x="370" y="64" font-size="17" fill="#a8620a" font-weight="700">443</text>
+      <text x="408" y="64" font-size="17" fill="#8d95ab">/v1/balance?acct=7#top</text>
+      <path d="M40,76 L92,76" stroke="#2f4fd0" stroke-width="2"/>
+      <path d="M126,76 L352,76" stroke="#0d7a52" stroke-width="2"/>
+      <path d="M370,76 L403,76" stroke="#a8620a" stroke-width="2"/>
+      <path d="M408,76 L660,76" stroke="#b9c2da" stroke-width="2" stroke-dasharray="4 3"/>
+      <text x="66" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2f4fd0">SCHEME</text>
+      <text x="239" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0d7a52">HOST</text>
+      <text x="386" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#a8620a">PORT</text>
+      <text x="534" y="98" text-anchor="middle" font-size="9.5" font-weight="700" fill="#8d95ab">NOT PART OF THE ORIGIN</text>
+      <text x="386" y="112" text-anchor="middle" font-size="7.6" fill="#8d95ab">(implied by https)</text>
+      <text x="534" y="112" text-anchor="middle" font-size="7.6" fill="#8d95ab">path, query, fragment are ignored</text>
+      <text x="40" y="32" font-size="9" fill="#59617a" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">origin = the exact triple (scheme, host, port), written https://app.harborpay.example</text>
+    </svg>
+    <figcaption><b>Figure 3.1</b> &mdash; Anatomy of an origin. The default port for
+    <code>https</code> is 443 and for <code>http</code> is 80; when the port is the default it
+    is omitted from the written form.</figcaption>
+  </figure>
+
+  <h2>Same origin, or not? Compared with https://app.harborpay.example</h2>
+  <table class="dense">
+    <thead><tr><th style="width:44%">URL</th><th style="width:13%">Same?</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="k">https://app.harborpay.example/settings</td><td><span class="tag g">Same</span></td><td>Only the path differs</td></tr>
+      <tr><td class="k">https://app.harborpay.example:443/</td><td><span class="tag g">Same</span></td><td>443 is the default port for https</td></tr>
+      <tr><td class="k">http://app.harborpay.example/</td><td><span class="tag b">Different</span></td><td>Scheme differs: http is not https</td></tr>
+      <tr><td class="k">https://api.harborpay.example/</td><td><span class="tag b">Different</span></td><td>Host differs, even though the parent domain matches</td></tr>
+      <tr><td class="k">https://harborpay.example/</td><td><span class="tag b">Different</span></td><td>Host differs: no subdomain is a different host</td></tr>
+      <tr><td class="k">https://app.harborpay.example:8443/</td><td><span class="tag b">Different</span></td><td>Port differs</td></tr>
+      <tr><td class="k">http://localhost:8080 vs :8081</td><td><span class="tag b">Different</span></td><td>Port differs &mdash; the basis of every lab in this book</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout"><span class="lbl">The most common surprise.</span> Your app and your
+  API on sibling subdomains of the same company domain are <b>different origins</b>. The
+  same-origin policy does not care who owns them. That is exactly Harbor Pay's launch-night
+  situation.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 3 &middot; What exactly is an origin?</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 3 &middot; continued</div>
+  <h2 style="margin-top:0">Origin is not &ldquo;site&rdquo;</h2>
+  <p>Browsers use a second, coarser boundary called a <b>site</b>: the scheme plus the
+  <i>registrable domain</i> &mdash; the part of the host just below a public suffix such as
+  <code>.com</code> or <code>.co.uk</code>. The list of public suffixes is maintained as the
+  <b>Public Suffix List</b>, which is why <code>a.github.io</code> and <code>b.github.io</code>
+  are different sites even though they share a parent domain.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:36%">Two URLs</th><th style="width:16%">Same origin?</th><th style="width:15%">Same site?</th><th>Which rules use it</th></tr></thead>
+    <tbody>
+      <tr><td class="k">app.harborpay.example<br>api.harborpay.example</td><td>No</td><td>Yes</td><td>CORS uses origin. Cookie <code>SameSite</code> uses site, so these two are &ldquo;same-site&rdquo;.</td></tr>
+      <tr><td class="k">localhost:8080<br>localhost:8081</td><td>No</td><td>Yes</td><td>Ports never change the site. The labs rely on this.</td></tr>
+      <tr><td class="k">harborpay.example<br>other.example</td><td>No</td><td>No</td><td>Different in every sense.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Keep the two words apart. <b>CORS is about origins.</b> Cookie rules such as
+  <code>SameSite</code> (Chapter&nbsp;9) are about sites. Mixing them up produces bugs that
+  appear in one environment and vanish in another.</p>
+
+  <h2>The strange case of <code>null</code></h2>
+  <p>Some documents have no meaningful origin, and browsers give them an <b>opaque origin</b>,
+  which is serialized in headers as the literal string <code>null</code>. You will see
+  <code>Origin: null</code> from:</p>
+  <ul class="tight">
+    <li>pages opened from the local disk (<code>file://</code> URLs);</li>
+    <li>documents created from <code>data:</code> URLs;</li>
+    <li>sandboxed iframes (the <code>sandbox</code> attribute without <code>allow-same-origin</code>).</li>
+  </ul>
+  <p>An opaque origin is never equal to any other origin, including another <code>null</code>.
+  That makes <code>null</code> a <i>description</i>, not an identity &mdash; many unrelated
+  documents all share the same string. Chapter&nbsp;13 explains why a server must never treat it
+  as a trusted caller.</p>
+
+  <h2>How the browser tells the server</h2>
+  <p>On cross-origin requests the browser adds an <code>Origin</code> request header naming
+  the origin of the page that made the request. A page's script cannot forge it: it is one of
+  the <i>forbidden request headers</i> that only the browser may set.</p>
+<pre><span class="k">GET</span> /v1/balance HTTP/1.1
+<span class="k">Host:</span> api.harborpay.example
+<span class="k">Origin:</span> <span class="s">https://app.harborpay.example</span>     <span class="c">&lt;- set by the browser, not by the page</span>
+<span class="k">Cookie:</span> hp_session=&#8230;</pre>
+  <div class="callout warn"><span class="lbl">Trust with care.</span> The <code>Origin</code>
+  header is reliable <i>inside a browser</i>; anyone using <code>curl</code> can type any value.
+  Fine for CORS, which protects browser users &mdash; but never a substitute for authentication.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 3 &middot; What exactly is an origin?</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 4 - WHAT THE WALL BLOCKS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 4</div>
+  <h1 class="title">What the wall blocks, and what it doesn't</h1>
+  <p class="lede">The same-origin policy is famous and widely misunderstood. It does not stop
+  your browser from talking to other origins. It stops pages from <i>reading</i> what comes
+  back.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <g>
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#e6f6ee" stroke="#a8d9c1"/>
+        <text x="16" y="24" font-size="11.5" font-weight="700" fill="#0d7a52">1 &#183; SEND</text>
+        <text x="16" y="40" font-size="8.6" fill="#3e6d5b">generally allowed</text>
+        <g font-size="8.6" fill="#14181f">
+          <text x="16" y="68">&#8226; Following a link</text>
+          <text x="16" y="86">&#8226; Submitting an HTML form</text>
+          <text x="16" y="104">&#8226; Loading an image or script</text>
+          <text x="16" y="122">&#8226; A simple <tspan font-family="SF Mono,Menlo,monospace">fetch()</tspan></text>
+        </g>
+        <text x="16" y="160" font-size="8.2" fill="#3e6d5b">The request leaves the browser,</text>
+        <text x="16" y="172" font-size="8.2" fill="#3e6d5b">often with cookies, and the server</text>
+        <text x="16" y="184" font-size="8.2" fill="#3e6d5b">acts on it.</text>
+      </g>
+      <g transform="translate(239,0)">
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+        <text x="16" y="24" font-size="11.5" font-weight="700" fill="#a8620a">2 &#183; EMBED</text>
+        <text x="16" y="40" font-size="8.6" fill="#7c5a2a">allowed, but sealed</text>
+        <g font-size="8.6" fill="#14181f">
+          <text x="16" y="68">&#8226; <tspan font-family="SF Mono,Menlo,monospace">&lt;img&gt;</tspan> shows, pixels unreadable</text>
+          <text x="16" y="86">&#8226; <tspan font-family="SF Mono,Menlo,monospace">&lt;script&gt;</tspan> runs, source hidden</text>
+          <text x="16" y="104">&#8226; <tspan font-family="SF Mono,Menlo,monospace">&lt;iframe&gt;</tspan> displays, DOM closed</text>
+          <text x="16" y="122">&#8226; Fonts, video, stylesheets</text>
+        </g>
+        <text x="16" y="160" font-size="8.2" fill="#7c5a2a">The page can use the resource</text>
+        <text x="16" y="172" font-size="8.2" fill="#7c5a2a">but cannot look inside it.</text>
+      </g>
+      <g transform="translate(478,0)">
+        <rect x="0" y="0" width="222" height="200" rx="8" fill="#fdeaee" stroke="#f0b8c4"/>
+        <text x="16" y="24" font-size="11.5" font-weight="700" fill="#c0203f">3 &#183; READ</text>
+        <text x="16" y="40" font-size="8.6" fill="#8a4453">blocked by default</text>
+        <g font-size="8.6" fill="#14181f">
+          <text x="16" y="68">&#8226; A response body from <tspan font-family="SF Mono,Menlo,monospace">fetch()</tspan></text>
+          <text x="16" y="86">&#8226; Response headers</text>
+          <text x="16" y="104">&#8226; Another origin's DOM</text>
+          <text x="16" y="122">&#8226; Pixels of a cross-origin image</text>
+        </g>
+        <text x="16" y="160" font-size="8.2" fill="#8a4453">This is the wall. CORS is the</text>
+        <text x="16" y="172" font-size="8.2" fill="#8a4453">server's way to open it for</text>
+        <text x="16" y="184" font-size="8.2" fill="#8a4453">named origins.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 4.1</b> &mdash; Three kinds of cross-origin interaction. Only the
+    third is blocked by default, and only the third is what CORS controls.</figcaption>
+  </figure>
+
+  <h2>Why sending was never blocked</h2>
+  <p>The web was built on links and forms that point at other sites. Blocking cross-origin
+  <i>sending</i> would have broken the web of 1996, so it was never on the table. Instead, the
+  rule became: <b>you may cause a request; you may not read the result</b> unless the other
+  origin agrees. That compromise has two consequences you will meet again:</p>
+  <ul>
+    <li><b>Side effects still happen.</b> If a cross-origin request changes data on the server,
+    it changes it whether or not the page can read the response. That is the root of
+    cross-site request forgery, and the reason Chapter&nbsp;16 insists CORS is not a CSRF
+    defense.</li>
+    <li><b>Embedding can leak.</b> Anything a browser will <i>execute</i> across origins
+    &mdash; such as a script &mdash; must never contain private data. Chapter&nbsp;5 shows what
+    happened when sites forgot.</li>
+  </ul>
+
+  <div class="callout good"><span class="lbl">Remember this sentence.</span> The same-origin
+  policy governs reading, not sending. CORS lets a server say &ldquo;this origin may read my
+  response&rdquo; &mdash; nothing more, nothing less.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 4 &middot; What the wall blocks</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 5 - LIFE BEFORE CORS
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 5</div>
+  <h1 class="title">Life before CORS</h1>
+  <p class="lede">For a decade, developers who needed cross-origin data had no official way to
+  get it. So they improvised &mdash; and every improvisation taught the industry something
+  about what a safe design would need.</p>
+
+  <div class="tl">
+    <div class="ev"><span class="yr">mid-1990s</span>JavaScript arrives in Netscape Navigator&nbsp;2; the same-origin policy follows almost immediately.</div>
+    <div class="ev"><span class="yr">1999&ndash;2005</span>XMLHttpRequest spreads and &ldquo;Ajax&rdquo; gets its name in 2005 &mdash; but it is same-origin only.</div>
+    <div class="ev"><span class="yr">2005&ndash;2010</span>JSONP, server-side proxies and <code>document.domain</code> become the everyday workarounds.</div>
+    <div class="ev"><span class="yr">2006&ndash;2007</span>Researchers show that private data served as executable JavaScript can be read by other sites (&ldquo;JavaScript hijacking&rdquo;).</div>
+    <div class="ev"><span class="yr">2009&ndash;2014</span>Browsers implement CORS; it becomes a W3C Recommendation in January 2014 and later moves into the WHATWG Fetch Standard.</div>
+  </div>
+
+  <h2>Workaround 1: JSONP</h2>
+  <p>Scripts are allowed to load across origins (Figure&nbsp;4.1, column 2). JSONP exploited
+  that: instead of returning data, the server returned a <i>script</i> that called a function
+  the page had defined, passing the data as its argument.</p>
+<pre><span class="c">// the page defines a function, then adds a script tag pointing at the other origin</span>
+<span class="k">function</span> showRates(data) { render(data); }
+&lt;script src=<span class="s">"https://api.example/rates?callback=showRates"</span>&gt;&lt;/script&gt;
+
+<span class="c">// the API responds with executable code rather than JSON</span>
+showRates({<span class="s">"USD"</span>: 1, <span class="s">"EUR"</span>: 0.92});</pre>
+  <p>It worked everywhere, and it had two fatal properties. The page had to <b>run code chosen
+  by the other server</b> with full privileges &mdash; total trust in the API. And the server
+  had <b>no way to choose who could read</b>: any website could include the same script tag.
+  JSONP was only ever safe for data you would publish to the whole internet.</p>
+
+  <h2>Workaround 2: the server-side proxy</h2>
+  <p>The page calls its <i>own</i> origin, and that server fetches from the other origin on
+  its behalf. Because the browser only ever talks to one origin, the same-origin policy never
+  triggers. Proxies remain a perfectly good pattern today (Chapter&nbsp;20 recommends a form of
+  it), but they add latency, cost, and a server that must be careful not to become an open
+  relay for anyone's requests.</p>
+
+  <h2>Workaround 3: <code>document.domain</code></h2>
+  <p>Two pages on sibling subdomains could both set <code>document.domain</code> to their shared
+  parent and be treated as same-origin. It widened the wall for <i>every</i> page on those
+  subdomains, not just the ones that needed it. Browsers have been retiring it; Chromium stopped
+  honoring it by default in 2023. Treat it as history.</p>
+
+  <div class="pfoot"><span class="ch">Chapter 5 &middot; Life before CORS</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 5 &middot; continued</div>
+  <h2 style="margin-top:0">Workaround 4: <code>postMessage</code></h2>
+  <p>HTML5's <code>window.postMessage</code> lets windows on different origins exchange messages
+  deliberately. It is still the right tool for cooperating <i>documents</i>, such as an embedded
+  payment widget, and it is safe when the receiver checks <code>event.origin</code> against an
+  exact expected value.</p>
+
+  <h2>The lesson of JavaScript hijacking</h2>
+  <div class="case">
+    <div class="meta">Research &#183; 2006&ndash;2007</div>
+    <h3>When private data was served as code</h3>
+    <p>In January 2006, security researcher Jeremiah Grossman described how a webmail
+    service's contact list, delivered to its own pages as JavaScript, could be read by a page
+    on a completely different site: the browser happily <i>ran</i> the cross-origin script, and
+    the hostile page found a way to observe the data as it executed. The provider fixed the
+    issue.</p>
+    <p>In 2007, researchers at Fortify Software (Brian Chess, Yekaterina Tsipenyuk O'Neil and
+    Jacob West) published <i>JavaScript Hijacking</i>, showing the same weakness across many
+    popular Ajax frameworks of the day and naming the class of bug.</p>
+    <div class="lesson"><b>What it taught:</b> the &ldquo;embed&rdquo; column of Figure&nbsp;4.1
+    is not a safe place for secrets. Responses containing private data should be plain data
+    (JSON), never executable script, and should be readable only through a mechanism the
+    server controls. That mechanism became CORS.</div>
+  </div>
+
+  <h2>What a real solution needed</h2>
+  <table>
+    <thead><tr><th style="width:34%">Requirement</th><th style="width:33%">The workarounds</th><th>How CORS answers it</th></tr></thead>
+    <tbody>
+      <tr><td>The <b>server</b> decides who may read</td><td>JSONP: anyone can read</td><td>The server names allowed origins in a response header</td></tr>
+      <tr><td>The page runs <b>no foreign code</b></td><td>JSONP: runs the API's script</td><td>Responses are data handed to <code>fetch()</code></td></tr>
+      <tr><td><b>Old servers stay safe</b> by default</td><td>&mdash;</td><td>No header means no access; nothing changes for servers that never opt in</td></tr>
+      <tr><td>Dangerous requests need <b>consent first</b></td><td>&mdash;</td><td>The preflight asks before the browser sends anything new</td></tr>
+      <tr><td><b>Credentials</b> are opt-in, twice</td><td>Always attached</td><td>The page and the server must both explicitly agree</td></tr>
+    </tbody>
+  </table>
+
+  <div class="story">
+    <div class="slug">Launch night &#183; 12:41 a.m.</div>
+    <p>Someone asks whether JSONP would be quicker. Ren replies with a link to a 2007 research
+    paper and two words: <span class="said">&ldquo;please don't.&rdquo;</span> You open a blank document and write a heading: <b>What CORS actually does</b>. It is time
+    to learn the protocol properly.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 5 &middot; Life before CORS</span><span class="n">0</span></div>
+</section>

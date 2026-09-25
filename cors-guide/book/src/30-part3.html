@@ -1,0 +1,795 @@
+
+<!-- ====================================================================
+     PART III PLATE
+     ==================================================================== -->
+<section class="page plate front">
+  <div class="bg" style="background:radial-gradient(900px 600px at 70% 20%, rgba(224,106,106,.20), transparent 60%),radial-gradient(700px 520px at 15% 95%, rgba(224,168,74,.16), transparent 65%),linear-gradient(178deg,#170d14 0%,#0f0a12 55%,#08060a 100%)"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno" style="color:#ff9fb0">Part III</div>
+    <h1>When the Wall Has Holes</h1>
+    <p class="pl">A CORS policy is a security decision written as a response header. Written
+    well, it opens one precise door. Written carelessly, it quietly switches off the browser's
+    protection for every user of your API. This part explains why that matters, the mistakes
+    behind real incidents, the attack patterns they enable, and one thing CORS was never meant
+    to do.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 310" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- a brick wall with one well-made door and one crack -->
+        <g stroke="#3a2a36" stroke-width="2">
+          <rect x="40" y="60" width="520" height="200" rx="6" fill="#1b1220"/>
+        </g>
+        <g fill="#26192c" stroke="#3a2a36" stroke-width="1.4">
+          <rect x="40" y="60" width="86" height="40"/><rect x="126" y="60" width="86" height="40"/><rect x="212" y="60" width="86" height="40"/><rect x="298" y="60" width="86" height="40"/><rect x="384" y="60" width="86" height="40"/><rect x="470" y="60" width="90" height="40"/>
+          <rect x="40" y="100" width="43" height="40"/><rect x="83" y="100" width="86" height="40"/><rect x="169" y="100" width="86" height="40"/><rect x="341" y="100" width="86" height="40"/><rect x="427" y="100" width="86" height="40"/><rect x="513" y="100" width="47" height="40"/>
+          <rect x="40" y="140" width="86" height="40"/><rect x="126" y="140" width="86" height="40"/><rect x="384" y="140" width="86" height="40"/><rect x="470" y="140" width="90" height="40"/>
+          <rect x="40" y="180" width="43" height="40"/><rect x="83" y="180" width="86" height="40"/><rect x="169" y="180" width="86" height="40"/><rect x="427" y="180" width="86" height="40"/><rect x="513" y="180" width="47" height="40"/>
+          <rect x="40" y="220" width="86" height="40"/><rect x="126" y="220" width="86" height="40"/><rect x="384" y="220" width="86" height="40"/><rect x="470" y="220" width="90" height="40"/>
+        </g>
+        <!-- the good door -->
+        <rect x="255" y="100" width="86" height="160" rx="4" fill="#0e1630" stroke="#4ad3a6" stroke-width="2.4"/>
+        <circle cx="326" cy="184" r="4" fill="#4ad3a6"/>
+        <rect x="266" y="112" width="64" height="22" rx="3" fill="#102a24" stroke="#4ad3a6"/>
+        <text x="298" y="127" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="8" fill="#bff3e0">1 ORIGIN</text>
+        <!-- the crack -->
+        <path d="M150,60 L162,96 L148,120 L170,150 L156,188 L178,222 L166,260" fill="none" stroke="#e06a6a" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M150,60 L162,96 L148,120 L170,150 L156,188 L178,222 L166,260" fill="none" stroke="#ffb4c0" stroke-width="1" stroke-linejoin="round" opacity=".6"/>
+        <text x="163" y="286" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="9" letter-spacing="1.2" fill="#ffb4c0">A CARELESS HEADER</text>
+        <text x="298" y="286" text-anchor="middle" font-family="SF Mono,Menlo,monospace" font-size="9" letter-spacing="1.2" fill="#bff3e0">A DELIBERATE DOOR</text>
+      </svg>
+    </div>
+    <div class="inthis" style="color:#c9a3ad">
+      <b>12</b> Why CORS is a security priority &nbsp;&#183;&nbsp; <b>13</b> Configuration mistakes that matter<br>
+      <b>14</b> Attack patterns, drawn &nbsp;&#183;&nbsp; <b>15</b> Case studies from the real world &nbsp;&#183;&nbsp; <b>16</b> CORS is not CSRF protection
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 12 - WHY CORS IS A SECURITY PRIORITY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 12</div>
+  <h1 class="title">Why CORS is a security priority</h1>
+  <p class="lede">A CORS policy is often the only thing standing between a page your users
+  happen to visit and the data your API holds about them. That makes a single response header
+  one of the most consequential lines in your codebase.</p>
+
+  <div class="story">
+    <div class="slug">Three weeks later &#183; Security review, 10:00 a.m.</div>
+    <p>Ren's backlog ticket has become a meeting. On the screen: a spreadsheet of every Harbor
+    Pay service and the CORS headers it returns. Forty-one rows, some from teams that no longer
+    exist.</p>
+    <p><span class="said">&ldquo;Before we look at any row,&rdquo;</span> Ren says,
+    <span class="said">&ldquo;let's agree on why this is worth a morning.&rdquo;</span></p>
+  </div>
+
+  <h2>Six reasons it deserves attention</h2>
+  <div class="grid g2">
+    <div class="panel tight"><h4 style="margin-top:0">1 &middot; It guards the user's own session</h4>
+      <p class="tiny" style="margin:0">Your authentication works perfectly and still doesn't help:
+      the request <i>really is</i> from the signed-in user's browser, carrying their real cookie. The
+      only question is which page gets to read the answer. That question is CORS.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">2 &middot; APIs are the product now</h4>
+      <p class="tiny" style="margin:0">Single-page apps, mobile back ends and partner integrations put
+      account data, payment details and personal records behind JSON endpoints. Those are exactly the
+      responses CORS decides about.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">3 &middot; Mistakes are silent</h4>
+      <p class="tiny" style="margin:0">A too-strict policy produces red errors and angry tickets. A
+      too-loose policy produces nothing at all &mdash; every test passes. The feedback loop
+      rewards loosening and never punishes it.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">4 &middot; The fix is tempting and tiny</h4>
+      <p class="tiny" style="margin:0">Under launch pressure, the difference between a correct policy
+      and a dangerous one is a few characters. Forums are full of snippets that make errors disappear
+      by trusting everyone.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">5 &middot; Reach is multiplied</h4>
+      <p class="tiny" style="margin:0">A policy bug is not one user's problem. It affects every
+      signed-in user of that API, from every browser, until someone notices.</p></div>
+    <div class="panel tight"><h4 style="margin-top:0">6 &middot; Standards bodies track it</h4>
+      <p class="tiny" style="margin:0">The weakness has its own entries &mdash; CWE-942
+      (<i>Permissive Cross-domain Policy with Untrusted Domains</i>) and CWE-346 (<i>Origin
+      Validation Error</i>) &mdash; and the OWASP Web Security Testing Guide has a dedicated test,
+      WSTG-CLNT-07.</p></div>
+  </div>
+
+  <h2>What is actually at stake</h2>
+  <p>If a policy lets an untrusted origin read <i>credentialed</i> responses, any page a signed-in
+  customer visits can see what that customer sees in your app, through their own session. No
+  password is stolen and no server is breached, so the logs show only normal requests.</p>
+
+  <div class="callout bad"><span class="lbl">The one-line summary.</span> CORS misconfiguration
+  turns your users' browsers against them. It is a privacy and data-exposure problem first, and
+  its blast radius is every signed-in user.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 12 &middot; Why CORS is a security priority</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 12 &middot; continued</div>
+  <h2 style="margin-top:0">Where risk actually lives</h2>
+  <p>Not every permissive header is a problem. Risk depends on two questions: <b>does the
+  response depend on who is asking</b> (cookies, network location, or other ambient
+  credentials), and <b>whom does the policy allow to read it</b>?</p>
+
+  <figure>
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <text x="430" y="16" text-anchor="middle" font-size="8.6" font-weight="700" fill="#59617a" font-family="SF Mono,Menlo,monospace" letter-spacing="1">WHO MAY READ &#8594;</text>
+      <text x="10" y="40" font-size="8.6" font-weight="700" fill="#59617a" font-family="SF Mono,Menlo,monospace" letter-spacing="1">WHAT IT RETURNS &#8595;</text>
+      <text x="300" y="40" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">Exact, reviewed allowlist</text>
+      <text x="560" y="40" text-anchor="middle" font-size="9" font-weight="700" fill="#14181f">Anyone (or effectively anyone)</text>
+      <text x="10" y="112" font-size="9" font-weight="700" fill="#14181f">Public data</text>
+      <text x="10" y="124" font-size="8" fill="#59617a">same for everyone,</text>
+      <text x="10" y="135" font-size="8" fill="#59617a">no credentials</text>
+      <text x="10" y="200" font-size="9" font-weight="700" fill="#14181f">Personal data</text>
+      <text x="10" y="212" font-size="8" fill="#59617a">cookies, sessions, or</text>
+      <text x="10" y="223" font-size="8" fill="#59617a">internal network access</text>
+      <rect x="170" y="54" width="260" height="96" rx="6" fill="#e6f6ee" stroke="#a8d9c1"/>
+      <text x="300" y="96" text-anchor="middle" font-size="10" font-weight="700" fill="#0d7a52">Fine</text>
+      <text x="300" y="112" text-anchor="middle" font-size="8.2" fill="#3e6d5b">more restrictive than needed, harmless</text>
+      <rect x="440" y="54" width="250" height="96" rx="6" fill="#e6f6ee" stroke="#a8d9c1"/>
+      <text x="565" y="96" text-anchor="middle" font-size="10" font-weight="700" fill="#0d7a52">Fine</text>
+      <text x="565" y="112" text-anchor="middle" font-size="8.2" fill="#3e6d5b">Allow-Origin: * for truly public data</text>
+      <rect x="170" y="156" width="260" height="90" rx="6" fill="#e6f6ee" stroke="#a8d9c1"/>
+      <text x="300" y="196" text-anchor="middle" font-size="10" font-weight="700" fill="#0d7a52">The goal</text>
+      <text x="300" y="212" text-anchor="middle" font-size="8.2" fill="#3e6d5b">exact origins + credentials, reviewed</text>
+      <rect x="440" y="156" width="250" height="90" rx="6" fill="#fdeaee" stroke="#c0203f" stroke-width="1.4"/>
+      <text x="565" y="196" text-anchor="middle" font-size="10" font-weight="700" fill="#c0203f">The danger zone</text>
+      <text x="565" y="212" text-anchor="middle" font-size="8.2" fill="#8a4453">every hole in Chapter 13 lands here</text>
+    </svg>
+    <figcaption><b>Figure 12.1</b> &mdash; Where CORS risk lives. Only one quadrant is dangerous,
+    and every mistake in the next chapter is a way of landing in it by accident.</figcaption>
+  </figure>
+
+  <h2>&ldquo;But we have authentication&rdquo;</h2>
+  <p>This is the most common objection in a review, and it misses the point. Authentication
+  answers &ldquo;is this request from Alice?&rdquo; In the danger zone the answer is honestly
+  <i>yes</i> &mdash; Alice's browser sent it, with Alice's cookie. What went wrong is that a page
+  Alice didn't intend to trust got to read the reply. Token-based APIs that never use cookies
+  are far less exposed for the same reason: the browser does not attach a bearer token
+  automatically, so there is no ambient credential to misuse.</p>
+
+  <h2>What a good review asks</h2>
+  <ol class="tight">
+    <li>Which responses from this service depend on cookies, sessions or network location?</li>
+    <li>For those responses, exactly which origins can read them, and who approved each one?</li>
+    <li>How is the <code>Origin</code> header compared &mdash; whole-string equality, or something
+    cleverer (and therefore riskier)?</li>
+    <li>Are the pages on every trusted origin themselves well defended against script injection?</li>
+    <li>Do all responses, including errors and cached ones, carry the right headers and
+    <code>Vary: Origin</code>?</li>
+  </ol>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 10:25 a.m.</div>
+    <p>The team sorts the spreadsheet by the first question. Nineteen services return nothing
+    personal; they can relax. Twenty-two do. Ren highlights those rows in yellow.
+    <span class="said">&ldquo;Now,&rdquo;</span> Ren says, <span class="said">&ldquo;let's see how each
+    one decides who's allowed in.&rdquo;</span></p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 12 &middot; Why CORS is a security priority</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 13 - CONFIGURATION MISTAKES
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 13</div>
+  <h1 class="title">Configuration mistakes that matter</h1>
+  <p class="lede">Almost every serious CORS problem is one of six patterns. Each one looks
+  reasonable in a code review, and each one has a simple, boring fix.</p>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Mistake 1 &#183; Echoing any origin, with credentials</div>
+    <h3>&ldquo;Copy back whatever Origin arrives&rdquo;</h3>
+    <p>The server reads the request's <code>Origin</code> and repeats it in
+    <code>Access-Control-Allow-Origin</code>, together with <code>Allow-Credentials: true</code>.
+    It always &ldquo;works,&rdquo; which is why it spreads. It is also exactly the
+    combination the browser's <code>*</code>-with-credentials rule exists to prevent: every origin
+    on the internet is now trusted with your users' sessions. Watch for framework settings with
+    friendly names &mdash; in some popular middleware, setting the origin option to <code>true</code>
+    means &ldquo;reflect the request's origin.&rdquo;</p>
+    <div class="lesson"><b>Fix:</b> compare the origin against an explicit list and repeat it only
+    on an exact match. If the data is truly public, use <code>*</code> <i>without</i> credentials.</div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Mistake 2 &#183; Loose matching</div>
+    <h3>Prefixes, suffixes, substrings and hand-written patterns</h3>
+    <p>Checks like &ldquo;the origin <i>contains</i> our domain,&rdquo; &ldquo;<i>ends with</i> our
+    domain,&rdquo; or a regular expression with an unescaped dot or a missing anchor all accept
+    more than their authors intended &mdash; including hostnames that someone else can register.
+    The researchers in Chapter&nbsp;15 found this class of bug to be widespread.</p>
+    <div class="lesson"><b>Fix:</b> don't pattern-match origins. Keep a list of complete origin
+    strings (scheme, host and port) and use exact equality. If you must support many
+    subdomains, parse the origin with a URL parser and compare the parsed hostname against an
+    exact set.</div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Mistake 3 &#183; Trusting <code>null</code></div>
+    <h3>Allowing <code>Origin: null</code> &ldquo;for local testing&rdquo;</h3>
+    <p>Developers add <code>null</code> to an allowlist so that a page opened from disk can call the
+    API. But <code>null</code> is shared by every sandboxed iframe, every <code>data:</code> document
+    and every local file on every machine (Chapter&nbsp;3). Trusting it trusts all of them at once.</p>
+    <div class="lesson"><b>Fix:</b> never allowlist <code>null</code>. Serve test pages from a real
+    local origin such as <code>http://localhost:8080</code>, and keep development origins out of
+    production configuration.</div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 13 &middot; Configuration mistakes that matter</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 13 &middot; continued</div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Mistake 4 &#183; Trusting plain http</div>
+    <h3>Allowing <code>http://app.harborpay.example</code> as well as https</h3>
+    <p>An <code>http</code> origin is only as trustworthy as every network between the user and the
+    server. On a hostile Wi-Fi network, content served over plain HTTP can be altered in transit,
+    so trusting the <code>http</code> version of your own site extends your API's trust to whoever
+    controls that network.</p>
+    <div class="lesson"><b>Fix:</b> allow only <code>https</code> origins in production, and use HSTS
+    so that your sites are never loaded over plain HTTP in the first place.</div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Mistake 5 &#183; Trusting every subdomain</div>
+    <h3>&ldquo;Anything under harborpay.example is ours&rdquo;</h3>
+    <p>A company domain accumulates marketing microsites, old campaign pages, third-party-hosted
+    help centers and forgotten staging servers. Trusting all of them means your most sensitive
+    API is only as safe as your least-maintained subdomain &mdash; including any with a
+    cross-site scripting bug or a dangling DNS record pointing at a service someone else can claim.</p>
+    <div class="lesson"><b>Fix:</b> list the specific origins that need access. Treat adding one as
+    a security decision, and remove entries when the site that needed them is retired.</div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Mistake 6 &#183; Network location as a credential</div>
+    <h3><code>Allow-Origin: *</code> on an internal API</h3>
+    <p>&ldquo;It's only reachable from the office network, so <code>*</code> is fine.&rdquo; But the
+    code that makes the request runs <i>inside an employee's browser</i>, which is on the office
+    network. A wildcard on an unauthenticated intranet API lets any page an employee visits read
+    it. Local services on <code>localhost</code> have the same problem (Chapter&nbsp;18).</p>
+    <div class="lesson"><b>Fix:</b> require real authentication on internal services, and never
+    combine &ldquo;trusted because of where it is&rdquo; with <code>*</code>.</div>
+  </div>
+
+  <h2>Plus one that breaks things before it breaks security</h2>
+  <p>A dynamic policy (one that names different origins for different requests) without
+  <code>Vary: Origin</code> lets caches serve one origin's permission to another. Chapter&nbsp;17
+  covers it in depth; the fix is one header, on every response.</p>
+
+  <div class="callout good"><span class="lbl">The pattern behind all six.</span> Every mistake here
+  replaces a <b>short, explicit list of trusted origins</b> with a rule that trusts a category
+  &mdash; &ldquo;whoever asks,&rdquo; &ldquo;anything that looks like us,&rdquo; &ldquo;anything local.&rdquo;
+  Categories grow without anyone deciding. Lists only grow when someone does.</div>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 11:40 a.m.</div>
+    <p>Of the twenty-two yellow rows, fourteen use exact lists. Five check whether the origin
+    <i>ends with</i> the company domain; two trust <code>null</code> for an old test harness; and one
+    forgotten reporting service echoes every origin with credentials. Ren opens eight tickets
+    and marks the last one urgent.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 13 &middot; Configuration mistakes that matter</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 14 - ATTACK PATTERNS, DRAWN
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 14</div>
+  <h1 class="title">Attack patterns, drawn</h1>
+  <p class="lede">You cannot defend against a shape you have never seen. This chapter draws the
+  seven patterns behind real cross-origin incidents, so you can recognize them in a design review,
+  spot their traces in your logs, and know exactly where to break the chain.</p>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 1:30 p.m.</div>
+    <p>After lunch Ren stands at the whiteboard. <span class="said">&ldquo;Tickets fix today's
+    bugs,&rdquo;</span> Ren says. <span class="said">&ldquo;Patterns stop next year's. Every
+    cross-origin attack I've seen is one of seven shapes.&rdquo;</span> Ren draws the first one.</p>
+  </div>
+
+  <h2>How to read the diagrams</h2>
+  <div class="grid g3" style="margin-bottom:4pt">
+    <div class="panel tight"><p class="tiny" style="margin:0"><b style="color:var(--bad)">Red dashed arrows</b>
+    are steps an attacker can cause or influence &mdash; usually just by getting a signed-in user to
+    open a web page.</p></div>
+    <div class="panel tight"><p class="tiny" style="margin:0"><b>Solid arrows</b> are the normal behavior
+    of browsers and servers. Most attacks need nothing unusual from either.</p></div>
+    <div class="panel tight"><p class="tiny" style="margin:0"><b style="color:var(--good)">Green shields</b>
+    mark where a defense breaks the chain. One shield anywhere on the path is enough.</p></div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--bad);margin-top:8pt">
+    <div class="meta" style="color:var(--bad)">Pattern 1 &#183; The borrowed session</div>
+    <h3>A hostile page reads your API through the user's own session</h3>
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs>
+        <marker id="a14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker>
+        <marker id="a14k" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#14181f"/></marker>
+        <g id="shield"><path d="M0,-13 L11,-8.5 L11,2 C11,9 5.5,13.5 0,16 C-5.5,13.5 -11,9 -11,2 L-11,-8.5 Z" fill="#0d7a52"/><path d="M-5,1 L-1,5.5 L6,-3.5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </defs>
+      <!-- the victim's browser -->
+      <rect x="0" y="10" width="360" height="180" rx="8" fill="#f5f7fc" stroke="#b9c2da"/>
+      <text x="14" y="30" font-size="9.5" font-weight="700" fill="#14181f">Signed-in user's browser</text>
+      <text x="14" y="43" font-size="7.8" fill="#59617a">holds a session cookie for the API</text>
+      <rect x="14" y="58" width="150" height="54" rx="6" fill="#fff" stroke="#2f4fd0"/>
+      <text x="89" y="80" text-anchor="middle" font-size="9" font-weight="700">Tab 1: your app</text>
+      <text x="89" y="94" text-anchor="middle" font-size="7.8" fill="#59617a">signed in, idle</text>
+      <rect x="14" y="124" width="150" height="54" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="89" y="146" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Tab 2: untrusted page</text>
+      <text x="89" y="160" text-anchor="middle" font-size="7.8" fill="#8a4453">opened from a link or an ad</text>
+      <!-- API -->
+      <rect x="520" y="60" width="170" height="80" rx="8" fill="#fff" stroke="#a8620a" stroke-width="1.3"/>
+      <text x="605" y="88" text-anchor="middle" font-size="9.5" font-weight="700">Your API</text>
+      <text x="605" y="103" text-anchor="middle" font-size="7.8" fill="#7c5a2a">permissive policy: names</text>
+      <text x="605" y="115" text-anchor="middle" font-size="7.8" fill="#7c5a2a">any origin, allows credentials</text>
+      <!-- flows -->
+      <path d="M164,140 L515,90" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" fill="none" marker-end="url(#a14r)"/>
+      <text x="372" y="96" font-size="7.8" fill="#c0203f">1. request, cookie attached</text>
+      <path d="M515,120 L360,158" stroke="#14181f" stroke-width="1.4" fill="none" marker-end="url(#a14k)"/>
+      <text x="398" y="164" font-size="7.8" fill="#14181f">2. data + permission for that page</text>
+      <path d="M360,170 L168,166" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" fill="none" marker-end="url(#a14r)"/>
+      <text x="190" y="184" font-size="7.8" fill="#c0203f">3. browser lets the page read it</text>
+      <use href="#shield" x="470" y="72"/>
+      <text x="470" y="52" text-anchor="middle" font-size="7.8" font-weight="700" fill="#0d7a52">exact allowlist</text>
+    </svg>
+    <div class="grid g3" style="gap:10pt">
+      <p class="tiny" style="margin:0"><b>What happens.</b> Nothing is stolen from the server and no
+      password is guessed. The API does what it always does &mdash; answers the user's browser &mdash;
+      and its CORS policy tells the browser that the untrusted page may read the answer.</p>
+      <p class="tiny" style="margin:0"><b>Warning signs.</b> Credentialed responses whose
+      <code>Access-Control-Allow-Origin</code> names an origin you never approved; <code>Origin</code>
+      values in your logs that no team recognizes.</p>
+      <p class="tiny" style="margin:0"><b>Break the chain.</b> An exact allowlist (Chapter&nbsp;13), no
+      credentials where the data isn't personal, and cookies with <code>SameSite</code> so the session
+      isn't attached cross-site in the first place.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Attack patterns, drawn</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 14 &middot; continued</div>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Pattern 2 &#183; The look-alike</div>
+    <h3>An origin that merely resembles yours passes a loose check</h3>
+    <svg viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs>
+        <marker id="b14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker>
+        <marker id="b14g" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#0d7a52"/></marker>
+      </defs>
+      <rect x="0" y="50" width="150" height="50" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="75" y="71" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Look-alike origin</text>
+      <text x="75" y="85" text-anchor="middle" font-size="7.6" fill="#8a4453">registered by someone else</text>
+      <!-- loose lane -->
+      <rect x="230" y="6" width="190" height="46" rx="6" fill="#fdf1e0" stroke="#a8620a"/>
+      <text x="325" y="25" text-anchor="middle" font-size="8.6" font-weight="700">Loose check</text>
+      <text x="325" y="39" text-anchor="middle" font-size="7.6" fill="#7c5a2a">contains / starts with / ends with</text>
+      <path d="M150,66 L226,34" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#b14r)"/>
+      <path d="M420,29 L516,29" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#b14r)"/>
+      <rect x="520" y="8" width="178" height="42" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="609" y="26" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">&#8220;Looks like us&rdquo; &#8594; trusted</text>
+      <text x="609" y="40" text-anchor="middle" font-size="7.6" fill="#8a4453">Pattern 1 follows</text>
+      <!-- exact lane -->
+      <rect x="230" y="98" width="190" height="46" rx="6" fill="#e6f6ee" stroke="#0d7a52"/>
+      <text x="325" y="117" text-anchor="middle" font-size="8.6" font-weight="700">Exact list lookup</text>
+      <text x="325" y="131" text-anchor="middle" font-size="7.6" fill="#3e6d5b">whole string, equality only</text>
+      <path d="M150,86 L226,118" stroke="#14181f" stroke-width="1.2"/>
+      <path d="M420,121 L516,121" stroke="#0d7a52" stroke-width="1.5" marker-end="url(#b14g)"/>
+      <rect x="520" y="100" width="178" height="42" rx="6" fill="#e6f6ee" stroke="#0d7a52"/>
+      <text x="609" y="118" text-anchor="middle" font-size="8.6" font-weight="700" fill="#0d7a52">Not on the list &#8594; no headers</text>
+      <text x="609" y="132" text-anchor="middle" font-size="7.6" fill="#3e6d5b">the browser withholds the data</text>
+      <use href="#shield" x="468" y="121"/>
+    </svg>
+    <div class="grid g3" style="gap:10pt">
+      <p class="tiny" style="margin:0"><b>What happens.</b> A string test written to recognize your domain also accepts names
+      that contain or end with the same characters &mdash; names anyone can register.</p>
+      <p class="tiny" style="margin:0"><b>Warning signs.</b> Origin checks built from <code>includes</code>, <code>endsWith</code>,
+      or hand-written regular expressions; allowlists described in words rather than listed.</p>
+      <p class="tiny" style="margin:0"><b>Break the chain.</b> Exact equality against complete origin strings, and tests that
+      prove near-miss origins are refused (Chapter&nbsp;20).</p>
+    </div>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Pattern 3 &#183; The compromised friend</div>
+    <h3>A trusted origin is taken over, and brings its trust with it</h3>
+    <svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs><marker id="c14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker></defs>
+      <rect x="0" y="4" width="330" height="132" rx="8" fill="#f5f7fc" stroke="#b9c2da"/>
+      <text x="14" y="22" font-size="9" font-weight="700">Your CORS allowlist</text>
+      <rect x="14" y="34" width="96" height="40" rx="5" fill="#fff" stroke="#0d7a52"/><text x="62" y="58" text-anchor="middle" font-size="8">Main app</text>
+      <rect x="118" y="34" width="96" height="40" rx="5" fill="#fff" stroke="#0d7a52"/><text x="166" y="58" text-anchor="middle" font-size="8">Partner portal</text>
+      <rect x="222" y="34" width="96" height="40" rx="5" fill="#fdeaee" stroke="#c0203f" stroke-width="1.4"/>
+      <text x="270" y="52" text-anchor="middle" font-size="8" fill="#c0203f" font-weight="700">Old campaign</text>
+      <text x="270" y="65" text-anchor="middle" font-size="7.2" fill="#8a4453">site, unmaintained</text>
+      <path d="M306,34 L312,46 L306,56 L314,66 L309,74" fill="none" stroke="#c0203f" stroke-width="1.6"/>
+      <text x="14" y="96" font-size="7.8" fill="#8a4453">Entry points: a script-injection bug, or a DNS</text>
+      <text x="14" y="108" font-size="7.8" fill="#8a4453">record left pointing at a service someone else</text>
+      <text x="14" y="120" font-size="7.8" fill="#8a4453">can now claim (a &#8220;dangling&#8221; subdomain).</text>
+      <path d="M318,54 L516,70" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#c14r)"/>
+      <text x="360" y="52" font-size="7.8" fill="#c0203f">requests carry a trusted Origin</text>
+      <rect x="520" y="44" width="178" height="56" rx="8" fill="#fff" stroke="#a8620a"/>
+      <text x="609" y="68" text-anchor="middle" font-size="9.5" font-weight="700">Your API</text>
+      <text x="609" y="83" text-anchor="middle" font-size="7.6" fill="#7c5a2a">policy works as designed</text>
+      <use href="#shield" x="540" y="120"/>
+      <text x="556" y="118" font-size="7.8" font-weight="700" fill="#0d7a52">short list, owned sites,</text>
+      <text x="556" y="130" font-size="7.8" font-weight="700" fill="#0d7a52">CSP, DNS hygiene</text>
+    </svg>
+    <div class="grid g3" style="gap:10pt">
+      <p class="tiny" style="margin:0"><b>What happens.</b> The policy is correct, but one of the
+      origins it trusts is no longer trustworthy. Anything running there speaks with that origin's
+      voice.</p>
+      <p class="tiny" style="margin:0"><b>Warning signs.</b> Allowlist entries nobody owns; subdomains
+      whose DNS points at deleted cloud resources; old sites without a content security policy.</p>
+      <p class="tiny" style="margin:0"><b>Break the chain.</b> Trust only what you maintain, give every
+      entry an owner, remove retired sites, and monitor DNS for dangling records.</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Attack patterns, drawn</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 14 &middot; continued</div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Pattern 4 &#183; The anonymous frame</div>
+    <h3>Trusting <code>null</code> trusts everyone who can be anonymous</h3>
+    <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs><marker id="d14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker></defs>
+      <g font-size="8">
+        <rect x="0" y="4" width="170" height="30" rx="5" fill="#fff" stroke="#b9c2da"/><text x="85" y="23" text-anchor="middle">Sandboxed iframe on any site</text>
+        <rect x="0" y="45" width="170" height="30" rx="5" fill="#fff" stroke="#b9c2da"/><text x="85" y="64" text-anchor="middle">A file opened from disk</text>
+        <rect x="0" y="86" width="170" height="30" rx="5" fill="#fff" stroke="#b9c2da"/><text x="85" y="105" text-anchor="middle">A data: document</text>
+      </g>
+      <g stroke="#c0203f" stroke-width="1.3" stroke-dasharray="5 4" fill="none">
+        <path d="M170,19 L262,56"/><path d="M170,60 L262,60"/><path d="M170,101 L262,64"/>
+      </g>
+      <rect x="264" y="40" width="150" height="40" rx="20" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="339" y="64" text-anchor="middle" font-size="9.5" font-weight="700" font-family="SF Mono,Menlo,monospace" fill="#c0203f">Origin: null</text>
+      <path d="M414,60 L516,60" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#d14r)"/>
+      <rect x="520" y="36" width="178" height="48" rx="8" fill="#fff" stroke="#a8620a"/>
+      <text x="609" y="56" text-anchor="middle" font-size="9" font-weight="700">API that allows null</text>
+      <text x="609" y="70" text-anchor="middle" font-size="7.6" fill="#7c5a2a">&#8220;for local testing&#8221;</text>
+      <use href="#shield" x="466" y="92"/>
+      <text x="486" y="108" font-size="7.8" font-weight="700" fill="#0d7a52">never allowlist null</text>
+    </svg>
+    <p class="tiny" style="margin:0"><b>What happens.</b> Many unrelated documents share the same
+    <code>null</code> origin, and some of them can be created by any website. <b>Warning signs:</b>
+    <code>null</code> in an allowlist or a test configuration that reached production.
+    <b>Break the chain:</b> serve test pages from a real local origin and refuse <code>null</code>
+    everywhere.</p>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Pattern 5 &#183; The blind write</div>
+    <h3>The response is hidden, but the action already happened</h3>
+    <svg viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs>
+        <marker id="e14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker>
+        <marker id="e14k" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#14181f"/></marker>
+      </defs>
+      <rect x="0" y="36" width="160" height="56" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="80" y="60" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Untrusted page</text>
+      <text x="80" y="74" text-anchor="middle" font-size="7.6" fill="#8a4453">in a signed-in user's browser</text>
+      <path d="M160,52 L386,52" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#e14r)"/>
+      <text x="170" y="44" font-size="7.8" fill="#c0203f">1. a form-like request, cookie attached</text>
+      <rect x="390" y="20" width="150" height="90" rx="8" fill="#fff" stroke="#a8620a"/>
+      <text x="465" y="44" text-anchor="middle" font-size="9" font-weight="700">State-changing</text>
+      <text x="465" y="57" text-anchor="middle" font-size="9" font-weight="700">endpoint</text>
+      <rect x="410" y="70" width="110" height="26" rx="4" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="465" y="87" text-anchor="middle" font-size="8" fill="#c0203f" font-weight="700">2. action performed</text>
+      <path d="M386,80 L164,80" stroke="#14181f" stroke-width="1.3" marker-end="url(#e14k)"/>
+      <text x="176" y="96" font-size="7.8" fill="#14181f">3. response unreadable &#8212; too late to matter</text>
+      <use href="#shield" x="290" y="118"/><text x="306" y="124" font-size="7.8" font-weight="700" fill="#0d7a52">SameSite cookies</text>
+      <use href="#shield" x="578" y="46"/><text x="594" y="42" font-size="7.8" font-weight="700" fill="#0d7a52">CSRF token,</text>
+      <text x="594" y="54" font-size="7.8" font-weight="700" fill="#0d7a52">JSON only,</text>
+      <text x="594" y="66" font-size="7.8" font-weight="700" fill="#0d7a52">Origin check</text>
+    </svg>
+    <p class="tiny" style="margin:0"><b>What happens.</b> CORS only protects reading (Chapter&nbsp;16), so a
+    request a form could send changes data even though its answer is withheld. <b>Warning signs:</b>
+    write endpoints that accept form encodings; state changes arriving with
+    <code>Sec-Fetch-Site: cross-site</code>. <b>Break the chain:</b> <code>SameSite</code> cookies plus a
+    server-side check on every write.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Attack patterns, drawn</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 14 &middot; continued</div>
+
+  <div class="case" style="border-left:3pt solid var(--warn)">
+    <div class="meta">Pattern 6 &#183; The confused cache</div>
+    <h3>One requester's answer is served to another</h3>
+    <svg viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs>
+        <marker id="f14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker>
+        <marker id="f14k" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#14181f"/></marker>
+      </defs>
+      <rect x="0" y="6" width="150" height="40" rx="6" fill="#fff" stroke="#2f4fd0"/><text x="75" y="30" text-anchor="middle" font-size="8.6" font-weight="700">Requester A</text>
+      <rect x="0" y="76" width="150" height="40" rx="6" fill="#fff" stroke="#c0203f"/><text x="75" y="100" text-anchor="middle" font-size="8.6" font-weight="700" fill="#c0203f">Requester B</text>
+      <rect x="260" y="36" width="170" height="50" rx="6" fill="#fdf1e0" stroke="#a8620a"/>
+      <text x="345" y="57" text-anchor="middle" font-size="9" font-weight="700">Shared cache</text>
+      <text x="345" y="71" text-anchor="middle" font-size="7.6" fill="#7c5a2a">keyed on URL only</text>
+      <rect x="540" y="36" width="158" height="50" rx="6" fill="#fff" stroke="#b9c2da"/><text x="619" y="65" text-anchor="middle" font-size="9" font-weight="700">API</text>
+      <path d="M150,26 L256,50" stroke="#14181f" stroke-width="1.3" marker-end="url(#f14k)"/>
+      <text x="168" y="10" font-size="7.6">1. A's response is stored:</text>
+      <text x="168" y="21" font-size="7.6">A's permission, maybe A's data</text>
+      <path d="M430,61 L536,61" stroke="#14181f" stroke-width="1.3"/>
+      <path d="M256,74 L154,94" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#f14r)"/>
+      <text x="170" y="112" font-size="7.6" fill="#c0203f">2. B receives the stored copy</text>
+      <use href="#shield" x="484" y="96"/><text x="500" y="102" font-size="7.8" font-weight="700" fill="#0d7a52">Vary: Origin + Cache-Control: private</text>
+    </svg>
+    <p class="tiny" style="margin:0"><b>What happens.</b> A cache that doesn't know the response depends
+    on who asked hands one requester's permission, or one user's data, to the next. <b>Warning signs:</b>
+    CORS errors that come and go; personalized responses served with public cache headers.
+    <b>Break the chain:</b> <code>Vary: Origin</code> on every dynamic CORS response, and private or no-store
+    caching for anything personal (Chapter&nbsp;17).</p>
+  </div>
+
+  <div class="case" style="border-left:3pt solid var(--bad)">
+    <div class="meta" style="color:var(--bad)">Pattern 7 &#183; The inside-out request</div>
+    <h3>A public page reaches into the user's own network</h3>
+    <svg viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif" style="margin:4pt 0 6pt">
+      <defs><marker id="g14r" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0203f"/></marker></defs>
+      <rect x="0" y="40" width="150" height="50" rx="6" fill="#fdeaee" stroke="#c0203f"/>
+      <text x="75" y="62" text-anchor="middle" font-size="9" font-weight="700" fill="#c0203f">Public web page</text>
+      <text x="75" y="76" text-anchor="middle" font-size="7.6" fill="#8a4453">running in the user's browser</text>
+      <rect x="250" y="4" width="448" height="122" rx="8" fill="#fdf1e0" stroke="#efcf9e"/>
+      <text x="264" y="22" font-size="8.6" font-weight="700" fill="#a8620a">The user's local network and machine</text>
+      <rect x="300" y="36" width="150" height="36" rx="5" fill="#fff" stroke="#a8620a"/><text x="375" y="58" text-anchor="middle" font-size="8.2">Router or printer admin</text>
+      <rect x="300" y="80" width="150" height="36" rx="5" fill="#fff" stroke="#a8620a"/><text x="375" y="102" text-anchor="middle" font-size="8.2">Service on localhost</text>
+      <path d="M150,58 L296,54" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#g14r)"/>
+      <path d="M150,72 L296,98" stroke="#c0203f" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#g14r)"/>
+      <text x="160" y="44" font-size="7.4" fill="#c0203f">direct requests</text>
+      <text x="160" y="116" font-size="7.4" fill="#c0203f">rebound name</text>
+      <use href="#shield" x="222" y="66"/>
+      <text x="470" y="46" font-size="7.8" font-weight="700" fill="#0d7a52">Local Network Access prompt</text>
+      <use href="#shield" x="468" y="86"/>
+      <text x="484" y="84" font-size="7.8" font-weight="700" fill="#0d7a52">Host validation, authentication,</text>
+      <text x="484" y="96" font-size="7.8" font-weight="700" fill="#0d7a52">user confirmation</text>
+    </svg>
+    <p class="tiny" style="margin:0"><b>What happens.</b> Devices and helpers that trust &ldquo;anyone on my
+    network&rdquo; receive requests from web pages, because the browser is on that network.
+    <b>Warning signs:</b> local services with no authentication; requests with unexpected
+    <code>Host</code> headers. <b>Break the chain:</b> the practices in Chapter&nbsp;18.</p>
+  </div>
+
+  <h2>One page, seven shapes</h2>
+  <table class="dense">
+    <thead><tr><th style="width:26%">Pattern</th><th style="width:36%">What the attacker needs</th><th>Primary defense</th></tr></thead>
+    <tbody>
+      <tr><td>1 Borrowed session</td><td>A permissive credentialed policy</td><td>Exact allowlist; <code>SameSite</code></td></tr>
+      <tr><td>2 Look-alike</td><td>A loose origin check</td><td>Exact equality, tested</td></tr>
+      <tr><td>3 Compromised friend</td><td>A weak site on your allowlist</td><td>Short, owned list; CSP; DNS hygiene</td></tr>
+      <tr><td>4 Anonymous frame</td><td><code>null</code> on your allowlist</td><td>Never trust <code>null</code></td></tr>
+      <tr><td>5 Blind write</td><td>A write endpoint that accepts simple requests</td><td>CSRF defenses on every write</td></tr>
+      <tr><td>6 Confused cache</td><td>A cache without <code>Vary: Origin</code></td><td><code>Vary</code>; private caching</td></tr>
+      <tr><td>7 Inside-out request</td><td>A local service that trusts its network</td><td>Host checks; authentication</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Attack patterns, drawn</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 14 &middot; continued</div>
+  <h2 style="margin-top:0">Being prepared: detect, respond, learn</h2>
+  <p>A prepared team knows what an attempt looks like in its logs and what to do in the first
+  hour. Most of these signals are already in your access logs.</p>
+
+  <h3>Signals worth alerting on</h3>
+  <table class="dense">
+    <thead><tr><th style="width:38%">Signal</th><th style="width:22%">Where to look</th><th>What it may mean</th></tr></thead>
+    <tbody>
+      <tr><td>A credentialed response names an origin that isn't on your list</td><td>Response logging, API gateway</td><td>A reflecting or loosely matched policy (patterns 1, 2). Should be impossible; treat as an incident.</td></tr>
+      <tr><td>Unfamiliar <code>Origin</code> values on authenticated endpoints</td><td>Access logs</td><td>Someone probing your policy, or an integration nobody documented.</td></tr>
+      <tr><td><code>Origin: null</code> on API traffic</td><td>Access logs</td><td>Sandboxed or local documents calling you (pattern 4).</td></tr>
+      <tr><td>State changes with <code>Sec-Fetch-Site: cross-site</code></td><td>Access logs, WAF</td><td>Possible forged writes (pattern 5).</td></tr>
+      <tr><td>Unexpected <code>Host</code> headers on local or internal services</td><td>Service logs</td><td>Possible DNS rebinding (pattern 7).</td></tr>
+      <tr><td>Subdomains pointing at deleted cloud resources</td><td>DNS inventory</td><td>A trusted origin waiting to be claimed (pattern 3).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The first hour of a CORS incident</h3>
+  <ol class="tight">
+    <li><b>Contain.</b> Replace the faulty rule with an exact allowlist, or temporarily remove
+    <code>Allow-Credentials</code>, and deploy. This is usually a one-line configuration change.</li>
+    <li><b>Purge.</b> Clear CDN and proxy caches that may hold responses with the old headers.</li>
+    <li><b>Scope.</b> Search logs for credentialed requests whose <code>Origin</code> was not on the
+    approved list: which origins, which endpoints, which users, over what period.</li>
+    <li><b>Protect users.</b> If personal data may have been read, invalidate the affected sessions and
+    follow your notification obligations.</li>
+    <li><b>Prevent recurrence.</b> Add the offending origin pattern to your CORS test suite
+    (Chapter&nbsp;20) so the same mistake fails a build next time.</li>
+  </ol>
+
+  <div class="callout good"><span class="lbl">The preparation that matters most.</span> An inventory of
+  every service's CORS policy, an owner for every allowed origin, and automated tests that fail on
+  anything broader. Teams that have these three rarely need the incident checklist above.</div>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 3:05 p.m.</div>
+    <p>Ren pins a photo of the whiteboard to the team channel: seven shapes, seven green shields.
+    <span class="said">&ldquo;Find the shape first,&rdquo;</span> Ren says. <span class="said">&ldquo;The fix is
+    usually already drawn.&rdquo;</span></p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 14 &middot; Attack patterns, drawn</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 15 - CASE STUDIES
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 15</div>
+  <h1 class="title">Case studies from the real world</h1>
+  <p class="lede">These are public incidents and published research, summarized from the original
+  disclosures. Each one is told for its lesson: what the system trusted, why that trust was
+  misplaced, and what fixed it.</p>
+
+  <div class="case">
+    <div class="meta">Research &#183; October 2016 &#183; OWASP AppSec USA</div>
+    <h3>&ldquo;Exploiting CORS Misconfigurations for Bitcoins and Bounties&rdquo;</h3>
+    <p>James Kettle of PortSwigger surveyed how real websites validated the <code>Origin</code>
+    header and found that many used simple string operations &mdash; reflection, prefix and
+    suffix checks &mdash; rather than exact comparison. Among the findings he described were
+    cryptocurrency exchanges whose CORS policies could have let another website read sensitive
+    account data from signed-in users; the issues were reported to the affected organizations.
+    The talk also showed how CORS mistakes combine with other bugs, such as cache behavior and
+    trusted-but-vulnerable subdomains.</p>
+    <div class="lesson"><b>Lesson:</b> the way you <i>compare</i> origins is security-critical. The
+    most common bugs were not exotic; they were convenient string checks (Chapter&nbsp;13,
+    mistakes 1 and 2).</div>
+  </div>
+
+  <div class="case">
+    <div class="meta">Research &#183; August 2018 &#183; USENIX Security Symposium</div>
+    <h3>&ldquo;We Still Don't Have Secure Cross-Domain Requests: an Empirical Study of CORS&rdquo;</h3>
+    <p>Jianjun Chen and colleagues measured CORS deployments across a large set of popular
+    websites. They found insecure misconfigurations to be common, identified weaknesses in how
+    CORS interacts with other web mechanisms, and noted that many sites whose policies varied by
+    origin failed to send <code>Vary: Origin</code>. The authors released an open-source scanner,
+    CORScanner, and proposed clarifications, some of which were incorporated into the specification.</p>
+    <div class="lesson"><b>Lesson:</b> CORS mistakes are not rare accidents but a systematic
+    pattern, driven by an inexpressive policy language and poor developer understanding. Treat
+    CORS as something to <i>test</i>, not assume.</div>
+  </div>
+
+  <div class="case">
+    <div class="meta">Web security history &#183; October 2005</div>
+    <h3>The Samy worm</h3>
+    <p>A cross-site scripting flaw on MySpace let a user named Samy Kamkar put a script in a profile
+    page. Anyone who viewed the profile ran the script, which added Samy as a friend and copied
+    itself to the viewer's own profile. It reached over a million profiles in about a day, and
+    MySpace went offline to clean it up.</p>
+    <div class="lesson"><b>Lesson for CORS:</b> the same-origin policy only separates origins; it
+    cannot protect an origin from script running <i>inside</i> it. Every origin on your CORS
+    allowlist extends its trust to your API, so each one must be defended against script
+    injection &mdash; a bug on a trusted origin is a bug in your API's security.</div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 15 &middot; Case studies from the real world</span><span class="n">0</span></div>
+</section>
+
+<section class="page">
+  <div class="chnum">Chapter 15 &middot; continued</div>
+
+  <div class="case">
+    <div class="meta">Vulnerability &#183; July 2019 &#183; CVE-2019-13450</div>
+    <h3>A video-conferencing app's localhost web server</h3>
+    <p>Security researcher Jonathan Leitschuh disclosed that the Zoom client for macOS installed a
+    local web server, listening on <code>localhost</code> port 19421, so that websites could launch
+    meetings with one click. Any website could send it requests, and it could join a user to a
+    meeting &mdash; with video on in some configurations &mdash; without meaningful confirmation. Because
+    CORS prevented pages from reading the server's responses, the app reportedly signaled results
+    through the dimensions of an image instead. The server also remained installed after the app
+    was removed. Zoom shipped updates removing the server, and Apple pushed a silent macOS update
+    to remove it from affected machines.</p>
+    <div class="lesson"><b>Lesson:</b> a local service is reachable from every web page the user
+    opens. CORS only limits <i>reading</i>; requests still arrive and actions still happen.
+    Local services need explicit user confirmation and real authentication, not reliance on
+    being &ldquo;only on localhost&rdquo; (Chapter&nbsp;18).</div>
+  </div>
+
+  <div class="case">
+    <div class="meta">Vulnerability &#183; January 2018 &#183; CVE-2018-5702</div>
+    <h3>A BitTorrent client's control interface and DNS rebinding</h3>
+    <p>Tavis Ormandy of Google Project Zero reported that the Transmission BitTorrent client's
+    daemon, which accepted JSON-RPC requests on a local port, could be reached through a
+    <b>DNS rebinding</b> attack: a hostname that first resolves to an attacker's server and later
+    to <code>127.0.0.1</code>, so the browser believes it is still talking to the same origin. The
+    fix added a check on the HTTP <code>Host</code> header, so that the daemon only answers requests
+    addressed to names it expects.</p>
+    <div class="lesson"><b>Lesson:</b> the same-origin policy is based on names, and DNS can change
+    what a name points to. Services on local or private addresses must validate the
+    <code>Host</code> header and require authentication. Chapter&nbsp;18 shows how browsers have since
+    added their own protections.</div>
+  </div>
+
+  <h2>What the five cases have in common</h2>
+  <table class="dense">
+    <thead><tr><th style="width:28%">Case</th><th style="width:36%">What was trusted</th><th>The durable fix</th></tr></thead>
+    <tbody>
+      <tr><td>2016 research</td><td>Origins that merely <i>resembled</i> trusted ones</td><td>Exact, listed origins</td></tr>
+      <tr><td>2018 measurement</td><td>That CORS policies were correct by default</td><td>Testing policies as code, plus <code>Vary: Origin</code></td></tr>
+      <tr><td>Samy, 2005</td><td>Everything running inside a trusted origin</td><td>Output encoding, content security policy</td></tr>
+      <tr><td>Zoom, 2019</td><td>Being reachable only from localhost</td><td>User confirmation and authentication</td></tr>
+      <tr><td>Transmission, 2018</td><td>That a name always means the same machine</td><td><code>Host</code> validation and authentication</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pull">In every case, something was trusted because of <i>where a request seemed to
+  come from</i>. Durable fixes replaced that assumption with an explicit decision.</div>
+
+  <div class="pfoot"><span class="ch">Chapter 15 &middot; Case studies from the real world</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     CH 16 - CORS IS NOT CSRF PROTECTION
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Chapter 16</div>
+  <h1 class="title">CORS is not CSRF protection</h1>
+  <p class="lede">CORS decides who may <i>read</i> a response. Cross-site request forgery is about
+  requests that <i>change</i> something. Confusing the two leaves real holes.</p>
+
+  <h2>The gap, stated plainly</h2>
+  <p>Simple requests (Chapter&nbsp;7) reach the server before any CORS check, often with the
+  user's cookies. If one moves money or deletes a record, the server does it; the browser then
+  hides the response, but the damage is done. That is <b>cross-site request forgery</b> (CSRF),
+  and no CORS header prevents it.</p>
+
+  <figure>
+    <svg viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <rect x="0" y="0" width="340" height="130" rx="8" fill="#eaeeff" stroke="#c6d0f5"/>
+      <text x="16" y="24" font-size="10.5" font-weight="700" fill="#2f4fd0">WHAT CORS CONTROLS</text>
+      <text x="16" y="48" font-size="9" fill="#14181f">&#10003; Whether a page may <tspan font-weight="700">read</tspan> a response</text>
+      <text x="16" y="66" font-size="9" fill="#14181f">&#10003; Whether <tspan font-weight="700">non-simple</tspan> requests are sent</text>
+      <text x="30" y="80" font-size="9" fill="#14181f">(through the preflight)</text>
+      <text x="16" y="104" font-size="8.4" fill="#59617a">Protects confidentiality of responses.</text>
+      <rect x="360" y="0" width="340" height="130" rx="8" fill="#fdeaee" stroke="#f0b8c4"/>
+      <text x="376" y="24" font-size="10.5" font-weight="700" fill="#c0203f">WHAT CORS DOES NOT CONTROL</text>
+      <text x="376" y="48" font-size="9" fill="#14181f">&#10007; Whether a <tspan font-weight="700">simple</tspan> request is sent</text>
+      <text x="376" y="66" font-size="9" fill="#14181f">&#10007; Whether the server <tspan font-weight="700">acts</tspan> on it</text>
+      <text x="376" y="84" font-size="9" fill="#14181f">&#10007; Requests from outside a browser</text>
+      <text x="376" y="104" font-size="8.4" fill="#8a4453">Integrity of actions needs other defenses.</text>
+    </svg>
+    <figcaption><b>Figure 16.1</b> &mdash; Protecting what a request can <i>do</i> is a separate job.</figcaption>
+  </figure>
+
+  <h2>Defenses that do protect state-changing endpoints</h2>
+  <table>
+    <thead><tr><th style="width:27%">Defense</th><th>How it works</th></tr></thead>
+    <tbody>
+      <tr><td><b>SameSite cookies</b></td><td><code>Lax</code> or <code>Strict</code> keeps the session cookie off cross-site requests. A strong default, but it is about <i>sites</i>, so sibling subdomains are not separated.</td></tr>
+      <tr><td><b>Anti-CSRF tokens</b></td><td>A secret per-session value in the server's own pages, required on every state change. Other sites cannot read it, so they cannot include it.</td></tr>
+      <tr><td><b>Require a non-simple request</b></td><td>Accept state changes only as strictly checked <code>application/json</code> or with a custom header. Forms cannot send those, and scripts must pass your preflight.</td></tr>
+      <tr><td><b>Check <code>Origin</code> on writes</b></td><td>Reject state-changing requests whose <code>Origin</code> is present and not on your list. Cheap, and effective against browser-based forgery.</td></tr>
+      <tr><td><b>Fetch Metadata</b></td><td>Modern browsers send <code>Sec-Fetch-Site</code> (<code>same-origin</code>, <code>same-site</code>, <code>cross-site</code>, <code>none</code>). A server can refuse cross-site requests to sensitive endpoints outright (Chapter&nbsp;19).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><span class="lbl">Layer them.</span> Use <code>SameSite</code> cookies
+  <i>and</i> at least one server-side check on every state-changing endpoint.</div>
+
+  <div class="story">
+    <div class="slug">Security review &#183; 12:15 p.m.</div>
+    <p>A developer on the payments team admits the transfer endpoint also accepts form posts
+    &mdash; <span class="said">&ldquo;for an old mobile client.&rdquo;</span> Nobody says anything
+    for a moment. Then the team adds a ninth ticket: <b>require JSON and check Origin on every
+    write</b>.</p>
+  </div>
+
+  <div class="pfoot"><span class="ch">Chapter 16 &middot; CORS is not CSRF protection</span><span class="n">0</span></div>
+</section>

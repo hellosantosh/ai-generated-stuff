@@ -1,0 +1,128 @@
+
+<!-- ====================================================================
+     GLOSSARY
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Glossary</h1>
+  <p class="lede">Every term in one place, with the chapter that explains it.</p>
+
+  <div class="grid g2 gloss" style="gap:0 20pt">
+    <div class="tiny">
+      <h4>Ambient authority</h4><p>Credentials such as cookies that the browser attaches automatically, whoever caused the request. (Ch.&nbsp;2)</p>
+      <h4>Access-Control-Allow-Origin</h4><p>The response header naming the one origin, or <code>*</code>, allowed to read the response. (Ch.&nbsp;6)</p>
+      <h4>CORP, COEP, COOP</h4><p>Cross-Origin Resource, Embedder and Opener Policies: headers controlling embedding and process isolation. (Ch.&nbsp;19)</p>
+      <h4>CORS</h4><p>Cross-Origin Resource Sharing: the protocol by which a server lets the browser share its responses with named other origins. (Ch.&nbsp;6)</p>
+      <h4>CORS-safelisted</h4><p>The request headers, content types and response headers that need no special permission. (Ch.&nbsp;7, 10)</p>
+      <h4>Credentials</h4><p>Cookies, HTTP authentication and TLS client certificates. Sent cross-origin only with <code>credentials: 'include'</code>. (Ch.&nbsp;9)</p>
+      <h4>Cross-origin isolation</h4><p>The state of a page served with COOP and COEP, which unlocks features such as <code>SharedArrayBuffer</code>. (Ch.&nbsp;19)</p>
+      <h4>CSRF</h4><p>Cross-site request forgery: causing a user's browser to send a state-changing request they didn't intend. Not prevented by CORS. (Ch.&nbsp;16)</p>
+      <h4>DNS rebinding</h4><p>Changing what a hostname resolves to, so a browser treats a local address as the same origin as a public site. (Ch.&nbsp;15, 18)</p>
+      <h4>Fetch Metadata</h4><p>The <code>Sec-Fetch-*</code> request headers describing how a request came about. (Ch.&nbsp;19)</p>
+      <h4>Fetch Standard</h4><p>The WHATWG living standard that defines fetching, including CORS. The authoritative source. (Ch.&nbsp;6)</p>
+      <h4>JSONP</h4><p>A pre-CORS technique that delivered data as an executable script. Obsolete. (Ch.&nbsp;5)</p>
+    </div>
+    <div class="tiny">
+      <h4>Local Network Access</h4><p>Chromium's permission-based protection for requests from public sites to local and loopback addresses. (Ch.&nbsp;18)</p>
+      <h4>Opaque origin</h4><p>An origin with no identity, serialized as <code>null</code>; never equal to any other origin. (Ch.&nbsp;3)</p>
+      <h4>Opaque response</h4><p>The result of a <code>no-cors</code> fetch: usable by the browser, unreadable by script. (Ch.&nbsp;10)</p>
+      <h4>Origin</h4><p>The triple of scheme, host and port that the same-origin policy compares. (Ch.&nbsp;3)</p>
+      <h4>ORB / CORB</h4><p>Opaque (formerly Cross-Origin) Read Blocking: stops sensitive responses from entering another site's process. (Ch.&nbsp;19)</p>
+      <h4>Preflight</h4><p>The <code>OPTIONS</code> request a browser sends to ask permission before a non-simple request. (Ch.&nbsp;8)</p>
+      <h4>Public Suffix List</h4><p>The list of suffixes, like <code>.com</code> or <code>.github.io</code>, under which domains are registered; it defines sites. (Ch.&nbsp;3)</p>
+      <h4>Same-origin policy</h4><p>The browser rule that a page may read only responses from its own origin, unless CORS permits otherwise. (Ch.&nbsp;2, 4)</p>
+      <h4>SameSite</h4><p>A cookie attribute that limits sending the cookie on cross-site requests. (Ch.&nbsp;9, 16)</p>
+      <h4>Simple request</h4><p>A request a form could send, which needs no preflight. (Ch.&nbsp;7)</p>
+      <h4>Site</h4><p>Scheme plus registrable domain. Coarser than an origin; used by cookies. (Ch.&nbsp;3)</p>
+      <h4>Vary</h4><p>The response header listing the request headers a response depends on; <code>Vary: Origin</code> keeps caches correct. (Ch.&nbsp;17)</p>
+      <h4>XS-Leaks</h4><p>Cross-site leaks: information inferred from side effects of cross-origin loads. (Ch.&nbsp;19)</p>
+    </div>
+  </div>
+
+  <div class="pfoot"><span class="ch">Reference &middot; Glossary</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     FURTHER READING
+     ==================================================================== -->
+<section class="page">
+  <div class="chnum">Reference</div>
+  <h1 class="title">Further reading</h1>
+  <p class="lede">The specifications, the best guides, and the sources behind the case studies.</p>
+
+  <h2>Read these first</h2>
+  <table class="dense">
+    <thead><tr><th style="width:34%">Source</th><th>Why read it</th></tr></thead>
+    <tbody>
+      <tr><td><b>WHATWG Fetch Standard</b><br><span class="mono tiny">fetch.spec.whatwg.org</span></td><td>The normative definition of CORS, preflights, credentials, opaque responses and ORB.</td></tr>
+      <tr><td><b>RFC 6454</b>, <i>The Web Origin Concept</i><br><span class="mono tiny">rfc-editor.org/rfc/rfc6454</span></td><td>The definition of an origin and the <code>Origin</code> header.</td></tr>
+      <tr><td><b>MDN Web Docs</b>, CORS guide<br><span class="mono tiny">developer.mozilla.org</span></td><td>The most readable practical reference, with browser compatibility tables.</td></tr>
+      <tr><td><b>OWASP WSTG-CLNT-07</b><br><span class="mono tiny">owasp.org/www-project-web-security-testing-guide</span></td><td>How security testers assess a CORS policy &mdash; useful for writing your own tests.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Going deeper</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:34%"><b>CWE-942, CWE-346</b><br><span class="mono tiny">cwe.mitre.org</span></td><td>The weakness entries for permissive cross-domain policies and origin validation errors.</td></tr>
+      <tr><td><b>Fetch Metadata and cross-origin isolation</b><br><span class="mono tiny">web.dev</span></td><td>Google's guides to resource isolation policies, COOP and COEP.</td></tr>
+      <tr><td><b>Local Network Access</b><br><span class="mono tiny">developer.chrome.com/blog/local-network-access</span></td><td>Chromium's announcement of the permission prompt that replaced Private Network Access preflights.</td></tr>
+      <tr><td><b>XS-Leaks Wiki</b><br><span class="mono tiny">xsleaks.dev</span></td><td>A catalog of cross-site leak techniques and their defenses.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Sources for the case studies</h2>
+  <ul class="tight small">
+    <li>J. Kettle, &ldquo;Exploiting CORS Misconfigurations for Bitcoins and Bounties,&rdquo; OWASP AppSec USA, October 2016; PortSwigger Research.</li>
+    <li>J. Chen et al., &ldquo;We Still Don't Have Secure Cross-Domain Requests: an Empirical Study of CORS,&rdquo; 27th USENIX Security Symposium, August 2018.</li>
+    <li>J. Leitschuh, disclosure of the Zoom macOS local web server issue, July 2019; CVE-2019-13450.</li>
+    <li>T. Ormandy, report on the Transmission RPC daemon and DNS rebinding, January 2018; CVE-2018-5702.</li>
+    <li>J. Grossman, &ldquo;Advanced Web Attack Techniques using GMail,&rdquo; January 2006.</li>
+    <li>B. Chess, Y. Tsipenyuk O'Neil, J. West, &ldquo;JavaScript Hijacking,&rdquo; Fortify Software, 2007.</li>
+    <li>Public reporting on the MySpace &ldquo;Samy&rdquo; worm, October 2005.</li>
+  </ul>
+
+  <p class="small muted">Browser security moves quickly. When a detail matters to a design
+  decision, confirm it against the Fetch Standard and current browser documentation.</p>
+
+  <div class="pfoot"><span class="ch">Reference &middot; Further reading</span><span class="n">0</span></div>
+</section>
+
+<!-- ====================================================================
+     BACK COVER
+     ==================================================================== -->
+<section class="page bookcover front">
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="inner" style="padding:1.1in 0.9in 0.8in">
+    <div class="imprint">
+      <svg width="17" height="19" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#8fa2d4" stroke-width="2"/>
+        <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#8fa2d4" opacity=".55"/>
+      </svg>
+      <span>Smiroh Publishers</span>
+    </div>
+    <p style="margin-top:40pt;font-size:21pt;line-height:1.3;font-weight:700;letter-spacing:-0.02em;color:#fff">&ldquo;Before anybody touches that header, can someone tell me what it actually protects?&rdquo;</p>
+    <p style="font-size:11.6pt;line-height:1.6;color:#b9c4e4;margin-top:14pt">Every web developer meets CORS as a red error in the console. Most learn just enough to
+    make it go away &mdash; and some of those quick fixes quietly expose every signed-in user of an
+    API to every website on the internet.</p>
+    <p style="font-size:11.6pt;line-height:1.6;color:#b9c4e4">This book follows a fintech team from a failed launch night to a company-wide security
+    review, and teaches CORS the way it should be taught: from the same-origin policy up. You will
+    learn:</p>
+    <ul style="font-size:11pt;line-height:1.7;color:#dfe7ff;padding-left:16pt">
+      <li>why browsers built the wall, and exactly what it blocks</li>
+      <li>simple requests, preflights, credentials and exposed headers</li>
+      <li>a step-by-step method for debugging any CORS error</li>
+      <li>the six configuration mistakes behind real incidents</li>
+      <li>seven attack patterns, drawn, with warning signs and defenses</li>
+      <li>caches, local networks, and the isolation headers after Spectre</li>
+      <li>architectures, reference configurations and a review checklist</li>
+    </ul>
+    <p style="font-size:11pt;line-height:1.6;color:#b9c4e4">Eight hands-on labs use a single zero-dependency Node.js server, printed in full, so you
+    can watch every rule in your own browser's DevTools.</p>
+    <div class="byline">
+      <div><div class="author-lbl">Author</div><div class="author">Smiroh Dev</div></div>
+      <div><div class="pubname">Computers / Security / Web Development</div><div class="pubsub">Smiroh Publishers &#183; First Edition</div></div>
+    </div>
+  </div>
+</section>
