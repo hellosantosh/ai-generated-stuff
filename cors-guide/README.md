@@ -8,6 +8,7 @@ to the OAuth 2.1 book in [`../oauth-simulator/dev-guide/`](../oauth-simulator/de
 | --- | --- |
 | **The book (PDF)** | [`book/cors-guide.pdf`](book/cors-guide.pdf) |
 | Cover image for store listings | [`book/cover.png`](book/cover.png) |
+| Square thumbnail for store listings | [`book/thumbnail.png`](book/thumbnail.png) |
 | Lab server | [`lab/server.js`](lab/server.js) |
 | Book source (one fragment per part) | [`book/src/`](book/src/) |
 | Assembled HTML | [`book/cors-guide.html`](book/cors-guide.html), a build byproduct |
@@ -49,6 +50,7 @@ cd book
 ./build-book.sh           # src/*.html -> cors-guide.html -> cors-guide.pdf
 ./build-book.sh --check   # also report any page whose content overflows
 ./export-cover.py         # cover.png, 1836 x 2376
+./export-thumbnail.py     # thumbnail.png, 1000 x 1000
 ```
 
 The build needs Chrome or Chromium, Python 3 and `pdfinfo`/`pdftotext` (poppler). It works like
