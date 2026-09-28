@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Brokerage APIs: a hypermedia (HATEOAS) brokerage REST API on Spring Boot.
+
+    auth-server       OAuth 2.1 authorization server (Spring Authorization Server)
+    brokerage-api     the REST API: HAL + HAL-FORMS, RFC 9457 errors, OAuth 2.1 scopes
+    brokerage-client  a small hypermedia client that follows links instead of building URLs
+    brokerage-agent   an AI agent (Spring AI) that uses the client as its tools
+
+  Build and test everything:   ./mvnw verify
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example.brokerage</groupId>
+  <artifactId>brokerage-apis</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>Brokerage APIs</name>
+
+  <modules>
+    <module>auth-server</module>
+    <module>brokerage-api</module>
+    <module>brokerage-client</module>
+    <module>brokerage-agent</module>
+  </modules>
+
+  <properties>
+    <java.version>27</java.version>
+    <spring-ai.version>2.0.1</spring-ai.version>
+    <json-schema-validator.version>3.0.7</json-schema-validator.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.example.brokerage</groupId>
+        <artifactId>brokerage-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>${json-schema-validator.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

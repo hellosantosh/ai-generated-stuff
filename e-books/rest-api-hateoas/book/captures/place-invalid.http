@@ -1,0 +1,40 @@
+POST /accounts/ACC-1001/orders HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Idempotency-Key: b1c2d3e4-0000-4000-8000-000000000001
+Content-Type: application/json
+
+{
+  "instrumentId": "",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "-5",
+  "limitPrice": "231.123456"
+}
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "detail": "One or more fields are invalid",
+  "instance": "/accounts/ACC-1001/orders",
+  "status": 400,
+  "title": "The request is not valid",
+  "type": "https://docs.brokerage.example/problems/invalid-request",
+  "requestId": "ebed2d1e-129e-4fc0-82c2-ca337e7f2e57",
+  "errors": [
+    {
+      "field": "instrumentId",
+      "message": "must not be blank"
+    },
+    {
+      "field": "limitPrice",
+      "message": "numeric value out of bounds (<9 digits>.<4 digits> expected)"
+    },
+    {
+      "field": "quantity",
+      "message": "must be greater than 0"
+    }
+  ]
+}

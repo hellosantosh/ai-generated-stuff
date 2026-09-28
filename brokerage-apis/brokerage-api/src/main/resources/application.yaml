@@ -1,0 +1,34 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: brokerage-api
+  jackson:
+    # Absent optional fields are omitted rather than sent as null.
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9000
+          # Tokens must be minted for this API, not merely by a trusted issuer.
+          audiences: brokerage-api
+
+brokerage:
+  simulator:
+    enabled: true
+    tick-millis: 1000
+  rate-limit:
+    requests-per-minute: 120
+    order-changes-per-minute: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"

@@ -1,0 +1,50 @@
+GET /accounts/ACC-1001/transactions?cursor=MTc4ODkwMjAwMDU4MTpUWE4tMTAwNw&limit=2 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:transactions": [
+      {
+        "id": "TXN-1006",
+        "type": "DIVIDEND",
+        "description": "Cash dividend AAPL",
+        "amount": "13.00",
+        "instrumentId": "EQ-AAPL",
+        "symbol": "AAPL",
+        "occurredAt": "2026-08-14T23:18:20.581886Z",
+        "settlesOn": "2026-08-14"
+      },
+      {
+        "id": "TXN-1002",
+        "type": "DEPOSIT",
+        "description": "ACH deposit",
+        "amount": "10000.00",
+        "occurredAt": "2026-05-31T19:33:20.581639Z",
+        "settlesOn": "2026-06-01"
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?cursor=MTc4ODkwMjAwMDU4MTpUWE4tMTAwNw&limit=2"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "next": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?cursor=MTc4MDI1NjAwMDU4MTpUWE4tMTAwMg&limit=2"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

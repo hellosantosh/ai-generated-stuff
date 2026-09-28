@@ -1,0 +1,20 @@
+GET /instruments/EQ-AAPL/quote HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 9
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "detail": "API version 9.0.0 is not supported",
+  "instance": "/instruments/EQ-AAPL/quote",
+  "status": 400,
+  "title": "The requested API version is not supported",
+  "type": "https://docs.brokerage.example/problems/unsupported-api-version",
+  "requestId": "2efcf18e-78a6-4168-9080-0b6a92731401",
+  "supportedVersions": [
+    "1",
+    "2"
+  ]
+}

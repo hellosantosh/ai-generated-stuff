@@ -1,0 +1,23 @@
+PATCH /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Content-Type: application/merge-patch+json
+If-Match: "ORD-100002-v1"
+
+{
+  "quantity": "8"
+}
+
+HTTP/1.1 412 Precondition Failed
+Content-Type: application/problem+json
+
+{
+  "detail": "The order has changed since you read it; fetch it again and reapply your change",
+  "instance": "/accounts/ACC-1001/orders/ORD-100002",
+  "status": 412,
+  "title": "The resource has changed",
+  "type": "https://docs.brokerage.example/problems/precondition-failed",
+  "requestId": "3a8fd355-11b3-46aa-9d99-e67ed5a69309",
+  "currentEtag": "\"ORD-100002-v2\""
+}

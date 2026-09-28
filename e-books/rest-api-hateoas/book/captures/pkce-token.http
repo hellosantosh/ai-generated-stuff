@@ -1,0 +1,19 @@
+POST /oauth2/token HTTP/1.1
+Host: localhost:9000
+Authorization: Basic YnJva2VyYWdlLXdlYjp3ZWItc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code&code=7dct2ilbad…&redirect_uri=http://127.0.0.1:3000/callback&code_verifier=5AmuzDTomAWZ…
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+
+{
+  "access_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "refresh_token": "rfg3DlrJ22FbZFKjl84rUyS3…",
+  "scope": "orders:read market-data:read openid accounts:read",
+  "id_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "token_type": "Bearer",
+  "expires_in": 599
+}

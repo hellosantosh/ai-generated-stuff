@@ -1,0 +1,58 @@
+PATCH /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Content-Type: application/merge-patch+json
+If-Match: "ORD-100002-v1"
+
+{
+  "limitPrice": "455.00"
+}
+
+HTTP/1.1 200 OK
+ETag: "ORD-100002-v2"
+Content-Type: application/hal+json
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100002"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "bk:instrument": {
+      "href": "http://localhost:8080/instruments/EQ-MSFT"
+    },
+    "edit": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100002"
+    },
+    "bk:cancel": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100002/cancellation"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "id": "ORD-100002",
+  "accountId": "ACC-1001",
+  "clientOrderId": "rebalance-2026-09-28",
+  "instrumentId": "EQ-MSFT",
+  "symbol": "MSFT",
+  "instrumentType": "EQUITY",
+  "side": "BUY",
+  "type": "LIMIT",
+  "timeInForce": "GTC",
+  "quantity": "10",
+  "limitPrice": "455.00",
+  "status": "OPEN",
+  "filledQuantity": "0",
+  "fills": [],
+  "createdAt": "2026-09-28T23:33:22.811774Z",
+  "updatedAt": "2026-09-28T23:33:22.873660Z",
+  "remainingQuantity": "10"
+}

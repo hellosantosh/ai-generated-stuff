@@ -1,0 +1,52 @@
+GET /accounts/ACC-1001/orders/ORD-100003 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+ETag: "ORD-100003-v2"
+Content-Type: application/hal+json
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100003"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "bk:instrument": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "id": "ORD-100003",
+  "accountId": "ACC-1001",
+  "instrumentId": "EQ-AAPL",
+  "symbol": "AAPL",
+  "instrumentType": "EQUITY",
+  "side": "BUY",
+  "type": "MARKET",
+  "timeInForce": "DAY",
+  "quantity": "3",
+  "status": "FILLED",
+  "filledQuantity": "3",
+  "averageFillPrice": "232.0400",
+  "fills": [
+    {
+      "id": "FIL-500001",
+      "quantity": "3",
+      "price": "232.04",
+      "executedAt": "2026-09-28T23:33:25.913947Z"
+    }
+  ],
+  "createdAt": "2026-09-28T23:33:25.405515Z",
+  "updatedAt": "2026-09-28T23:33:25.913947Z",
+  "remainingQuantity": "0"
+}

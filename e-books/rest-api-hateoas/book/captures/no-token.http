@@ -1,0 +1,16 @@
+GET /accounts HTTP/1.1
+Host: localhost:8080
+API-Version: 2
+
+HTTP/1.1 401 Unauthorized
+Content-Type: application/problem+json
+WWW-Authenticate: Bearer resource_metadata="http://localhost:8080/.well-known/oauth-protected-resource"
+
+{
+  "detail": "A valid bearer token is required",
+  "instance": "/accounts",
+  "status": 401,
+  "title": "Authentication is required",
+  "type": "https://docs.brokerage.example/problems/unauthorized",
+  "requestId": "13565048-4c83-43b7-b3dd-6c0137bb99c8"
+}

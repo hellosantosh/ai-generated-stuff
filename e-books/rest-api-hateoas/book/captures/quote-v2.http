@@ -1,0 +1,42 @@
+GET /instruments/EQ-AAPL/quote HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+ETag: "q3"
+Content-Type: application/hal+json
+Cache-Control: max-age=1, private
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL/quote"
+    },
+    "bk:instrument": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "instrumentId": "EQ-AAPL",
+  "symbol": "AAPL",
+  "last": "232.78",
+  "bid": {
+    "price": "232.76",
+    "size": "500"
+  },
+  "ask": {
+    "price": "232.80",
+    "size": "500"
+  },
+  "change": "2.68",
+  "changePercent": "1.16",
+  "volume": 1250184,
+  "asOf": "2026-09-28T23:33:21.893816Z"
+}

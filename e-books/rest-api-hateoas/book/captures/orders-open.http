@@ -1,0 +1,65 @@
+GET /accounts/ACC-1001/orders?status=OPEN&status=PARTIALLY_FILLED HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:orders": [
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100001"
+          },
+          "bk:account": {
+            "href": "http://localhost:8080/accounts/ACC-1001"
+          },
+          "bk:instrument": {
+            "href": "http://localhost:8080/instruments/EQ-MSFT"
+          },
+          "edit": {
+            "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100001"
+          },
+          "bk:cancel": {
+            "href": "http://localhost:8080/accounts/ACC-1001/orders/ORD-100001/cancellation"
+          }
+        },
+        "id": "ORD-100001",
+        "accountId": "ACC-1001",
+        "clientOrderId": "rebalance-msft-01",
+        "instrumentId": "EQ-MSFT",
+        "symbol": "MSFT",
+        "instrumentType": "EQUITY",
+        "side": "BUY",
+        "type": "LIMIT",
+        "timeInForce": "GTC",
+        "quantity": "10",
+        "limitPrice": "480.00",
+        "status": "OPEN",
+        "filledQuantity": "0",
+        "fills": [],
+        "createdAt": "2026-09-27T23:33:20.584838Z",
+        "updatedAt": "2026-09-27T23:33:20.584838Z",
+        "remainingQuantity": "10"
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders?status=OPEN&status=PARTIALLY_FILLED"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

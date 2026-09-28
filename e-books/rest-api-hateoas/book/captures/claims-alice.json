@@ -1,0 +1,16 @@
+{
+  "sub": "alice",
+  "aud": "brokerage-api",
+  "nbf": 1790638418,
+  "scope": [
+    "orders:read",
+    "market-data:read",
+    "openid",
+    "accounts:read"
+  ],
+  "iss": "http://localhost:9000",
+  "exp": 1790639018,
+  "customer_id": "cust-1001",
+  "iat": 1790638418,
+  "jti": "cd2da16b-4884-43c2-a470-eebb332bf05f"
+}

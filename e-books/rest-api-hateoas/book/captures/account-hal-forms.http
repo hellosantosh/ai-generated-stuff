@@ -1,0 +1,184 @@
+GET /accounts/ACC-1001 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Accept: application/prs.hal-forms+json
+
+HTTP/1.1 200 OK
+Content-Type: application/prs.hal-forms+json
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "bk:balances": {
+      "href": "http://localhost:8080/accounts/ACC-1001/balances"
+    },
+    "bk:positions": {
+      "href": "http://localhost:8080/accounts/ACC-1001/positions"
+    },
+    "bk:transactions": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions{?type,from,to,cursor,limit}",
+      "templated": true
+    },
+    "bk:orders": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders{?status,symbol,cursor,limit}",
+      "templated": true
+    },
+    "bk:order-previews": {
+      "href": "http://localhost:8080/accounts/ACC-1001/order-previews"
+    },
+    "bk:order-events": {
+      "href": "http://localhost:8080/accounts/ACC-1001/order-events"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "id": "ACC-1001",
+  "number": "****4821",
+  "nickname": "Individual Margin",
+  "type": "MARGIN",
+  "registration": "INDIVIDUAL",
+  "currency": "USD",
+  "openedOn": "2021-03-15",
+  "_templates": {
+    "previewOrder": {
+      "method": "POST",
+      "properties": [
+        {
+          "max": 64,
+          "min": 0,
+          "name": "clientOrderId",
+          "regex": "[A-Za-z0-9._-]*",
+          "type": "text"
+        },
+        {
+          "name": "instrumentId",
+          "regex": "^(?=\\s*\\S).*$",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "limitPrice",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "type": "text"
+        },
+        {
+          "name": "quantity",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "side",
+          "options": {
+            "inline": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "required": true
+        },
+        {
+          "name": "stopPrice",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "type": "text"
+        },
+        {
+          "name": "timeInForce",
+          "options": {
+            "inline": [
+              "DAY",
+              "GTC"
+            ]
+          }
+        },
+        {
+          "name": "type",
+          "options": {
+            "inline": [
+              "MARKET",
+              "LIMIT",
+              "STOP",
+              "STOP_LIMIT"
+            ]
+          },
+          "required": true
+        }
+      ],
+      "target": "http://localhost:8080/accounts/ACC-1001/order-previews"
+    },
+    "placeOrder": {
+      "method": "POST",
+      "properties": [
+        {
+          "max": 64,
+          "min": 0,
+          "name": "clientOrderId",
+          "regex": "[A-Za-z0-9._-]*",
+          "type": "text"
+        },
+        {
+          "name": "instrumentId",
+          "regex": "^(?=\\s*\\S).*$",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "limitPrice",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "type": "text"
+        },
+        {
+          "name": "quantity",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "required": true,
+          "type": "text"
+        },
+        {
+          "name": "side",
+          "options": {
+            "inline": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "required": true
+        },
+        {
+          "name": "stopPrice",
+          "regex": "^[0-9]+(\\.[0-9]+)?$",
+          "type": "text"
+        },
+        {
+          "name": "timeInForce",
+          "options": {
+            "inline": [
+              "DAY",
+              "GTC"
+            ]
+          }
+        },
+        {
+          "name": "type",
+          "options": {
+            "inline": [
+              "MARKET",
+              "LIMIT",
+              "STOP",
+              "STOP_LIMIT"
+            ]
+          },
+          "required": true
+        }
+      ],
+      "target": "http://localhost:8080/accounts/ACC-1001/orders"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: brokerage-agent
+  main:
+    web-application-type: none
+    banner-mode: off
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: claude-opus-5
+          # Leave room for tool calls and thinking; Spring AI's default is 4096.
+          max-tokens: 16000
+  security:
+    oauth2:
+      client:
+        registration:
+          brokerage:
+            provider: brokerage-auth
+            client-id: brokerage-agent
+            client-secret: agent-secret
+            authorization-grant-type: client_credentials
+            scope: accounts:read, market-data:read, orders:read, orders:write
+        provider:
+          brokerage-auth:
+            token-uri: http://localhost:9000/oauth2/token
+
+brokerage:
+  api-root: http://localhost:8080/
+
+logging:
+  level:
+    root: warn

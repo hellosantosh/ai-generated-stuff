@@ -1,0 +1,17 @@
+POST /oauth2/token HTTP/1.1
+Host: localhost:9000
+Authorization: Basic YnJva2VyYWdlLWNsaTpjbGktc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&scope=accounts:read+market-data:read+orders:read+orders:write
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+
+{
+  "access_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "scope": "orders:read market-data:read orders:write accounts:read",
+  "token_type": "Bearer",
+  "expires_in": 899
+}

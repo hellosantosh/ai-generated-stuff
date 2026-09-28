@@ -1,0 +1,21 @@
+PATCH /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Content-Type: application/merge-patch+json
+
+{
+  "limitPrice": "455.00"
+}
+
+HTTP/1.1 428 Precondition Required
+Content-Type: application/problem+json
+
+{
+  "detail": "Send If-Match with the order's current ETag to change it",
+  "instance": "/accounts/ACC-1001/orders/ORD-100002",
+  "status": 428,
+  "title": "An If-Match header is required",
+  "type": "https://docs.brokerage.example/problems/precondition-required",
+  "requestId": "5b378c3c-5f60-4a91-9545-bf20d77799bd"
+}

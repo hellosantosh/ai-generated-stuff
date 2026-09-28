@@ -1,0 +1,28 @@
+POST /accounts/ACC-1001/orders HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Idempotency-Key: 7d0e4c9a-3b1f-4e6d-8a52-9c0f1e2b3a4d
+Content-Type: application/json
+
+{
+  "instrumentId": "EQ-MSFT",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "12",
+  "limitPrice": "450.00",
+  "timeInForce": "GTC",
+  "clientOrderId": "rebalance-2026-09-28"
+}
+
+HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  "detail": "Idempotency-Key 7d0e4c9a-3b1f-4e6d-8a52-9c0f1e2b3a4d was already used for a different order request",
+  "instance": "/accounts/ACC-1001/orders",
+  "status": 422,
+  "title": "The Idempotency-Key was already used for a different request",
+  "type": "https://docs.brokerage.example/problems/idempotency-key-reused",
+  "requestId": "9ecf9cbe-42c0-49c9-957b-3f3c6552c4f6"
+}

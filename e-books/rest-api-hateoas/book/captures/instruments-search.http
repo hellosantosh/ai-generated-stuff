@@ -1,0 +1,409 @@
+GET /instruments?symbol=AAPL HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:instruments": [
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL/quote"
+          },
+          "bk:option-chain": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL/option-chain{?expiration}",
+            "templated": true
+          }
+        },
+        "id": "EQ-AAPL",
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "type": "EQUITY",
+        "exchange": "XNAS",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": true,
+        "multiplier": "1"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-220"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-220/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-C-220",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $220 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "220",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-220"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-220/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-P-220",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $220 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "220",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-230"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-230/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-C-230",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $230 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "230",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-230"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-230/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-P-230",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $230 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "230",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-240"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-240/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-C-240",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $240 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "240",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-240"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-P-240/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-P-240",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $240 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "240",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-220"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-220/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-C-220",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $220 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "220",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-220"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-220/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-P-220",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $220 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "220",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-230"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-230/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-C-230",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $230 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "230",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-230"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-230/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-P-230",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $230 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "230",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-240"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-C-240/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-C-240",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $240 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "240",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-240"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261120-P-240/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261120-P-240",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-11-20 $240 PUT",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "PUT",
+          "strike": "240",
+          "expiration": "2026-11-20",
+          "style": "AMERICAN"
+        }
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/instruments?symbol=AAPL"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

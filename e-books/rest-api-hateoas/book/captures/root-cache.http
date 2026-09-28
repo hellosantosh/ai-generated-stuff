@@ -1,0 +1,39 @@
+GET /instruments/EQ-AAPL HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL"
+    },
+    "bk:quote": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL/quote"
+    },
+    "bk:option-chain": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL/option-chain{?expiration}",
+      "templated": true
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "id": "EQ-AAPL",
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "type": "EQUITY",
+  "exchange": "XNAS",
+  "currency": "USD",
+  "tradable": true,
+  "fractionable": true,
+  "multiplier": "1"
+}

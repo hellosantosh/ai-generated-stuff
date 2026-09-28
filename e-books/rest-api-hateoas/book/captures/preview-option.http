@@ -1,0 +1,49 @@
+POST /accounts/ACC-1001/order-previews HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Content-Type: application/json
+
+{
+  "instrumentId": "OPT-AAPL-261016-C-240",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "2",
+  "limitPrice": "3.10",
+  "timeInForce": "DAY"
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_links": {
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "bk:place-order": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders{?status,symbol,cursor,limit}",
+      "templated": true
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "accountId": "ACC-1001",
+  "instrumentId": "OPT-AAPL-261016-C-240",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "2",
+  "estimatedPrice": "3.10",
+  "estimatedNotional": "620.00",
+  "estimatedCommission": "1.30",
+  "estimatedTotal": "621.30",
+  "buyingPower": "53848.86",
+  "acceptable": true,
+  "issues": []
+}

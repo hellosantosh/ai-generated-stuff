@@ -1,0 +1,54 @@
+GET /accounts/ACC-1001/transactions?limit=2 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:transactions": [
+      {
+        "id": "TXN-1008",
+        "type": "TRADE",
+        "description": "Bought 12 AMZN @ 205.40",
+        "amount": "-2464.80",
+        "instrumentId": "EQ-AMZN",
+        "symbol": "AMZN",
+        "quantity": "12",
+        "price": "205.40",
+        "occurredAt": "2026-09-19T22:30:20.581910Z",
+        "settlesOn": "2026-09-21"
+      },
+      {
+        "id": "TXN-1007",
+        "type": "DIVIDEND",
+        "description": "Cash dividend SPY",
+        "amount": "26.85",
+        "instrumentId": "ETF-SPY",
+        "symbol": "SPY",
+        "occurredAt": "2026-09-08T21:13:20.581902Z",
+        "settlesOn": "2026-09-08"
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?limit=2"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "next": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?cursor=MTc4ODkwMjAwMDU4MTpUWE4tMTAwNw&limit=2"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

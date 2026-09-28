@@ -1,0 +1,29 @@
+GET /accounts HTTP/1.1
+Host: localhost:8081
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+RateLimit-Policy: "default";q=2;w=60
+RateLimit: "default";r=1;t=20
+
+{
+  "_embedded": {
+    "bk:accounts": [
+      /* 2 more */
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8081/accounts"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

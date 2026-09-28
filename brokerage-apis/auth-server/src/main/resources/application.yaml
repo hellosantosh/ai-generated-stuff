@@ -1,0 +1,64 @@
+# Development-only authorization server. Plain HTTP, in-memory keys and clients:
+# never deploy this configuration.
+server:
+  port: 9000
+
+spring:
+  application:
+    name: auth-server
+  security:
+    user:
+      # The demo customer, for the browser-based authorization code flow.
+      name: alice
+      password: wonderland
+    oauth2:
+      authorizationserver:
+        issuer: http://localhost:9000
+        client:
+          # A customer's own script or trading bot: the "personal API key" pattern.
+          brokerage-cli:
+            registration:
+              client-id: brokerage-cli
+              client-secret: "{noop}cli-secret"
+              client-authentication-methods: [client_secret_basic]
+              authorization-grant-types: [client_credentials]
+              scopes: [accounts:read, market-data:read, orders:read, orders:write]
+            token:
+              access-token-time-to-live: 15m
+          # The AI agent: same customer, but every order is capped by trading_limit.
+          brokerage-agent:
+            registration:
+              client-id: brokerage-agent
+              client-secret: "{noop}agent-secret"
+              client-authentication-methods: [client_secret_basic]
+              authorization-grant-types: [client_credentials]
+              scopes: [accounts:read, market-data:read, orders:read, orders:write]
+            token:
+              access-token-time-to-live: 5m
+          # A web app's backend (a "backend for frontend"): a confidential client that signs
+          # the customer in with the authorization code grant, PKCE and consent. Tokens stay
+          # on the server; the browser holds only a session cookie. Spring Authorization
+          # Server issues refresh tokens to confidential clients only.
+          brokerage-web:
+            registration:
+              client-id: brokerage-web
+              client-secret: "{noop}web-secret"
+              client-authentication-methods: [client_secret_basic]
+              authorization-grant-types: [authorization_code, refresh_token]
+              redirect-uris: [http://127.0.0.1:3000/callback]
+              scopes: [openid, accounts:read, market-data:read, orders:read, orders:write]
+            require-proof-key: true
+            require-authorization-consent: true
+            token:
+              access-token-time-to-live: 10m
+              refresh-token-time-to-live: 8h
+              reuse-refresh-tokens: false
+
+brokerage:
+  identities:
+    customers:
+      alice: cust-1001
+      brokerage-cli: cust-1001
+      brokerage-agent: cust-1001
+    trading-limits:
+      brokerage-agent: 5000

@@ -1,0 +1,28 @@
+POST /accounts/ACC-1001/orders HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Idempotency-Key: b1c2d3e4-0000-4000-8000-000000000002
+Content-Type: application/json
+
+{
+  "instrumentId": "ETF-SPY",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "500",
+  "limitPrice": "660.00"
+}
+
+HTTP/1.1 422 Unprocessable Content
+Content-Type: application/problem+json
+
+{
+  "detail": "This order needs 330000.00 but only 46241.10 is available",
+  "instance": "/accounts/ACC-1001/orders",
+  "status": 422,
+  "title": "The account does not have enough buying power",
+  "type": "https://docs.brokerage.example/problems/insufficient-buying-power",
+  "requestId": "57f30b86-1e22-469c-9bb5-95200cde901d",
+  "required": "330000.00",
+  "available": "46241.10"
+}

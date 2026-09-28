@@ -1,0 +1,38 @@
+GET /instruments/EQ-AAPL/quote HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+
+HTTP/1.1 200 OK
+ETag: "q3"
+Content-Type: application/hal+json
+Cache-Control: max-age=1, private
+Deprecation: @1788220800
+Sunset: Mon, 1 Mar 2027 00:00:00 GMT
+Link: <https://docs.brokerage.example/migrations/v2>; rel="sunset"; type="text/html"
+
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL/quote"
+    },
+    "bk:instrument": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "instrumentId": "EQ-AAPL",
+  "symbol": "AAPL",
+  "last": "232.78",
+  "bid": "232.76",
+  "ask": "232.80",
+  "bidSize": "500",
+  "askSize": "500",
+  "volume": 1250184,
+  "asOf": "2026-09-28T23:33:21.893816Z"
+}

@@ -1,0 +1,24 @@
+GET /.well-known/oauth-protected-resource HTTP/1.1
+Host: localhost:8080
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "resource": "http://localhost:8080",
+  "bearer_methods_supported": [
+    "header"
+  ],
+  "tls_client_certificate_bound_access_tokens": false,
+  "resource_name": "Brokerage API",
+  "authorization_servers": [
+    "http://localhost:9000"
+  ],
+  "scopes_supported": [
+    "market-data:read",
+    "accounts:read",
+    "orders:read",
+    "orders:write"
+  ]
+}

@@ -1,0 +1,76 @@
+GET /accounts/ACC-1001/positions HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:positions": [
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/accounts/ACC-1001/positions/EQ-AAPL"
+          },
+          "bk:instrument": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL/quote"
+          }
+        },
+        "instrumentId": "EQ-AAPL",
+        "symbol": "AAPL",
+        "instrumentType": "EQUITY",
+        "quantity": "50",
+        "averageCost": "180.25",
+        "costBasis": "9012.50",
+        "lastPrice": "232.78",
+        "marketValue": "11639.00",
+        "unrealizedPnl": "2626.50",
+        "unrealizedPnlPercent": "29.14"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/accounts/ACC-1001/positions/EQ-MSFT"
+          },
+          "bk:instrument": {
+            "href": "http://localhost:8080/instruments/EQ-MSFT"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/EQ-MSFT/quote"
+          }
+        },
+        "instrumentId": "EQ-MSFT",
+        "symbol": "MSFT",
+        "instrumentType": "EQUITY",
+        "quantity": "20",
+        "averageCost": "402.10",
+        "costBasis": "8042.00",
+        "lastPrice": "513.04",
+        "marketValue": "10260.80",
+        "unrealizedPnl": "2218.80",
+        "unrealizedPnlPercent": "27.59"
+      },
+      /* 2 more */
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/positions"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

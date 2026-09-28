@@ -1,0 +1,61 @@
+GET /accounts HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:accounts": [
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/accounts/ACC-1001"
+          },
+          "bk:balances": {
+            "href": "http://localhost:8080/accounts/ACC-1001/balances"
+          },
+          "bk:positions": {
+            "href": "http://localhost:8080/accounts/ACC-1001/positions"
+          },
+          "bk:transactions": {
+            "href": "http://localhost:8080/accounts/ACC-1001/transactions{?type,from,to,cursor,limit}",
+            "templated": true
+          },
+          "bk:orders": {
+            "href": "http://localhost:8080/accounts/ACC-1001/orders{?status,symbol,cursor,limit}",
+            "templated": true
+          },
+          "bk:order-previews": {
+            "href": "http://localhost:8080/accounts/ACC-1001/order-previews"
+          },
+          "bk:order-events": {
+            "href": "http://localhost:8080/accounts/ACC-1001/order-events"
+          }
+        },
+        "id": "ACC-1001",
+        "number": "****4821",
+        "nickname": "Individual Margin",
+        "type": "MARGIN",
+        "registration": "INDIVIDUAL",
+        "currency": "USD",
+        "openedOn": "2021-03-15"
+      },
+      /* 1 more */
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

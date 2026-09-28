@@ -1,0 +1,16 @@
+GET /accounts/ACC-2001 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 404 Not Found
+Content-Type: application/problem+json
+
+{
+  "detail": "Account ACC-2001 was not found",
+  "instance": "/accounts/ACC-2001",
+  "status": 404,
+  "title": "The resource does not exist",
+  "type": "https://docs.brokerage.example/problems/not-found",
+  "requestId": "0a85d808-3652-44b0-a81a-cbeea89a3569"
+}

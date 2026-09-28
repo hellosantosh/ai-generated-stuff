@@ -1,0 +1,49 @@
+GET /accounts/ACC-1001/transactions?type=DIVIDEND HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:transactions": [
+      {
+        "id": "TXN-1007",
+        "type": "DIVIDEND",
+        "description": "Cash dividend SPY",
+        "amount": "26.85",
+        "instrumentId": "ETF-SPY",
+        "symbol": "SPY",
+        "occurredAt": "2026-09-08T21:13:20.581902Z",
+        "settlesOn": "2026-09-08"
+      },
+      {
+        "id": "TXN-1006",
+        "type": "DIVIDEND",
+        "description": "Cash dividend AAPL",
+        "amount": "13.00",
+        "instrumentId": "EQ-AAPL",
+        "symbol": "AAPL",
+        "occurredAt": "2026-08-14T23:18:20.581886Z",
+        "settlesOn": "2026-08-14"
+      }
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?type=DIVIDEND"
+    },
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

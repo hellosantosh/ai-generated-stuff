@@ -1,0 +1,16 @@
+POST /accounts/ACC-1001/orders/ORD-100002/cancellation HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 409 Conflict
+Content-Type: application/problem+json
+
+{
+  "detail": "Order ORD-100002 is CANCELLED and cannot be cancelled",
+  "instance": "/accounts/ACC-1001/orders/ORD-100002/cancellation",
+  "status": 409,
+  "title": "The order can no longer be cancelled",
+  "type": "https://docs.brokerage.example/problems/order-not-cancellable",
+  "requestId": "a066ba22-ee17-4ce6-a696-29e66e6a54fe"
+}

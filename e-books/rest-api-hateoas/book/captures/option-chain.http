@@ -1,0 +1,70 @@
+GET /instruments/EQ-AAPL/option-chain HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_embedded": {
+    "bk:instruments": [
+      {
+        "_links": {
+          "self": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-220"
+          },
+          "bk:quote": {
+            "href": "http://localhost:8080/instruments/OPT-AAPL-261016-C-220/quote"
+          },
+          "bk:underlying": {
+            "href": "http://localhost:8080/instruments/EQ-AAPL"
+          }
+        },
+        "id": "OPT-AAPL-261016-C-220",
+        "symbol": "AAPL",
+        "name": "AAPL 2026-10-16 $220 CALL",
+        "type": "OPTION",
+        "exchange": "OPRA",
+        "currency": "USD",
+        "tradable": true,
+        "fractionable": false,
+        "multiplier": "100",
+        "option": {
+          "underlyingId": "EQ-AAPL",
+          "underlyingSymbol": "AAPL",
+          "right": "CALL",
+          "strike": "220",
+          "expiration": "2026-10-16",
+          "style": "AMERICAN"
+        }
+      },
+      /* 5 more */
+    ]
+  },
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL/option-chain?expiration=2026-10-16"
+    },
+    "bk:underlying": {
+      "href": "http://localhost:8080/instruments/EQ-AAPL"
+    },
+    "bk:expiration": [
+      {
+        "href": "http://localhost:8080/instruments/EQ-AAPL/option-chain?expiration=2026-10-16",
+        "name": "2026-10-16"
+      },
+      {
+        "href": "http://localhost:8080/instruments/EQ-AAPL/option-chain?expiration=2026-11-20",
+        "name": "2026-11-20"
+      }
+    ],
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  }
+}

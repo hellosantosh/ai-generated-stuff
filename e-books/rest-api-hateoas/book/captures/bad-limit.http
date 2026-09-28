@@ -1,0 +1,16 @@
+GET /accounts/ACC-1001/transactions?limit=500 HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json
+
+{
+  "detail": "limit must be between 1 and 100",
+  "instance": "/accounts/ACC-1001/transactions",
+  "status": 400,
+  "title": "The request is not valid",
+  "type": "https://docs.brokerage.example/problems/invalid-request",
+  "requestId": "67da86fc-6a59-4fa3-9a8f-d0d7eb36a1c4"
+}

@@ -1,0 +1,8 @@
+GET /instruments/EQ-AAPL/quote HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+If-None-Match: "q3"
+
+HTTP/1.1 304 Not Modified
+ETag: "q3"

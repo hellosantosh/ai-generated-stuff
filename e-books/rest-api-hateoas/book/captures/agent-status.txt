@@ -1,0 +1,8 @@
+Brokerage assistant. Ask about your accounts or ask for a trade.
+Commands: /confirm CODE, /discard CODE, /status, /quit
+
+> /status
+ACC-1001  Individual Margin
+ACC-1002  Roth IRA
+
+> /quit

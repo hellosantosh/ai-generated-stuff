@@ -1,0 +1,18 @@
+POST /oauth2/token HTTP/1.1
+Host: localhost:9000
+Authorization: Basic YnJva2VyYWdlLXdlYjp3ZWItc2VjcmV0
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=refresh_token&refresh_token=rfg3DlrJ22Fb…
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+
+{
+  "access_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "refresh_token": "EgsJH9OLnaAWRG2XiFd9IJuf…",
+  "scope": "orders:read market-data:read openid accounts:read",
+  "id_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "token_type": "Bearer",
+  "expires_in": 599
+}

@@ -1,0 +1,376 @@
+<!-- ====================================================================
+     FRONT COVER
+     ==================================================================== -->
+<section class="bookcover" id="cover">
+  <div class="bg"></div>
+  <div class="gridbg"></div>
+  <div class="spine"></div>
+  <div class="hair"></div>
+
+  <div class="inner">
+    <div class="imprint">
+      <svg width="17" height="19" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#8fa2d4" stroke-width="2"/>
+        <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#8fa2d4" opacity=".55"/>
+      </svg>
+      <span>Smiroh Publishers</span>
+    </div>
+
+    <div class="kicker">A practical guide to</div>
+    <h1 class="bt">REST API Standards<br><span class="amp" style="font-size:36pt">with HATEOAS</span></h1>
+    <div class="trule"></div>
+    <p class="sub">Design, build and consume hypermedia APIs the standard way. A complete brokerage
+    API in Spring Boot&nbsp;4 and Java&nbsp;27 takes you from first principles to idempotent trading,
+    OAuth&nbsp;2.1, OpenAPI&nbsp;3.2 contracts and an AI agent built with Spring&nbsp;AI.</p>
+
+    <div class="art">
+      <svg style="width:5.9in" viewBox="0 0 560 318" xmlns="http://www.w3.org/2000/svg" role="img"
+           aria-label="A graph of brokerage resources connected by named links, starting from the API root"
+           font-family="Menlo,monospace">
+        <defs>
+          <marker id="cvB" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="6.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#7ea6ff"/></marker>
+          <marker id="cvT" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="6.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#4ad3a6"/></marker>
+          <marker id="cvW" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="6.5" markerHeight="5.5" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#e0a84a"/></marker>
+          <radialGradient id="cvG" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#5b8cff" stop-opacity=".30"/>
+            <stop offset="100%" stop-color="#5b8cff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="280" cy="150" r="170" fill="url(#cvG)"/>
+
+        <!-- edges: root to collections -->
+        <path d="M258,58 C220,74 190,92 174,112" fill="none" stroke="#7ea6ff" stroke-width="1.8" marker-end="url(#cvB)"/>
+        <path d="M302,58 C340,74 370,92 386,112" fill="none" stroke="#7ea6ff" stroke-width="1.8" marker-end="url(#cvB)"/>
+        <text x="186" y="78" font-size="8" fill="#9fb3e6" text-anchor="end">bk:accounts</text>
+        <text x="374" y="78" font-size="8" fill="#9fb3e6">bk:instruments</text>
+
+        <!-- account's links -->
+        <path d="M144,144 C118,164 96,182 82,198" fill="none" stroke="#4ad3a6" stroke-width="1.5" marker-end="url(#cvT)"/>
+        <path d="M156,152 C154,176 152,196 151,214" fill="none" stroke="#4ad3a6" stroke-width="1.5" marker-end="url(#cvT)"/>
+        <path d="M176,144 C198,164 216,182 228,196" fill="none" stroke="#4ad3a6" stroke-width="1.5" marker-end="url(#cvT)"/>
+        <text x="96" y="168" font-size="7.4" fill="#8fd8bf" text-anchor="end">bk:balances</text>
+        <text x="160" y="190" font-size="7.4" fill="#8fd8bf">bk:positions</text>
+        <text x="214" y="168" font-size="7.4" fill="#8fd8bf">bk:orders</text>
+
+        <!-- instrument's links -->
+        <path d="M392,152 C382,176 372,196 366,206" fill="none" stroke="#7ea6ff" stroke-width="1.5" marker-end="url(#cvB)"/>
+        <path d="M416,144 C436,164 450,182 458,198" fill="none" stroke="#7ea6ff" stroke-width="1.5" marker-end="url(#cvB)"/>
+        <text x="370" y="186" font-size="7.4" fill="#9fb3e6" text-anchor="end">bk:quote</text>
+        <text x="448" y="168" font-size="7.4" fill="#9fb3e6">bk:option-chain</text>
+
+        <!-- orders to one order, and the order's affordances -->
+        <path d="M240,232 C240,250 240,262 240,278" fill="none" stroke="#4ad3a6" stroke-width="1.5" marker-end="url(#cvT)"/>
+        <text x="248" y="258" font-size="7.4" fill="#8fd8bf">item</text>
+        <path d="M260,294 C290,294 312,294 336,294" fill="none" stroke="#e0a84a" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#cvW)"/>
+        <text x="298" y="286" font-size="7.8" fill="#f6dcae" text-anchor="middle">bk:cancel</text>
+        <path d="M222,304 C196,316 188,284 216,286" fill="none" stroke="#e0a84a" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#cvW)"/>
+        <text x="182" y="306" font-size="7.8" fill="#f6dcae" text-anchor="end">edit</text>
+
+        <!-- nodes -->
+        <g transform="translate(280,42)">
+          <path d="M0,-24 L21,-12 L21,12 L0,24 L-21,12 L-21,-12 Z" fill="#0d1428" stroke="#c7d6ff" stroke-width="2"/>
+          <text y="4" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">/</text>
+        </g>
+        <text x="312" y="36" font-size="8.4" font-weight="700" letter-spacing="1.4" fill="#dfe7ff">API ROOT</text>
+        <text x="312" y="48" font-size="7.2" fill="#7f8db8">the only URL a client knows</text>
+
+        <g fill="#0e1630" stroke-width="2">
+          <circle cx="160" cy="132" r="19" stroke="#4ad3a6"/>
+          <circle cx="400" cy="132" r="19" stroke="#7ea6ff"/>
+          <circle cx="72" cy="210" r="13" stroke="#4ad3a6"/>
+          <circle cx="150" cy="228" r="13" stroke="#4ad3a6"/>
+          <circle cx="240" cy="212" r="15" stroke="#4ad3a6"/>
+          <circle cx="362" cy="218" r="13" stroke="#7ea6ff"/>
+          <circle cx="464" cy="210" r="13" stroke="#7ea6ff"/>
+          <circle cx="240" cy="294" r="17" stroke="#e0a84a"/>
+          <circle cx="350" cy="294" r="12" stroke="#e0a84a" stroke-dasharray="3 2"/>
+        </g>
+        <g font-size="7.6" font-weight="700" letter-spacing="1.1" fill="#cfdaf7" text-anchor="middle">
+          <text x="160" y="135">ACCTS</text>
+          <text x="400" y="135">INSTR</text>
+          <text x="72" y="238">BALANCES</text>
+          <text x="150" y="256">POSITIONS</text>
+          <text x="240" y="215" fill="#bff3e0">ORD</text>
+          <text x="362" y="246">QUOTE</text>
+          <text x="464" y="238">CHAIN</text>
+          <text x="240" y="297" fill="#f6dcae">OPEN</text>
+        </g>
+        <text x="364" y="297" font-size="7.2" fill="#f6dcae">cancellation</text>
+      </svg>
+    </div>
+    <p class="artcap">HAL &#183; HAL-FORMS &#183; RFC&nbsp;9457 &#183; Idempotency &#183; OAuth&nbsp;2.1 &#183; OpenAPI&nbsp;3.2 &#183; Spring&nbsp;AI</p>
+
+    <div style="text-align:center">
+      <span class="badge"><b>26 chapters</b> &#183; a complete Spring Boot 4 brokerage API &#183; every exchange captured from the running code</span>
+    </div>
+
+    <div class="byline">
+      <div>
+        <div class="author-lbl">Author</div>
+        <div class="author">Smiroh Dev</div>
+      </div>
+      <div>
+        <div class="pubname">Smiroh Publishers</div>
+        <div class="pubsub">First Edition</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     COPYRIGHT / EDITION NOTICE
+     ==================================================================== -->
+<section class="copyright" id="copyright">
+  <div class="cp-mark">
+    <svg width="19" height="21" viewBox="0 0 34 38" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M17,1 L32,9.5 L32,28.5 L17,37 L2,28.5 L2,9.5 Z" fill="none" stroke="#59617a" stroke-width="2"/>
+      <path d="M17,10 L24,14 L24,24 L17,28 L10,24 L10,14 Z" fill="#59617a" opacity=".5"/>
+    </svg>
+    <span class="nm">Smiroh Publishers</span>
+  </div>
+
+  <h1 class="cp-title">REST API Standards with HATEOAS</h1>
+  <p class="cp-by">Smiroh Dev</p>
+
+  <div style="margin:20pt 0 18pt">
+    <dl>
+      <dt>Publisher</dt><dd>Smiroh Publishers</dd>
+      <dt>Edition</dt><dd>First edition</dd>
+      <dt>Published</dt><dd><b>September 2026</b></dd>
+      <dt>Format</dt><dd>Electronic book (PDF), __PAGES__ pages</dd>
+      <dt>ISBN (ebook)</dt><dd>To be assigned</dd>
+      <dt>Subject</dt><dd>Computers / Programming / Web Services &amp; APIs</dd>
+      <dt>Code</dt><dd>Java 27, Spring Boot 4.1.1, Spring AI 2.0.1; complete listings in Appendix&nbsp;E</dd>
+    </dl>
+  </div>
+
+  <div class="legal">
+    <p><b>Copyright &copy; 2026 Smiroh Dev. All rights reserved.</b></p>
+
+    <p>Published by Smiroh Publishers. No part of this publication may be reproduced,
+    distributed, or transmitted in any form or by any means, including photocopying,
+    recording, or other electronic or mechanical methods, without the prior written
+    permission of the publisher, except in the case of brief quotations embodied in critical
+    reviews and certain other noncommercial uses permitted by copyright law.</p>
+
+    <h4>Trademarks</h4>
+    <p>Java is a registered trademark of Oracle and/or its affiliates. Spring, Spring Boot and
+    related names are trademarks of Broadcom Inc. and/or its subsidiaries. Webull is a trademark
+    of its owner. Claude and Anthropic are trademarks of Anthropic, PBC. All other trademarks are
+    the property of their respective owners and are used editorially, with no intention of
+    infringement. The publisher is not affiliated with any company or product named in this book.</p>
+
+    <h4>About the sample application</h4>
+    <p>The brokerage in this book is fictional. Its customers, accounts and prices are invented,
+    and its market is a simulation. The code is a teaching implementation: state lives in memory,
+    and the authorization server is configured for local development only. It is not a trading
+    system and must never be connected to real accounts, real markets or real credentials.</p>
+
+    <h4>Standards and third-party APIs</h4>
+    <p>The RFCs, Internet-Drafts and specifications cited here are the normative sources; where
+    this book and a specification disagree, the specification governs. Chapter&nbsp;24 describes the
+    publicly documented Webull OpenAPI as of September 2026, for comparison only. Product
+    features, model names and draft standards change, so check current documentation before
+    relying on them.</p>
+
+    <h4>Limit of liability and disclaimer of warranty</h4>
+    <p>The information in this book is provided on an &ldquo;as is&rdquo; basis, without warranty
+    of any kind, express or implied. While every precaution has been taken in its preparation,
+    neither the author nor the publisher shall have any liability to any person or entity with
+    respect to any loss or damage caused, or alleged to have been caused, directly or
+    indirectly, by the information or code it contains. Nothing in this book is investment,
+    legal or compliance advice.</p>
+  </div>
+
+  <div class="colophon">
+    Set in Helvetica Neue and Charter, with Menlo for code. Every HTTP exchange in this book was
+    recorded from the running sample application, and every code excerpt is drawn from the tested
+    source at build time. All diagrams are original vector artwork created for this edition.<br>
+    First edition &middot; September 2026 &middot; Smiroh Publishers
+  </div>
+</section>
+
+<!-- ====================================================================
+     CONTENTS
+     ==================================================================== -->
+<section class="contents chapter" id="contents" data-foot="Contents">
+  <div class="chnum">Contents</div>
+  <h1 class="title">What is in this book</h1>
+
+  <ol class="toc" style="margin-top:6pt">
+    <li><a href="#preface"><span class="num">&mdash;</span><span class="t">Preface</span><span class="d">Who this book is for, what you will build, and how to read it</span><span class="pg" data-ref="preface">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part I</span>Foundations</h2>
+  <ol class="toc">
+    <li><a href="#ch01"><span class="num">01</span><span class="t">Why API standards matter</span><span class="d">A duplicate order, a broken client, and the case for standards</span><span class="pg" data-ref="ch01">000</span></a></li>
+    <li><a href="#ch02"><span class="num">02</span><span class="t">REST in one chapter</span><span class="d">Constraints, resources and the Richardson maturity model</span><span class="pg" data-ref="ch02">000</span></a></li>
+    <li><a href="#ch03"><span class="num">03</span><span class="t">HTTP, the parts that matter</span><span class="d">Methods, status codes, headers and media types</span><span class="pg" data-ref="ch03">000</span></a></li>
+    <li><a href="#ch04"><span class="num">04</span><span class="t">Your workbench</span><span class="d">Build, run and call the brokerage API</span><span class="pg" data-ref="ch04">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part II</span>Designing Resources</h2>
+  <ol class="toc">
+    <li><a href="#ch05"><span class="num">05</span><span class="t">Modeling a brokerage</span><span class="d">From screens and verbs to resources and links</span><span class="pg" data-ref="ch05">000</span></a></li>
+    <li><a href="#ch06"><span class="num">06</span><span class="t">Representations</span><span class="d">JSON style, money as strings, time in UTC</span><span class="pg" data-ref="ch06">000</span></a></li>
+    <li><a href="#ch07"><span class="num">07</span><span class="t">Accounts and history</span><span class="d">Balances, positions and transactions: the read side</span><span class="pg" data-ref="ch07">000</span></a></li>
+    <li><a href="#ch08"><span class="num">08</span><span class="t">Market data</span><span class="d">Instruments, quotes and option chains</span><span class="pg" data-ref="ch08">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part III</span>Hypermedia</h2>
+  <ol class="toc">
+    <li><a href="#ch09"><span class="num">09</span><span class="t">HATEOAS</span><span class="d">Links as the engine of application state</span><span class="pg" data-ref="ch09">000</span></a></li>
+    <li><a href="#ch10"><span class="num">10</span><span class="t">HAL and link relations</span><span class="d">_links, _embedded, CURIEs and registered relations</span><span class="pg" data-ref="ch10">000</span></a></li>
+    <li><a href="#ch11"><span class="num">11</span><span class="t">Hypermedia with Spring HATEOAS</span><span class="d">Models, link builders and assemblers</span><span class="pg" data-ref="ch11">000</span></a></li>
+    <li><a href="#ch12"><span class="num">12</span><span class="t">Affordances with HAL-FORMS</span><span class="d">Telling clients what they can do next</span><span class="pg" data-ref="ch12">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part IV</span>Trading Safely</h2>
+  <ol class="toc">
+    <li><a href="#ch13"><span class="num">13</span><span class="t">Placing orders</span><span class="d">Validation, business rules and 201 Created</span><span class="pg" data-ref="ch13">000</span></a></li>
+    <li><a href="#ch14"><span class="num">14</span><span class="t">Idempotency</span><span class="d">Retries that can never buy twice</span><span class="pg" data-ref="ch14">000</span></a></li>
+    <li><a href="#ch15"><span class="num">15</span><span class="t">Changing and cancelling orders</span><span class="d">ETags, merge patch and 202 Accepted</span><span class="pg" data-ref="ch15">000</span></a></li>
+    <li><a href="#ch16"><span class="num">16</span><span class="t">Problem details</span><span class="d">Errors as RFC&nbsp;9457 documents</span><span class="pg" data-ref="ch16">000</span></a></li>
+  </ol>
+</section>
+
+<section class="contents chapter" id="contents2" data-foot="Contents">
+  <div class="chnum">Contents &middot; continued</div>
+
+  <h2 class="part" style="margin-top:4pt"><span class="pn">Part V</span>Operating at Scale</h2>
+  <ol class="toc">
+    <li><a href="#ch17"><span class="num">17</span><span class="t">Collections</span><span class="d">Cursor pagination, filtering and caching</span><span class="pg" data-ref="ch17">000</span></a></li>
+    <li><a href="#ch18"><span class="num">18</span><span class="t">Live order events</span><span class="d">Server-sent events with replay</span><span class="pg" data-ref="ch18">000</span></a></li>
+    <li><a href="#ch19"><span class="num">19</span><span class="t">Evolution and quotas</span><span class="d">Versions, deprecation and rate limits</span><span class="pg" data-ref="ch19">000</span></a></li>
+    <li><a href="#ch20"><span class="num">20</span><span class="t">Security</span><span class="d">OAuth&nbsp;2.1, scopes, PKCE and protected resource metadata</span><span class="pg" data-ref="ch20">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part VI</span>Contracts, Clients and Agents</h2>
+  <ol class="toc">
+    <li><a href="#ch21"><span class="num">21</span><span class="t">The OpenAPI 3.2 contract</span><span class="d">Describing a hypermedia API precisely</span><span class="pg" data-ref="ch21">000</span></a></li>
+    <li><a href="#ch22"><span class="num">22</span><span class="t">Testing the API</span><span class="d">From MockMvcTester to contract tests</span><span class="pg" data-ref="ch22">000</span></a></li>
+    <li><a href="#ch23"><span class="num">23</span><span class="t">A hypermedia client</span><span class="d">Following links from Java</span><span class="pg" data-ref="ch23">000</span></a></li>
+    <li><a href="#ch24"><span class="num">24</span><span class="t">RPC or resources?</span><span class="d">Lessons from the Webull OpenAPI</span><span class="pg" data-ref="ch24">000</span></a></li>
+    <li><a href="#ch25"><span class="num">25</span><span class="t">Agentic AI with Spring AI</span><span class="d">A trading assistant with a human in the loop</span><span class="pg" data-ref="ch25">000</span></a></li>
+    <li><a href="#ch26"><span class="num">26</span><span class="t">The standard on one page</span><span class="d">Every rule in this book, as a checklist</span><span class="pg" data-ref="ch26">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Appendices</span></h2>
+  <ol class="toc">
+    <li><a href="#appA"><span class="num">A</span><span class="t">Quick reference</span><span class="d">Commands, clients, scopes and every endpoint</span><span class="pg" data-ref="appA">000</span></a></li>
+    <li><a href="#appB"><span class="num">B</span><span class="t">Status codes and problem types</span><span class="d">What each error means and what a client should do</span><span class="pg" data-ref="appB">000</span></a></li>
+    <li><a href="#appC"><span class="num">C</span><span class="t">Glossary</span><span class="d">Every term in one place</span><span class="pg" data-ref="appC">000</span></a></li>
+    <li><a href="#appD"><span class="num">D</span><span class="t">Further reading</span><span class="d">The RFCs, drafts and specifications behind each chapter</span><span class="pg" data-ref="appD">000</span></a></li>
+    <li><a href="#appE"><span class="num">E</span><span class="t">Complete source code</span><span class="d">__LISTED_FILES__ files and __LISTED_LINES__ lines, every one tested</span><span class="pg" data-ref="appE">000</span></a></li>
+  </ol>
+
+  <div class="panel" style="margin-top:16pt">
+    <h3 style="margin-top:0">How the chapters build on each other</h3>
+    <p class="small" style="margin-bottom:4pt">Part&nbsp;I needs no prior knowledge beyond Java and a little HTTP. Each later
+    part assumes the ones before it. If you already design REST APIs for a living, skim Part&nbsp;I,
+    read Chapter&nbsp;4 to get the code running, and start in earnest at Part&nbsp;III. If you only want
+    the agent, read Chapters&nbsp;4, 9, 14 and 20 first: Chapter&nbsp;25 leans on all four.</p>
+  </div>
+</section>
+
+<!-- ====================================================================
+     PREFACE
+     ==================================================================== -->
+<section class="chapter" id="preface" data-foot="Preface">
+  <div class="chnum">Preface</div>
+  <h1 class="title">About this book</h1>
+  <p class="lede">Most APIs that call themselves RESTful stop at JSON over HTTP. This book goes the whole
+  way, and shows with one complete, tested application why the last steps are the ones that pay.</p>
+
+  <h2>Who this book is for</h2>
+  <p>You write or review HTTP APIs, probably in Java, and you want them to be <i>boringly
+  predictable</i>: every error shaped the same way, every retry safe, every collection paged the
+  same way, and clients that do not break when the server changes. You might be a developer
+  building your first public API, an architect writing your organization's API guidelines, or a
+  tech lead who has to decide whether hypermedia is worth it. You need Java and a working idea of
+  what an HTTP request is. Everything else is explained as it comes up.</p>
+
+  <h2>What you will build</h2>
+  <p>The running example is a retail brokerage, the kind of API that sits behind a trading app:
+  accounts, balances, positions, transaction history, market data, and orders for stocks and
+  options. A brokerage makes a demanding teacher. Money must never be rounded by accident, a
+  retried request must never buy twice, two devices editing one order must not overwrite each
+  other, and every action must be authorized to the cent. The standards in this book exist
+  because domains like this one need them.</p>
+
+  <table>
+    <thead><tr><th style="width:24%">Module</th><th>What it is</th><th style="width:28%">Where it is covered</th></tr></thead>
+    <tbody>
+      <tr><td class="k">auth-server</td><td>An OAuth&nbsp;2.1 authorization server (Spring Security) with three
+      registered clients and one demo customer.</td><td>Chapters 4 and 20</td></tr>
+      <tr><td class="k">brokerage-api</td><td>The REST API itself: HAL and HAL-FORMS hypermedia, RFC&nbsp;9457 errors,
+      idempotent orders, ETags, cursors, server-sent events, versioning and rate limits.</td><td>Chapters 5&ndash;20</td></tr>
+      <tr><td class="k">brokerage-client</td><td>A small Java client that navigates the API by following links
+      and never builds a URL.</td><td>Chapter 23</td></tr>
+      <tr><td class="k">brokerage-agent</td><td>An AI assistant built with Spring&nbsp;AI and Claude that uses the
+      client as its tools, with a human confirming every trade.</td><td>Chapter 25</td></tr>
+      <tr><td class="k">openapi</td><td>The OpenAPI 3.2 contract, served by the API and checked by its tests.</td><td>Chapter 21</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How this book is built</h2>
+  <p>Two rules kept the book honest. First, <b>no code in it is typed by hand.</b> Every code excerpt
+  is pulled from the tested source when the book is built, and Appendix&nbsp;E prints every source
+  file in full. Second, <b>no HTTP exchange is invented.</b> Each request and response was recorded
+  from the running application, against freshly started servers. When you run the same request,
+  you will see the same shape, though prices and timestamps will differ, because the market
+  in the sample application never stops moving.</p>
+
+  <div class="grid g2" style="margin:8pt 0 10pt">
+    <figure class="code src keep" style="margin:0"><figcaption><span class="path">api/orders/Order.java</span><span class="note">source excerpt</span></figcaption><pre><span class="an">@JsonIgnore</span>
+<span class="kw">public</span> String etag() {
+    <span class="kw">return</span> <span class="st">"\""</span> + id + <span class="st">"-v"</span> + version + <span class="st">"\""</span>;
+}</pre></figure>
+    <figure class="code http keep" style="margin:0"><figcaption><span class="path">HTTP</span><span class="note">recorded exchange</span></figcaption><pre><span class="rl">GET /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1</span>
+<span class="hd">If-None-Match</span>: "ORD-100002-v1"
+<span class="gap"></span><span class="ok">HTTP/1.1 304 Not Modified</span></pre></figure>
+  </div>
+  <p>Light blocks are source code, captioned with the file they come from. Dark blocks are
+  traffic on the wire, captioned <span class="mono">HTTP</span>. Long HAL documents are
+  sometimes shortened: a comment such as <code>/* 3 more */</code> marks where array items were left out,
+  and the HAL <code>curies</code> entry, which every response repeats, is usually omitted after
+  Chapter&nbsp;10 introduces it.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <p class="small" style="margin:0">Chapters that set a rule end with a box like this one. The boxes add up to a
+    complete API style guide, gathered in Chapter&nbsp;26 as a single checklist you can adopt, adapt
+    or argue with.</p>
+  </div>
+
+  <h2>What you need</h2>
+  <ul class="tight">
+    <li><b>JDK 27</b> (the sample code uses Java 27 as its release level) and <b>Maven 3.9</b> or later,
+    or the Maven Wrapper included with the code.</li>
+    <li><b>curl</b>, or any HTTP client, to follow along with the exchanges.</li>
+    <li>For Chapter&nbsp;25 only, an <b>Anthropic API key</b>. Everything else runs without one.</li>
+  </ul>
+
+  <table class="dense">
+    <thead><tr><th style="width:40%">Component</th><th>Version used in this book</th></tr></thead>
+    <tbody>
+      <tr><td>Java</td><td>27 (general availability September 15, 2026)</td></tr>
+      <tr><td>Spring Boot</td><td>4.1.1, with Spring Framework 7.0.9</td></tr>
+      <tr><td>Spring HATEOAS</td><td>3.1.2</td></tr>
+      <tr><td>Spring Security (including the authorization server)</td><td>7.1.1</td></tr>
+      <tr><td>Jackson</td><td>3.1.5</td></tr>
+      <tr><td>Spring AI</td><td>2.0.1, with the Anthropic Java SDK 2.52.0</td></tr>
+      <tr><td>JUnit</td><td>6.0.3</td></tr>
+      <tr><td>OpenAPI Specification</td><td>3.2.1</td></tr>
+    </tbody>
+  </table>
+
+  <h2>A note on the standards</h2>
+  <p>Where an Internet standard exists, this book uses it and names it: RFC&nbsp;9110 for HTTP
+  semantics, RFC&nbsp;9457 for errors, RFC&nbsp;7396 for merge patches, RFC&nbsp;8288 for links, and so
+  on. A few conventions are still Internet-Drafts, notably the <code>Idempotency-Key</code> and
+  <code>RateLimit</code> header fields. The book says so each time, uses the shape the draft
+  describes, and explains what to watch for. Where no standard exists, as with pagination
+  cursors, the book states a convention and the reasoning behind it, so you can adopt it or
+  replace it knowingly.</p>
+</section>

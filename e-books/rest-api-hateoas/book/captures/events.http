@@ -1,0 +1,15 @@
+GET /accounts/ACC-1001/order-events HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Accept: text/event-stream
+
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+
+id:7
+event:order.created
+data:{"orderId":"ORD-100004","status":"OPEN","filledQuantity":"0","remainingQuantity":"4","occurredAt":"2026-09-28T23:33:28.961201Z","_links":{"order":{"href":"http://localhost:8080/accounts/ACC-1001/orders/ORD-100004"}}}
+
+id:8
+event:order.filled
+data:{"orderId":"ORD-100004","status":"FILLED","filledQuantity":"4","remainingQuantity":"0","averageFillPrice":"185.3500","occurredAt":"2026-09-28T23:33:29.933320Z","_links":{"order":{"href":"http://localhost:8080/accounts/ACC-1001/orders/ORD-100004"}}}

@@ -1,0 +1,17 @@
+GET /accounts HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+
+HTTP/1.1 403 Forbidden
+Content-Type: application/problem+json
+WWW-Authenticate: Bearer error="insufficient_scope", error_description="The request requires higher privileges than provided by the access token.", error_uri="https://tools.ietf.org/html/rfc6750#section-3.1"
+
+{
+  "detail": "The access token does not grant the scope this operation requires",
+  "instance": "/accounts",
+  "status": 403,
+  "title": "The access token lacks a required scope",
+  "type": "https://docs.brokerage.example/problems/insufficient-scope",
+  "requestId": "9a8a9339-83a1-4714-980b-442bbd876c7d"
+}

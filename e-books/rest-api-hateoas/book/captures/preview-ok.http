@@ -1,0 +1,50 @@
+POST /accounts/ACC-1001/order-previews HTTP/1.1
+Host: localhost:8080
+Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+API-Version: 2
+Content-Type: application/json
+
+{
+  "instrumentId": "EQ-MSFT",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "10",
+  "limitPrice": "450.00",
+  "timeInForce": "GTC",
+  "clientOrderId": "rebalance-2026-09-28"
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/hal+json
+
+{
+  "_links": {
+    "bk:account": {
+      "href": "http://localhost:8080/accounts/ACC-1001"
+    },
+    "bk:place-order": {
+      "href": "http://localhost:8080/accounts/ACC-1001/orders{?status,symbol,cursor,limit}",
+      "templated": true
+    },
+    "curies": [
+      {
+        "href": "https://docs.brokerage.example/rels/{rel}",
+        "name": "bk",
+        "templated": true
+      }
+    ]
+  },
+  "accountId": "ACC-1001",
+  "instrumentId": "EQ-MSFT",
+  "symbol": "MSFT",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": "10",
+  "estimatedPrice": "450.00",
+  "estimatedNotional": "4500.00",
+  "estimatedCommission": "0.00",
+  "estimatedTotal": "4500.00",
+  "buyingPower": "55241.10",
+  "acceptable": true,
+  "issues": []
+}
