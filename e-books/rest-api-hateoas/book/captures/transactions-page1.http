@@ -1,6 +1,6 @@
 GET /accounts/ACC-1001/transactions?limit=2 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -18,7 +18,7 @@ Content-Type: application/hal+json
         "symbol": "AMZN",
         "quantity": "12",
         "price": "205.40",
-        "occurredAt": "2026-09-19T22:30:20.581910Z",
+        "occurredAt": "2026-09-20T09:42:26.876265Z",
         "settlesOn": "2026-09-21"
       },
       {
@@ -28,8 +28,8 @@ Content-Type: application/hal+json
         "amount": "26.85",
         "instrumentId": "ETF-SPY",
         "symbol": "SPY",
-        "occurredAt": "2026-09-08T21:13:20.581902Z",
-        "settlesOn": "2026-09-08"
+        "occurredAt": "2026-09-09T08:25:26.876260Z",
+        "settlesOn": "2026-09-09"
       }
     ]
   },
@@ -41,7 +41,7 @@ Content-Type: application/hal+json
       "href": "http://localhost:8080/accounts/ACC-1001"
     },
     "next": {
-      "href": "http://localhost:8080/accounts/ACC-1001/transactions?cursor=MTc4ODkwMjAwMDU4MTpUWE4tMTAwNw&limit=2"
+      "href": "http://localhost:8080/accounts/ACC-1001/transactions?cursor=MTc4ODk0MjMyNjg3NjpUWE4tMTAwNw&limit=2"
     },
     "curies": [
       {

@@ -1,7 +1,7 @@
 {
   "sub": "brokerage-agent",
   "aud": "brokerage-api",
-  "nbf": 1790638402,
+  "nbf": 1790678728,
   "scope": [
     "orders:read",
     "market-data:read",
@@ -10,8 +10,8 @@
   ],
   "iss": "http://localhost:9000",
   "trading_limit": "5000",
-  "exp": 1790638702,
+  "exp": 1790679028,
   "customer_id": "cust-1001",
-  "iat": 1790638402,
-  "jti": "9b4140cb-b528-4dd3-a3e9-748817b58705"
+  "iat": 1790678728,
+  "jti": "a925c8ce-4dfd-49c1-8a84-c943cb5bfb2b"
 }

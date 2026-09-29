@@ -12,8 +12,9 @@ Code in the book is never pasted. Three directives pull it in at build time:
   <pre data-src="brokerage-api/.../OrderService.java" data-from="REGEX" data-to="REGEX"></pre>
       an excerpt of a source file under brokerage-apis/, highlighted. Optional:
       data-after (search for data-from only after this line), data-skip="A..B"
-      (elide the lines strictly between A and B), data-doc="no" (do not pull in the
-      Javadoc and annotations above data-from), data-cap (a caption).
+      (elide the lines strictly between A and B), data-to-nth="3" (end at the third line
+      matching data-to, to take several methods), data-doc="no" (do not pull in the Javadoc
+      and annotations above data-from), data-cap (a caption).
   <pre data-http="place"></pre>
       an HTTP exchange recorded from the running application by tools/capture.py.
   <pre data-file="claims-cli.json"></pre>
@@ -48,8 +49,9 @@ NAME = "rest-api-hateoas"
 HTML_OUT = BOOK / f"{NAME}.html"
 PDF_OUT = BOOK / f"{NAME}.pdf"
 
-# Widest line, in characters, that fits a code block at its font size.
-EXCERPT_WIDTH = 104
+# Widest line, in characters, that fits a code block at its font size. Captured HTTP may wrap
+# (long URLs do); source excerpts must not, because the source is formatted to this width.
+EXCERPT_WIDTH = 110
 LISTING_WIDTH = 112
 
 warnings = []
@@ -90,7 +92,13 @@ def excerpt(attrs):
     first = _find(lines, attrs["data-from"], start, rel) if "data-from" in attrs else 0
     if first is None:
         return [f"pattern not found: {attrs['data-from']}"], rel
-    last = _find(lines, attrs["data-to"], first, rel) if "data-to" in attrs else len(lines) - 1
+    last = len(lines) - 1
+    if "data-to" in attrs:                  # data-to-nth: stop at the Nth match, to take several methods
+        last = first - 1
+        for _ in range(int(attrs.get("data-to-nth", "1"))):
+            last = _find(lines, attrs["data-to"], last + 1, rel)
+            if last is None:
+                break
     if last is None:
         return [f"pattern not found: {attrs['data-to']}"], rel
     if rel.endswith(".java") and attrs.get("data-doc", "yes") != "no" and "data-from" in attrs:
@@ -166,7 +174,7 @@ def expand_http(m):
         text = cut_json(text, attrs["data-cut"])
     lines = text.split("\n")
     label = attrs.get("data-label", "HTTP")
-    return code_figure("http", label, highlight.http(text), lines, attrs.get("data-cap"))
+    return code_figure("http", label, highlight.http(text), lines, attrs.get("data-cap"), width=10_000)
 
 
 def cut_json(text, what):
@@ -186,7 +194,7 @@ def expand_file(m):
     text = path.read_text().rstrip("\n")
     fn = highlight.by_name(attrs["data-lang"]) if "data-lang" in attrs else highlight.for_path(name)
     return code_figure("file", attrs.get("data-label", name), fn(text), text.split("\n"),
-                       attrs.get("data-cap"))
+                       attrs.get("data-cap"), width=10_000)
 
 
 def expand_directives(doc):

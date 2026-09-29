@@ -1,6 +1,6 @@
 PATCH /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Content-Type: application/merge-patch+json
 If-Match: "ORD-100002-v1"
@@ -18,6 +18,6 @@ Content-Type: application/problem+json
   "status": 412,
   "title": "The resource has changed",
   "type": "https://docs.brokerage.example/problems/precondition-failed",
-  "requestId": "3a8fd355-11b3-46aa-9d99-e67ed5a69309",
+  "requestId": "02a60603-4e99-4fb1-a10a-3f7ede34eae2",
   "currentEtag": "\"ORD-100002-v2\""
 }

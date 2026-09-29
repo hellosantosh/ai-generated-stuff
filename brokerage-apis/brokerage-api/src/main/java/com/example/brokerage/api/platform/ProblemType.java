@@ -23,7 +23,7 @@ public enum ProblemType {
             "An If-Match header is required"),
     PRECONDITION_FAILED("precondition-failed", HttpStatus.PRECONDITION_FAILED, "The resource has changed"),
     ORDER_NOT_CANCELLABLE("order-not-cancellable", HttpStatus.CONFLICT,
-            "The order can no longer be cancelled"),
+            "The order can no longer be canceled"),
     ORDER_NOT_REPLACEABLE("order-not-replaceable", HttpStatus.CONFLICT, "The order can no longer be changed"),
     INSUFFICIENT_BUYING_POWER("insufficient-buying-power", HttpStatus.UNPROCESSABLE_CONTENT,
             "The account does not have enough buying power"),

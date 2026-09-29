@@ -327,7 +327,7 @@ paths:
       responses:
         "200":
           description: >-
-            The order. A working order links to `edit` and `bk:cancel`; a filled or cancelled
+            The order. A working order links to `edit` and `bk:cancel`; a filled or canceled
             order does not.
           headers:
             ETag: { $ref: "#/components/headers/ETag" }
@@ -376,7 +376,7 @@ paths:
       operationId: cancelOrder
       summary: Request cancellation
       description: >-
-        Cancelling is asynchronous: the order moves to PENDING_CANCEL at once and to CANCELLED
+        Canceling is asynchronous: the order moves to PENDING_CANCEL at once and to CANCELLED
         shortly after, and it may still fill in between. Orders are never deleted.
       tags: [orders]
       security: [{ oauth2: [orders:write] }]

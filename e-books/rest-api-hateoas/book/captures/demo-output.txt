@@ -1,0 +1,19 @@
+Accounts
+  ACC-1001  Individual Margin  MARGIN
+  ACC-1002  Roth IRA           CASH
+
+ACC-1001: cash 30982.11, buying power 52364.22, equity 67074.39
+
+Positions
+  AAPL      53 @ 231.95    P&L 2584.73
+  MSFT      20 @ 514.09    P&L 2239.80
+  SPY       15 @ 667.59    P&L 1913.85
+  AMZN      12 @ 230.40    P&L 300.00
+  NVDA       4 @ 184.62    P&L -3.84
+
+AAPL 231.95  bid 231.93  ask 231.97  (0.80%)
+
+Preview: 5 AAPL at 208.75 costs 1043.75 (acceptable: true)
+Placed ORD-100005: OPEN, cancelable: true
+Cancel requested: PENDING_CANCEL
+Now CANCELLED, cancelable: false

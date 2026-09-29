@@ -52,6 +52,25 @@ class ProtocolTest {
     }
 
     @Test
+    void aValueOfTheWrongTypeIsReportedLikeAValidationError() {
+        MvcTestResult result = mvc.post().uri("/accounts/ACC-1001/order-previews").with(alice(ALL))
+                .contentType("application/json")
+                .content("""
+                        {"instrumentId": "EQ-AAPL", "side": "HOLD", "type": "MARKET", "quantity": "1"}""")
+                .exchange();
+        assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+        assertThat(result).bodyJson().extractingPath("$.type").isEqualTo(PROBLEMS + "invalid-request");
+        assertThat(result).bodyJson().extractingPath("$.errors[0].field").isEqualTo("side");
+        assertThat(result).bodyJson().extractingPath("$.errors[0].message")
+                .isEqualTo("must be one of BUY, SELL");
+    }
+
+    @Test
+    void theContractAnswersHeadRequestsWithoutAToken() {
+        assertThat(mvc.head().uri("/openapi.yaml")).hasStatusOk();
+    }
+
+    @Test
     void versionOneQuotesAreFlatAndDeprecated() {
         MvcTestResult v1 = mvc.get().uri("/instruments/EQ-AAPL/quote").with(alice(ALL)).exchange();
         assertThat(v1).hasStatusOk();

@@ -10,7 +10,7 @@ Content-Type: application/json;charset=UTF-8
 Cache-Control: no-cache, no-store, max-age=0, must-revalidate
 
 {
-  "access_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "access_token": "eyJraWQiOiI3MTE1NmVlYi02…",
   "scope": "orders:read market-data:read orders:write accounts:read",
   "token_type": "Bearer",
   "expires_in": 899

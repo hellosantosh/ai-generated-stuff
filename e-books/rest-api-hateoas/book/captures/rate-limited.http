@@ -1,19 +1,19 @@
 GET /accounts HTTP/1.1
 Host: localhost:8081
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 429 Too Many Requests
 Content-Type: application/problem+json
-Retry-After: 19
+Retry-After: 14
 RateLimit-Policy: "default";q=2;w=60
-RateLimit: "default";r=0;t=19
+RateLimit: "default";r=0;t=14
 
 {
-  "detail": "The default request quota for this client is used up; retry in 19 seconds",
+  "detail": "The default request quota for this client is used up; retry in 14 seconds",
   "instance": "/accounts",
   "status": 429,
   "title": "Too many requests",
   "type": "https://docs.brokerage.example/problems/rate-limited",
-  "requestId": "7f23ea9c-f77e-4296-9ac9-9611b76938c7"
+  "requestId": "62fcd984-edaa-4ac6-bf00-7f4d40732149"
 }

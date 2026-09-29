@@ -1,0 +1,490 @@
+<!-- ====================================================================
+     PART V PLATE
+     ==================================================================== -->
+<section class="plate" id="part5">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part V</div>
+    <h1>Operating at Scale</h1>
+    <p class="pl">An API that works for one developer on a laptop must also work for thousands of
+    clients over years. Collections that never end, events that must not be missed, versions
+    that must be retired, quotas that must be shared, and tokens that must be trusted.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="Menlo,monospace">
+        <!-- pages -->
+        <g transform="translate(60,70)">
+          <rect x="16" y="-16" width="96" height="120" rx="8" fill="#0e1630" stroke="#3d4868"/>
+          <rect x="8" y="-8" width="96" height="120" rx="8" fill="#0e1630" stroke="#5b6b9a"/>
+          <rect x="0" y="0" width="96" height="120" rx="8" fill="#101b3a" stroke="#7ea6ff" stroke-width="2"/>
+          <g fill="#7ea6ff"><rect x="14" y="18" width="66" height="6" rx="3"/><rect x="14" y="34" width="54" height="6" rx="3"/><rect x="14" y="50" width="62" height="6" rx="3"/></g>
+          <text x="14" y="100" font-size="10" fill="#c7d6ff">next &#8594;</text>
+        </g>
+        <!-- stream -->
+        <g fill="none" stroke-width="2.2">
+          <path d="M210,120 C250,90 290,150 330,120 C370,90 410,150 450,120" stroke="#4ad3a6"/>
+          <path d="M210,146 C250,116 290,176 330,146 C370,116 410,176 450,146" stroke="#4ad3a6" opacity=".45"/>
+        </g>
+        <g fill="#8fe8c9" font-size="9"><text x="236" y="96">id:7</text><text x="316" y="186">id:8</text><text x="396" y="96">id:9</text></g>
+        <!-- gauge -->
+        <g transform="translate(520,130)">
+          <path d="M-46,20 A48,48 0 1 1 46,20" fill="none" stroke="#3d4868" stroke-width="8" stroke-linecap="round"/>
+          <path d="M-46,20 A48,48 0 0 1 20,-43" fill="none" stroke="#e0a84a" stroke-width="8" stroke-linecap="round"/>
+          <line x1="0" y1="4" x2="18" y2="-30" stroke="#f6dcae" stroke-width="2.4"/>
+          <circle cx="0" cy="4" r="5" fill="#f6dcae"/>
+          <text y="46" text-anchor="middle" font-size="9" fill="#f6dcae">r=17 of q=120</text>
+        </g>
+        <!-- key -->
+        <g transform="translate(300,236)">
+          <circle cx="-40" cy="0" r="16" fill="none" stroke="#c7d6ff" stroke-width="2.4"/>
+          <path d="M-24,0 H40 M22,0 V12 M34,0 V10" stroke="#c7d6ff" stroke-width="2.4" fill="none"/>
+          <text x="54" y="4" font-size="10" fill="#c7d6ff">scopes &#183; audience &#183; PKCE</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>17</b> Collections &nbsp;&#183;&nbsp; <b>18</b> Live order events &nbsp;&#183;&nbsp;
+      <b>19</b> Evolution and quotas &nbsp;&#183;&nbsp; <b>20</b> Security
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 17 - COLLECTIONS
+     ==================================================================== -->
+<section class="chapter" id="ch17" data-foot="Chapter 17 · Collections">
+  <div class="chnum">Chapter 17</div>
+  <h1 class="title">Collections: pagination, filtering and caching</h1>
+  <p class="lede">A collection that can grow forever needs three things: a way to read it in
+  pieces that never skip or repeat, a way to ask for less of it, and a way to avoid reading it
+  again when nothing has changed.</p>
+
+  <h2>Why not page=2?</h2>
+  <p>Offset pagination (<code>?page=2&amp;size=25</code>, or <code>?offset=25</code>) is easy to build and
+  wrong for any list that changes while it is read. A statement is newest first, so every new
+  transaction is inserted at the top. If one arrives between a client's request for page&nbsp;1 and
+  its request for page&nbsp;2, every item shifts down by one, and page&nbsp;2 begins with an item the
+  client has already seen. If an item is removed, one is skipped instead. Neither is visible to
+  the client.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <g font-size="10" font-weight="700" fill="#14181f"><text x="10" y="16">Offset: page 2 starts at position 3</text><text x="370" y="16">Cursor: page 2 starts after TXN-1007</text></g>
+      <g font-family="Menlo,monospace" font-size="9">
+        <g transform="translate(10,28)">
+          <rect width="150" height="22" rx="3" fill="#e6f6ee"/><text x="8" y="15">TXN-1009  (new!)</text>
+          <rect y="26" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="41">TXN-1008</text>
+          <rect y="52" width="150" height="22" rx="3" fill="#fdeaee" stroke="#c0203f"/><text x="8" y="67">TXN-1007  seen twice</text>
+          <rect y="78" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="93">TXN-1006</text>
+          <rect y="104" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="119">TXN-1002</text>
+        </g>
+        <path d="M172,82 L200,82" stroke="#c0203f"/><text x="204" y="86" fill="#c0203f">page 2, item 1</text>
+        <g transform="translate(370,28)">
+          <rect width="150" height="22" rx="3" fill="#e6f6ee"/><text x="8" y="15">TXN-1009  (new!)</text>
+          <rect y="26" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="41">TXN-1008</text>
+          <rect y="52" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="67">TXN-1007  &#8592; cursor</text>
+          <rect y="78" width="150" height="22" rx="3" fill="#e6f6ee" stroke="#0d7a52"/><text x="8" y="93">TXN-1006</text>
+          <rect y="104" width="150" height="22" rx="3" fill="#f5f7fc" stroke="#b9c2da"/><text x="8" y="119">TXN-1002</text>
+        </g>
+        <path d="M532,118 L560,118" stroke="#0d7a52"/><text x="564" y="122" fill="#0d7a52">page 2, item 1</text>
+      </g>
+      <text x="10" y="186" font-size="8.8" fill="#59617a">Page 1 returned TXN-1008 and TXN-1007. Then TXN-1009 arrived at the top.</text>
+      <text x="370" y="186" font-size="8.8" fill="#59617a">The cursor names the last item seen, so new items cannot shift the next page.</text>
+    </svg>
+    <figcaption><b>Figure 17.1</b> &mdash; Offset pagination repeats (or skips) items when the list changes
+    between pages. A cursor marks a position in the sort order itself, so it cannot.</figcaption>
+  </figure>
+
+  <h2>Cursors</h2>
+  <p>A <b>cursor</b> encodes the sort key of the last item returned: here, its timestamp and ID,
+  which together are unique. The next page is &ldquo;items older than that key,&rdquo; a question with
+  the same answer no matter what was inserted above. The cursor is base64url-encoded so that it
+  looks, and is treated, as opaque:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/CursorPage.java" data-from="^public record CursorPage" data-to="public static final int MAX_LIMIT"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/CursorPage.java" data-from="public static .T. CursorPage.T. of\(" data-to="^    }$"></pre>
+  <p>Opacity is a promise the server keeps to itself: because no client parses cursors, the
+  encoding can change at any time. A cursor that fails to decode, whether tampered with or from a
+  retired format, is a 400, never a silent empty page. The page size is bounded too:</p>
+  <pre data-http="bad-limit" data-show="response"></pre>
+  <p>Following <code>next</code> from the first page of Chapter&nbsp;7 gives the second, with its own
+  <code>next</code>:</p>
+  <pre data-http="transactions-page2" data-cut="curies"></pre>
+  <p>There is no <code>prev</code>, no page number and no total count. Each would cost the server work,
+  typically a count query over a growing table, and none is stable while the list changes. A
+  statement screen needs &ldquo;more,&rdquo; and <code>next</code> is exactly that.</p>
+
+  <h2>Filtering</h2>
+  <p>Filters are optional query parameters that narrow a collection, and they are declared in the
+  collection's link template, so clients discover them. The conventions are few and uniform:</p>
+  <ul class="tight">
+    <li><b>Equality:</b> <code>?symbol=AAPL</code>, <code>?type=DIVIDEND</code>.</li>
+    <li><b>Any of several values:</b> repeat the parameter: <code>?status=OPEN&amp;status=PARTIALLY_FILLED</code>
+    (a comma-separated list is accepted too, which is what RFC&nbsp;6570 expansion of a list produces).</li>
+    <li><b>Ranges:</b> <code>from</code> and <code>to</code>, inclusive, as ISO dates in UTC.</li>
+    <li><b>Order:</b> fixed, newest first. A stable, indexable order is what makes cursors cheap.</li>
+  </ul>
+  <pre data-http="orders-open" data-cut="curies" data-cap="working orders: two statuses, one request"></pre>
+
+  <h2>Caching</h2>
+  <p>HTTP caching (RFC&nbsp;9111) is the cheapest performance work an API can do, because clients and
+  proxies already implement it. The server's job is to say, for every response, whether it may be
+  stored and for how long, with <code>Cache-Control</code>:</p>
+  <table class="dense">
+    <thead><tr><th style="width:26%">Resource</th><th style="width:38%">Cache-Control</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Accounts, balances, orders</td><td class="m">no-cache, no-store, max-age=0, must-revalidate</td><td>Private and changing; Spring Security's default</td></tr>
+      <tr><td>Quotes</td><td class="m">max-age=1, private</td><td>Changes every second; licensed per user</td></tr>
+      <tr><td>The OpenAPI document</td><td class="m">max-age=3600</td><td>Public, and changes only with a release</td></tr>
+    </tbody>
+  </table>
+  <p>Spring Security writes the strict <code>no-store</code> policy on every response unless the
+  application sets its own header. That is a safe default for an API full of personal data, and
+  even reference data such as an instrument inherits it:</p>
+  <pre data-http="root-cache" data-show="response" data-cut="curies"></pre>
+  <p>Where caching is safe, the controller opts in explicitly, as the quote endpoint does
+  (Chapter&nbsp;8) and as the contract does:</p>
+  <pre data-http="openapi"></pre>
+  <p><b>Validation</b> complements expiry. When a cached copy is stale, the client revalidates
+  it by sending its <code>ETag</code> in <code>If-None-Match</code>, and a <code>304</code> costs almost nothing.
+  Orders and quotes both support it; you saw both 304s in earlier chapters. Collections do not
+  carry ETags in this API: a page of a changing list is cheap to regenerate and rarely identical
+  twice.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Page unbounded collections with opaque cursors and a <code>next</code> link; bound the page size and reject bad cursors with 400.</li>
+      <li>Sort in one stable order; filter with optional query parameters declared in the link template.</li>
+      <li>Every response states its cacheability; personal data is <code>no-store</code>, licensed data is <code>private</code>.</li>
+      <li>Resources that clients poll carry an <code>ETag</code> and answer <code>If-None-Match</code> with 304.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 18 - LIVE ORDER EVENTS
+     ==================================================================== -->
+<section class="chapter" id="ch18" data-foot="Chapter 18 · Live order events">
+  <div class="chnum">Chapter 18</div>
+  <h1 class="title">Live order events with server-sent events</h1>
+  <p class="lede">A trader wants to know the moment an order fills. Polling can tell them, one
+  wasted request at a time. A stream tells them once, as it happens, and with the right design
+  it never loses an event across a reconnect.</p>
+
+  <h2>Choosing a push technology</h2>
+  <table class="dense">
+    <thead><tr><th style="width:18%">Option</th><th>Strengths</th><th style="width:36%">Costs</th></tr></thead>
+    <tbody>
+      <tr><td>Polling</td><td>Trivial; works everywhere; cheap with ETags</td><td>Latency equals the interval; wasted requests</td></tr>
+      <tr class="hl"><td><b>Server-sent events</b></td><td>Plain HTTP; one-way push; built-in event IDs and reconnection with <code>Last-Event-ID</code></td><td>Server to client only; one long-lived connection per client</td></tr>
+      <tr><td>WebSockets</td><td>Two-way, low overhead per message</td><td>A separate protocol; reconnection and replay are yours to build</td></tr>
+      <tr><td>Webhooks</td><td>No open connection; good for server-to-server</td><td>The client must host a public endpoint and verify signatures</td></tr>
+    </tbody>
+  </table>
+  <p>Order updates flow one way, from the brokerage to the client, and each one matters. Server-sent
+  events (SSE), defined in the WHATWG HTML standard, fit both needs. They run over ordinary
+  HTTP, through the same authentication and proxies as the rest of the API, and they were designed
+  with replay in mind.</p>
+
+  <h2>The event stream</h2>
+  <p>A client opens the stream with an ordinary <code>GET</code> and <code>Accept: text/event-stream</code>, and
+  the response simply never ends. Each event is a few <code>field:value</code> lines followed by a
+  blank line. Here is the stream while a market order for NVDA is placed and fills:</p>
+  <pre data-http="events" data-cap="an order created, then filled on the next market tick"></pre>
+  <p><code>id</code> numbers every event, <code>event</code> names its type, and <code>data</code> carries a JSON
+  summary of the order. The summary is deliberately small, and it links to the full order, so the
+  event stream is hypermedia too: a client that needs every detail follows <code>_links.order</code>.</p>
+  <table class="dense">
+    <thead><tr><th style="width:34%">Event type</th><th>Published when</th></tr></thead>
+    <tbody>
+      <tr><td class="k">order.created</td><td>An order is placed.</td></tr>
+      <tr><td class="k">order.replaced</td><td>A merge patch changed a working order.</td></tr>
+      <tr><td class="k">order.partially-filled</td><td>An execution filled part of the order.</td></tr>
+      <tr><td class="k">order.filled</td><td>The order is completely filled.</td></tr>
+      <tr><td class="k">order.cancel-requested</td><td>A cancellation was accepted (202).</td></tr>
+      <tr><td class="k">order.cancelled</td><td>The cancellation completed.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Never missing an event</h2>
+  <p>Connections drop. When a browser's <code>EventSource</code> reconnects, it automatically sends the ID
+  of the last event it received in a <code>Last-Event-ID</code> header, and any client can do the same.
+  The server keeps a short history of each account's events and replays everything after that
+  ID before streaming new ones:</p>
+  <pre data-http="events-replay" data-cap="reconnecting after event 7: event 8 is replayed at once"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderEvents.java" data-from="public SseEmitter subscribe\(" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderEvents.java" data-from="public List.Event. replay\(" data-to="^    }$"></pre>
+  <p>The controller checks ownership exactly as every other account endpoint does, then hands the
+  subscription to <code>OrderEvents</code>. Note the base URI captured at subscription time: events are
+  sent later, outside the original request, where the current request is no longer available to
+  build links from.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderEventController.java" data-from="public SseEmitter events\(" data-to="^    }$"></pre>
+
+  <h2>Running streams in production</h2>
+  <ul class="tight">
+    <li><b>History has a horizon.</b> This implementation keeps the last 500 events per account. A
+    client that has been away longer should re-read its orders, then resume the stream.</li>
+    <li><b>Proxies buffer.</b> Some reverse proxies hold responses until they end, which never
+    happens here. Disable response buffering for the stream's path.</li>
+    <li><b>Idle connections die.</b> Load balancers close quiet connections. Streams that may be idle
+    for long should send a periodic comment line (a line starting with a colon) as a heartbeat.</li>
+    <li><b>One process is not a cluster.</b> Here, events live in memory. With several instances,
+    publish them through a message broker so every instance can serve every subscriber, and replay
+    from a durable log.</li>
+  </ul>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Push state changes as server-sent events over the same authenticated HTTP as the rest of the API.</li>
+      <li>Every event has an increasing <code>id</code> and a typed <code>event</code> name; reconnects with <code>Last-Event-ID</code> replay what was missed.</li>
+      <li>Event data is a small summary that links to the full resource.</li>
+      <li>Document the replay horizon, and what a client should do beyond it.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 19 - EVOLUTION AND QUOTAS
+     ==================================================================== -->
+<section class="chapter" id="ch19" data-foot="Chapter 19 · Evolution and quotas">
+  <div class="chnum">Chapter 19</div>
+  <h1 class="title">Evolution: versions, deprecation and rate limits</h1>
+  <p class="lede">An API that never changes is dead, and an API that breaks its clients is
+  soon abandoned. The craft lies between: evolve without versions whenever you can, version
+  precisely when you must, and tell clients well ahead of time what is going away.</p>
+
+  <h2>Change without breaking</h2>
+  <p>Most changes need no version at all, provided clients are tolerant readers (Chapter&nbsp;6).
+  These are safe:</p>
+  <ul class="tight">
+    <li>Adding a property to a representation, or a new link to its <code>_links</code>.</li>
+    <li>Adding a resource, a link relation, an optional query parameter or a new problem type.</li>
+    <li>Adding a value to an enumeration that clients were told to treat as open-ended.</li>
+    <li>Moving a resource to a new URI, for clients that follow links. This is the change hypermedia
+    makes free.</li>
+  </ul>
+  <p>These break clients: removing or renaming a property, changing its type or shape, changing
+  what a value means, adding a required input, or tightening validation. The brokerage has one
+  breaking change in its history. Version&nbsp;1 of a quote had flat <code>bid</code> and <code>bidSize</code>
+  properties; version&nbsp;2 groups each side into a price level and adds the day's change:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/market/Quotes.java" data-from="^public final class Quotes" data-to="^}$"></pre>
+
+  <h2>Where to put the version</h2>
+  <table class="dense">
+    <thead><tr><th style="width:26%">Strategy</th><th style="width:28%">Example</th><th>Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td>URI path</td><td class="m">/v2/instruments/…</td><td>Visible and simple, but every resource gets one URI per version, and every link must know the version.</td></tr>
+      <tr><td>Query parameter</td><td class="m">?version=2</td><td>Easy to add, easy to lose when a client follows a link.</td></tr>
+      <tr class="hl"><td><b>Request header</b></td><td class="m">API-Version: 2</td><td>One URI per resource; links stay version-free; the client pins its version once.</td></tr>
+      <tr><td>Media type parameter</td><td class="m">application/hal+json;v=2</td><td>Precise per representation, but awkward in tooling and caches.</td></tr>
+    </tbody>
+  </table>
+  <p>For a hypermedia API the header wins, because links must work for every client regardless of
+  version. The brokerage uses the API versioning support new in Spring Framework&nbsp;7: one line
+  chooses the header, and handler mappings declare the version they serve.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/WebConfig.java" data-from="public void configureApiVersioning" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/market/InstrumentController.java" data-from="public ResponseEntity.*quoteV1\(" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/market/InstrumentController.java" data-from="ResponseEntity.EntityModel.Quote.. quote\(" data-to="^    }$"></pre>
+  <p>Mappings without a version, which is every other endpoint, serve all versions. A version the
+  server does not know is refused, and the problem lists the ones it does:</p>
+  <pre data-http="quote-v9" data-show="response"></pre>
+
+  <h2>Deprecation and sunset</h2>
+  <p>Version&nbsp;1 is still the default, so that clients written before version&nbsp;2 existed keep
+  working. It is also deprecated, and every response in version&nbsp;1 says so with three
+  standard header fields:</p>
+  <pre data-http="quote-v1" data-cut="curies" data-cap="no API-Version header: version 1, with warnings"></pre>
+  <dl class="defs">
+    <dt>Deprecation: @1788220800 (RFC&nbsp;9745)</dt>
+    <dd>The moment the version was deprecated, as a Unix timestamp: September&nbsp;1, 2026. It still works;
+    it will not improve.</dd>
+    <dt>Sunset: Mon, 1 Mar 2027 00:00:00 GMT (RFC&nbsp;8594)</dt>
+    <dd>When it is expected to stop working.</dd>
+    <dt>Link: &lt;…/migrations/v2&gt;; rel="sunset"</dt>
+    <dd>Where to read about the move.</dd>
+  </dl>
+  <p>Because the version is a property of the whole contract, a version&nbsp;1 client sees the warning
+  on <i>every</i> response, not just on quotes. That is by design: the client, not a single endpoint,
+  must move. Clients log and alert on <code>Deprecation</code> headers, and they pin a version on every
+  request, as the book's client does, so that a change of default can never change what they
+  receive:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/HypermediaClient.java" data-from="public HypermediaClient\(RestClient.Builder builder\)" data-to="^    }$"></pre>
+
+  <h2>Rate limits</h2>
+  <p>Quotas keep one client's bug from becoming every client's outage. The brokerage applies two
+  per-client policies in fixed one-minute windows: <code>default</code>, for every request, and a stricter
+  <code>orders</code> policy for requests that change orders.</p>
+  <pre data-src="brokerage-api/src/main/resources/application.yaml" data-from="^  rate-limit:" data-to="order-changes-per-minute"></pre>
+  <p>A quota is only fair if clients can see it before they hit it. Every response advertises the
+  policy and what is left of it, using the <code>RateLimit-Policy</code> and <code>RateLimit</code> fields from
+  the IETF HTTP APIs working group's draft: <code>q</code> is the quota, <code>w</code> the window in
+  seconds, <code>r</code> the requests remaining and <code>t</code> the seconds until the window resets. To
+  show a limit being reached, these captures come from a second API instance configured with a
+  quota of two requests per minute:</p>
+  <pre data-http="rate-limit-ok" data-show="response"></pre>
+  <pre data-http="rate-limited" data-show="response" data-cap="the third request in the window"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/RateLimiter.java" data-from="public boolean preHandle\(" data-to="^    }$"></pre>
+  <p>A well-behaved client slows down as <code>r</code> approaches zero, waits out <code>Retry-After</code> when it
+  does not, and retries with the same idempotency key (Chapter&nbsp;14). A fixed window is the
+  simplest fair algorithm; a production gateway would typically use a sliding window or token
+  bucket, and share its counters across instances.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Prefer additive, backward-compatible change; clients must tolerate new properties, links and values.</li>
+      <li>Version the contract with a request header, never the path; unknown versions are 400 with the supported list.</li>
+      <li>Announce retirement with <code>Deprecation</code>, <code>Sunset</code> and a <code>rel="sunset"</code> link; clients pin their version.</li>
+      <li>Every response advertises its quota with <code>RateLimit-Policy</code> and <code>RateLimit</code>; exceeding it is 429 with <code>Retry-After</code>.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 20 - SECURITY
+     ==================================================================== -->
+<section class="chapter" id="ch20" data-foot="Chapter 20 · Security">
+  <div class="chnum">Chapter 20</div>
+  <h1 class="title">Securing the API with OAuth 2.1</h1>
+  <p class="lede">A brokerage API must answer two questions on every request: who is this
+  client acting for, and what has it been allowed to do? OAuth&nbsp;2.1 answers both with a signed
+  token, and never lets the API see a password.</p>
+
+  <h2>Four roles</h2>
+  <p>OAuth names four parties. The <b>resource owner</b> is the customer, Alice. The <b>client</b> is
+  the software acting for her: a web app, her own script, an AI agent. The <b>authorization
+  server</b> authenticates her, asks her consent, and issues tokens. The <b>resource server</b> is the
+  brokerage API, which accepts tokens and enforces what they allow. OAuth&nbsp;2.1, an IETF draft
+  that consolidates a decade of OAuth&nbsp;2.0 security guidance, removes the risky parts of the
+  original: no implicit grant, no password grant, PKCE for every authorization code, exact
+  redirect URI matching, and refresh tokens that are rotated or bound to a key.</p>
+
+  <h2>Three clients, three patterns</h2>
+  <table class="dense">
+    <thead><tr><th style="width:18%">Client</th><th style="width:30%">Grant</th><th>Pattern and limits</th></tr></thead>
+    <tbody>
+      <tr><td class="k">brokerage-web</td><td>Authorization code + PKCE, with consent; refresh tokens</td><td>A web app's backend (a &ldquo;backend for frontend&rdquo;). A confidential client: tokens stay on the server, and the browser holds only a session cookie. Access tokens last 10 minutes; refresh tokens 8 hours, rotated on every use.</td></tr>
+      <tr><td class="k">brokerage-cli</td><td>Client credentials</td><td>A customer's own script, registered to that customer, like a personal API key. Tokens last 15 minutes.</td></tr>
+      <tr><td class="k">brokerage-agent</td><td>Client credentials</td><td>The AI agent (Chapter&nbsp;25). Registered to the customer, with tokens that last 5 minutes and a <code>trading_limit</code> of 5,000 USD per order.</td></tr>
+    </tbody>
+  </table>
+  <p>The development authorization server is Spring Authorization Server, part of Spring
+  Security&nbsp;7. Its clients are declared in configuration:</p>
+  <pre data-src="auth-server/src/main/resources/application.yaml" data-from="^        client:" data-to="reuse-refresh-tokens: false"></pre>
+
+  <div class="callout"><span class="lbl">Why the web app is a confidential client.</span> A single-page
+  app running only in the browser is a <i>public</i> client: it cannot keep a secret, and any token it
+  holds is exposed to whatever script runs on the page. The IETF's guidance for browser-based apps
+  recommends a backend-for-frontend instead: a small server that performs the OAuth flow as a
+  confidential client and gives the browser only an <code>HttpOnly</code> session cookie. Spring
+  Authorization Server agrees in its own way: it issues refresh tokens to confidential clients only.</div>
+
+  <h2>What a token says</h2>
+  <p>The API trusts only what the authorization server signed. Beyond the standard claims, the
+  brokerage's tokens carry two of its own, added by a token customizer:</p>
+  <pre data-src="auth-server/src/main/java/com/example/brokerage/auth/AuthServerApplication.java" data-from="OAuth2TokenCustomizer.JwtEncodingContext. brokerageClaims" data-to="^    }$"></pre>
+  <pre data-src="auth-server/src/main/resources/application.yaml" data-from="^brokerage:" data-to="brokerage-agent: 5000"></pre>
+  <div class="grid g2">
+    <pre data-file="claims-alice.json" data-label="Alice, through brokerage-web"></pre>
+    <pre data-file="claims-agent.json" data-label="the agent, through brokerage-agent"></pre>
+  </div>
+  <p>The two tokens act for the same customer, <code>cust-1001</code>, with different authority. Alice's
+  browser session was granted read scopes only, because that is what the web app asked for and she
+  consented to. The agent may trade, but only up to its <code>trading_limit</code>. Chapter&nbsp;25 shows the
+  API enforcing it.</p>
+
+  <h2>The browser flow: authorization code with PKCE</h2>
+  <figure class="fig">
+    <svg viewBox="0 0 700 262" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="f201" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <g font-size="9.6" font-weight="700" text-anchor="middle" fill="#14181f">
+        <rect x="10" y="6" width="110" height="26" rx="6" fill="#eaeeff" stroke="#2f4fd0"/><text x="65" y="23">Browser</text>
+        <rect x="200" y="6" width="130" height="26" rx="6" fill="#e6f6ee" stroke="#0d7a52"/><text x="265" y="23">Web backend (BFF)</text>
+        <rect x="410" y="6" width="130" height="26" rx="6" fill="#fdf1e0" stroke="#a8620a"/><text x="475" y="23">Authorization server</text>
+        <rect x="590" y="6" width="100" height="26" rx="6" fill="#fff" stroke="#14181f"/><text x="640" y="23">API</text>
+      </g>
+      <g stroke="#dbe1ef" stroke-dasharray="3 3"><line x1="65" y1="32" x2="65" y2="256"/><line x1="265" y1="32" x2="265" y2="256"/><line x1="475" y1="32" x2="475" y2="256"/><line x1="640" y1="32" x2="640" y2="256"/></g>
+      <g fill="none" stroke-width="1.2">
+        <path d="M65,52 L261,52" stroke="#2f4fd0" marker-end="url(#f201)"/>
+        <path d="M265,74 L69,74" stroke="#0d7a52" marker-end="url(#f201)"/>
+        <path d="M65,96 L471,96" stroke="#2f4fd0" marker-end="url(#f201)"/>
+        <path d="M475,122 L69,122" stroke="#a8620a" marker-end="url(#f201)"/>
+        <path d="M65,146 L261,146" stroke="#2f4fd0" marker-end="url(#f201)"/>
+        <path d="M265,170 L471,170" stroke="#0d7a52" marker-end="url(#f201)"/>
+        <path d="M475,194 L269,194" stroke="#a8620a" marker-end="url(#f201)"/>
+        <path d="M265,222 L636,222" stroke="#0d7a52" marker-end="url(#f201)"/>
+      </g>
+      <g font-size="8.4" fill="#14181f">
+        <text x="72" y="47">1 &#183; Sign in</text>
+        <text x="72" y="69" fill="#0d7a52">2 &#183; redirect to /oauth2/authorize + code_challenge</text>
+        <text x="130" y="91">3 &#183; Alice signs in and consents at the authorization server</text>
+        <text x="72" y="117" fill="#a8620a">4 &#183; redirect to /callback?code=…&amp;state=…</text>
+        <text x="72" y="141">5 &#183; the code</text>
+        <text x="272" y="165" fill="#0d7a52">6 &#183; code + code_verifier + client secret</text>
+        <text x="272" y="189" fill="#a8620a">7 &#183; access + refresh tokens</text>
+        <text x="272" y="217" fill="#0d7a52">8 &#183; API calls with the access token</text>
+        <text x="72" y="246" fill="#59617a">The browser only ever holds a session cookie for the web backend.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 20.1</b> &mdash; The authorization code grant with PKCE, through a backend for frontend.
+    The code_verifier is known only to the backend, so an intercepted code is useless without it.</figcaption>
+  </figure>
+  <p>PKCE (RFC&nbsp;7636) binds the code to the client that asked for it. Before redirecting, the
+  backend creates a random <code>code_verifier</code> and sends its SHA-256 hash as the
+  <code>code_challenge</code>. Here is the authorization request, captured from the sample server:</p>
+  <pre data-http="pkce-authorize" data-show="request"></pre>
+  <p>After Alice signs in and consents, the authorization server redirects back with a short-lived
+  code and the <code>state</code> the backend chose, which it checks to defeat cross-site request forgery:</p>
+  <pre data-http="pkce-callback"></pre>
+  <p>The backend exchanges the code, proving possession of the verifier and authenticating with its
+  own secret:</p>
+  <pre data-http="pkce-token" data-cap="tokens shortened for print"></pre>
+  <p>When the access token expires, the backend uses the refresh token, and receives a <i>new</i> refresh
+  token each time, because the server is configured not to reuse them. A stolen refresh token
+  therefore works at most once, and its use by an attacker invalidates the legitimate chain:</p>
+  <pre data-http="pkce-refresh" data-show="response"></pre>
+
+  <h2>The resource server</h2>
+  <p>The API validates each token's signature against the authorization server's published keys,
+  checks its issuer and expiry, and checks that it was minted for this API:</p>
+  <pre data-src="brokerage-api/src/main/resources/application.yaml" data-from="^  security:" data-to="audiences: brokerage-api"></pre>
+  <p>Then one configuration method decides, for every operation, which scope it requires. Keeping
+  every rule in one place makes the security model reviewable at a glance:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/SecurityConfig.java" data-from="public static final String MARKET_DATA_READ" data-to="oauth-protected-resource.*;$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/SecurityConfig.java" data-from="SecurityFilterChain api\(" data-to="^    }$"></pre>
+  <p>Beyond scopes, controllers turn the token into a <code>Caller</code>, whose customer ID scopes every
+  query and whose trading limit caps every order:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/Caller.java" data-from="^public record Caller" data-to="^}$"></pre>
+
+  <h2>Discovery: RFC 9728</h2>
+  <p>How does a client that has never seen this API find out where to get a token? RFC&nbsp;9728,
+  <i>OAuth 2.0 Protected Resource Metadata</i>, answers it. The API publishes a metadata document
+  naming its authorization servers and scopes, and points to it from the challenge in every 401
+  (Chapter&nbsp;16) and from the API root.</p>
+  <pre data-http="prm" data-show="response"></pre>
+  <p>A generic client, or an AI agent, can go from a 401 to a token without any documentation:
+  read <code>resource_metadata</code> from the challenge, fetch the metadata, fetch the authorization
+  server's own metadata (RFC&nbsp;8414) from <code>/.well-known/oauth-authorization-server</code>, and start
+  the right flow.</p>
+
+  <h2>Before production</h2>
+  <ul class="tight">
+    <li><b>TLS everywhere.</b> The samples use plain HTTP on localhost only.</li>
+    <li><b>Durable, rotated keys.</b> The development server generates a new signing key at each start.</li>
+    <li><b>Sender-constrained tokens</b> with DPoP (RFC&nbsp;9449) or mutual TLS (RFC&nbsp;8705), so a stolen
+    token is useless on another machine.</li>
+    <li><b>Secrets in a vault,</b> never in configuration files, and never tokens in URLs or logs.</li>
+    <li><b>Step-up and consent</b> for sensitive actions, and revocation when a device is lost.</li>
+  </ul>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Authenticate every request with an OAuth&nbsp;2.1 bearer token; browsers go through a backend for frontend with PKCE.</li>
+      <li>Tokens are audience-restricted, short-lived and carry fine-grained scopes; refresh tokens rotate.</li>
+      <li>Each operation's required scope is declared in one place; every query is scoped to the token's customer.</li>
+      <li>Publish RFC&nbsp;9728 metadata and point to it from every 401 challenge.</li>
+    </ol>
+  </div>
+</section>

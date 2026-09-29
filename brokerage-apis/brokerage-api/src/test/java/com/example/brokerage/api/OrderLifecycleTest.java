@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
- * Placing, retrying, changing and cancelling orders, and the links that follow each state.
+ * Placing, retrying, changing and canceling orders, and the links that follow each state.
  */
 @ApiTest
 class OrderLifecycleTest {

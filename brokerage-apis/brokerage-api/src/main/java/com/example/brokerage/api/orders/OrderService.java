@@ -195,7 +195,7 @@ public class OrderService implements Reservations {
         }
         if (!order.status().isWorking()) {
             throw new ApiException(ProblemType.ORDER_NOT_CANCELLABLE,
-                    "Order " + orderId + " is " + order.status() + " and cannot be cancelled");
+                    "Order " + orderId + " is " + order.status() + " and cannot be canceled");
         }
         Order pending = order.withStatus(Status.PENDING_CANCEL, clock.instant());
         save(pending);

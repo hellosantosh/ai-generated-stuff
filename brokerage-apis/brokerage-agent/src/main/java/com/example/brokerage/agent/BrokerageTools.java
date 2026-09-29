@@ -86,8 +86,8 @@ public class BrokerageTools {
         });
     }
 
-    @Tool(description = "Propose cancelling a working order. "
-            + "Nothing is cancelled until the customer confirms.")
+    @Tool(description = "Propose canceling a working order. "
+            + "Nothing is canceled until the customer confirms.")
     public Proposal proposeCancellation(@ToolParam(description = "Account ID") String accountId,
             @ToolParam(description = "Order ID, such as ORD-100002") String orderId) {
         Order order = brokerage.openOrders(accountId).stream()

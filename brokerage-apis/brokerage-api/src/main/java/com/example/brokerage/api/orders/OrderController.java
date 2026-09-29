@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 
 /**
- * Orders. Reading needs orders:read; placing, changing and cancelling need orders:write.
+ * Orders. Reading needs orders:read; placing, changing and canceling need orders:write.
  */
 @RestController
 public class OrderController {
@@ -137,8 +137,9 @@ public class OrderController {
         EntityModel<OrderPreview> model = EntityModel.of(preview,
                 linkTo(methodOn(AccountController.class).account(accountId, null)).withRel("account"));
         if (preview.acceptable() && caller.canTrade()) {
+            // expand(): this link is a POST target, so the listing's query parameters do not apply
             model.add(linkTo(methodOn(OrderController.class).orders(accountId, null, null, null, null, null))
-                    .withRel("place-order"));
+                    .withRel("place-order").expand());
         }
         return model;
     }

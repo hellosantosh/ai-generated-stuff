@@ -31,7 +31,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  *   market-data:read   instruments, quotes, option chains
  *   accounts:read      accounts, balances, positions, transactions
  *   orders:read        orders, order previews, the order event stream
- *   orders:write       placing, changing and cancelling orders
+ *   orders:write       placing, changing and canceling orders
  * </pre>
  */
 @Configuration(proxyBeanMethods = false)
@@ -42,14 +42,18 @@ public class SecurityConfig {
     public static final String ORDERS_READ = "SCOPE_orders:read";
     public static final String ORDERS_WRITE = "SCOPE_orders:write";
 
+    /** Discovery documents that anyone may read, with or without a token. */
+    private static final String[] PUBLIC = { "/", "/openapi.yaml", "/actuator/health/**",
+            "/.well-known/oauth-protected-resource" };
+
     @Bean
     SecurityFilterChain api(HttpSecurity http, ProblemResponses problems,
             @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}") String issuer)
             throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET, "/", "/openapi.yaml", "/actuator/health/**",
-                                "/.well-known/oauth-protected-resource").permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC).permitAll()
+                        .requestMatchers(HttpMethod.HEAD, PUBLIC).permitAll()
                         .requestMatchers(HttpMethod.GET, "/instruments/**").hasAuthority(MARKET_DATA_READ)
                         .requestMatchers(HttpMethod.GET, "/accounts/*/orders/**", "/accounts/*/order-events")
                             .hasAuthority(ORDERS_READ)

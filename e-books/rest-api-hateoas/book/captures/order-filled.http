@@ -1,6 +1,6 @@
 GET /accounts/ACC-1001/orders/ORD-100003 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -43,10 +43,10 @@ Content-Type: application/hal+json
       "id": "FIL-500001",
       "quantity": "3",
       "price": "232.04",
-      "executedAt": "2026-09-28T23:33:25.913947Z"
+      "executedAt": "2026-09-29T10:45:32.234747Z"
     }
   ],
-  "createdAt": "2026-09-28T23:33:25.405515Z",
-  "updatedAt": "2026-09-28T23:33:25.913947Z",
+  "createdAt": "2026-09-29T10:45:31.592779Z",
+  "updatedAt": "2026-09-29T10:45:32.234747Z",
   "remainingQuantity": "0"
 }

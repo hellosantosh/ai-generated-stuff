@@ -12,5 +12,5 @@ WWW-Authenticate: Bearer resource_metadata="http://localhost:8080/.well-known/oa
   "status": 401,
   "title": "Authentication is required",
   "type": "https://docs.brokerage.example/problems/unauthorized",
-  "requestId": "13565048-4c83-43b7-b3dd-6c0137bb99c8"
+  "requestId": "05ab6bff-2c40-4a22-8ad8-bcb0fd95eddc"
 }

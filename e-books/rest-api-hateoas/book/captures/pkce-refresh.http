@@ -3,16 +3,16 @@ Host: localhost:9000
 Authorization: Basic YnJva2VyYWdlLXdlYjp3ZWItc2VjcmV0
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=refresh_token&refresh_token=rfg3DlrJ22Fb…
+grant_type=refresh_token&refresh_token=wk_7mKDJwLgX…
 
 HTTP/1.1 200 OK
 Content-Type: application/json;charset=UTF-8
 
 {
-  "access_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
-  "refresh_token": "EgsJH9OLnaAWRG2XiFd9IJuf…",
+  "access_token": "eyJraWQiOiI3MTE1NmVlYi02…",
+  "refresh_token": "Alt22befVQCIqaNDpF10gvmf…",
   "scope": "orders:read market-data:read openid accounts:read",
-  "id_token": "eyJraWQiOiI5ZjlkYzAwOS1m…",
+  "id_token": "eyJraWQiOiI3MTE1NmVlYi02…",
   "token_type": "Bearer",
   "expires_in": 599
 }

@@ -1,6 +1,6 @@
 POST /accounts/ACC-1001/orders HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Idempotency-Key: b1c2d3e4-0000-4000-8000-000000000009
 Content-Type: application/json
@@ -17,10 +17,16 @@ HTTP/1.1 400 Bad Request
 Content-Type: application/problem+json
 
 {
-  "detail": "Failed to read request",
+  "detail": "One or more fields are invalid",
   "instance": "/accounts/ACC-1001/orders",
   "status": 400,
-  "title": "Bad Request",
+  "title": "The request is not valid",
   "type": "https://docs.brokerage.example/problems/invalid-request",
-  "requestId": "c5dbf956-0bfd-44f5-a27b-e9be1c961558"
+  "requestId": "73b19d0e-2869-4944-86d0-c483c63a2fcc",
+  "errors": [
+    {
+      "field": "side",
+      "message": "must be one of BUY, SELL"
+    }
+  ]
 }

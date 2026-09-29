@@ -1,6 +1,6 @@
 GET /accounts HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 403 Forbidden
@@ -13,5 +13,5 @@ WWW-Authenticate: Bearer error="insufficient_scope", error_description="The requ
   "status": 403,
   "title": "The access token lacks a required scope",
   "type": "https://docs.brokerage.example/problems/insufficient-scope",
-  "requestId": "9a8a9339-83a1-4714-980b-442bbd876c7d"
+  "requestId": "329ae2cf-4691-4de4-93d9-bdeb2c2d19ea"
 }

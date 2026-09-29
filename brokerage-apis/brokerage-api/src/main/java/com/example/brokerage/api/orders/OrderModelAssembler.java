@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
  *   <li>A working order, seen by a token with orders:write, offers "edit" (change it with
  *       PATCH) and "bk:cancel"; in HAL-FORMS both come with a template describing the
  *       request.</li>
- *   <li>A filled or cancelled order offers neither. A client that shows buttons only for
+ *   <li>A filled or canceled order offers neither. A client that shows buttons only for
  *       links that are present can never offer an action the server would refuse.</li>
  * </ul>
  */

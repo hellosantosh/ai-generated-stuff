@@ -1,6 +1,6 @@
 GET /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -46,7 +46,7 @@ Content-Type: application/hal+json
   "status": "OPEN",
   "filledQuantity": "0",
   "fills": [],
-  "createdAt": "2026-09-28T23:33:22.811774Z",
-  "updatedAt": "2026-09-28T23:33:22.811774Z",
+  "createdAt": "2026-09-29T10:45:28.998175Z",
+  "updatedAt": "2026-09-29T10:45:28.998175Z",
   "remainingQuantity": "10"
 }

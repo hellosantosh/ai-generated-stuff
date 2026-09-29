@@ -1,6 +1,6 @@
 GET /accounts/ACC-1001/balances HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -33,5 +33,5 @@ Content-Type: application/hal+json
   "positionsMarketValue": "34662.28",
   "totalEquity": "67082.83",
   "unrealizedPnl": "7042.98",
-  "asOf": "2026-09-28T23:33:22.699555Z"
+  "asOf": "2026-09-29T10:45:28.885254Z"
 }

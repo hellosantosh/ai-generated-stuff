@@ -1,6 +1,6 @@
 POST /accounts/ACC-1001/orders HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Content-Type: application/json
 
@@ -23,5 +23,5 @@ Content-Type: application/problem+json
   "status": 400,
   "title": "An Idempotency-Key header is required",
   "type": "https://docs.brokerage.example/problems/idempotency-key-missing",
-  "requestId": "4c3c3e39-5d2a-4baa-9afb-54eda2f169ff"
+  "requestId": "5c2e986a-4189-407e-9c88-98ac0dae6796"
 }

@@ -1,9 +1,12 @@
 package com.example.brokerage.api.platform;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -11,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.accept.InvalidApiVersionException;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 /**
  * Turns every error into an RFC 9457 problem document (application/problem+json), with a
@@ -80,6 +85,44 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         problem.setProperty("errors", errors);
         return ResponseEntity.badRequest().body(problem);
+    }
+
+    /**
+     * A body that cannot be read: malformed JSON, or a value of the wrong type such as an
+     * unknown enum constant. A wrong value is reported in the same "errors" shape as a
+     * Bean Validation failure, so clients handle one format for every invalid field.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        HttpServletRequest servletRequest = ((ServletWebRequest) request).getRequest();
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause instanceof MismatchedInputException mismatch && !mismatch.getPath().isEmpty()) {
+                ProblemDetail problem = problem(ProblemType.INVALID_REQUEST, "One or more fields are invalid",
+                        servletRequest);
+                problem.setProperty("errors", List.of(Map.of("field", fieldPath(mismatch),
+                        "message", expected(mismatch.getTargetType()))));
+                return ResponseEntity.badRequest().body(problem);
+            }
+        }
+        return ResponseEntity.badRequest().body(problem(ProblemType.INVALID_REQUEST,
+                "The request body is not valid JSON", servletRequest));
+    }
+
+    private static String fieldPath(MismatchedInputException mismatch) {
+        return mismatch.getPath().stream()
+                .map(ref -> ref.getPropertyName() != null ? ref.getPropertyName()
+                        : "[" + ref.getIndex() + "]")
+                .collect(Collectors.joining("."));
+    }
+
+    private static String expected(Class<?> type) {
+        if (type != null && type.isEnum()) {
+            return "must be one of " + Arrays.stream(type.getEnumConstants()).map(Object::toString)
+                    .collect(Collectors.joining(", "));
+        }
+        return type == BigDecimal.class ? "must be a decimal number written as a string, such as \"10.25\""
+                : "has the wrong type";
     }
 
     /** Everything Spring raises itself gets the same instance and requestId members. */

@@ -1,0 +1,513 @@
+<!-- ====================================================================
+     PART III PLATE
+     ==================================================================== -->
+<section class="plate" id="part3">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part III</div>
+    <h1>Hypermedia</h1>
+    <p class="pl">The constraint most APIs skip, and the one that pays for itself soonest in a
+    trading system: responses that tell the client what it may do next. HAL for links,
+    HAL-FORMS for forms, and Spring HATEOAS to produce both without ceremony.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="Menlo,monospace">
+        <rect x="40" y="30" width="270" height="240" rx="12" fill="#0f1834" stroke="#5b8cff" stroke-width="2"/>
+        <g font-size="11" fill="#c7d6ff">
+          <text x="62" y="62">{</text>
+          <text x="76" y="86" fill="#9db4ff">"_links": {</text>
+          <text x="92" y="110">"self":</text>
+          <text x="92" y="134" fill="#f6dcae">"edit":</text>
+          <text x="92" y="158" fill="#f6dcae">"bk:cancel":</text>
+          <text x="92" y="182">"bk:instrument":</text>
+          <text x="76" y="206" fill="#9db4ff">},</text>
+          <text x="76" y="230" fill="#8fe8c9">"status": "OPEN"</text>
+          <text x="62" y="254">}</text>
+        </g>
+        <g fill="none" stroke-width="1.8">
+          <path d="M150,106 C260,90 330,70 400,62" stroke="#7ea6ff"/>
+          <path d="M150,130 C260,128 330,120 400,120" stroke="#e0a84a" stroke-dasharray="5 4"/>
+          <path d="M200,154 C280,170 330,180 400,178" stroke="#e0a84a" stroke-dasharray="5 4"/>
+          <path d="M230,178 C300,210 340,230 400,236" stroke="#7ea6ff"/>
+        </g>
+        <g>
+          <circle cx="414" cy="62" r="13" fill="#0e1630" stroke="#7ea6ff" stroke-width="2"/>
+          <circle cx="414" cy="120" r="13" fill="#2a2210" stroke="#e0a84a" stroke-width="2"/>
+          <circle cx="414" cy="178" r="13" fill="#2a2210" stroke="#e0a84a" stroke-width="2"/>
+          <circle cx="414" cy="236" r="13" fill="#0e1630" stroke="#7ea6ff" stroke-width="2"/>
+        </g>
+        <g font-size="10" fill="#dfe7ff">
+          <text x="436" y="66">the order itself</text>
+          <text x="436" y="116" fill="#f6dcae">change it (PATCH)</text>
+          <text x="436" y="130" fill="#8f9cc4">only while working</text>
+          <text x="436" y="174" fill="#f6dcae">cancel it (POST)</text>
+          <text x="436" y="188" fill="#8f9cc4">only while working</text>
+          <text x="436" y="240">what it trades</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>09</b> HATEOAS &nbsp;&#183;&nbsp; <b>10</b> HAL and link relations &nbsp;&#183;&nbsp;
+      <b>11</b> Hypermedia with Spring HATEOAS &nbsp;&#183;&nbsp; <b>12</b> Affordances with HAL-FORMS
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 9 - HATEOAS
+     ==================================================================== -->
+<section class="chapter" id="ch09" data-foot="Chapter 9 · HATEOAS">
+  <div class="chnum">Chapter 9</div>
+  <h1 class="title">HATEOAS: links as the engine of application state</h1>
+  <p class="lede">A client that knows only one URL, and learns everything else from the
+  responses it receives, can never offer an action the server would refuse, and never breaks
+  when the server reorganizes. That is the whole promise of hypermedia.</p>
+
+  <h2>What the acronym means</h2>
+  <p><b>Hypermedia as the engine of application state</b> is the last of REST's uniform-interface
+  constraints. <i>Application state</i> is where the client is in its work: looking at an account,
+  holding an open order, waiting for a cancellation to complete. The constraint says the client
+  moves from one state to the next by following links and submitting forms that the server put
+  in its responses, just as you move through a website by clicking links rather than typing URLs.</p>
+  <p>Consider what a trading screen needs to know about an order: whether a <i>Cancel</i> button
+  should appear, and whether a <i>Change</i> button should. Without hypermedia, the client
+  reimplements the server's rules: &ldquo;show Cancel if the status is <code>OPEN</code> or
+  <code>PARTIALLY_FILLED</code>, and if the user's token has <code>orders:write</code>, and if…&rdquo;. Every copy
+  of that rule is a place for it to go stale. With hypermedia, the rule lives in one place, and the
+  client asks one question: <i>is there a <code>bk:cancel</code> link?</i></p>
+
+  <h2>The order's state machine, as links</h2>
+  <figure class="fig">
+    <svg viewBox="0 0 700 290" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="f91a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <g font-size="10.4" font-weight="700" text-anchor="middle">
+        <rect x="16" y="40" width="130" height="44" rx="22" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/><text x="81" y="66" fill="#0d7a52">OPEN</text>
+        <rect x="280" y="40" width="160" height="44" rx="22" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/><text x="360" y="66" fill="#0d7a52">PARTIALLY_FILLED</text>
+        <rect x="560" y="40" width="124" height="44" rx="22" fill="#eceff8" stroke="#59617a" stroke-width="1.4"/><text x="622" y="66" fill="#14181f">FILLED</text>
+        <rect x="270" y="190" width="180" height="44" rx="22" fill="#fdf1e0" stroke="#a8620a" stroke-width="1.4"/><text x="360" y="216" fill="#a8620a">PENDING_CANCEL</text>
+        <rect x="560" y="190" width="124" height="44" rx="22" fill="#eceff8" stroke="#59617a" stroke-width="1.4"/><text x="622" y="216" fill="#14181f">CANCELLED</text>
+      </g>
+      <g fill="none" stroke-width="1.3">
+        <path d="M146,62 L276,62" stroke="#0d7a52" marker-end="url(#f91a)"/>
+        <path d="M440,62 L556,62" stroke="#0d7a52" marker-end="url(#f91a)"/>
+        <path d="M110,40 C180,20 520,20 590,38" stroke="#0d7a52" marker-end="url(#f91a)"/>
+        <path d="M100,84 C130,170 200,206 266,210" stroke="#a8620a" marker-end="url(#f91a)"/>
+        <path d="M360,84 L360,186" stroke="#a8620a" marker-end="url(#f91a)"/>
+        <path d="M450,212 L556,212" stroke="#59617a" marker-end="url(#f91a)"/>
+        <path d="M440,196 C500,150 560,110 600,86" stroke="#0d7a52" stroke-dasharray="4 3" marker-end="url(#f91a)"/>
+      </g>
+      <g font-size="8.6" fill="#59617a">
+        <text x="211" y="56" text-anchor="middle">fill</text><text x="498" y="56" text-anchor="middle">fill</text>
+        <text x="350" y="10" text-anchor="middle">fill (all at once)</text>
+        <text x="20" y="178">POST bk:cancel</text><text x="366" y="140">POST bk:cancel</text>
+        <text x="503" y="206" text-anchor="middle">next pass</text>
+        <text x="548" y="152">a fill can still win</text>
+      </g>
+      <g font-family="Menlo,monospace" font-size="8" fill="#14181f">
+        <rect x="16" y="96" width="130" height="36" rx="4" fill="#fff" stroke="#b9c2da"/>
+        <text x="24" y="110">self · edit</text><text x="24" y="124" fill="#a8620a">bk:cancel</text>
+        <rect x="280" y="96" width="160" height="36" rx="4" fill="#fff" stroke="#b9c2da"/>
+        <text x="288" y="110">self · edit</text><text x="288" y="124" fill="#a8620a">bk:cancel</text>
+        <rect x="560" y="96" width="124" height="24" rx="4" fill="#fff" stroke="#b9c2da"/><text x="568" y="112">self only</text>
+        <rect x="270" y="246" width="180" height="24" rx="4" fill="#fff" stroke="#b9c2da"/><text x="278" y="262">self only</text>
+        <rect x="560" y="246" width="124" height="24" rx="4" fill="#fff" stroke="#b9c2da"/><text x="568" y="262">self only</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 9.1</b> &mdash; The order lifecycle. The boxes under each state list the links an
+    order carries in that state (every order also links to its account and instrument). Working
+    orders offer <code>edit</code> and <code>bk:cancel</code>; nothing else does.</figcaption>
+  </figure>
+
+  <p>Here is the same order before and after it is canceled. While it is working, it offers two
+  transitions:</p>
+  <pre data-http="order" data-show="response" data-cut="curies" data-cap="a working order"></pre>
+  <p>After the cancellation completes, the transitions are gone. Nothing else about the
+  representation's shape changed:</p>
+  <pre data-http="order-cancelled" data-show="response" data-cut="curies" data-cap="the same order, canceled"></pre>
+
+  <p>The code that makes this decision is short, and it is the only place in the system where the
+  decision is made:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderModelAssembler.java" data-from="public EntityModel.Order. toModel\(Order order, Caller caller\)" data-to="^    }$"></pre>
+  <p>Two inputs decide the links: the order's state (<code>isWorking()</code>) and the caller's
+  permissions (<code>canTrade()</code>, true when the token has <code>orders:write</code>). A read-only token sees
+  a working order with no <code>edit</code> and no <code>bk:cancel</code>, because for that caller those actions
+  do not exist.</p>
+
+  <h2>Links reflect permissions too</h2>
+  <p>The same principle applies one level up. An account read with a token that has only
+  <code>accounts:read</code> and <code>market-data:read</code> does not mention orders at all:</p>
+  <pre data-http="accounts-readonly" data-show="response" data-cut="curies" data-cap="a read-only token's view of the account"></pre>
+  <p>Compare it with the full view in Chapter&nbsp;7, which adds <code>bk:orders</code>,
+  <code>bk:order-previews</code> and <code>bk:order-events</code>. The client for a read-only dashboard
+  never has to be told that it cannot trade. There is simply nothing to click.</p>
+
+  <h2>The client's side of the bargain</h2>
+  <div class="rule-box">
+    <div class="rh">Four rules for hypermedia clients</div>
+    <ol class="tight">
+      <li><b>Bookmark only the root.</b> Store the API root URL in configuration; discover everything else.</li>
+      <li><b>Follow relations, not paths.</b> Find a link by its relation (<code>bk:orders</code>), never by what its URL looks like.</li>
+      <li><b>Offer an action only if its link is present.</b> The absence of <code>bk:cancel</code> means &ldquo;you cannot cancel this, now.&rdquo;</li>
+      <li><b>Store resource URIs, not IDs to rebuild them from.</b> Keep the <code>self</code> link of anything you will need again.</li>
+    </ol>
+  </div>
+
+  <h2>Links are guidance, not security</h2>
+  <p>A missing link tells an honest client what it cannot do. It does not stop a dishonest or
+  out-of-date one. The server still enforces every rule on every request: a client that posts to
+  a cancellation URL it saved earlier, after the order filled, gets a clear refusal.</p>
+  <pre data-http="cancel-again" data-cap="the server enforces the rule the link expressed"></pre>
+  <p>This is also why hypermedia and caching get along. A client may act on a representation that
+  was accurate a second ago. The server's answer, <code>409 Conflict</code> with a problem type naming
+  the reason, tells it to re-read the order, whose links will now be accurate again.</p>
+
+  <h2>Objections, answered</h2>
+  <dl class="defs">
+    <dt>&ldquo;Clients hard-code URLs anyway.&rdquo;</dt>
+    <dd>Some will. They lose the benefits, and nothing breaks for anyone else. The clients in this
+    book, a Java library and an AI agent, follow links, and Chapter&nbsp;23 shows that doing so costs no
+    more code than building URLs.</dd>
+    <dt>&ldquo;Links make responses bigger.&rdquo;</dt>
+    <dd>A few hundred bytes of links compress extremely well, and they save the round trips a client
+    would otherwise spend asking what it may do.</dd>
+    <dt>&ldquo;We will have to document the relations.&rdquo;</dt>
+    <dd>Yes, instead of documenting URL patterns, parameters and state rules. A relation is a stable
+    name with a meaning; a URL pattern is an implementation detail with a lifetime.</dd>
+    <dt>&ldquo;It is slower to discover everything from the root.&rdquo;</dt>
+    <dd>Discovery results can be cached like any other representation. A client that already holds
+    an account's representation follows its links directly.</dd>
+  </dl>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every representation links to itself and to its related resources.</li>
+      <li>State transitions appear as links only when the resource's state and the caller's permissions allow them.</li>
+      <li>The decision about which links a resource carries is made in exactly one place in the server.</li>
+      <li>The server enforces every rule regardless of links; a stale link earns a precise problem, such as 409.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 10 - HAL AND LINK RELATIONS
+     ==================================================================== -->
+<section class="chapter" id="ch10" data-foot="Chapter 10 · HAL and link relations">
+  <div class="chnum">Chapter 10</div>
+  <h1 class="title">HAL and link relations</h1>
+  <p class="lede">Hypermedia needs a format that says, in a way every client can parse,
+  &ldquo;here is a link, and here is what it means.&rdquo; HAL does that with two reserved
+  properties and a naming scheme borrowed from the Web itself.</p>
+
+  <h2>HAL in two properties</h2>
+  <p>The JSON Hypertext Application Language, HAL, was proposed by Mike Kelly and is described in
+  the Internet-Draft <i>draft-kelly-json-hal</i>. Its media type is <code>application/hal+json</code>.
+  It adds exactly two reserved properties to an ordinary JSON object:</p>
+  <ul>
+    <li><b><code>_links</code></b>, an object whose keys are <b>link relations</b> and whose values are link
+    objects, or arrays of them when a relation has several targets.</li>
+    <li><b><code>_embedded</code></b>, an object whose keys are link relations and whose values are
+    resources, or arrays of resources, included in the response to save round trips.</li>
+  </ul>
+  <p>Everything else is the resource's own state. A HAL client needs no schema to find the links:
+  they are always in <code>_links</code>, keyed by what they mean.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,monospace">
+      <rect x="10" y="10" width="360" height="230" rx="8" fill="#161b28"/>
+      <g font-size="10" fill="#e9edf7">
+        <text x="26" y="34">{</text>
+        <text x="40" y="54" fill="#9db4ff">"_embedded"</text><text x="122" y="54">: {</text>
+        <text x="56" y="72" fill="#9db4ff">"bk:positions"</text><text x="160" y="72">: [ { … }, { … } ]</text>
+        <text x="40" y="90">},</text>
+        <text x="40" y="110" fill="#9db4ff">"_links"</text><text x="102" y="110">: {</text>
+        <text x="56" y="128" fill="#9db4ff">"self"</text><text x="98" y="128">: { </text><text x="130" y="128" fill="#7fdba8">"href"</text><text x="172" y="128">: "…/positions" },</text>
+        <text x="56" y="146" fill="#9db4ff">"bk:account"</text><text x="140" y="146">: { </text><text x="172" y="146" fill="#7fdba8">"href"</text><text x="214" y="146">: "…" },</text>
+        <text x="56" y="164" fill="#9db4ff">"curies"</text><text x="112" y="164">: [ {</text>
+        <text x="72" y="182" fill="#7fdba8">"name"</text><text x="114" y="182">: "bk",</text>
+        <text x="72" y="200" fill="#7fdba8">"href"</text><text x="114" y="200">: "…/rels/{rel}", "templated": true } ]</text>
+        <text x="40" y="218">}</text><text x="26" y="234">}</text>
+      </g>
+      <g font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-size="9.4" fill="#14181f">
+        <path d="M372,60 L420,60" stroke="#2f4fd0"/><text x="426" y="56" font-weight="700">_embedded</text>
+        <text x="426" y="69" fill="#59617a">resources included in the response,</text>
+        <text x="426" y="81" fill="#59617a">keyed by relation; the items of a collection</text>
+        <path d="M372,128 L420,128" stroke="#2f4fd0"/><text x="426" y="124" font-weight="700">_links</text>
+        <text x="426" y="137" fill="#59617a">keyed by link relation; the value is a link</text>
+        <text x="426" y="149" fill="#59617a">object with at least an href</text>
+        <path d="M372,182 L420,182" stroke="#2f4fd0"/><text x="426" y="178" font-weight="700">curies</text>
+        <text x="426" y="191" fill="#59617a">"bk:account" expands to the documentation</text>
+        <text x="426" y="203" fill="#59617a">URI …/rels/account: a compact URI</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 10.1</b> &mdash; The anatomy of a HAL document: embedded resources, links keyed
+    by relation, and the CURIE that shortens the API's own relation names.</figcaption>
+  </figure>
+
+  <h2>Link objects</h2>
+  <p>A link object must have an <code>href</code>. HAL defines a handful of optional properties, and
+  the brokerage uses four of them:</p>
+  <table class="dense">
+    <thead><tr><th style="width:18%">Property</th><th>Meaning</th><th style="width:36%">Example in this API</th></tr></thead>
+    <tbody>
+      <tr><td class="k">href</td><td>The target URI, or a URI template</td><td class="m">…/orders/ORD-100002</td></tr>
+      <tr><td class="k">templated</td><td><code>true</code> when <code>href</code> is an RFC&nbsp;6570 template</td><td class="m">…/orders{?status,symbol,cursor,limit}</td></tr>
+      <tr><td class="k">type</td><td>The media type the target will return</td><td class="m">application/openapi+yaml</td></tr>
+      <tr><td class="k">name</td><td>Distinguishes links that share a relation</td><td class="m">"2026-10-16" on bk:expiration</td></tr>
+      <tr><td class="k">title, profile, deprecation, hreflang</td><td>Labels, profiles, retirement notices, languages</td><td>not used</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Link relations: the vocabulary</h2>
+  <p>A link relation names the <i>meaning</i> of a link: not &ldquo;a URL,&rdquo; but &ldquo;the next page,&rdquo;
+  &ldquo;the way to edit this,&rdquo; &ldquo;this order's instrument.&rdquo; RFC&nbsp;8288, <i>Web Linking</i>, defines two
+  kinds. <b>Registered</b> relations are short names in the IANA Link Relations registry, such as
+  <code>self</code> and <code>next</code>, with meanings every client already knows. <b>Extension</b> relations
+  are URIs that the API owner defines and documents, which keeps them globally unique.</p>
+  <p>Extension URIs are long, so HAL provides <b>CURIEs</b> (compact URIs): a named template
+  declared once in <code>curies</code>. In this API, <code>bk:orders</code> expands to
+  <code>https://docs.brokerage.example/rels/orders</code>, a page that documents the relation. Here is the
+  API root again, where the declaration appears:</p>
+  <pre data-http="root" data-show="response" data-cap="the curies entry declares the bk: prefix"></pre>
+
+  <table class="dense">
+    <thead><tr><th style="width:24%">Relation</th><th style="width:14%">Kind</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">self</td><td>IANA</td><td>This resource's canonical URI.</td></tr>
+      <tr><td class="k">next</td><td>IANA</td><td>The next page of a paged collection.</td></tr>
+      <tr><td class="k">edit</td><td>IANA (RFC&nbsp;5023)</td><td>Where to send changes to this resource (a merge patch).</td></tr>
+      <tr><td class="k">service-desc</td><td>IANA (RFC&nbsp;8631)</td><td>A machine-readable description of the API: the OpenAPI document.</td></tr>
+      <tr><td class="k">service-doc</td><td>IANA (RFC&nbsp;8631)</td><td>Human-readable documentation.</td></tr>
+      <tr><td class="k">bk:accounts, bk:account</td><td>extension</td><td>The customer's accounts; the account a resource belongs to.</td></tr>
+      <tr><td class="k">bk:balances, bk:positions, bk:transactions</td><td>extension</td><td>An account's balance sheet, holdings and statement.</td></tr>
+      <tr><td class="k">bk:orders, bk:order-previews, bk:order-events</td><td>extension</td><td>An account's orders; where to preview one; its event stream.</td></tr>
+      <tr><td class="k">bk:cancel</td><td>extension</td><td>POST here to cancel this order. Present only while it can be canceled.</td></tr>
+      <tr><td class="k">bk:place-order</td><td>extension</td><td>On an acceptable preview: where to POST the order.</td></tr>
+      <tr><td class="k">bk:instruments, bk:instrument</td><td>extension</td><td>Instrument search; the instrument an order or position concerns.</td></tr>
+      <tr><td class="k">bk:quote, bk:option-chain</td><td>extension</td><td>An instrument's latest quote; its option contracts.</td></tr>
+      <tr><td class="k">bk:expiration, bk:underlying</td><td>extension</td><td>One expiration's chain (named by date); an option's underlying stock.</td></tr>
+      <tr><td class="k">bk:oauth-protected-resource</td><td>extension</td><td>The RFC&nbsp;9728 metadata: where to get tokens for this API.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout"><span class="lbl">Prefer registered relations.</span> Before inventing a relation,
+  check the IANA registry. <code>edit</code>, <code>next</code>, <code>prev</code>, <code>first</code>, <code>last</code>,
+  <code>collection</code>, <code>item</code>, <code>related</code> and <code>describedby</code> cover a great deal. The brokerage
+  invents relations only for domain concepts, such as a balance sheet or a cancellation, that no
+  registry could know about.</div>
+
+  <h2>Templated links</h2>
+  <p>Some links need input from the client. RFC&nbsp;6570 URI templates express that without
+  giving away the URL structure. The template <code>…/orders{?status,symbol,cursor,limit}</code> uses
+  <i>form-style query expansion</i>: each variable the client supplies becomes a query parameter,
+  and each one it omits disappears.</p>
+  <table class="dense">
+    <thead><tr><th style="width:42%">Variables supplied</th><th>Expanded URI</th></tr></thead>
+    <tbody>
+      <tr><td>none</td><td class="m">…/accounts/ACC-1001/orders</td></tr>
+      <tr><td class="m">symbol=AAPL</td><td class="m">…/orders?symbol=AAPL</td></tr>
+      <tr><td class="m">status=[OPEN, PARTIALLY_FILLED]</td><td class="m">…/orders?status=OPEN,PARTIALLY_FILLED</td></tr>
+    </tbody>
+  </table>
+  <p>The client expands templates with a library (Spring's <code>UriTemplate</code> in Java) and
+  never concatenates strings. The server, for its part, sends templates only for things a client
+  chooses. Links a client should follow as-is, such as <code>next</code>, are always expanded.</p>
+
+  <h2>Why HAL?</h2>
+  <p>HAL is not the only hypermedia format. It is the simplest one that does the job, and it has
+  the best support in the Spring ecosystem.</p>
+  <table class="dense">
+    <thead><tr><th style="width:17%">Format</th><th>Strengths</th><th style="width:34%">Trade-offs</th></tr></thead>
+    <tbody>
+      <tr><td>HAL</td><td>Minimal; plain JSON plus <code>_links</code>/<code>_embedded</code>; wide library support</td><td>Links only; actions need HAL-FORMS</td></tr>
+      <tr><td>HAL-FORMS</td><td>Adds <code>_templates</code>: method, fields, validation</td><td>A separate media type clients opt into</td></tr>
+      <tr><td>Siren</td><td>Entities, links and <i>actions</i> in one format</td><td>A stricter envelope around every resource</td></tr>
+      <tr><td>JSON:API</td><td>Complete conventions for relationships, sparse fieldsets, paging</td><td>Opinionated document structure; weaker affordances</td></tr>
+      <tr><td>JSON-LD + Hydra</td><td>Linked-data semantics; rich vocabularies</td><td>Steep learning curve for most teams</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Representations are <code>application/hal+json</code>; links live in <code>_links</code>, included resources in <code>_embedded</code>.</li>
+      <li>Use IANA-registered relations where one fits; otherwise define extension relations as URIs, shortened with one CURIE.</li>
+      <li>Every extension relation's URI resolves to documentation of its meaning.</li>
+      <li>Templated links use RFC&nbsp;6570; links meant to be followed as-is are always expanded.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 11 - HYPERMEDIA WITH SPRING HATEOAS
+     ==================================================================== -->
+<section class="chapter" id="ch11" data-foot="Chapter 11 · Hypermedia with Spring HATEOAS">
+  <div class="chnum">Chapter 11</div>
+  <h1 class="title">Hypermedia with Spring HATEOAS</h1>
+  <p class="lede">Spring HATEOAS turns hypermedia from hand-written JSON into a handful of types
+  and one link builder. Links are built from controller methods, so they cannot drift from the
+  routes they point to.</p>
+
+  <h2>Enabling the formats</h2>
+  <p>Spring Boot's HATEOAS starter configures HAL by default. The brokerage turns on HAL-FORMS as
+  well, declares its CURIE, and describes a few HAL-FORMS details, all in one configuration class:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/HypermediaConfig.java" data-from="^@Configuration" data-to="public static final String RELS"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/HypermediaConfig.java" data-from="CurieProvider curieProvider\(\)" data-to="^    }$"></pre>
+  <p>The override is a small workaround worth knowing about. RFC&nbsp;8631 registered
+  <code>service-desc</code> and <code>service-doc</code> with IANA, but Spring HATEOAS's built-in list of IANA
+  relations does not include them, so without the override they would come out as
+  <code>bk:service-desc</code>: a custom relation, which is wrong. Registered relations must never be
+  prefixed.</p>
+
+  <h2>Four model types</h2>
+  <table class="dense">
+    <thead><tr><th style="width:30%">Type</th><th>Represents</th><th style="width:30%">In this API</th></tr></thead>
+    <tbody>
+      <tr><td class="k">RepresentationModel</td><td>A resource defined by its links, with its own properties</td><td>The API root</td></tr>
+      <tr><td class="k">EntityModel&lt;T&gt;</td><td>A domain object plus links</td><td>An account, an order, a quote</td></tr>
+      <tr><td class="k">CollectionModel&lt;T&gt;</td><td>Items (embedded) plus links</td><td>Accounts, positions, orders</td></tr>
+      <tr><td class="k">PagedModel&lt;T&gt;</td><td>A page of items with page metadata</td><td>Not used: pages here are cursors</td></tr>
+    </tbody>
+  </table>
+  <p>Domain records stay free of web concerns: <code>Order</code> knows nothing about links. The
+  <code>@Relation</code> annotation on a record names it inside <code>_embedded</code> (<code>orders</code>, which
+  the CURIE provider turns into <code>bk:orders</code>), and nothing else about the record needs to
+  change.</p>
+
+  <h2>Links from methods, not strings</h2>
+  <p><code>WebMvcLinkBuilder</code> builds links by <i>calling</i> the controller method they point to, on a
+  proxy that records the call instead of executing it:</p>
+  <figure class="code src keep"><figcaption><span class="path">the pattern</span></figcaption><pre>linkTo(methodOn(OrderController.<span class="kw">class</span>).order(accountId, orderId, <span class="kw">null</span>, <span class="kw">null</span>)).withSelfRel()</pre></figure>
+  <p>The builder reads the method's mapping, fills in the path variables from the arguments,
+  adds any query parameters, and produces an absolute URI based on the current request. Arguments
+  that are not part of the URI, such as the request body or the <code>Jwt</code>, are passed as
+  <code>null</code>. If someone renames the route, every link to it follows; if someone deletes the
+  method, the links stop compiling. Absolute URIs are derived from the incoming request, so behind
+  a proxy you set <code>server.forward-headers-strategy</code> to have Spring honor the
+  <code>X-Forwarded-*</code> or <code>Forwarded</code> headers.</p>
+
+  <h2>The root: a resource that is all links</h2>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/RootController.java" data-from="public static class ApiRoot" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/RootController.java" data-from="public ApiRoot root\(\)" data-to="^    }$"></pre>
+  <p>Three links point outside the controllers: the OpenAPI document, the documentation site and
+  the protected resource metadata. For those, <code>Link.of(href, rel)</code> takes the URI directly.</p>
+
+  <h2>Assemblers: one place for the link rules</h2>
+  <p>When a resource appears in several responses, its links should be built in one place. The
+  brokerage uses an assembler class for orders (you saw it in Chapter&nbsp;9) and a method on the
+  controller for accounts, whose links depend on the caller's scopes:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/accounts/AccountController.java" data-from="EntityModel.Account. toModel\(Account account, Caller caller\)" data-to="^    }$"></pre>
+  <p><code>andAffordance(afford(...))</code> attaches a description of the <code>placeOrder</code> operation
+  to the <code>bk:orders</code> link. Plain HAL ignores it; HAL-FORMS renders it as a template, as the
+  next chapter shows.</p>
+
+  <h2>Collections and embedded items</h2>
+  <p>A collection is a <code>CollectionModel</code> of item models, each carrying its own links:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/accounts/AccountController.java" data-from="public CollectionModel.*accounts\(@AuthenticationPrincipal" data-to="^    }$"></pre>
+
+  <h2>Testing the links</h2>
+  <p>Links are part of the contract, so they are tested like any other output. This test checks
+  that links follow the token's scopes, and that a HAL-FORMS client sees the order template:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/HypermediaTest.java" data-from="void linksReflectWhatTheTokenMayDo" data-to="^    }$"></pre>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Build links from controller methods, never from string templates, so routes and links cannot diverge.</li>
+      <li>Keep domain types free of links; wrap them in models at the edge.</li>
+      <li>Put each resource's link rules in one assembler or method, and test them.</li>
+      <li>Registered relations are never prefixed with a CURIE.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 12 - AFFORDANCES WITH HAL-FORMS
+     ==================================================================== -->
+<section class="chapter" id="ch12" data-foot="Chapter 12 · Affordances with HAL-FORMS">
+  <div class="chnum">Chapter 12</div>
+  <h1 class="title">Affordances with HAL-FORMS</h1>
+  <p class="lede">A link tells a client where it can go. An affordance tells it what it can do
+  there: which method to use, what to send, and which values are allowed. HAL-FORMS adds
+  exactly that to HAL.</p>
+
+  <h2>From links to forms</h2>
+  <p>A plain HAL link to <code>bk:cancel</code> says an action exists. It does not say whether to use
+  <code>POST</code> or <code>DELETE</code>, or what body to send. Documentation fills that gap for people,
+  but a generic client, or an AI agent, benefits from a machine-readable answer. <b>HAL-FORMS</b>, a
+  specification by Mike Amundsen with the media type <code>application/prs.hal-forms+json</code>,
+  supplies it: an extra <code>_templates</code> object whose entries describe the requests a client
+  may send.</p>
+  <p>Clients opt in with the <code>Accept</code> header. Ask for the working order that way:</p>
+  <pre data-http="order-hal-forms" data-cut="curies" data-cap="the same order, with templates"></pre>
+
+  <h2>Reading a template</h2>
+  <table class="dense">
+    <thead><tr><th style="width:18%">Member</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">method</td><td>The HTTP method to use.</td></tr>
+      <tr><td class="k">contentType</td><td>The body's media type, <code>application/json</code> when absent. Here, a merge patch.</td></tr>
+      <tr><td class="k">target</td><td>Where to send it. When absent, the resource's own <code>self</code> URI.</td></tr>
+      <tr><td class="k">properties</td><td>The fields: <code>name</code>, <code>required</code>, <code>regex</code>, <code>type</code>, <code>min</code>/<code>max</code>, <code>options</code>.</td></tr>
+    </tbody>
+  </table>
+  <p><code>replaceOrder</code> has no <code>target</code>, so it applies to the order itself, and its
+  <code>contentType</code> is <code>application/merge-patch+json</code>, taken from what the controller
+  method consumes. Its properties are the fields of a change, with the pattern every decimal
+  must match. <code>cancelOrder</code> is a <code>POST</code> with no fields. A filled or canceled order has
+  no templates at all, for the same reason it has no links.</p>
+
+  <p>The account carries two templates for a trading token. <code>placeOrder</code> comes from the explicit
+  affordance in Chapter&nbsp;11. <code>previewOrder</code> appears on its own: Spring HATEOAS records an
+  affordance for the handler method behind every link built with <code>linkTo(methodOn(...))</code>,
+  and HAL-FORMS renders a template for each one that is not a <code>GET</code>. The
+  <code>bk:order-previews</code> link points at a <code>POST</code> handler, so it brings its template along. Here is one of the placeOrder template's
+  properties, from the same capture:</p>
+  <figure class="code http keep"><figcaption><span class="path">HTTP</span><span class="note">from GET /accounts/ACC-1001 (HAL-FORMS)</span></figcaption><pre>{
+  <span class="key">"name"</span>: <span class="st">"side"</span>,
+  <span class="key">"options"</span>: { <span class="key">"inline"</span>: [ <span class="st">"BUY"</span>, <span class="st">"SELL"</span> ] },
+  <span class="key">"required"</span>: <span class="nu">true</span>
+}</pre></figure>
+
+  <h2>Where the template comes from</h2>
+  <p>Spring HATEOAS derives each property from the request type of the handler method, the class
+  bound with <code>@RequestBody</code>. Bean Validation annotations become constraints: <code>@NotNull</code>
+  and <code>@NotBlank</code> become <code>required</code>, <code>@Size</code> becomes <code>min</code> and
+  <code>max</code>, and <code>@Pattern</code> becomes <code>regex</code>.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderRequest.java" data-from="^public class OrderRequest" data-to="private String clientOrderId;"></pre>
+  <p>The remaining details come from configuration: the list of allowed values for each
+  enumeration, and a pattern that describes a decimal-as-string:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/HypermediaConfig.java" data-from="HalFormsConfiguration halFormsConfiguration\(\)" data-to="^    }$"></pre>
+
+  <div class="callout warn"><span class="lbl">A JavaBean, on purpose.</span> <code>OrderRequest</code> is a
+  class with getters and setters, not a record. Spring HATEOAS decides whether a property is
+  writable by looking for a setter, and a record has none, so every field of a record-based request
+  would be rendered <code>readOnly</code>, a template no client could fill in. The class Javadoc says
+  so, to save the next developer from &ldquo;simplifying&rdquo; it. Similarly, <code>@InputType("text")</code>
+  stops Spring HATEOAS from describing a <code>BigDecimal</code> as a <code>number</code> input, which would
+  contradict the API's decimals-as-strings rule.</div>
+
+  <h2>What clients do with templates</h2>
+  <ul>
+    <li><b>Generic user interfaces</b> render a form per template: a dropdown for <code>options</code>, a
+    validated text box for <code>regex</code>, a required marker. When the server adds a field, the form
+    grows without a client release.</li>
+    <li><b>Client-side validation</b> uses the same rules the server enforces, stated once.</li>
+    <li><b>Agents and tools</b> learn the shape of an action at run time. A tool-using model can be
+    given a template instead of a hand-written parameter list.</li>
+  </ul>
+  <p>Templates describe the <i>shape</i> of a request, not every business rule. A limit order needs
+  a limit price, and a sale needs shares to sell; those rules involve several fields or the
+  account's state, so the server checks them and reports violations as problems (Chapter&nbsp;16).
+  The template narrows the space of wrong requests; it does not replace validation.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Offer <code>application/prs.hal-forms+json</code> beside HAL; describe every state-changing action as a template.</li>
+      <li>Derive templates from the request types and their validation annotations, so forms and validation cannot disagree.</li>
+      <li>A template appears only when its action is available, exactly like its link.</li>
+      <li>Templates describe shape; the server still validates everything.</li>
+    </ol>
+  </div>
+</section>

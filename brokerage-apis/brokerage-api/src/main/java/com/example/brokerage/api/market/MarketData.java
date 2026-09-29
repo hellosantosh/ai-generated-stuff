@@ -132,12 +132,16 @@ public class MarketData {
     }
 
     private void option(Instrument underlying, LocalDate expiration, Right right, int strike) {
+        String callOrPut = right == Right.CALL ? "C" : "P";
         String id = "OPT-%s-%s-%s-%d".formatted(underlying.symbol(), expiration.format(OPTION_DATE),
-                right == Right.CALL ? "C" : "P", strike);
+                callOrPut, strike);
+        // The OCC option symbol: root, expiration (yyMMdd), C or P, and the strike times 1,000.
+        String symbol = "%s%s%s%08d".formatted(underlying.symbol(), expiration.format(OPTION_DATE),
+                callOrPut, strike * 1000);
         String name = "%s %s $%d %s".formatted(underlying.symbol(), expiration, strike, right);
         OptionTerms terms = new OptionTerms(underlying.id(), underlying.symbol(), right,
                 BigDecimal.valueOf(strike), expiration, "AMERICAN");
-        instruments.put(id, new Instrument(id, underlying.symbol(), name, Type.OPTION, "OPRA", "USD",
+        instruments.put(id, new Instrument(id, symbol, name, Type.OPTION, "OPRA", "USD",
                 true, false, BigDecimal.valueOf(100), terms));
         priceOption(instruments.get(id));
     }

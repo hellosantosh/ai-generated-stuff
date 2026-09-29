@@ -1,0 +1,670 @@
+<!-- ====================================================================
+     PART VI PLATE
+     ==================================================================== -->
+<section class="plate" id="part6">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part VI</div>
+    <h1>Contracts, Clients and Agents</h1>
+    <p class="pl">The API described precisely, tested against its own description, consumed by
+    a client that follows links, compared with a real RPC-style brokerage API, and finally
+    handed to an AI agent, with a human keeping the final word on every trade.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="Menlo,monospace">
+        <!-- contract -->
+        <g transform="translate(40,60)">
+          <rect width="120" height="150" rx="8" fill="#101b3a" stroke="#7ea6ff" stroke-width="2"/>
+          <text x="14" y="26" font-size="10" fill="#c7d6ff">openapi: 3.2.1</text>
+          <g fill="#3d4868"><rect x="14" y="40" width="88" height="5" rx="2"/><rect x="14" y="54" width="70" height="5" rx="2"/><rect x="14" y="68" width="80" height="5" rx="2"/><rect x="14" y="82" width="60" height="5" rx="2"/><rect x="14" y="96" width="84" height="5" rx="2"/></g>
+          <path d="M30,122 L46,136 L90,112" stroke="#4ad3a6" stroke-width="4" fill="none"/>
+        </g>
+        <!-- client -->
+        <g transform="translate(250,110)">
+          <circle r="44" fill="#0f2a2a" stroke="#4ad3a6" stroke-width="2"/>
+          <text y="-4" text-anchor="middle" font-size="11" font-weight="700" fill="#8fe8c9">client</text>
+          <text y="12" text-anchor="middle" font-size="9" fill="#8f9cc4">follows links</text>
+        </g>
+        <!-- agent -->
+        <g transform="translate(470,110)">
+          <path d="M0,-50 L43,-25 L43,25 L0,50 L-43,25 L-43,-25 Z" fill="#1d1535" stroke="#a06bff" stroke-width="2"/>
+          <text y="-4" text-anchor="middle" font-size="11" font-weight="700" fill="#d9c7ff">agent</text>
+          <text y="12" text-anchor="middle" font-size="9" fill="#8f9cc4">proposes only</text>
+        </g>
+        <g fill="none" stroke-width="1.8">
+          <path d="M162,120 L204,114" stroke="#7ea6ff"/>
+          <path d="M296,110 L425,110" stroke="#4ad3a6" stroke-dasharray="6 4"/>
+        </g>
+        <!-- human -->
+        <g transform="translate(470,236)">
+          <circle cy="-12" r="11" fill="none" stroke="#f6dcae" stroke-width="2"/>
+          <path d="M-20,18 C-20,2 20,2 20,18" fill="none" stroke="#f6dcae" stroke-width="2"/>
+          <text x="32" y="4" font-size="10" fill="#f6dcae">/confirm</text>
+        </g>
+        <path d="M470,164 L470,206" stroke="#e0a84a" stroke-width="1.6" stroke-dasharray="4 3"/>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>21</b> The OpenAPI 3.2 contract &nbsp;&#183;&nbsp; <b>22</b> Testing the API &nbsp;&#183;&nbsp;
+      <b>23</b> A hypermedia client<br><b>24</b> RPC or resources? &nbsp;&#183;&nbsp;
+      <b>25</b> Agentic AI with Spring AI &nbsp;&#183;&nbsp; <b>26</b> The standard on one page
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 21 - THE OPENAPI 3.2 CONTRACT
+     ==================================================================== -->
+<section class="chapter" id="ch21" data-foot="Chapter 21 · The OpenAPI 3.2 contract">
+  <div class="chnum">Chapter 21</div>
+  <h1 class="title">The OpenAPI 3.2 contract</h1>
+  <p class="lede">Hypermedia tells a client what it can do right now. A contract tells a
+  developer, a code generator and a test suite what the API can do at all. A serious API needs
+  both, and they must never disagree.</p>
+
+  <h2>Links and contracts are complementary</h2>
+  <p>An OpenAPI document describes every operation, parameter, header, schema and error an API
+  offers. It powers documentation sites, mock servers, client generators, gateway configuration and
+  contract tests. It does not replace hypermedia: the paths in the document are documentation of
+  where resources currently live, not an invitation to build URLs. The brokerage's contract says so
+  in its description, and links to it from the API root with the registered <code>service-desc</code>
+  relation, so a client can find the contract the same way it finds everything else.</p>
+
+  <h2>What is new in OpenAPI 3.2</h2>
+  <p>OpenAPI&nbsp;3.2.0 was published in September 2025, and 3.2.1 followed as a patch release. The
+  brokerage's contract uses five of the version's additions:</p>
+  <table class="dense">
+    <thead><tr><th style="width:26%">Feature</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="k">$self</td><td>The document's own URI, the base for resolving its references, even when copied elsewhere.</td></tr>
+      <tr><td class="k">tags: summary, parent, kind</td><td>Hierarchical tags: <i>Orders</i> sits under <i>Trading</i>; <code>kind</code> separates navigation from badges such as <i>Deprecated</i>.</td></tr>
+      <tr><td class="k">itemSchema</td><td>Describes each item of a streaming response, such as each server-sent event.</td></tr>
+      <tr><td class="k">oauth2MetadataUrl</td><td>Points an OAuth security scheme at the authorization server's RFC&nbsp;8414 metadata.</td></tr>
+      <tr><td class="k">dataValue, serializedValue</td><td>Examples that separate the data from its serialized form.</td></tr>
+    </tbody>
+  </table>
+  <p>The version also adds support for the <code>QUERY</code> method, query-string parameters described as
+  a whole, and the OAuth device authorization flow, none of which the brokerage needs.</p>
+
+  <h2>A tour of the contract</h2>
+  <p>The document opens with its identity and a summary of the conventions every operation
+  follows, so a reader of the rendered documentation learns the rules before the details:</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-to="identifier: Apache-2.0"></pre>
+  <p>Hierarchical tags organize the operations for documentation tools:</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-from="^tags:$" data-to="kind: badge"></pre>
+  <p>Each operation states its required scope, its headers, its request schema with an example,
+  and every response it can produce, including the problem responses, which are defined once and
+  referenced everywhere. OpenAPI's own <code>links</code> describe, at design time, what HAL's links
+  provide at run time: from a new order to reading or canceling it.</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-after="^  /accounts/\{accountId\}/orders:$" data-from="^    post:$" data-to='"429":'></pre>
+  <p>The event stream is where 3.2 shines. <code>itemSchema</code> describes each event, and the JSON
+  inside its <code>data</code> field is described with <code>contentMediaType</code> and
+  <code>contentSchema</code>:</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-after="^  /accounts/\{accountId\}/order-events:$" data-from="^    get:$" data-to="contentSchema"></pre>
+  <p>Two shared schemas carry the conventions of Part&nbsp;II and Part&nbsp;IV: the decimal string, and the
+  problem document with its <code>errors</code> array:</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-from="^    Decimal:$" data-to="examples: "></pre>
+  <pre data-src="openapi/brokerage-api.yaml" data-from="^    Problem:$" data-to="message: \{ type: string \}"></pre>
+  <p>And the security scheme names both OAuth flows, and where their metadata lives:</p>
+  <pre data-src="openapi/brokerage-api.yaml" data-from="^  securitySchemes:$" data-to="refreshUrl:"></pre>
+
+  <h2>Shipping the contract with the code</h2>
+  <p>The contract lives in its own folder, reviewed like code, and the build copies it into the
+  API's jar so the application serves the very document it was tested against:</p>
+  <pre data-src="brokerage-api/pom.xml" data-from="The OpenAPI contract ships" data-to="&lt;/resource&gt;"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/RootController.java" data-from="public ResponseEntity.Resource. contract\(\)" data-to="^    }$"></pre>
+
+  <div class="callout"><span class="lbl">Design-first or code-first?</span> This contract was written by
+  hand, beside the code, and is enforced by tests (Chapter&nbsp;22). Generating the document from
+  annotations is the popular alternative, and it guarantees the document matches the code, but only
+  in the details the annotations capture. Hypermedia rules, problem types and link relations are
+  easier to describe by hand. Whichever you choose, the test that compares real responses with the
+  schemas is what keeps the contract honest.</div>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every API has an OpenAPI&nbsp;3.2 document, served by the API and linked with <code>service-desc</code>.</li>
+      <li>The contract states each operation's scope, headers, examples and every problem response.</li>
+      <li>The contract is versioned with the code and tested against the running application.</li>
+      <li>Its paths document where resources live; clients still navigate by links.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 22 - TESTING THE API
+     ==================================================================== -->
+<section class="chapter" id="ch22" data-foot="Chapter 22 · Testing the API">
+  <div class="chnum">Chapter 22</div>
+  <h1 class="title">Testing a hypermedia API</h1>
+  <p class="lede">An API's tests should exercise what clients depend on: status codes, headers,
+  links, problem types and the contract, through the real security layer. The brokerage's tests
+  run the whole application, in memory, in a few seconds.</p>
+
+  <h2>One annotation for the whole application</h2>
+  <p>Every API test boots the complete Spring application with MockMvc, so requests pass through
+  the real filters, security rules, controllers and exception handlers without opening a socket.
+  One meta-annotation holds the setup, and it freezes the simulated market so every price is known:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ApiTest.java" data-from="^@Target" data-to="^public @interface ApiTest"></pre>
+  <p>Tests need access tokens without an authorization server. Spring Security's test support
+  builds an authenticated JWT directly, and a few factory methods give the tests the same claims
+  the real server would issue:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ApiTest.java" data-from="public static RequestPostProcessor alice" data-to="^    }$"></pre>
+
+  <h2>Assertions that read like the protocol</h2>
+  <p><code>MockMvcTester</code>, new in Spring Framework 6.2 and refined in 7, pairs MockMvc with AssertJ,
+  so a test states status codes, headers and JSON paths fluently. This test is Chapter&nbsp;15 in
+  miniature:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/OrderLifecycleTest.java" data-from="void changingAnOrderRequiresItsCurrentEtag" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ProtocolTest.java" data-from="void aValueOfTheWrongTypeIsReportedLikeAValidationError" data-to="^    }$"></pre>
+  <p>Some behavior needs different configuration. The rate limit test starts the application with a
+  quota of three requests per minute, rather than wait for the real quota of 120:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/RateLimitTest.java" data-from="^@SpringBootTest" data-to="^}$"></pre>
+
+  <h2>Contract tests</h2>
+  <p>The OpenAPI document is code, so it is tested. <code>ContractTest</code> loads the contract and the
+  official OpenAPI&nbsp;3.2 meta-schema into a JSON Schema validator, and checks three things: the
+  document is a valid OpenAPI&nbsp;3.2 document, its examples match its own schemas, and real responses
+  from the running application match the schemas the document promises.</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ContractTest.java" data-from="static void loadTheContract" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ContractTest.java" data-from="void theContractIsAValidOpenApi32Document" data-to="^    }$" data-to-nth="2"></pre>
+  <p>The second test matters as much as the first: a validation that never fails proves nothing,
+  so the test breaks a copy of the contract on purpose and checks that the validator notices.
+  Then real responses are compared with their schemas:</p>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ContractTest.java" data-from="void readOnlyResourcesMatchTheirSchemas" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/test/java/com/example/brokerage/api/ContractTest.java" data-from="private static void assertMatches" data-to="^    }$"></pre>
+
+  <div class="callout good"><span class="lbl">It found real bugs.</span> While this book was being written,
+  the contract test caught two mismatches that every other test had missed. Jackson was serializing
+  <code>Instrument.isOption()</code> as an undocumented boolean property named <code>option</code>, colliding
+  with the real <code>option</code> object, and the schema for previews rejected the HAL <code>curies</code>
+  entry that every response carries. Both were fixed in minutes, because the test named the
+  schema, the path and the offending document.</div>
+
+  <h2>Testing clients without a server</h2>
+  <p>The client and agent modules test against <code>MockRestServiceServer</code>, which answers a real
+  <code>RestClient</code> with scripted responses. The client's test uses deliberately odd URLs: a client
+  that built paths would never find them, so passing proves it follows links.</p>
+  <pre data-src="brokerage-client/src/test/java/com/example/brokerage/client/BrokerageClientTest.java" data-from="Deliberately odd URLs" data-to="^    }$" data-to-nth="2"></pre>
+
+  <h2>The suite</h2>
+  <table class="dense">
+    <thead><tr><th style="width:30%">Test class</th><th style="width:8%">Tests</th><th>What it proves</th></tr></thead>
+    <tbody>
+      <tr><td class="k">HypermediaTest</td><td>8</td><td>Discovery, link relations, scope-dependent links and templates, 401/403/404</td></tr>
+      <tr><td class="k">OrderLifecycleTest</td><td>8</td><td>Placement, replay, validation, limits, ETags, cancellation, previews</td></tr>
+      <tr><td class="k">ProtocolTest</td><td>9</td><td>Cursors, versions, caching, type errors, HEAD, event replay</td></tr>
+      <tr><td class="k">ContractTest</td><td>5</td><td>The contract is valid and the application honors it</td></tr>
+      <tr><td class="k">RateLimitTest</td><td>1</td><td>Quota headers, 429 and <code>Retry-After</code></td></tr>
+      <tr><td class="k">BrokerageClientTest</td><td>4</td><td>Link following, retries with one key, typed problems, missing links</td></tr>
+      <tr><td class="k">BrokerageToolsTest, GuardrailsTest</td><td>7</td><td>The agent's tools and its human-in-the-loop guarantees</td></tr>
+    </tbody>
+  </table>
+  <p><code>./mvnw verify</code> runs all 42 tests in well under a minute.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Test through the real security layer with realistic tokens; freeze anything random.</li>
+      <li>Assert on what clients see: status, headers, links, problem types.</li>
+      <li>Validate the contract against the OpenAPI meta-schema, and real responses against the contract.</li>
+      <li>Prove that each validation can fail, and prove that clients follow links by giving them odd URLs.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 23 - A HYPERMEDIA CLIENT
+     ==================================================================== -->
+<section class="chapter" id="ch23" data-foot="Chapter 23 · A hypermedia client">
+  <div class="chnum">Chapter 23</div>
+  <h1 class="title">A hypermedia client in Java</h1>
+  <p class="lede">A client that follows links is not harder to write than one that builds URLs.
+  It is a different habit, and three small classes are enough to make it the easy one.</p>
+
+  <h2>The rules the client lives by</h2>
+  <ol class="steps">
+    <li><b>One configured URL:</b> the API root. Everything else comes from links.</li>
+    <li><b>Relations, not paths:</b> every navigation step names a link relation.</li>
+    <li><b>Tolerant reading:</b> unknown properties and values are ignored, never fatal.</li>
+    <li><b>Problems are typed:</b> an error becomes an exception carrying the problem type.</li>
+    <li><b>Safe retries:</b> transient failures are retried with the same idempotency key.</li>
+    <li><b>A pinned version:</b> every request says which API version it expects.</li>
+  </ol>
+
+  <h2>HypermediaClient: HTTP without paths</h2>
+  <p>The lowest layer wraps Spring's <code>RestClient</code>. There is no method that takes a path to
+  append to a base URL. Every request targets a link the server provided. You saw its constructor
+  in Chapter&nbsp;19; its methods are equally short:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/HypermediaClient.java" data-from="public HalResource post\(Link target" data-to="^    }$" data-to-nth="2"></pre>
+  <p>Errors never escape as raw HTTP. A status handler turns every error response into an
+  <code>ApiProblem</code> built from the problem document:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/ApiProblem.java" data-from="static ApiProblem from\(" data-to="^    }$" data-to-nth="2"></pre>
+
+  <h2>HalResource: reading links</h2>
+  <p>A response is wrapped in a <code>HalResource</code>, which answers the questions a client asks of
+  hypermedia. <code>requiredLink</code> turns a missing link into a clear message rather than a null
+  pointer, because a missing link <i>means</i> something:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/HalResource.java" data-from="public Optional.Link. link\(String rel\)" data-to="^    }$" data-to-nth="3"></pre>
+
+  <h2>BrokerageClient: the domain, as navigation</h2>
+  <p>The top layer offers the domain as Java methods, each a short walk through the link graph.
+  Read the navigation helpers and notice what is absent: no path, no format string, no URL.</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/BrokerageClient.java" data-from="private List.HalResource. accountResources\(\)" data-to="^    }$" data-to-nth="4"></pre>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/BrokerageClient.java" data-from="public List.Account. accounts\(\)" data-to="^    }$" data-to-nth="3"></pre>
+  <p>Canceling shows the payoff. The client does not decide whether an order can be canceled. It
+  looks for the link, and refuses without a round trip when the server has not offered one:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/BrokerageClient.java" data-from="public Order cancel\(Order order\)" data-to="^    }$"></pre>
+  <p>The model records are the client's own view of the API, and only the fields it uses. Statuses
+  and types are strings, so the server can add values freely:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/Model.java" data-from="An order, with the links the server offered" data-to="^    }$"></pre>
+
+  <h2>Generated clients and hypermedia clients</h2>
+  <p>OpenAPI generators produce a method per operation with typed models, and they are convenient.
+  They also bake the URL templates into the client, which quietly converts a hypermedia API back
+  into a fixed-URL one. A good compromise is to generate the <i>models</i> from the contract's
+  schemas and write the navigation by hand, as this client does in a few dozen lines. For
+  scripts and throwaway tools, a generated client is fine; for anything that must survive the
+  API's evolution, follow the links.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Clients are configured with the API root only, and navigate by relation.</li>
+      <li>Clients read tolerantly and pin the API version on every request.</li>
+      <li>Errors surface as typed problems; transient ones are retried with the original idempotency key.</li>
+      <li>An action is attempted only when its link is present.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 24 - RPC OR RESOURCES?
+     ==================================================================== -->
+<section class="chapter" id="ch24" data-foot="Chapter 24 · RPC or resources?">
+  <div class="chnum">Chapter 24</div>
+  <h1 class="title">RPC or resources? Lessons from the Webull OpenAPI</h1>
+  <p class="lede">Real brokerage APIs are often designed as remote procedure calls. Comparing
+  one with this book's design, operation by operation, shows what each style gets right, and
+  which standards cost nothing to adopt either way.</p>
+
+  <p>Webull publishes its OpenAPI for customers and partners at <i>developer.webull.com</i>. It is a
+  capable, well-documented API that supports equities, options, futures and other asset classes,
+  with market data over HTTP and streaming. It is also a clear example of the RPC style: operations
+  named by paths, each with its own request and response shape. What follows describes the API as
+  documented in September 2026, and it is a comparison of styles, not a review. Details change, so
+  consult Webull's documentation before building against it.</p>
+
+  <h2>The same operations, two designs</h2>
+  <table class="dense">
+    <thead><tr><th style="width:24%">Operation</th><th style="width:37%">Webull OpenAPI (RPC style)</th><th>This book (resources)</th></tr></thead>
+    <tbody>
+      <tr><td>List accounts</td><td class="m">GET /trading/accounts/list</td><td class="m">GET /accounts</td></tr>
+      <tr><td>Balances</td><td class="m">GET /trading/assets/balances/get<br>?account_id=…</td><td class="m">GET /accounts/{id}/balances</td></tr>
+      <tr><td>Positions</td><td class="m">GET /trading/assets/positions/list<br>?account_id=…</td><td class="m">GET /accounts/{id}/positions</td></tr>
+      <tr><td>Preview an order</td><td class="m">POST /trading/orders/preview</td><td class="m">POST /accounts/{id}/order-previews</td></tr>
+      <tr><td>Place an order</td><td class="m">POST /trading/orders/place</td><td class="m">POST /accounts/{id}/orders</td></tr>
+      <tr><td>Change an order</td><td class="m">POST /trading/orders/replace</td><td class="m">PATCH …/orders/{orderId}</td></tr>
+      <tr><td>Cancel an order</td><td class="m">POST /trading/orders/cancel</td><td class="m">POST …/orders/{orderId}/cancellation</td></tr>
+      <tr><td>One order</td><td class="m">GET /trading/orders/get</td><td class="m">GET …/orders/{orderId}</td></tr>
+      <tr><td>Open orders</td><td class="m">GET /trading/orders/open-orders/list</td><td class="m">GET …/orders?status=OPEN</td></tr>
+      <tr><td>Order history</td><td class="m">GET /trading/orders/historical-orders/list</td><td class="m">GET …/orders (paged)</td></tr>
+      <tr><td>Instruments</td><td class="m">GET /trading/instruments/stocks/profiles/list</td><td class="m">GET /instruments?symbol=…</td></tr>
+      <tr><td>Quotes</td><td class="m">GET /market-data/stocks/snapshots/list</td><td class="m">GET /instruments/{id}/quote</td></tr>
+    </tbody>
+  </table>
+  <p>In the RPC style, the account is a parameter: a query parameter for reads and a body field
+  (<code>account_id</code>) for writes. Operations are verbs at the end of the path (<code>place</code>,
+  <code>replace</code>, <code>cancel</code>, <code>list</code>, <code>get</code>), and every change is a <code>POST</code>. In the
+  resource style, the account is part of the address of everything it owns, and the method carries
+  the verb.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,monospace">
+      <rect x="8" y="8" width="332" height="164" rx="8" fill="#fdf1e0" stroke="#e0a84a"/>
+      <rect x="360" y="8" width="332" height="164" rx="8" fill="#e6f6ee" stroke="#0d7a52"/>
+      <g font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-size="10" font-weight="700">
+        <text x="20" y="28" fill="#a8620a">RPC: the path names the procedure</text>
+        <text x="372" y="28" fill="#0d7a52">Resources: the path names the thing</text>
+      </g>
+      <g font-size="8.8" fill="#14181f">
+        <text x="20" y="54">POST /trading/orders/place</text>
+        <text x="20" y="68" fill="#59617a">{"account_id": "…", "new_orders": [ … ]}</text>
+        <text x="20" y="92">POST /trading/orders/cancel</text>
+        <text x="20" y="106" fill="#59617a">{"account_id": "…", "client_order_id": "…"}</text>
+        <text x="20" y="130" fill="#c0203f">417  {"error_code": "…", "message": "…"}</text>
+        <text x="20" y="152" fill="#59617a">next page: ?pagination_key=…</text>
+        <text x="372" y="54">POST /accounts/ACC-1001/orders</text>
+        <text x="372" y="68" fill="#59617a">Idempotency-Key: …  → 201 + Location</text>
+        <text x="372" y="92">POST …/orders/ORD-100002/cancellation</text>
+        <text x="372" y="106" fill="#59617a">→ 202 Accepted, from the order's bk:cancel</text>
+        <text x="372" y="130" fill="#c0203f">422  application/problem+json</text>
+        <text x="372" y="152" fill="#59617a">next page: follow _links.next</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 24.1</b> &mdash; The two styles side by side. Neither is wrong; they put the
+    knowledge in different places. In RPC, it lives in documentation and SDKs; in hypermedia, the
+    responses carry much of it.</figcaption>
+  </figure>
+
+  <h2>Point by point</h2>
+  <dl class="defs">
+    <dt>Authentication: request signing versus bearer tokens</dt>
+    <dd>Webull authenticates each request with an application key and an HMAC signature: the client
+    signs the path, query, body and a set of headers (<code>x-app-key</code>, <code>x-timestamp</code>,
+    <code>x-signature-nonce</code>, <code>x-signature-algorithm</code>, <code>x-signature-version</code>, and the host)
+    with its app secret, which never travels. Requests made on a customer's behalf also carry an
+    <code>x-access-token</code>. Signing gives something a plain bearer token does not: a captured request
+    cannot be replayed after its timestamp and nonce are spent, or altered in transit. OAuth's answer
+    to the same threat is sender-constrained tokens (DPoP or mutual TLS, Chapter&nbsp;20). The OAuth
+    route wins on ecosystem: standard libraries, delegated consent, scopes, and discovery through
+    RFC&nbsp;9728, with no custom signing code in every client.</dd>
+    <dt>Errors: 417 versus problem details</dt>
+    <dd>Webull reports business-rule failures with HTTP <code>417</code> and a body of <code>error_code</code>
+    and <code>message</code>. The structured code is the valuable part, and it is the same idea as a problem
+    type. The status is the questionable part: 417 <i>Expectation Failed</i> is defined by HTTP for
+    failures of the <code>Expect</code> request header, so generic tools misread it. RFC&nbsp;9457 over
+    400, 403, 409 and 422 says the same things in a standard shape.</dd>
+    <dt>Idempotency: client_order_id versus Idempotency-Key</dt>
+    <dd>Webull requires a <code>client_order_id</code> of up to 32 characters, unique per account, which makes
+    a retried placement detectable. Chapter&nbsp;14 compared the two approaches: the header generalizes
+    the idea to any <code>POST</code> and defines what a replay returns.</dd>
+    <dt>Pagination: pagination_key versus next links</dt>
+    <dd>Order lists take a <code>pagination_key</code>, a cursor in all but name, which is the right
+    algorithm. A <code>next</code> link carries the same cursor with nothing for the client to assemble.</dd>
+    <dt>Versions: x-version versus API-Version</dt>
+    <dd>Both put the version in a header rather than the path. The difference is only the name.</dd>
+    <dt>Naming: snake_case versus camelCase</dt>
+    <dd>Webull uses <code>account_id</code>; this book uses <code>accountId</code>. Either is fine, consistently applied.</dd>
+  </dl>
+
+  <h2>What the RPC design does well</h2>
+  <ul>
+    <li><b>Composite orders.</b> One placement request carries a <code>new_orders</code> array and a
+    <code>combo_type</code>, such as a bracket or one-cancels-other group, so linked orders are accepted or
+    refused together. A resource design needs an explicit resource for this, such as an
+    <i>order group</i> posted to <code>/accounts/{id}/order-groups</code> that links to its member orders.
+    That resource is worth designing before you need it.</li>
+    <li><b>SDK ergonomics.</b> Operation-per-path maps one to one onto SDK methods, and Webull ships
+    SDKs that also hide the signing.</li>
+    <li><b>Breadth.</b> One uniform envelope stretches across many asset classes and market-data products.</li>
+  </ul>
+
+  <h2>Standards cost nothing to adopt, in either style</h2>
+  <p>The most useful lesson of the comparison is that most of this book's standards do not depend
+  on the resource style at all. An RPC API can return RFC&nbsp;9457 problems with accurate statuses,
+  accept an <code>Idempotency-Key</code> on every <code>POST</code>, write money as decimal strings, send
+  <code>Deprecation</code> and <code>RateLimit</code> headers, link to its next page, publish RFC&nbsp;9728 metadata,
+  and describe itself in OpenAPI&nbsp;3.2. Hypermedia is the step that needs resources. The rest is
+  available to everyone.</p>
+
+  <div class="callout"><span class="lbl">Integrating with an RPC upstream.</span> If your firm routes orders to
+  a broker whose API is RPC-style, you can still offer your own clients a resource API. Put the
+  upstream behind an anti-corruption layer: your resources, links and problem types on the outside,
+  translated to the upstream's procedures, error codes and signing on the inside. Clients never see
+  the difference, and you can change brokers without changing clients.</div>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Choose resources by default; use RPC-style operations only where a resource model is genuinely awkward.</li>
+      <li>Whatever the style, adopt the style-independent standards: problem details, idempotency keys, decimal strings, deprecation and rate-limit headers, OpenAPI.</li>
+      <li>Model composite actions, such as bracket orders, as resources of their own.</li>
+      <li>Hide a foreign API behind your own contract, not inside your clients.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 25 - AGENTIC AI WITH SPRING AI
+     ==================================================================== -->
+<section class="chapter" id="ch25" data-foot="Chapter 25 · Agentic AI with Spring AI">
+  <div class="chnum">Chapter 25</div>
+  <h1 class="title">Agentic AI: a trading assistant with Spring AI</h1>
+  <p class="lede">An AI agent is a new kind of API client: capable, fast, and occasionally wrong
+  with great confidence. Everything this book has built, from scopes to idempotency keys to
+  problem types, is what lets such a client act for a customer without being trusted blindly.</p>
+
+  <h2>What the agent does</h2>
+  <p>The <code>brokerage-agent</code> module is a console assistant for one customer. Ask it about balances,
+  positions, quotes or open orders, and it answers from live data. Ask it to buy or sell, and it
+  checks the price, previews the order and <i>proposes</i> it, with an estimate and a confirmation code.
+  Nothing happens until the customer types <code>/confirm</code> with that code.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="f251" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <g font-size="9.6" text-anchor="middle">
+        <rect x="10" y="90" width="100" height="56" rx="8" fill="#fdf1e0" stroke="#a8620a"/>
+        <text x="60" y="114" font-weight="700">Customer</text><text x="60" y="130" font-size="8.4" fill="#59617a">at the console</text>
+        <rect x="150" y="90" width="120" height="56" rx="8" fill="#fff" stroke="#14181f"/>
+        <text x="210" y="114" font-weight="700">AgentConsole</text><text x="210" y="130" font-size="8.4" fill="#59617a">/confirm is code, not AI</text>
+        <rect x="310" y="20" width="130" height="56" rx="8" fill="#f1ecfc" stroke="#6b3fc4"/>
+        <text x="375" y="44" font-weight="700">ChatClient</text><text x="375" y="60" font-size="8.4" fill="#59617a">Spring AI + memory</text>
+        <rect x="490" y="20" width="200" height="56" rx="8" fill="#f1ecfc" stroke="#6b3fc4"/>
+        <text x="590" y="44" font-weight="700">Claude (claude-opus-5)</text><text x="590" y="60" font-size="8.4" fill="#59617a">decides which tools to call</text>
+        <rect x="310" y="112" width="130" height="56" rx="8" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="375" y="136" font-weight="700">BrokerageTools</text><text x="375" y="152" font-size="8.4" fill="#59617a">read, or propose</text>
+        <rect x="310" y="188" width="130" height="50" rx="8" fill="#fdeaee" stroke="#c0203f"/>
+        <text x="375" y="210" font-weight="700">PendingActions</text><text x="375" y="225" font-size="8.4" fill="#59617a">proposals, 5 min</text>
+        <rect x="490" y="112" width="200" height="56" rx="8" fill="#e6f6ee" stroke="#0d7a52"/>
+        <text x="590" y="132" font-weight="700">Hypermedia client</text><text x="590" y="148" font-size="8.4" fill="#59617a">OAuth client credentials:</text>
+        <text x="590" y="160" font-size="8.4" fill="#59617a">brokerage-agent, limit 5,000</text>
+        <rect x="490" y="188" width="200" height="50" rx="8" fill="#fff" stroke="#2f4fd0" stroke-width="1.4"/>
+        <text x="590" y="210" font-weight="700">Brokerage API</text><text x="590" y="225" font-size="8.4" fill="#59617a">enforces scopes and the limit</text>
+      </g>
+      <g fill="none" stroke-width="1.3">
+        <path d="M110,118 L146,118" stroke="#14181f" marker-end="url(#f251)"/>
+        <path d="M270,108 C290,80 296,60 306,52" stroke="#6b3fc4" marker-end="url(#f251)"/>
+        <path d="M440,48 L486,48" stroke="#6b3fc4" marker-end="url(#f251)"/>
+        <path d="M375,76 L375,108" stroke="#6b3fc4" marker-end="url(#f251)"/>
+        <path d="M440,140 L486,140" stroke="#2f4fd0" marker-end="url(#f251)"/>
+        <path d="M375,168 L375,184" stroke="#c0203f" marker-end="url(#f251)"/>
+        <path d="M590,168 L590,184" stroke="#0d7a52" marker-end="url(#f251)"/>
+        <path d="M210,146 C220,200 260,214 306,214" stroke="#a8620a" stroke-dasharray="4 3" marker-end="url(#f251)"/>
+        <path d="M440,214 C470,214 480,160 486,152" stroke="#c0203f" stroke-dasharray="4 3" marker-end="url(#f251)"/>
+      </g>
+      <g font-size="8" fill="#59617a">
+        <text x="148" y="192">/confirm CODE</text><text x="446" y="247">place, with key = CODE</text>
+        <text x="296" y="98">tool calls</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 25.1</b> &mdash; The agent's architecture. The model can read and propose; only the
+    console, driven by a person, can confirm. The API enforces the agent's scopes and trading limit
+    whatever the model or the console does.</figcaption>
+  </figure>
+
+  <h2>Configuration</h2>
+  <p>Spring AI's Anthropic starter provides the chat model; the agent selects Claude Opus&nbsp;5 and
+  leaves room for tool use and thinking in each response. The agent is also an OAuth client in its
+  own right, with its own registration:</p>
+  <pre data-src="brokerage-agent/src/main/resources/application.yaml" data-from="^  ai:" data-to="^            token-uri"></pre>
+  <p>Spring Security fetches, caches and renews the agent's client credentials token, and adds it to
+  every request the hypermedia client makes:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/BrokerageAgentApplication.java" data-from="BrokerageClient brokerageClient\(" data-to="^    }$" data-to-nth="2"></pre>
+  <p>The system prompt sets the agent's role and its limits in plain language. It explains
+  <i>why</i> the agent cannot act alone, so the model can explain it to the customer:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/BrokerageAgentApplication.java" data-from="static final String SYSTEM_PROMPT" data-to="Keep answers short"></pre>
+
+  <h2>Tools: thin wrappers over the client</h2>
+  <p>A Spring AI tool is an annotated method. Its description and parameter descriptions become the
+  schema the model sees. Each brokerage tool is a one-line call to the hypermedia client, so the
+  model sees exactly what the API allows, and no URL ever passes through the model:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/BrokerageTools.java" data-from="public List.Account. listAccounts\(\)" data-to="^    }$" data-to-nth="2"></pre>
+  <p>Tools that would change anything only <i>propose</i>. <code>proposeOrder</code> resolves the symbol,
+  previews the order through the API, and either returns the preview's issues or records a proposal:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/BrokerageTools.java" data-from='@Tool\(description = """$' data-to="^    }$"></pre>
+
+  <h2>The human in the loop</h2>
+  <p>A proposal is a closure waiting in memory. The model receives only its code, summary and
+  instructions, and has no tool that can confirm one. Confirmation happens in <code>PendingActions</code>,
+  called only from the console:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/PendingActions.java" data-from="public Proposal propose\(" data-to="^    }$" data-to-nth="2"></pre>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/AgentConsole.java" data-from="public void run\(String... args\)" data-to="^    }$"></pre>
+  <p>Three details make the gate robust. Commands starting with <code>/</code> are handled by code and never
+  reach the model, so no prompt, however cleverly injected, can type <code>/confirm</code> for the
+  customer. Proposals expire after five minutes, so a stale estimate cannot be confirmed tomorrow.
+  And the confirmation code <i>is</i> the order's <code>Idempotency-Key</code>: confirming twice, or retrying
+  after a timeout, can never place two orders.</p>
+
+  <h2>Defense in depth: the API has the last word</h2>
+  <p>Suppose everything above failed: a bug in the gate, or a confused model that proposes a trade
+  far larger than asked. The API still refuses anything beyond the limit the customer delegated to
+  this client, because the limit is in the agent's token (Chapter&nbsp;20) and the API checks it on every
+  order:</p>
+  <pre data-http="agent-limit" data-show="response"></pre>
+  <p>The agent's scopes, its five-minute tokens, its trading limit and the customer's own accounts
+  are all enforced by the resource server, not by the agent. The agent is trusted exactly as much as
+  its token says, which is the only safe way to trust software that reasons.</p>
+
+  <h2>Refusals and fallbacks</h2>
+  <p>A model may decline a request. The console checks why the model stopped before reading its
+  answer, and shows a clear message for a refusal rather than an empty reply:</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/AgentConsole.java" data-from="private String ask\(" data-to="^    }$"></pre>
+  <p>The sample also opts in to a Claude API feature called <b>server-side refusal fallbacks</b>, in
+  beta as of this writing. When a safety classifier declines a request, the API re-runs it on the
+  fallback model Anthropic recommends for that category, instead of returning the refusal. Spring
+  AI has no option for this request field, so a small OkHttp interceptor adds the beta header and
+  <code>"fallbacks": "default"</code> to each Messages API request. It is an explicit opt-in: remove the
+  <code>RefusalFallbacks</code> component to turn it off.</p>
+  <pre data-src="brokerage-agent/src/main/java/com/example/brokerage/agent/RefusalFallbacks.java" data-from="public Response intercept\(Chain chain\)" data-to="^    }$" data-to-nth="2"></pre>
+
+  <h2>Testing an agent without a model</h2>
+  <p>The tools are plain Java, so the most important guarantee, that proposing places nothing and
+  confirming places exactly once, is tested without any model at all:</p>
+  <pre data-src="brokerage-agent/src/test/java/com/example/brokerage/agent/BrokerageToolsTest.java" data-from="void proposingPlacesNothingAndConfirmingPlacesExactlyOnce" data-to="^    }$"></pre>
+
+  <h2>Running the agent</h2>
+  <p>With the authorization server and the API running, build the agent and start it with your
+  Anthropic API key in the environment:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>export ANTHROPIC_API_KEY=...
+<span class="pr">$ </span>java -jar brokerage-agent/target/brokerage-agent-1.0.0.jar</pre></figure>
+  <p>Without a key, the console still starts and <code>/status</code> checks the API and the agent's token by
+  calling a tool directly, with no model involved:</p>
+  <pre data-file="agent-status.txt" data-lang="text" data-label="agent console" data-cap="recorded from a real run, without an API key"></pre>
+  <p>With a key, a request such as &ldquo;buy 5 AAPL in my margin account&rdquo; unfolds in a fixed
+  sequence. The model calls <code>getQuote</code> for the price, then <code>proposeOrder</code>. The tool
+  previews the order through the API and returns a proposal with its estimated total and code, and
+  the model relays both. The customer types <code>/confirm</code> with the code, the console calls
+  <code>PendingActions</code>, and the order is placed with the code as its idempotency key. The model
+  never touched the order itself.</p>
+
+  <div class="callout ai"><span class="lbl">Hypermedia and agents.</span> Agents benefit from hypermedia
+  more than any other client. Links let an agent discover what it may do at run time instead of
+  relying on stale training data about URL patterns; HAL-FORMS templates are already
+  machine-readable descriptions of actions, close to the tool schemas models consume; and problem
+  types give an agent a precise reason to explain to its user. An API designed by this book's
+  standards is, almost by accident, an agent-ready API.</div>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>An agent is an OAuth client with its own registration, short-lived tokens and least-privilege scopes.</li>
+      <li>Delegated limits, such as a maximum order value, live in the token and are enforced by the API.</li>
+      <li>Agents propose; people confirm through a path the model cannot reach; confirmations are idempotent and expire.</li>
+      <li>Tools are thin wrappers over a hypermedia client; test their guarantees without a model.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 26 - THE STANDARD ON ONE PAGE
+     ==================================================================== -->
+<section class="chapter" id="ch26" data-foot="Chapter 26 · The standard on one page">
+  <div class="chnum">Chapter 26</div>
+  <h1 class="title">The standard on one page</h1>
+  <p class="lede">Every rule from the chapters, gathered as a checklist you can adopt as your
+  own API style guide, adapt to your organization, or argue with in a design review.</p>
+
+  <div class="grid g2 onepage" style="gap:6pt 18pt">
+    <div>
+      <h3 style="margin-top:0">Resources and URIs</h3>
+      <ul class="checklist tight small">
+        <li>Everything important, including processes, is a noun with one canonical URI.</li>
+        <li>Lowercase, hyphenated, plural collections, nested only for ownership.</li>
+        <li>Filters in the query string; no verbs, no versions in paths.</li>
+        <li>Identifiers are opaque strings.</li>
+      </ul>
+      <h3>Representations</h3>
+      <ul class="checklist tight small">
+        <li>Money and quantities are decimal strings with a stated scale and currency.</li>
+        <li>Moments are UTC ISO&nbsp;8601; dates are ISO dates.</li>
+        <li>camelCase properties, UPPER_SNAKE_CASE values.</li>
+        <li>Absent values omitted; internals hidden; sensitive values masked.</li>
+        <li>Clients read tolerantly.</li>
+      </ul>
+      <h3>Hypermedia</h3>
+      <ul class="checklist tight small">
+        <li>HAL with <code>_links</code> and <code>_embedded</code>; one root URL.</li>
+        <li>Registered relations first; extension relations as documented URIs via one CURIE.</li>
+        <li>Transitions appear only when state and permissions allow; decided in one place.</li>
+        <li>HAL-FORMS templates derived from request types.</li>
+      </ul>
+      <h3>HTTP semantics</h3>
+      <ul class="checklist tight small">
+        <li>Methods by their guarantees; precise status codes; never an error with 2xx.</li>
+        <li>201 with <code>Location</code> for creation; 202 for work in progress.</li>
+        <li>Registered media types and headers before invented ones.</li>
+      </ul>
+      <h3>Errors</h3>
+      <ul class="checklist tight small">
+        <li>Every error is RFC&nbsp;9457 problem details from one catalog of type URIs.</li>
+        <li>Invalid fields listed in one <code>errors</code> array; facts as extension members.</li>
+        <li>401 with a challenge, 403 for scope, 404 for others' data.</li>
+        <li>Request IDs everywhere; no internals revealed.</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-top:0">Safety</h3>
+      <ul class="checklist tight small">
+        <li>An <code>Idempotency-Key</code> on every valuable <code>POST</code>; replays marked.</li>
+        <li><code>ETag</code> on mutable resources; <code>If-Match</code> required (428/412).</li>
+        <li>Partial updates as JSON merge patch.</li>
+        <li>Previews use the same rules as the real action.</li>
+        <li>Records that must be kept are never deleted.</li>
+      </ul>
+      <h3>Collections, caching, events</h3>
+      <ul class="checklist tight small">
+        <li>Opaque cursors and <code>next</code> links; bounded pages; one stable order.</li>
+        <li>Explicit <code>Cache-Control</code>; <code>no-store</code> for personal data; 304 on <code>If-None-Match</code>.</li>
+        <li>Server-sent events with IDs and <code>Last-Event-ID</code> replay; events link to resources.</li>
+      </ul>
+      <h3>Evolution and quotas</h3>
+      <ul class="checklist tight small">
+        <li>Additive change first; version with a header when breaking.</li>
+        <li><code>Deprecation</code>, <code>Sunset</code> and a sunset link before removal; clients pin versions.</li>
+        <li><code>RateLimit</code> and <code>RateLimit-Policy</code> on every response; 429 with <code>Retry-After</code>.</li>
+      </ul>
+      <h3>Security</h3>
+      <ul class="checklist tight small">
+        <li>OAuth&nbsp;2.1 bearer tokens: audience-restricted, short-lived, scoped.</li>
+        <li>Browsers through a backend for frontend with PKCE; refresh tokens rotate.</li>
+        <li>Scopes decided in one place; every query scoped to the token's customer.</li>
+        <li>RFC&nbsp;9728 metadata, linked from every 401.</li>
+      </ul>
+      <h3>Contracts, clients and agents</h3>
+      <ul class="checklist tight small">
+        <li>An OpenAPI&nbsp;3.2 contract, served and tested against real responses.</li>
+        <li>Clients configured with the root only, navigating by relation.</li>
+        <li>Agents propose, people confirm, and the API enforces delegated limits.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 style="break-before:page; margin-top:0">Epilogue: the train, again</h2>
+  <div class="story">
+    <div class="slug">A Tuesday, some months later &middot; the same tunnel</div>
+    <p>Maya taps <i>Buy</i>. The train enters the tunnel, and the app waits, gives up, and tries again,
+    exactly as before. This time the second request carries the same idempotency key as the first. The
+    brokerage recognizes it, returns the order it created a few seconds earlier, and marks the response
+    as a replay. Maya owns 100 shares.</p>
+    <p>At the office, the app's developers barely notice the day. When an order is refused, the app
+    shows the problem's detail and branches on its type. When the brokerage moved its order URLs last
+    month, the app did not change, because it had never known them. When version 1 of the quotes
+    endpoint began sending <code>Deprecation</code> headers, an alert opened a ticket, and the move to
+    version 2 was a morning's work.</p>
+    <p>None of it is remarkable. That is the point of a standard: it turns the decisions nobody knew
+    they were making into decisions somebody made on purpose, once, for everyone.</p>
+  </div>
+</section>

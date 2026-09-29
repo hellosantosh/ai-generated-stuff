@@ -1,6 +1,6 @@
 POST /accounts/ACC-1001/order-previews HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Content-Type: application/json
 
@@ -22,8 +22,7 @@ Content-Type: application/hal+json
       "href": "http://localhost:8080/accounts/ACC-1001"
     },
     "bk:place-order": {
-      "href": "http://localhost:8080/accounts/ACC-1001/orders{?status,symbol,cursor,limit}",
-      "templated": true
+      "href": "http://localhost:8080/accounts/ACC-1001/orders"
     },
     "curies": [
       {
@@ -35,7 +34,7 @@ Content-Type: application/hal+json
   },
   "accountId": "ACC-1001",
   "instrumentId": "OPT-AAPL-261016-C-240",
-  "symbol": "AAPL",
+  "symbol": "AAPL261016C00240000",
   "side": "BUY",
   "type": "LIMIT",
   "quantity": "2",

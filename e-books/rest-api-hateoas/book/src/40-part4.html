@@ -1,0 +1,515 @@
+<!-- ====================================================================
+     PART IV PLATE
+     ==================================================================== -->
+<section class="plate" id="part4">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part IV</div>
+    <h1>Trading Safely</h1>
+    <p class="pl">Orders move money, so every weakness in an API becomes somebody's loss. This
+    part places orders through layered validation, makes retries harmless with idempotency keys,
+    stops concurrent edits from colliding, and turns every failure into a precise, documented
+    problem.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="Menlo,monospace">
+        <!-- a shield made of layered rules around an order -->
+        <g transform="translate(300,150)">
+          <path d="M0,-128 L112,-86 L112,10 C112,70 60,112 0,132 C-60,112 -112,70 -112,10 L-112,-86 Z" fill="#0f1834" stroke="#5b8cff" stroke-width="2"/>
+          <path d="M0,-102 L88,-68 L88,8 C88,56 48,90 0,106 C-48,90 -88,56 -88,8 L-88,-68 Z" fill="none" stroke="#4ad3a6" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <path d="M0,-76 L64,-50 L64,6 C64,42 36,68 0,80 C-36,68 -64,42 -64,6 L-64,-50 Z" fill="none" stroke="#e0a84a" stroke-width="1.6"/>
+          <rect x="-34" y="-24" width="68" height="44" rx="6" fill="#161b28" stroke="#c7d6ff" stroke-width="1.6"/>
+          <text y="-3" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">BUY 10</text>
+          <text y="12" text-anchor="middle" font-size="9" fill="#9db4ff">MSFT @ 450</text>
+        </g>
+        <g font-size="10">
+          <text x="440" y="70" fill="#c7d6ff">validation</text><text x="440" y="84" fill="#8f9cc4">400 · 422</text>
+          <text x="440" y="130" fill="#8fe8c9">idempotency</text><text x="440" y="144" fill="#8f9cc4">retry safely</text>
+          <text x="440" y="190" fill="#f6dcae">If-Match</text><text x="440" y="204" fill="#8f9cc4">412 · 428</text>
+          <text x="54" y="90" fill="#ff9fb0">problem+json</text><text x="54" y="104" fill="#8f9cc4">every failure</text>
+          <text x="54" y="200" fill="#c7d6ff">202 Accepted</text><text x="54" y="214" fill="#8f9cc4">async cancel</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>13</b> Placing orders &nbsp;&#183;&nbsp; <b>14</b> Idempotency &nbsp;&#183;&nbsp;
+      <b>15</b> Changing and canceling orders &nbsp;&#183;&nbsp; <b>16</b> Problem details
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 13 - PLACING ORDERS
+     ==================================================================== -->
+<section class="chapter" id="ch13" data-foot="Chapter 13 · Placing orders">
+  <div class="chnum">Chapter 13</div>
+  <h1 class="title">Placing orders</h1>
+  <p class="lede">Placing an order is the most consequential request a brokerage API accepts.
+  The design goal is simple to state: a well-formed, permitted order is accepted in one
+  round trip, and anything else is refused with a reason a program can act on.</p>
+
+  <h2>The order request</h2>
+  <p>An order names an instrument, a side, a type, a quantity and, depending on the type, prices.
+  The four order types behave as they do at any US broker:</p>
+  <table class="dense">
+    <thead><tr><th style="width:16%">Type</th><th>Executes</th><th style="width:26%">Prices required</th></tr></thead>
+    <tbody>
+      <tr><td class="k">MARKET</td><td>Immediately, at the best available price: the ask when buying, the bid when selling.</td><td>none</td></tr>
+      <tr><td class="k">LIMIT</td><td>Only at the limit price or better.</td><td><code>limitPrice</code></td></tr>
+      <tr><td class="k">STOP</td><td>As a market order once the last price reaches the stop.</td><td><code>stopPrice</code></td></tr>
+      <tr><td class="k">STOP_LIMIT</td><td>As a limit order once the last price reaches the stop.</td><td>both</td></tr>
+    </tbody>
+  </table>
+  <p><code>timeInForce</code> is <code>DAY</code> (the default) or <code>GTC</code>, good till canceled.
+  <code>clientOrderId</code> is the caller's own reference, up to 64 safe characters, which the API
+  stores and echoes but never interprets. Options use the same request: the instrument decides
+  the multiplier and the commission. Fractional quantities are accepted only for market orders on
+  fractionable stocks.</p>
+
+  <h2>Preview first</h2>
+  <p>A good trading screen shows the estimated cost before the customer commits. That estimate is
+  a resource of its own, an <i>order preview</i>, computed by exactly the rules that placing the order
+  will apply, and stored nowhere:</p>
+  <pre data-http="preview-ok" data-cut="curies"></pre>
+  <p>An acceptable preview carries a <code>bk:place-order</code> link: the next step, offered only
+  when it would succeed and only to a caller allowed to trade. A preview that breaks a business
+  rule is still a <i>successful</i> response. The preview itself worked; the answer is
+  &ldquo;no,&rdquo; with each issue carrying the same problem type that placing the order would
+  return:</p>
+  <pre data-http="preview-bad" data-show="response" data-cut="curies"></pre>
+  <p>For an option, the same request shape yields option economics: two contracts at 3.10 control
+  200 shares, so the notional is 620.00, plus a commission of 0.65 per contract.</p>
+  <pre data-http="preview-option" data-cut="curies"></pre>
+
+  <h2>Placing the order: 201 Created</h2>
+  <pre data-http="place" data-cut="curies"></pre>
+  <p>Everything in that response has a job. <code>201 Created</code> says a new resource exists.
+  <code>Location</code> says where, and it is the URI the client should keep. <code>ETag</code> is the order's
+  version, needed to change it later (Chapter&nbsp;15). <code>Idempotent-Replayed: false</code> says this
+  request created the order rather than replaying an earlier result (Chapter&nbsp;14). The body is the
+  order itself, with its links, so the client needs no second request to display it.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderController.java" data-from="public ResponseEntity.*placeOrder\(" data-to="^    }$"></pre>
+
+  <h2>Five layers of refusal</h2>
+  <p>An order can be wrong in five different ways, and each is caught by a different layer with a
+  different status code. Keeping the layers distinct is what lets a client react sensibly.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 230" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <g font-size="9.6">
+        <rect x="10" y="10" width="680" height="36" rx="5" fill="#f5f7fc" stroke="#b9c2da"/>
+        <rect x="40" y="52" width="620" height="36" rx="5" fill="#eceff8" stroke="#b9c2da"/>
+        <rect x="70" y="94" width="560" height="36" rx="5" fill="#eaeeff" stroke="#8fa2d4"/>
+        <rect x="100" y="136" width="500" height="36" rx="5" fill="#fdf1e0" stroke="#e0a84a"/>
+        <rect x="130" y="178" width="440" height="36" rx="5" fill="#fdeaee" stroke="#c0203f"/>
+      </g>
+      <g font-size="10" font-weight="700" fill="#14181f">
+        <text x="24" y="33">1 &#183; Readable JSON, known values</text>
+        <text x="54" y="75">2 &#183; Each field valid on its own</text>
+        <text x="84" y="117">3 &#183; Fields consistent with each other</text>
+        <text x="114" y="159">4 &#183; Allowed by the account's state</text>
+        <text x="144" y="201">5 &#183; Within the client's delegated authority</text>
+      </g>
+      <g font-size="8.8" fill="#59617a">
+        <text x="290" y="33">"side": "HOLD", a malformed body</text>
+        <text x="290" y="75">blank instrument, negative quantity</text>
+        <text x="324" y="117">a LIMIT order without a limit price</text>
+        <text x="352" y="159">buying power, shares to sell, tradability</text>
+        <text x="392" y="201">the agent's trading limit</text>
+      </g>
+      <g font-family="Menlo,monospace" font-size="9.4" font-weight="700" text-anchor="end">
+        <text x="680" y="33" fill="#c0203f">400</text><text x="650" y="75" fill="#c0203f">400</text>
+        <text x="620" y="117" fill="#c0203f">400</text><text x="590" y="159" fill="#a8620a">422</text>
+        <text x="560" y="201" fill="#c0203f">403</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 13.1</b> &mdash; The layers an order passes through. The first three are about the
+    request (400: fix it). The fourth is about the account (422: the request was fine, the answer is
+    no). The fifth is about authority (403: a bigger order needs a different client).</figcaption>
+  </figure>
+
+  <h3>Layers 1 and 2: the request itself</h3>
+  <p>A value of the wrong type never reaches the controller; Jackson rejects it while reading the
+  body. The API reports it in the same <code>errors</code> shape as any other invalid field, so a
+  client has one format to handle:</p>
+  <pre data-http="place-invalid-json" data-show="response"></pre>
+  <p>Field rules come from Bean Validation annotations on <code>OrderRequest</code>, which you met in
+  Chapter&nbsp;12. Every failing field is reported at once, sorted by field name, so a user can fix
+  them all in one pass:</p>
+  <pre data-http="place-invalid"></pre>
+
+  <h3>Layers 3 and 4: the rules</h3>
+  <p>Rules that involve several fields, or the account, live in <code>OrderService</code>. Consistency
+  between type and prices is still a malformed request, so it is a 400:</p>
+  <pre data-http="place-limit-missing" data-show="response"></pre>
+  <p>Rules about the account's state are different in kind. The request is valid; the account
+  simply cannot do it. That is <code>422 Unprocessable Content</code>, with the numbers a client needs
+  in extension members:</p>
+  <pre data-http="place-too-big" data-show="response"></pre>
+  <p>All of these checks live in one method, used by both previews and placements, so a preview
+  can never promise what placement will refuse:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderService.java" data-from="private Assessment assess\(" data-to="^    }$"></pre>
+
+  <h2>Execution</h2>
+  <p>A new order starts <code>OPEN</code>. Each second the matching engine looks at every working order.
+  A buy executes at the ask and a sell at the bid, never beyond a limit, and never for more than the
+  size displayed at that price, which is how partial fills happen. Every execution is booked to
+  the ledger as a trade with a T+1 settlement date, and published as an event.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderService.java" data-from="private void tryToFill\(" data-to="^    }$"></pre>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Offer a preview resource that applies exactly the rules placement applies, and link from an acceptable preview to placement.</li>
+      <li>A new order returns <code>201 Created</code> with <code>Location</code>, <code>ETag</code> and the full representation.</li>
+      <li>Malformed or invalid requests are 400 with every field error listed; valid requests the account cannot honor are 422; exceeding delegated authority is 403.</li>
+      <li>Every rule lives in one server-side method shared by every path that needs it.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 14 - IDEMPOTENCY
+     ==================================================================== -->
+<section class="chapter" id="ch14" data-foot="Chapter 14 · Idempotency">
+  <div class="chnum">Chapter 14</div>
+  <h1 class="title">Idempotency: retries that can never buy twice</h1>
+  <p class="lede">Networks fail in the middle of requests. When they do, the client cannot know
+  whether its order was placed. An idempotency key turns that uncertainty from a hazard into a
+  non-event.</p>
+
+  <h2>The problem with a timeout</h2>
+  <p>Remember Maya's train from Chapter&nbsp;1. When a <code>POST</code> times out, one of three things has
+  happened, and the client cannot tell which:</p>
+  <figure class="fig">
+    <svg viewBox="0 0 700 214" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="f141" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <g font-size="9.6" font-weight="700" fill="#14181f" text-anchor="middle">
+        <text x="120" y="16">A &#183; request lost</text><text x="350" y="16">B &#183; response lost</text><text x="580" y="16">C &#183; still working</text>
+      </g>
+      <g font-size="8.6" fill="#59617a" text-anchor="middle">
+        <text x="50" y="34">client</text><text x="190" y="34">server</text>
+        <text x="280" y="34">client</text><text x="420" y="34">server</text>
+        <text x="510" y="34">client</text><text x="650" y="34">server</text>
+      </g>
+      <g stroke="#dbe1ef" stroke-dasharray="3 3">
+        <line x1="50" y1="40" x2="50" y2="206"/><line x1="190" y1="40" x2="190" y2="206"/>
+        <line x1="280" y1="40" x2="280" y2="206"/><line x1="420" y1="40" x2="420" y2="206"/>
+        <line x1="510" y1="40" x2="510" y2="206"/><line x1="650" y1="40" x2="650" y2="206"/>
+      </g>
+      <g fill="none" stroke-width="1.4">
+        <path d="M50,60 L130,80" stroke="#2f4fd0"/><text x="132" y="86" font-size="14" fill="#c0203f">&#215;</text>
+        <path d="M280,60 L416,86" stroke="#2f4fd0" marker-end="url(#f141)"/>
+        <rect x="396" y="92" width="48" height="18" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1"/>
+        <path d="M420,118 L350,136" stroke="#0d7a52"/><text x="340" y="144" font-size="14" fill="#c0203f">&#215;</text>
+        <path d="M510,60 L646,86" stroke="#2f4fd0" marker-end="url(#f141)"/>
+        <rect x="626" y="92" width="48" height="50" rx="3" fill="#fdf1e0" stroke="#a8620a" stroke-width="1"/>
+      </g>
+      <g font-size="8" fill="#14181f" text-anchor="middle">
+        <text x="420" y="104">order</text><text x="650" y="112">placing</text><text x="650" y="124">order…</text>
+      </g>
+      <g font-size="8.8" fill="#14181f">
+        <text x="56" y="168">no order exists</text><text x="56" y="182" fill="#0d7a52">retry: correct</text>
+        <text x="286" y="168">the order exists</text><text x="286" y="182" fill="#c0203f">plain retry: buys twice</text>
+        <text x="516" y="168">the order is being made</text><text x="516" y="182" fill="#c0203f">plain retry: buys twice</text>
+      </g>
+      <g font-size="8.6" fill="#59617a"><text x="56" y="150">timeout</text><text x="286" y="150">timeout</text><text x="516" y="150">timeout</text></g>
+    </svg>
+    <figcaption><b>Figure 14.1</b> &mdash; Three failures that look identical to the client. Only in case A is a
+    plain retry correct; only an idempotency key makes a retry correct in all three.</figcaption>
+  </figure>
+
+  <p><code>GET</code>, <code>PUT</code> and <code>DELETE</code> are idempotent by definition, so retrying them is always
+  safe. <code>POST</code> is not, and placing an order must be a <code>POST</code>, because each order is new.
+  The fix is to let the client make any particular <code>POST</code> idempotent by naming it.</p>
+
+  <h2>The Idempotency-Key header</h2>
+  <p>The IETF HTTP APIs working group's Internet-Draft <i>The Idempotency-Key HTTP Header Field</i>
+  standardizes a practice that payment APIs have used for years. The client generates a unique
+  key, a UUID works well, and sends it with the request. The server remembers the key along with
+  the result. If the same key arrives again, the server returns the stored result instead of doing
+  the work again.</p>
+  <ul>
+    <li><b>Same key, same request:</b> the original order, marked <code>Idempotent-Replayed: true</code>.</li>
+    <li><b>Same key, different request:</b> a client bug; refused with 422 rather than guessed at.</li>
+    <li><b>No key:</b> refused with 400. In this API every new order must be retry-safe.</li>
+  </ul>
+  <pre data-http="place-replay" data-show="response" data-cut="curies" data-cap="the same key and body, sent again"></pre>
+  <pre data-http="place-reused-key" data-cap="the same key, a different quantity"></pre>
+  <pre data-http="place-no-key" data-show="response"></pre>
+
+  <h2>How the server remembers</h2>
+  <p>Recognizing &ldquo;the same request&rdquo; needs a definition. <code>OrderRequest</code> computes a
+  <b>fingerprint</b> from its normalized fields. Quantities are stripped of trailing zeros, so
+  <code>"10"</code> and <code>"10.00"</code> count as the same order, and the default time in force is
+  filled in:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderRequest.java" data-from="String fingerprint\(\)" data-to="^    }$"></pre>
+  <p>The key store keeps each key for 24 hours, scoped to the client and the account, so two
+  different applications can never collide on a key:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/IdempotencyKeys.java" data-from="^@Component" data-to="^}$"></pre>
+  <p>The placement method checks the key before anything else, and records it only after the
+  order exists:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderService.java" data-from="public synchronized Placement place\(" data-to="^    }$"></pre>
+
+  <div class="callout warn"><span class="lbl">In production.</span> This store is an in-memory map, and the
+  service is <code>synchronized</code>, so two concurrent requests with one key can never both succeed.
+  A real deployment runs several instances, so the store belongs in a shared database, and the key
+  must be claimed atomically <i>before</i> the order is created. A unique constraint on (client,
+  account, key) is the usual tool. The draft specifies <code>409 Conflict</code> for a request that
+  arrives while an earlier one with the same key is still in flight.</div>
+
+  <h2>The client's half</h2>
+  <p>An idempotency key is only useful if the client reuses it on retries. The book's client
+  generates one key per order and retries timeouts and transient failures with that same key:</p>
+  <pre data-src="brokerage-client/src/main/java/com/example/brokerage/client/BrokerageClient.java" data-from="public Order place\(" data-to="^    }$"></pre>
+  <ul class="tight">
+    <li>Retry network failures and transient statuses (429, 502, 503, 504), never 400s or 422s.</li>
+    <li>Honor <code>Retry-After</code> when the server sends it; otherwise back off progressively.</li>
+    <li>Generate the key when the user presses <i>Buy</i>, not when the request is sent, so that
+    every retry, even after an app restart, carries the same key.</li>
+  </ul>
+
+  <h2>Is clientOrderId enough?</h2>
+  <p>Many brokerage APIs, including the RPC-style one compared in Chapter&nbsp;24, deduplicate on a
+  client-supplied order ID instead. It is a workable idea: the ID must be unique per account, so a
+  retry with the same ID cannot create a second order. The <code>Idempotency-Key</code> header is the
+  more general version of the same idea. It works for any <code>POST</code>, not only orders; it separates
+  &ldquo;my reference for this order&rdquo; from &ldquo;this attempt&rdquo;; and it defines what a replay
+  returns, which a unique-ID rule usually leaves unsaid.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every non-idempotent request that creates something valuable requires an <code>Idempotency-Key</code>.</li>
+      <li>The same key and request replay the original response, marked <code>Idempotent-Replayed: true</code>; the same key with a different request is 422.</li>
+      <li>Keys are scoped to the client and retained for at least 24 hours; claim them atomically.</li>
+      <li>Clients generate the key once per user intent and reuse it on every retry.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 15 - CHANGING AND CANCELLING ORDERS
+     ==================================================================== -->
+<section class="chapter" id="ch15" data-foot="Chapter 15 · Changing and canceling orders">
+  <div class="chnum">Chapter 15</div>
+  <h1 class="title">Changing and canceling orders</h1>
+  <p class="lede">A working order is shared state: the customer's phone, their laptop and the
+  exchange can all touch it at once. HTTP's conditional requests keep those writers from
+  silently overwriting each other, and <code>202 Accepted</code> tells the truth about cancels
+  that take time.</p>
+
+  <h2>The lost update</h2>
+  <p>Maya's phone and laptop both show her open order for 10&nbsp;MSFT at 450.00. On the laptop she
+  raises the limit to 455.00. A moment later, on the phone, which still shows the old order, she
+  cuts the quantity to 8. Without protection, the phone's request is applied to an order it has
+  never seen, and nobody is told.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 236" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs><marker id="f151" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker></defs>
+      <g font-size="10" font-weight="700" text-anchor="middle" fill="#14181f">
+        <rect x="20" y="8" width="120" height="28" rx="6" fill="#eaeeff" stroke="#2f4fd0"/><text x="80" y="26">Laptop</text>
+        <rect x="290" y="8" width="120" height="28" rx="6" fill="#fff" stroke="#14181f"/><text x="350" y="26">API</text>
+        <rect x="560" y="8" width="120" height="28" rx="6" fill="#eaeeff" stroke="#2f4fd0"/><text x="620" y="26">Phone</text>
+      </g>
+      <g stroke="#dbe1ef" stroke-dasharray="3 3"><line x1="80" y1="36" x2="80" y2="230"/><line x1="350" y1="36" x2="350" y2="230"/><line x1="620" y1="36" x2="620" y2="230"/></g>
+      <g fill="none" stroke-width="1.3">
+        <path d="M350,56 L84,56" stroke="#59617a" marker-end="url(#f151)"/>
+        <path d="M350,56 L616,56" stroke="#59617a" marker-end="url(#f151)"/>
+        <path d="M80,96 L346,96" stroke="#2f4fd0" marker-end="url(#f151)"/>
+        <path d="M350,120 L84,120" stroke="#0d7a52" marker-end="url(#f151)"/>
+        <path d="M620,160 L354,160" stroke="#2f4fd0" marker-end="url(#f151)"/>
+        <path d="M350,190 L616,190" stroke="#c0203f" marker-end="url(#f151)"/>
+      </g>
+      <g font-family="Menlo,monospace" font-size="8.6">
+        <text x="215" y="50" text-anchor="middle" fill="#59617a">ETag "ORD-100002-v1"</text>
+        <text x="485" y="50" text-anchor="middle" fill="#59617a">ETag "ORD-100002-v1"</text>
+        <text x="96" y="90" fill="#2f4fd0">PATCH limitPrice 455  If-Match: "…-v1"</text>
+        <text x="96" y="134" fill="#0d7a52">200 OK  ETag: "ORD-100002-v2"</text>
+        <text x="360" y="154" fill="#2f4fd0">PATCH quantity 8  If-Match: "…-v1"</text>
+        <text x="360" y="204" fill="#c0203f">412 Precondition Failed</text>
+        <text x="360" y="218" fill="#c0203f">currentEtag: "ORD-100002-v2"</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 15.1</b> &mdash; Optimistic concurrency with ETags. The laptop's change succeeds and
+    produces version 2. The phone's change was based on version 1, so it is refused, and the phone must
+    re-read the order before deciding again.</figcaption>
+  </figure>
+
+  <h2>ETags and If-Match</h2>
+  <p>Every order carries a <b>strong entity tag</b> that changes whenever the order does:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/Order.java" data-from="public String etag\(\)" data-to="^    }$"></pre>
+  <p>A client that changes an order must send the tag of the version it saw in <code>If-Match</code>. The
+  server compares it with the current tag before applying anything. The API goes one step
+  further than HTTP requires and makes the header <i>mandatory</i>: a change without
+  <code>If-Match</code> is refused with <code>428 Precondition Required</code>, defined for exactly this purpose
+  by RFC&nbsp;6585.</p>
+  <pre data-http="amend-no-if-match"></pre>
+  <pre data-http="amend" data-cut="curies" data-cap="with the current ETag: accepted, and the ETag moves on"></pre>
+  <pre data-http="amend-stale" data-cap="the phone, still holding version 1"></pre>
+  <p>The <code>currentEtag</code> extension member saves the phone a guess: it can re-read the order, show
+  the user what changed, and let them decide.</p>
+
+  <h2>Merge patch: sending only what changes</h2>
+  <p>The change itself is a <b>JSON merge patch</b> (RFC&nbsp;7396), sent as
+  <code>application/merge-patch+json</code>. A merge patch is a partial document: each member present
+  replaces the same member of the resource, and members that are absent stay as they are. That
+  makes the request both minimal and self-evident: <code>{"limitPrice": "455.00"}</code> changes the
+  limit price and nothing else.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderAmendment.java" data-from="^public class OrderAmendment" data-to="private Order.TimeInForce timeInForce;"></pre>
+  <p>Only a working order's quantity, prices and time in force can change. The instrument, side
+  and type cannot. A different instrument is a different order, so the client cancels and places
+  a new one. The server re-runs the business rules on the new terms, discounting the cash the order
+  had already reserved:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderService.java" data-from="public synchronized Order amend\(" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderController.java" data-from="@PatchMapping" data-to="^    }$"></pre>
+
+  <h2>Polling cheaply with If-None-Match</h2>
+  <p>The same tag makes polling almost free. A client that has an order sends its tag in
+  <code>If-None-Match</code>. While nothing has changed, the answer is a bodiless <code>304 Not Modified</code>:</p>
+  <pre data-http="order-304"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderController.java" data-from="Order.. order\(@PathVariable" data-to="^    }$"></pre>
+
+  <h2>Canceling: 202 Accepted</h2>
+  <p>On a real exchange, a cancel is a request, not a command. It travels to the market, and a
+  fill may arrive first. The API models that honestly. A cancellation request is accepted at once
+  with <code>202 Accepted</code>, the order moves to <code>PENDING_CANCEL</code>, and <code>Location</code> points at
+  the order, whose status will settle:</p>
+  <pre data-http="cancel" data-cut="curies"></pre>
+  <p>Notice that the <code>edit</code> and <code>bk:cancel</code> links are already gone: a pending cancel
+  cannot be changed or canceled again. On the matching engine's next pass, the order becomes
+  <code>CANCELLED</code>, unless a fill wins the race, in which case it becomes <code>FILLED</code> and the
+  cancel is moot. You saw the final state in Chapter&nbsp;9.</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/orders/OrderService.java" data-from="public synchronized Order cancel\(" data-to="^    }$"></pre>
+  <p>Asking twice is harmless: a second request while the cancel is pending returns the same pending
+  order, so a client can retry a cancel without an idempotency key. Once the order is final, the
+  request is refused with <code>409 Conflict</code>.</p>
+
+  <h2>Why not DELETE?</h2>
+  <p><code>DELETE /orders/ORD-100002</code> reads naturally, but it promises the wrong thing: that the
+  resource will be gone. A canceled order must remain readable for the customer's records, for
+  regulators, and for the client that asked. Modeling the cancellation as its own resource keeps
+  every guarantee true: the order is never deleted, the request is accepted rather than
+  completed, and the final state is visible on the order itself.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every mutable resource has a strong <code>ETag</code>; changes require <code>If-Match</code> (428 without, 412 when stale, with the current tag in the problem).</li>
+      <li>Partial updates are JSON merge patches with <code>application/merge-patch+json</code>.</li>
+      <li>Operations that complete later answer <code>202 Accepted</code> with a <code>Location</code> to watch.</li>
+      <li>Records that must be kept are never deleted; ending them is a state change.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 16 - PROBLEM DETAILS
+     ==================================================================== -->
+<section class="chapter" id="ch16" data-foot="Chapter 16 · Problem details">
+  <div class="chnum">Chapter 16</div>
+  <h1 class="title">Problem details: errors as RFC 9457 documents</h1>
+  <p class="lede">An error response is an API's most important documentation, because it is the
+  one a developer reads when something is already wrong. RFC&nbsp;9457 gives every error the same
+  shape, and a stable identifier that code can depend on.</p>
+
+  <h2>Anatomy of a problem</h2>
+  <p>RFC&nbsp;9457, <i>Problem Details for HTTP APIs</i>, replaced RFC&nbsp;7807 in 2023 and defines the
+  media type <code>application/problem+json</code>. Every error from the brokerage API is one:</p>
+  <figure class="fig">
+    <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" font-family="Menlo,monospace">
+      <rect x="10" y="8" width="380" height="204" rx="8" fill="#161b28"/>
+      <g font-size="9.4" fill="#e9edf7">
+        <text x="24" y="30">{</text>
+        <text x="38" y="50"><tspan fill="#9db4ff">"type"</tspan>: <tspan fill="#7fdba8">"https://docs…/problems/</tspan></text>
+        <text x="110" y="64" fill="#7fdba8">insufficient-buying-power",</text>
+        <text x="38" y="84"><tspan fill="#9db4ff">"title"</tspan>: <tspan fill="#7fdba8">"The account does not have…"</tspan>,</text>
+        <text x="38" y="102"><tspan fill="#9db4ff">"status"</tspan>: <tspan fill="#ffcf70">422</tspan>,</text>
+        <text x="38" y="120"><tspan fill="#9db4ff">"detail"</tspan>: <tspan fill="#7fdba8">"This order needs 330000.00…"</tspan>,</text>
+        <text x="38" y="138"><tspan fill="#9db4ff">"instance"</tspan>: <tspan fill="#7fdba8">"/accounts/ACC-1001/orders"</tspan>,</text>
+        <text x="38" y="156"><tspan fill="#9db4ff">"requestId"</tspan>: <tspan fill="#7fdba8">"71e69cf7-…"</tspan>,</text>
+        <text x="38" y="174"><tspan fill="#9db4ff">"required"</tspan>: <tspan fill="#7fdba8">"330000.00"</tspan>,</text>
+        <text x="38" y="192"><tspan fill="#9db4ff">"available"</tspan>: <tspan fill="#7fdba8">"46241.10"</tspan> }</text>
+      </g>
+      <g font-family="Helvetica Neue,Helvetica,Arial,sans-serif" font-size="9.2">
+        <path d="M392,56 L420,56" stroke="#2f4fd0"/><text x="426" y="52" font-weight="700" fill="#14181f">type: the identity of the problem</text>
+        <text x="426" y="64" fill="#59617a">stable URI; clients branch on it; it resolves to docs</text>
+        <path d="M392,92 L420,92" stroke="#2f4fd0"/><text x="426" y="89" font-weight="700" fill="#14181f">title, status</text>
+        <text x="426" y="101" fill="#59617a">a fixed summary per type; the HTTP status, repeated</text>
+        <path d="M392,128 L420,128" stroke="#2f4fd0"/><text x="426" y="125" font-weight="700" fill="#14181f">detail, instance</text>
+        <text x="426" y="137" fill="#59617a">this occurrence, for humans; the request path</text>
+        <path d="M392,174 L420,174" stroke="#2f4fd0"/><text x="426" y="171" font-weight="700" fill="#14181f">extension members</text>
+        <text x="426" y="183" fill="#59617a">machine-readable facts, defined per type</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 16.1</b> &mdash; A problem document. <code>type</code> is the contract; <code>title</code> and
+    <code>detail</code> are for people; extension members carry the facts a program needs.</figcaption>
+  </figure>
+
+  <p>The most important rule is the division of labor. <b>Code branches on <code>type</code>,</b> never on
+  <code>title</code> or <code>detail</code>, which are prose and may be reworded or translated. The type is
+  a URI, so it is globally unique. In this API it also resolves to a page that documents the
+  problem: what it means, when it happens, and what to do about it.</p>
+
+  <h2>A catalog, not a free-for-all</h2>
+  <p>Every problem the API can return is declared in one enumeration, with its type, status and
+  title. There is no other way to produce an error, so the catalog is complete by construction:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/ProblemType.java" data-from="^public enum ProblemType" data-to="RATE_LIMITED\("></pre>
+  <p>Appendix&nbsp;B lists each type with what a client should do about it. Business code raises an
+  <code>ApiException</code> with a type, a detail and any extension members:</p>
+  <figure class="code src keep"><figcaption><span class="path">api/orders/OrderService.java</span><span class="note">raising a problem</span></figcaption><pre><span class="kw">throw</span> <span class="kw">new</span> ApiException(ProblemType.PRECONDITION_FAILED,
+        <span class="st">"The order has changed since you read it; fetch it again and reapply your change"</span>)
+        .with(<span class="st">"currentEtag"</span>, order.etag());</pre></figure>
+
+  <h2>One handler for every error</h2>
+  <p>A single <code>@RestControllerAdvice</code> turns every exception into a problem document, adding
+  the request path as <code>instance</code> and the request ID for support:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/ApiExceptionHandler.java" data-from="ResponseEntity.ProblemDetail. handleApi\(" data-to="^    }$"></pre>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/ApiExceptionHandler.java" data-from="static ProblemDetail problem\(" data-to="^    }$"></pre>
+  <p>The class extends Spring's <code>ResponseEntityExceptionHandler</code>, which already renders
+  Spring's own exceptions, such as 405, 406 and 415, as problem details. Two overrides give
+  invalid input the API's consistent <code>errors</code> array, whether Bean Validation rejected a field
+  or Jackson could not read it:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/ApiExceptionHandler.java" data-from="protected ResponseEntity.Object. handleMethodArgumentNotValid" data-to="^    }$"></pre>
+
+  <h2>Security errors are problems too</h2>
+  <p>Authentication and authorization failures happen in Spring Security's filter chain, before any
+  controller runs, and by default they produce an empty body. The API keeps what Spring Security
+  does well, the standard <code>WWW-Authenticate</code> challenge of RFC&nbsp;6750, and adds the problem
+  document by handing the exception to the same MVC exception handling:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/SecurityConfig.java" data-from="public static final class ProblemResponses" data-to="^    }$"></pre>
+  <pre data-http="no-token" data-cap="no token: 401, a challenge, and where to get a token"></pre>
+  <pre data-http="wrong-scope" data-show="response" data-cap="a token without the scope: 403"></pre>
+  <p>Three statuses, three meanings. <b>401</b>: I do not know who you are; get a token (the challenge
+  even says where, through the <code>resource_metadata</code> parameter of RFC&nbsp;9728). <b>403</b>: I know
+  who you are, and your token does not allow this. <b>404</b>: as far as you are concerned, it does not
+  exist, which is also the answer for another customer's account.</p>
+
+  <h2>Request IDs</h2>
+  <p>Every response carries an <code>X-Request-Id</code>, and every problem repeats it as
+  <code>requestId</code>. A client may supply its own ID so that its logs and the server's share one
+  value. The server accepts only IDs that are short and plain, so the header cannot be used to
+  inject text into logs:</p>
+  <pre data-src="brokerage-api/src/main/java/com/example/brokerage/api/platform/RequestIdFilter.java" data-from="protected void doFilterInternal" data-to="^    }$"></pre>
+
+  <h2>What never goes in a problem</h2>
+  <ul class="tight">
+    <li>Stack traces, exception class names, SQL, file paths or server names.</li>
+    <li>Anything that confirms the existence of a resource the caller may not see.</li>
+    <li>Secrets, tokens or the full contents of the request.</li>
+  </ul>
+  <p>An unexpected exception becomes a generic <code>500</code> problem with a request ID, and the
+  details go to the server's log, where the request ID finds them.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every error is <code>application/problem+json</code> with <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code> and <code>instance</code>.</li>
+      <li>Problem types are stable URIs from one catalog, each documented; clients branch on <code>type</code> only.</li>
+      <li>Facts a client needs travel as typed extension members; invalid fields are listed in one <code>errors</code> array.</li>
+      <li>401 carries a <code>WWW-Authenticate</code> challenge; 401, 403 and 404 are used precisely.</li>
+      <li>Every response and problem carries a request ID; no problem reveals internals.</li>
+    </ol>
+  </div>
+</section>

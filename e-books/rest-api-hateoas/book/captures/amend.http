@@ -1,6 +1,6 @@
 PATCH /accounts/ACC-1001/orders/ORD-100002 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Content-Type: application/merge-patch+json
 If-Match: "ORD-100002-v1"
@@ -52,7 +52,7 @@ Content-Type: application/hal+json
   "status": "OPEN",
   "filledQuantity": "0",
   "fills": [],
-  "createdAt": "2026-09-28T23:33:22.811774Z",
-  "updatedAt": "2026-09-28T23:33:22.873660Z",
+  "createdAt": "2026-09-29T10:45:28.998175Z",
+  "updatedAt": "2026-09-29T10:45:29.064534Z",
   "remainingQuantity": "10"
 }

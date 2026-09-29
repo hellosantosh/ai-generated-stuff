@@ -41,8 +41,8 @@ class BrokerageClientTest {
             {"_embedded": {"bk:accounts": [{"id": "ACC-1", "nickname": "Main", "type": "MARGIN",
               "_links": {"self": {"href": "https://api.test/a/1"},
                          "bk:balances": {"href": "https://api.test/money/for/ACC-1"},
-                          "bk:orders": {"href": "https://api.test/a/1/o{?status,cursor}",
-                                        "templated": true}}}]},
+                         "bk:orders": {"href": "https://api.test/a/1/o{?status,cursor}",
+                                       "templated": true}}}]},
              "_links": {"self": {"href": "https://api.test/v9/acct-list"}}}""";
 
     MockRestServiceServer server;
@@ -123,7 +123,7 @@ class BrokerageClientTest {
 
         assertThatThrownBy(() -> brokerage.cancel(filled))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("can no longer be cancelled");
+                .hasMessageContaining("can no longer be canceled");
         server.verify();
     }
 

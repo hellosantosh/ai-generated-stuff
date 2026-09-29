@@ -1,0 +1,644 @@
+<!-- ====================================================================
+     PART I PLATE
+     ==================================================================== -->
+<section class="plate" id="part1">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part I</div>
+    <h1>Foundations</h1>
+    <p class="pl">Before a single annotation or link: why standards matter, what REST
+    actually asks of an API, the parts of HTTP that an API designer must know cold, and a
+    workbench on which the rest of the book runs.</p>
+
+    <div class="art">
+      <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" font-family="Menlo,monospace">
+        <!-- three stacked plates: HTTP, resources, hypermedia -->
+        <g transform="translate(250,236)">
+          <path d="M-210,0 L0,-52 L210,0 L0,52 Z" fill="#101b3a" stroke="#5b8cff" stroke-width="2"/>
+          <path d="M-210,0 L-210,14 L0,66 L210,14 L210,0 L0,52 Z" fill="#0b1430" stroke="#5b8cff" stroke-width="1.4"/>
+          <text y="5" text-anchor="middle" font-size="15" font-weight="700" letter-spacing="3" fill="#9db4ff">HTTP</text>
+        </g>
+        <g transform="translate(250,160)">
+          <path d="M-170,0 L0,-42 L170,0 L0,42 Z" fill="#0f2a2a" stroke="#4ad3a6" stroke-width="2"/>
+          <path d="M-170,0 L-170,12 L0,54 L170,12 L170,0 L0,42 Z" fill="#0b2020" stroke="#4ad3a6" stroke-width="1.4"/>
+          <text y="5" text-anchor="middle" font-size="14" font-weight="700" letter-spacing="3" fill="#8fe8c9">RESOURCES</text>
+        </g>
+        <g transform="translate(250,94)">
+          <path d="M-128,0 L0,-32 L128,0 L0,32 Z" fill="#2a2210" stroke="#e0a84a" stroke-width="2"/>
+          <path d="M-128,0 L-128,10 L0,42 L128,10 L128,0 L0,32 Z" fill="#201a0b" stroke="#e0a84a" stroke-width="1.4"/>
+          <text y="5" text-anchor="middle" font-size="13" font-weight="700" letter-spacing="3" fill="#f6dcae">HYPERMEDIA</text>
+        </g>
+        <g font-size="10" fill="#9fb3e6">
+          <line x1="382" y1="94" x2="450" y2="94" stroke="#e0a84a" stroke-dasharray="3 3"/>
+          <text x="458" y="91" fill="#f6dcae">links &#183; forms</text>
+          <text x="458" y="104" fill="#8f9cc4">what to do next</text>
+          <line x1="424" y1="160" x2="450" y2="160" stroke="#4ad3a6" stroke-dasharray="3 3"/>
+          <text x="458" y="157" fill="#8fe8c9">accounts &#183; orders</text>
+          <text x="458" y="170" fill="#8f9cc4">nouns with addresses</text>
+          <line x1="462" y1="236" x2="470" y2="236" stroke="#5b8cff" stroke-dasharray="3 3"/>
+          <text x="476" y="233" fill="#c7d6ff">methods &#183; status</text>
+          <text x="476" y="246" fill="#8f9cc4">uniform interface</text>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>01</b> Why API standards matter &nbsp;&#183;&nbsp; <b>02</b> REST in one chapter &nbsp;&#183;&nbsp;
+      <b>03</b> HTTP, the parts that matter &nbsp;&#183;&nbsp; <b>04</b> Your workbench
+    </div>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 1 - WHY API STANDARDS MATTER
+     ==================================================================== -->
+<section class="chapter" id="ch01" data-foot="Chapter 1 · Why API standards matter">
+  <div class="chnum">Chapter 1</div>
+  <h1 class="title">Why API standards matter</h1>
+  <p class="lede">An API is a promise made to strangers. Standards are how you keep that
+  promise when you are not in the room: when the network drops, when the server changes, and
+  when the client was written by someone you will never meet.</p>
+
+  <div class="story">
+    <div class="slug">Tuesday, 9:31 a.m. &middot; a commuter train</div>
+    <p>Maya taps <i>Buy</i> on 100 shares. The train enters a tunnel. Her trading app waits thirty
+    seconds, gives up, and, because its developers were careful people, tries again. The second
+    request goes through. So, it turns out, did the first. The brokerage now holds two orders
+    for 100 shares, and by the time the train leaves the tunnel both have filled.</p>
+    <p>That afternoon the app's developers read the API documentation looking for a way to
+    retry safely. There isn't one. They find something else instead: errors arrive as
+    <span class="mono">{"code": 417, "msg": "failed"}</span> for a dozen different reasons, so the
+    app cannot tell &ldquo;insufficient funds&rdquo; from &ldquo;market closed.&rdquo; And a
+    release note mentions that <span class="mono">/v1/orders/place</span> will move to
+    <span class="mono">/v2/trade/submit</span> next quarter, which means another app release,
+    another app-store review, and another month in which old versions of the app will break.</p>
+    <p>None of these is a bug in the usual sense. Each is a decision the API's designers did not
+    know they were making.</p>
+  </div>
+
+  <p>Every one of those problems has a published, well-understood solution. A client that
+  sends an <code>Idempotency-Key</code> header can retry an order as often as it likes, and the
+  server will create it once. An error written as an RFC&nbsp;9457 problem document carries a
+  stable type identifier that a program can branch on. A client that follows links instead of
+  building URLs does not care where the server moves a resource. This book is about adopting
+  those solutions deliberately and consistently, so that the next Maya only buys once.</p>
+
+  <h2>What a standard buys you</h2>
+  <p>&ldquo;Standard&rdquo; here means two things. Some are <b>Internet standards</b>: RFCs published by
+  the IETF, such as HTTP semantics (RFC&nbsp;9110) or problem details (RFC&nbsp;9457), that
+  thousands of engineers have already argued over. Others are <b>house conventions</b>: choices
+  such as &ldquo;money is always a decimal string&rdquo; that no RFC makes for you but that you make
+  once, write down, and apply everywhere. Both kinds pay off the same way.</p>
+
+  <table>
+    <thead><tr><th style="width:26%">Without a standard</th><th style="width:36%">With one</th><th>Who benefits</th></tr></thead>
+    <tbody>
+      <tr><td>Every endpoint invents its own error shape</td><td>One problem-details format, one catalog of type URIs</td><td>Client developers, support engineers</td></tr>
+      <tr><td>Retries might duplicate orders</td><td>Idempotency keys make retries safe by construction</td><td>Customers, and the firm's risk team</td></tr>
+      <tr><td>Clients hard-code URL patterns</td><td>Clients follow links from one root URL</td><td>API teams, who can reorganize freely</td></tr>
+      <tr><td>Two devices silently overwrite an order change</td><td>ETags and <code>If-Match</code> turn a lost update into a clear 412</td><td>Customers with more than one screen</td></tr>
+      <tr><td>Each list pages differently</td><td>One cursor convention and a <code>next</code> link</td><td>Anyone who has written a sync job</td></tr>
+      <tr><td>Documentation drifts from behavior</td><td>An OpenAPI contract tested against real responses</td><td>Everyone who reads the documentation</td></tr>
+    </tbody>
+  </table>
+
+  <p>There is a quieter benefit too. Standards shrink documentation. When your API returns
+  <code>428 Precondition Required</code>, you do not need a page explaining what went wrong: RFC&nbsp;6585
+  explains it, every HTTP library knows it, and an experienced developer recognizes it on sight.
+  Every invented convention is something your documentation must teach and your users must
+  remember.</p>
+
+  <h2>The standards in this book</h2>
+  <table class="dense">
+    <thead><tr><th style="width:27%">Standard</th><th>What it governs</th><th style="width:12%">Chapter</th></tr></thead>
+    <tbody>
+      <tr><td>RFC 9110, 9111</td><td>HTTP semantics and caching: methods, status codes, conditional requests</td><td>3, 15, 17</td></tr>
+      <tr><td>RFC 8288, RFC 6570</td><td>Web linking and link relations; URI templates such as <code>{?status}</code></td><td>9, 10</td></tr>
+      <tr><td>HAL, HAL-FORMS</td><td>JSON hypermedia: <code>_links</code>, <code>_embedded</code> and <code>_templates</code></td><td>10&ndash;12</td></tr>
+      <tr><td>RFC 9457</td><td>Problem details: one machine-readable shape for every error</td><td>16</td></tr>
+      <tr><td>RFC 7396</td><td>JSON merge patch, for partial updates</td><td>15</td></tr>
+      <tr><td>Idempotency-Key <span class="tag w">draft</span></td><td>Safe retries of non-idempotent requests</td><td>14</td></tr>
+      <tr><td>WHATWG HTML (SSE)</td><td>Server-sent events and <code>Last-Event-ID</code> replay</td><td>18</td></tr>
+      <tr><td>RFC 9745, RFC 8594</td><td>The <code>Deprecation</code> and <code>Sunset</code> header fields</td><td>19</td></tr>
+      <tr><td>RateLimit fields <span class="tag w">draft</span></td><td>Advertising quotas before clients hit them</td><td>19</td></tr>
+      <tr><td>OAuth 2.1 <span class="tag w">draft</span>, RFC 7636</td><td>Authorization with scopes; PKCE for the authorization code grant</td><td>20</td></tr>
+      <tr><td>RFC 9728, RFC 8631</td><td>Protected resource metadata; <code>service-desc</code> and <code>service-doc</code> links</td><td>10, 20</td></tr>
+      <tr><td>OpenAPI 3.2</td><td>A machine-readable description of the whole API</td><td>21</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The brokerage you will build</h2>
+  <p>Standards are easiest to judge in a real system, so this book builds one. The sample
+  brokerage has four parts, shown in Figure&nbsp;1.1, and every one of them runs on your laptop.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <defs>
+        <marker id="f11a" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="context-stroke"/></marker>
+      </defs>
+      <!-- clients -->
+      <g font-size="10">
+        <rect x="14" y="30" width="178" height="62" rx="8" fill="#eaeeff" stroke="#2f4fd0"/>
+        <text x="103" y="52" text-anchor="middle" font-weight="700" fill="#14181f">Web app backend</text>
+        <text x="103" y="67" text-anchor="middle" font-size="8.6" fill="#59617a" font-family="Menlo,monospace">brokerage-web</text>
+        <text x="103" y="81" text-anchor="middle" font-size="8.4" fill="#59617a">code + PKCE, for a signed-in user</text>
+
+        <rect x="14" y="118" width="178" height="62" rx="8" fill="#e6f6ee" stroke="#0d7a52"/>
+        <text x="103" y="140" text-anchor="middle" font-weight="700" fill="#14181f">Customer's own script</text>
+        <text x="103" y="155" text-anchor="middle" font-size="8.6" fill="#59617a" font-family="Menlo,monospace">brokerage-cli</text>
+        <text x="103" y="169" text-anchor="middle" font-size="8.4" fill="#59617a">client credentials</text>
+
+        <rect x="14" y="206" width="178" height="62" rx="8" fill="#f1ecfc" stroke="#6b3fc4"/>
+        <text x="103" y="228" text-anchor="middle" font-weight="700" fill="#14181f">AI agent (Spring AI)</text>
+        <text x="103" y="243" text-anchor="middle" font-size="8.6" fill="#59617a" font-family="Menlo,monospace">brokerage-agent</text>
+        <text x="103" y="257" text-anchor="middle" font-size="8.4" fill="#59617a">client credentials + trading limit</text>
+      </g>
+      <!-- authorization server -->
+      <rect x="276" y="20" width="176" height="70" rx="8" fill="#fff" stroke="#a8620a" stroke-width="1.4"/>
+      <text x="364" y="44" text-anchor="middle" font-size="10.4" font-weight="700" fill="#14181f">Authorization server</text>
+      <text x="364" y="59" text-anchor="middle" font-size="8.6" fill="#59617a" font-family="Menlo,monospace">auth-server &#183; :9000</text>
+      <text x="364" y="75" text-anchor="middle" font-size="8.4" fill="#59617a">issues signed JWT access tokens</text>
+      <!-- API -->
+      <rect x="500" y="112" width="186" height="170" rx="10" fill="#fff" stroke="#2f4fd0" stroke-width="1.6"/>
+      <text x="593" y="136" text-anchor="middle" font-size="10.8" font-weight="700" fill="#14181f">Brokerage API</text>
+      <text x="593" y="151" text-anchor="middle" font-size="8.6" fill="#59617a" font-family="Menlo,monospace">brokerage-api &#183; :8080</text>
+      <g font-size="8.6" fill="#14181f">
+        <rect x="514" y="162" width="158" height="22" rx="4" fill="#eaeeff"/><text x="593" y="177" text-anchor="middle">HAL + HAL-FORMS resources</text>
+        <rect x="514" y="188" width="158" height="22" rx="4" fill="#eaeeff"/><text x="593" y="203" text-anchor="middle">orders, previews, events</text>
+        <rect x="514" y="214" width="158" height="22" rx="4" fill="#eaeeff"/><text x="593" y="229" text-anchor="middle">simulated market + ledger</text>
+        <rect x="514" y="240" width="158" height="30" rx="4" fill="#fdf1e0"/><text x="593" y="253" text-anchor="middle">/openapi.yaml</text>
+        <text x="593" y="265" text-anchor="middle" font-size="7.6" fill="#59617a">the OpenAPI 3.2 contract</text>
+      </g>
+      <!-- token requests -->
+      <g stroke="#a8620a" stroke-width="1.2" stroke-dasharray="4 3" fill="none">
+        <path d="M192,54 L272,54" marker-end="url(#f11a)"/>
+        <path d="M192,140 C236,120 250,100 282,86" marker-end="url(#f11a)"/>
+        <path d="M192,224 C246,190 262,120 300,90" marker-end="url(#f11a)"/>
+      </g>
+      <text x="232" y="47" text-anchor="middle" font-size="8" fill="#a8620a">token</text>
+      <!-- API calls -->
+      <g stroke="#2f4fd0" stroke-width="1.4" fill="none">
+        <path d="M192,74 C330,100 420,140 496,160" marker-end="url(#f11a)"/>
+        <path d="M192,158 C320,166 420,180 496,190" marker-end="url(#f11a)"/>
+        <path d="M192,246 C320,242 420,230 496,220" marker-end="url(#f11a)"/>
+      </g>
+      <text x="340" y="198" text-anchor="middle" font-size="8.4" fill="#2f4fd0">Authorization: Bearer &lt;JWT&gt;</text>
+      <!-- JWKS -->
+      <path d="M560,112 C552,90 520,64 456,58" stroke="#59617a" stroke-width="1" stroke-dasharray="2 3" fill="none" marker-end="url(#f11a)"/>
+      <text x="536" y="76" font-size="8" fill="#59617a">signing keys (JWKS)</text>
+    </svg>
+    <figcaption><b>Figure 1.1</b> &mdash; The sample brokerage. Three kinds of client obtain tokens from
+    the authorization server and call the API with them. The API checks each token's signature with
+    the authorization server's published keys, and never sees a password.</figcaption>
+  </figure>
+
+  <p>The <b>API</b> serves accounts, balances, positions, transaction history, instruments,
+  quotes, option chains and orders. Its market is a simulation: prices take a small random step
+  every second and orders fill against them, so the order lifecycle is real enough to test
+  cancellations and fills. The <b>authorization server</b> issues OAuth&nbsp;2.1 tokens to three
+  registered clients, each representing a different way customers reach a brokerage. The
+  <b>hypermedia client</b> is a small Java library that navigates the API by following links. The
+  <b>agent</b> is a conversational assistant, built with Spring&nbsp;AI and Claude, that uses the client
+  as its tools and needs a person to confirm every trade.</p>
+
+  <div class="callout"><span class="lbl">Why a brokerage?</span> Because it is unforgiving. A
+  social network can show a stale like count. A brokerage that rounds a price, repeats an
+  order or lets two edits collide costs somebody money. If a standard earns its keep here, it
+  will earn its keep anywhere.</div>
+
+  <h2>How to read this book</h2>
+  <p>The chapters build on each other. Part&nbsp;I sets out REST and HTTP and gets the code running.
+  Part&nbsp;II designs the resources. Part&nbsp;III adds hypermedia, the part of REST most APIs skip.
+  Part&nbsp;IV makes trading safe: idempotency, concurrency control and errors. Part&nbsp;V covers
+  what happens at scale: paging, streaming, versioning, quotas and security. Part&nbsp;VI ties it
+  together with the OpenAPI contract, tests, a client, a comparison with a real-world RPC-style
+  brokerage API, and an AI agent.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Where an Internet standard exists, use it, and name it in your documentation.</li>
+      <li>Where none exists, write the convention down once and apply it to every endpoint.</li>
+      <li>Treat consistency as a feature: the second endpoint should hold no surprises for anyone who has used the first.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 2 - REST IN ONE CHAPTER
+     ==================================================================== -->
+<section class="chapter" id="ch02" data-foot="Chapter 2 · REST in one chapter">
+  <div class="chnum">Chapter 2</div>
+  <h1 class="title">REST in one chapter</h1>
+  <p class="lede">REST is not a protocol, a format or a URL style. It is a short list of
+  constraints, and the payoff for accepting them is an API that can change on the server
+  without breaking the clients.</p>
+
+  <p>Roy Fielding described Representational State Transfer in his 2000 doctoral dissertation
+  as the architectural style of the Web itself: the set of choices that let millions of
+  independently written browsers and servers keep working together while both sides evolved.
+  An API is RESTful to the degree that it adopts the same constraints. Each one costs you
+  something, and each one buys you something specific.</p>
+
+  <h2>The constraints</h2>
+  <dl class="defs">
+    <dt>Client&ndash;server</dt>
+    <dd>The client owns the user interface and the server owns the data and rules. In the
+    brokerage, buying power is computed only by the server. A client can display it, but never
+    decides it.</dd>
+    <dt>Stateless</dt>
+    <dd>Every request carries everything the server needs to understand it: the access token,
+    the account, the order. The server keeps no conversation state between requests. That is why
+    the brokerage API disables HTTP sessions entirely, and why any instance behind a load balancer
+    can answer any request.</dd>
+    <dt>Cacheable</dt>
+    <dd>Responses say whether, and for how long, they may be reused. A quote is good for one
+    second, and only for the user who asked (<code>Cache-Control: max-age=1, private</code>). An
+    account balance must never be stored by a shared cache at all.</dd>
+    <dt>Uniform interface</dt>
+    <dd>Every resource is manipulated the same way: identified by a URI, read and changed through
+    representations, described by self-descriptive messages, and connected by links. This is the
+    constraint that separates REST from &ldquo;JSON over HTTP,&rdquo; and it has four parts, covered below.</dd>
+    <dt>Layered system</dt>
+    <dd>A client cannot tell whether it is talking to the server itself, a cache, a gateway or a
+    rate limiter. The brokerage adds its rate limiting and request IDs as layers that no endpoint
+    has to know about.</dd>
+    <dt>Code on demand (optional)</dt>
+    <dd>A server may send code for the client to run, as web pages send JavaScript. APIs rarely use
+    it, and this one does not.</dd>
+  </dl>
+
+  <h2>The uniform interface, in four parts</h2>
+  <ol class="steps">
+    <li><b>Resources are identified by URIs.</b> The order <code>ORD-100002</code> in account
+    <code>ACC-1001</code> is <code>/accounts/ACC-1001/orders/ORD-100002</code>, and only that.</li>
+    <li><b>Resources are manipulated through representations.</b> The client never touches the
+    order itself. It receives a JSON representation, and it changes the order by sending one: a
+    merge patch that says <code>{"limitPrice": "455.00"}</code>.</li>
+    <li><b>Messages are self-descriptive.</b> A response says what it is. For example,
+    <code>Content-Type: application/problem+json</code> announces an error document before the client
+    reads a byte of it, and <code>ETag</code> says which version of the order this is.</li>
+    <li><b>Hypermedia is the engine of application state.</b> Responses contain links to what the
+    client can do next. An open order links to its cancellation; a filled order does not. This is
+    HATEOAS, the subject of Part&nbsp;III.</li>
+  </ol>
+
+  <h2>The Richardson maturity model</h2>
+  <p>Leonard Richardson proposed a simple way to see how far an API has gone toward REST, in four
+  levels. Martin Fowler's write-up made it famous. Here is the brokerage's order placement at each
+  level.</p>
+
+  <figure class="fig">
+    <svg viewBox="0 0 700 262" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue,Helvetica,Arial,sans-serif">
+      <g>
+        <rect x="8" y="186" width="164" height="70" rx="6" fill="#f5f7fc" stroke="#b9c2da"/>
+        <rect x="180" y="136" width="164" height="120" rx="6" fill="#eceff8" stroke="#b9c2da"/>
+        <rect x="352" y="86" width="164" height="170" rx="6" fill="#eaeeff" stroke="#8fa2d4"/>
+        <rect x="524" y="36" width="168" height="220" rx="6" fill="#e6f6ee" stroke="#0d7a52" stroke-width="1.4"/>
+      </g>
+      <g font-family="Menlo,monospace" font-size="9" font-weight="700" letter-spacing="1.4" fill="#59617a">
+        <text x="20" y="204">LEVEL 0</text><text x="192" y="154">LEVEL 1</text>
+        <text x="364" y="104" fill="#2f4fd0">LEVEL 2</text><text x="536" y="54" fill="#0d7a52">LEVEL 3</text>
+      </g>
+      <g font-size="11.4" font-weight="700" fill="#14181f">
+        <text x="20" y="220">One endpoint</text><text x="192" y="170">Resources</text>
+        <text x="364" y="120">HTTP verbs</text><text x="536" y="70">Hypermedia</text>
+      </g>
+      <g font-family="Menlo,monospace" font-size="7.8" fill="#14181f">
+        <text x="20" y="236">POST /api</text>
+        <text x="20" y="248" fill="#59617a">{"op":"placeOrder",…}</text>
+        <text x="192" y="188">POST /accounts/ACC-1001</text>
+        <text x="192" y="200">     /orders/place</text>
+        <text x="192" y="214" fill="#59617a">200 OK {"ok":false}</text>
+        <text x="364" y="138">POST /accounts/ACC-1001</text>
+        <text x="364" y="150">     /orders</text>
+        <text x="364" y="164" fill="#2f4fd0">201 Created</text>
+        <text x="364" y="176" fill="#2f4fd0">Location: …/ORD-100002</text>
+        <text x="364" y="190" fill="#c0203f">422 insufficient-buying-power</text>
+        <text x="536" y="88">201 Created</text>
+        <text x="536" y="102" fill="#0d7a52">"_links": {</text>
+        <text x="536" y="114" fill="#0d7a52">  "self": …,</text>
+        <text x="536" y="126" fill="#0d7a52">  "edit": …,</text>
+        <text x="536" y="138" fill="#0d7a52">  "bk:cancel": …</text>
+        <text x="536" y="150" fill="#0d7a52">}</text>
+      </g>
+      <g font-size="8.6" fill="#59617a">
+        <text x="536" y="176">The response says what the</text>
+        <text x="536" y="188">client may do next. Filled</text>
+        <text x="536" y="200">orders lose their cancel link.</text>
+        <text x="364" y="214">Methods and status codes</text>
+        <text x="364" y="226">mean what HTTP says.</text>
+        <text x="192" y="232">Nouns, but every call</text>
+        <text x="192" y="244">is still a POST.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 2.1</b> &mdash; The Richardson maturity model, applied to placing an order.
+    Most APIs described as RESTful stop at level&nbsp;2. This book's API is at level&nbsp;3.</figcaption>
+  </figure>
+
+  <p><b>Level&nbsp;0</b> uses HTTP only as a tunnel: one URL, one method, and the real request hidden
+  in the body. <b>Level&nbsp;1</b> gives things addresses but still treats HTTP as a pipe. <b>Level&nbsp;2</b>
+  uses methods and status codes as HTTP defines them, so caches, proxies and client libraries
+  understand what is going on; <code>201 Created</code> with a <code>Location</code> header is a sentence every HTTP
+  developer can read. <b>Level&nbsp;3</b> adds hypermedia controls. The response to a new order
+  links to the order, to a way to change it and to a way to cancel it, and the client learns
+  what it may do from the response rather than from documentation.</p>
+
+  <div class="callout"><span class="lbl">Levels are not grades.</span> A level&nbsp;2 API can be excellent,
+  and plenty of successful public APIs stop there. The argument of this book is narrower: the
+  step to level&nbsp;3 is cheaper than it looks with modern frameworks, and in a domain where
+  actions depend on state and permissions, as trading does, it removes a whole class of client
+  bugs. Chapter&nbsp;9 makes that case in detail.</div>
+
+  <h2>Resources and representations</h2>
+  <p>A <b>resource</b> is anything important enough to have its own identifier: an account, an
+  order, a quote, even an order <i>preview</i>. A <b>representation</b> is a document describing the
+  resource's current state in some format. One resource can have several representations. The
+  brokerage serves every order as plain HAL (<code>application/hal+json</code>) and, to clients
+  that ask for it, as HAL-FORMS (<code>application/prs.hal-forms+json</code>), which adds
+  descriptions of the forms a client may submit. The URI stays the same; the <code>Accept</code> header
+  chooses the representation.</p>
+  <p>This distinction pays off in design. You do not have to expose your database tables. A
+  <i>balances</i> resource can be computed on every request from the ledger and the market,
+  because to the client a resource is whatever the representation says, however it came to be.</p>
+
+  <h2>What REST is not</h2>
+  <ul>
+    <li><b>Not CRUD over tables.</b> The brokerage has no <code>DELETE</code> for orders. A canceled
+    order still exists, so canceling is a state change modeled as a resource of its own:
+    <code>POST …/orders/ORD-100002/cancellation</code>.</li>
+    <li><b>Not a URL style.</b> Pretty URLs are pleasant, but a REST client must not depend on
+    them. Clients follow links; the server may reorganize its URLs at will.</li>
+    <li><b>Not JSON.</b> REST is format-neutral. What matters is that the format is described by a
+    media type and can carry links.</li>
+    <li><b>Not the opposite of RPC.</b> Some operations are awkward as resources. Chapter&nbsp;24 compares
+    the brokerage with a real RPC-style trading API, and says when RPC is the better fit.</li>
+  </ul>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Every request is self-contained: no server-side sessions, and the token travels with every call.</li>
+      <li>Every important thing is a resource with a stable URI, including processes such as previews and cancellations.</li>
+      <li>Methods and status codes mean exactly what RFC&nbsp;9110 says they mean.</li>
+      <li>Responses carry links to related resources and to the actions available right now.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 3 - HTTP, THE PARTS THAT MATTER
+     ==================================================================== -->
+<section class="chapter" id="ch03" data-foot="Chapter 3 · HTTP, the parts that matter">
+  <div class="chnum">Chapter 3</div>
+  <h1 class="title">HTTP, the parts that matter</h1>
+  <p class="lede">HTTP already defines most of what an API needs: verbs with guarantees, a
+  vocabulary of outcomes, and headers for caching, concurrency and negotiation. Using them
+  as defined is most of the work of a good API.</p>
+
+  <h2>Methods and their guarantees</h2>
+  <p>RFC&nbsp;9110 gives each method two properties that clients, proxies and retry libraries rely on.
+  A <b>safe</b> method does not change anything the client is responsible for, so it can be
+  prefetched, cached and retried freely. An <b>idempotent</b> method has the same effect whether it
+  is sent once or ten times, so a client can retry it after a timeout.</p>
+
+  <table>
+    <thead><tr><th style="width:11%">Method</th><th style="width:8%">Safe</th><th style="width:12%">Idempotent</th><th>How the brokerage uses it</th></tr></thead>
+    <tbody>
+      <tr><td class="k">GET</td><td>yes</td><td>yes</td><td>Every read: accounts, positions, quotes, orders, the event stream.</td></tr>
+      <tr><td class="k">HEAD</td><td>yes</td><td>yes</td><td>Like GET without the body; Spring answers it for every GET mapping.</td></tr>
+      <tr><td class="k">POST</td><td>no</td><td><b>no</b></td><td>Placing an order, previewing one, requesting a cancellation. Made retry-safe with an <code>Idempotency-Key</code> (Chapter&nbsp;14).</td></tr>
+      <tr><td class="k">PATCH</td><td>no</td><td>no</td><td>Changing an open order, as a JSON merge patch guarded by <code>If-Match</code> (Chapter&nbsp;15).</td></tr>
+      <tr><td class="k">PUT</td><td>no</td><td>yes</td><td>Not used: no resource here is replaced wholesale by the client.</td></tr>
+      <tr><td class="k">DELETE</td><td>no</td><td>yes</td><td>Not used: orders are never deleted, only canceled, and history is never erased.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Notice what drives the choice of method: the effect, not the URL. Canceling an order is not
+  a <code>DELETE</code>, because the order survives with the status <code>CANCELLED</code> and stays readable
+  forever. It is not a <code>PATCH</code> of <code>status</code>, because a client does not get to set a status;
+  it can only ask for a cancellation, which the market may overtake with a fill. So it is a
+  <code>POST</code> that creates a cancellation request, answered with <code>202 Accepted</code>.</p>
+
+  <h2>Status codes: the vocabulary of outcomes</h2>
+  <p>A client should be able to handle a response correctly from its status code alone, and then
+  refine its behavior from the body. These are all the codes the brokerage returns.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:21%">Status</th><th>Meaning in this API</th><th style="width:27%">Client's next step</th></tr></thead>
+    <tbody>
+      <tr><td class="k">200 OK</td><td>The read or change succeeded; the body is the current state.</td><td>Use it.</td></tr>
+      <tr><td class="k">201 Created</td><td>An order was placed. <code>Location</code> names it; <code>ETag</code> is its version.</td><td>Store the Location, not a URL you built.</td></tr>
+      <tr><td class="k">202 Accepted</td><td>A cancellation was requested and is in progress.</td><td>Watch the order until it is final.</td></tr>
+      <tr><td class="k">304 Not Modified</td><td>Your cached copy (by <code>If-None-Match</code>) is still current.</td><td>Reuse the cached copy.</td></tr>
+      <tr><td class="k">400 Bad Request</td><td>The request is malformed or invalid: a missing field, a bad cursor.</td><td>Fix the request; do not retry as is.</td></tr>
+      <tr><td class="k">401 Unauthorized</td><td>No valid access token.</td><td>Obtain a token, then retry.</td></tr>
+      <tr><td class="k">403 Forbidden</td><td>The token is valid but lacks a scope, or exceeds a delegated trading limit.</td><td>Ask for more authority, or a smaller order.</td></tr>
+      <tr><td class="k">404 Not Found</td><td>No such resource <i>for this caller</i>, including other customers' accounts.</td><td>Stop; re-navigate from the root.</td></tr>
+      <tr><td class="k">409 Conflict</td><td>The order's state forbids the action: it has already filled or been canceled.</td><td>Re-read the order.</td></tr>
+      <tr><td class="k">412 Precondition Failed</td><td>The order changed since you read it (<code>If-Match</code> mismatch).</td><td>Re-read, reapply, resend.</td></tr>
+      <tr><td class="k">422 Unprocessable Content</td><td>Well-formed but refused by a business rule: buying power, position, a reused key.</td><td>Show the reason to the user.</td></tr>
+      <tr><td class="k">428 Precondition Required</td><td>This change needs an <code>If-Match</code> header.</td><td>Read the ETag first.</td></tr>
+      <tr><td class="k">429 Too Many Requests</td><td>A rate limit was reached.</td><td>Wait for <code>Retry-After</code>, then retry.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><span class="lbl">Never return 200 for an error.</span> A response like
+  <code>200 OK {"success": false}</code> hides failures from every tool that relies on status
+  codes: monitoring, caches, retry policies, API gateways and the developer's own debugger. If
+  something went wrong, the status line must say so.</div>
+
+  <h2>The headers this API speaks</h2>
+  <div class="grid g2">
+    <table class="dense" style="margin:0">
+      <thead><tr><th>Request header</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Authorization</td><td>The OAuth bearer token.</td></tr>
+        <tr><td class="k">Accept</td><td>HAL or HAL-FORMS.</td></tr>
+        <tr><td class="k">Content-Type</td><td>JSON or merge patch.</td></tr>
+        <tr><td class="k">Idempotency-Key</td><td>Makes an order retry-safe.</td></tr>
+        <tr><td class="k">If-Match</td><td>Change only this version.</td></tr>
+        <tr><td class="k">If-None-Match</td><td>Send it only if changed.</td></tr>
+        <tr><td class="k">API-Version</td><td>Pin the API version.</td></tr>
+        <tr><td class="k">Last-Event-ID</td><td>Resume an event stream.</td></tr>
+        <tr><td class="k">X-Request-Id</td><td>Correlate your logs with ours.</td></tr>
+      </tbody>
+    </table>
+    <table class="dense" style="margin:0">
+      <thead><tr><th>Response header</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Location</td><td>Where the new order lives.</td></tr>
+        <tr><td class="k">ETag</td><td>The version of this state.</td></tr>
+        <tr><td class="k">Cache-Control</td><td>Whether and how long to cache.</td></tr>
+        <tr><td class="k">Idempotent-Replayed</td><td>This is a stored result.</td></tr>
+        <tr><td class="k">Deprecation, Sunset</td><td>This version is going away.</td></tr>
+        <tr><td class="k">RateLimit, -Policy</td><td>Your quota and what is left.</td></tr>
+        <tr><td class="k">Retry-After</td><td>How long to wait.</td></tr>
+        <tr><td class="k">WWW-Authenticate</td><td>Why a token was refused.</td></tr>
+        <tr><td class="k">X-Request-Id</td><td>Quote it to support.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Media types and content negotiation</h2>
+  <p>The <code>Content-Type</code> of every message tells the receiver how to read it. The
+  brokerage uses these types, each defined by a specification you can cite.</p>
+  <table class="dense">
+    <thead><tr><th style="width:38%">Media type</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td class="k">application/hal+json</td><td>Every resource representation (the default).</td></tr>
+      <tr><td class="k">application/prs.hal-forms+json</td><td>The same representations plus <code>_templates</code>, on request.</td></tr>
+      <tr><td class="k">application/problem+json</td><td>Every error (RFC&nbsp;9457).</td></tr>
+      <tr><td class="k">application/json</td><td>Request bodies for new orders and previews.</td></tr>
+      <tr><td class="k">application/merge-patch+json</td><td>Changes to an order (RFC&nbsp;7396).</td></tr>
+      <tr><td class="k">text/event-stream</td><td>The live order event stream.</td></tr>
+      <tr><td class="k">application/openapi+yaml</td><td>The API's own OpenAPI description.</td></tr>
+    </tbody>
+  </table>
+  <p>A client picks among the representations the server offers with the <code>Accept</code>
+  header. Ask for an account as plain HAL and you receive its links. Ask for
+  <code>application/prs.hal-forms+json</code> and the same account also describes the order form
+  you may submit, as Chapter&nbsp;12 shows. If a client asks for a type the server cannot produce, the
+  answer is <code>406 Not Acceptable</code>; if it sends a body in a type the endpoint does not read, it
+  is <code>415 Unsupported Media Type</code>. Both come back as problem documents like every other error.</p>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>Choose methods by their guarantees: GET for reads, POST for non-idempotent actions, PATCH for partial changes.</li>
+      <li>Use the most specific status code that applies, and never report an error with a 2xx status.</li>
+      <li>Label every body with a precise media type; use registered types and headers before inventing new ones.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ====================================================================
+     CH 4 - YOUR WORKBENCH
+     ==================================================================== -->
+<section class="chapter" id="ch04" data-foot="Chapter 4 · Your workbench">
+  <div class="chnum">Chapter 4</div>
+  <h1 class="title">Your workbench</h1>
+  <p class="lede">Twenty minutes from now you will have the whole brokerage running on your
+  machine, a token in hand, and your first hypermedia response on the screen. Every later
+  chapter assumes you can reproduce what it shows.</p>
+
+  <h2>What you need</h2>
+  <p>The code targets <b>Java&nbsp;27</b>, the release that became generally available on
+  September&nbsp;15, 2026, so you need a JDK&nbsp;27. Install one with your platform's package manager or
+  a version manager such as SDKMAN, and check it:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>java -version
+openjdk version "27" 2026-09-15</pre></figure>
+  <p>You do not need Maven installed: the project includes the <b>Maven Wrapper</b>, a small script
+  (<code>mvnw</code>, or <code>mvnw.cmd</code> on Windows) that downloads the exact Maven version the
+  project was built with, 3.9.16, the first time you run it. You will also want <code>curl</code>.</p>
+
+  <div class="callout warn"><span class="lbl">If your IDE complains.</span> IDE support for a new
+  Java release often lags by a few weeks. If your editor reports errors that Maven does not, trust
+  Maven, and update the IDE's Java tooling. The book's code compiles and its tests pass with the
+  command-line build.</div>
+
+  <h2>A tour of the project</h2>
+  <p>The code lives in the <code>brokerage-apis</code> folder of the book's repository. It is a
+  multi-module Maven build whose parent is Spring Boot&nbsp;4.1.1.</p>
+  <figure class="code file keep"><figcaption><span class="path">brokerage-apis/</span><span class="note">project layout</span></figcaption><pre>pom.xml                     <span class="cm">parent: Spring Boot 4.1.1, Java 27, Spring AI 2.0.1</span>
+mvnw, mvnw.cmd, .mvn/       <span class="cm">the Maven Wrapper</span>
+openapi/brokerage-api.yaml  <span class="cm">the OpenAPI 3.2 contract (Chapter 21)</span>
+auth-server/                <span class="cm">OAuth 2.1 authorization server, port 9000 (Chapter 20)</span>
+brokerage-api/              <span class="cm">the REST API, port 8080</span>
+  src/main/java/com/example/brokerage/api/
+    RootController.java     <span class="cm">the API root and the contract</span>
+    platform/               <span class="cm">errors, security, versions, paging, rate limits</span>
+    market/                 <span class="cm">instruments, quotes, option chains, the simulator</span>
+    accounts/               <span class="cm">accounts, the ledger, balances, positions</span>
+    orders/                 <span class="cm">orders, previews, idempotency, events</span>
+  src/test/java/...         <span class="cm">31 tests, including contract tests</span>
+brokerage-client/           <span class="cm">the hypermedia client and its demo (Chapter 23)</span>
+brokerage-agent/            <span class="cm">the Spring AI agent (Chapter 25)</span></pre></figure>
+
+  <p>The API's packages follow its domain, not its layers. Everything about orders, from the
+  controller to the idempotency store, lives in <code>orders</code>; cross-cutting machinery such as
+  error handling lives in <code>platform</code>. When you want to know how cancellation works, there is
+  one package to read.</p>
+
+  <h2>Build and test</h2>
+  <p>From the <code>brokerage-apis</code> folder, build everything and run every test:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>./mvnw verify
+<span class="cm">...</span>
+[INFO] Brokerage Authorization Server ..................... SUCCESS
+[INFO] Brokerage API ...................................... SUCCESS
+[INFO] Brokerage Hypermedia Client ........................ SUCCESS
+[INFO] Brokerage AI Agent ................................. SUCCESS
+[INFO] BUILD SUCCESS</pre></figure>
+  <p>The first run downloads Maven and the dependencies, so it takes a few minutes; after that, a
+  full build with tests takes well under a minute. Each module also produces an executable jar
+  under its <code>target</code> folder.</p>
+
+  <h2>Start the servers</h2>
+  <p>Open two terminals in <code>brokerage-apis</code>. Start the authorization server first: the API
+  fetches its configuration and signing keys from it to validate tokens.</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal 1</span></figcaption><pre><span class="pr">$ </span>java -jar auth-server/target/auth-server-1.0.0.jar</pre></figure>
+  <figure class="code file keep"><figcaption><span class="path">terminal 2</span></figcaption><pre><span class="pr">$ </span>java -jar brokerage-api/target/brokerage-api-1.0.0.jar</pre></figure>
+  <p>The API seeds two demo customers with accounts, cash, positions and a year of transaction
+  history, and starts a market simulation that ticks once a second. Everything is in memory:
+  restart the API and you start fresh.</p>
+
+  <h2>Get a token</h2>
+  <p>Every call except the API root needs an OAuth access token. The quickest way to get one
+  is the <code>brokerage-cli</code> client, which stands for a customer's own script. It uses the
+  client credentials grant: it authenticates as itself and receives a token bound to its
+  customer.</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>curl -s -u brokerage-cli:cli-secret http://localhost:9000/oauth2/token \
+    -d grant_type=client_credentials \
+    -d scope="accounts:read market-data:read orders:read orders:write"</pre></figure>
+  <pre data-http="token-cli" data-cap="the token request, as the server saw it"></pre>
+  <p>The access token is a signed JWT. Its payload carries the claims the API relies on. You can
+  decode the middle section of any JWT with a base64 decoder; for this token it reads:</p>
+  <pre data-file="claims-cli.json" data-label="access token claims" data-cap="decoded payload"></pre>
+  <p>Three claims matter most. <code>aud</code> says the token was minted for the brokerage API and
+  nothing else, and the API rejects tokens meant for other audiences. <code>scope</code> lists what
+  the client may do. <code>customer_id</code> says whose accounts it may see. Chapter&nbsp;20 explains
+  where each comes from. For the rest of this book, assume a shell variable holds the token:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>TOKEN=$(curl -s -u brokerage-cli:cli-secret http://localhost:9000/oauth2/token \
+    -d grant_type=client_credentials \
+    -d scope="accounts:read market-data:read orders:read orders:write" | jq -r .access_token)</pre></figure>
+
+  <h2>Your first hypermedia response</h2>
+  <p>The API root is the one URL a client needs to know, and the only one that needs no token:</p>
+  <pre data-http="root" data-cap="the API root: links to everything else"></pre>
+  <p>Read the response as a menu. There is a link to the accounts, a templated link for
+  searching instruments, a machine-readable description of the API (<code>service-desc</code>), human
+  documentation (<code>service-doc</code>), and the protected resource metadata that tells a client
+  where to get tokens. The <code>curies</code> entry explains the <code>bk:</code> prefix, and
+  Chapter&nbsp;10 covers it. From here, a client can reach every resource in the API without
+  building a single URL. Follow the accounts link with your token:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>curl -s -H "Authorization: Bearer $TOKEN" -H "API-Version: 2" http://localhost:8080/accounts</pre></figure>
+
+  <h2>Take the guided tour</h2>
+  <p>The client module includes a demo that exercises the API end to end through the hypermedia
+  client of Chapter&nbsp;23: it lists accounts, reads balances and positions, fetches a quote,
+  previews and places a limit order below the market, cancels it, and waits for the
+  cancellation to complete. With both servers running:</p>
+  <figure class="code file keep"><figcaption><span class="path">terminal</span></figcaption><pre><span class="pr">$ </span>./mvnw -q -pl brokerage-client compile exec:java \
+    -Dexec.mainClass=com.example.brokerage.client.Demo</pre></figure>
+  <pre data-file="demo-output.txt" data-lang="text" data-label="demo output" data-cap="recorded from a real run"></pre>
+  <p>Not one URL in the demo was built by hand. Every request followed a link that the
+  previous response provided, which is the promise of the next ten chapters.</p>
+
+  <h2>When something goes wrong</h2>
+  <table class="dense">
+    <thead><tr><th style="width:38%">Symptom</th><th>Cause and fix</th></tr></thead>
+    <tbody>
+      <tr><td><code>UnsupportedClassVersionError</code>, class file version 71</td><td>You ran the jar with an older Java. Use JDK&nbsp;27.</td></tr>
+      <tr><td><code>Port 8080 was already in use</code></td><td>Stop the other process, or add <code>--server.port=8081</code> to the command.</td></tr>
+      <tr><td>Every call returns 401</td><td>The token expired (15 minutes for <code>brokerage-cli</code>), or the authorization server was restarted and its signing keys changed. Get a new token.</td></tr>
+      <tr><td>Calls with a fresh token still fail with 401</td><td>The API fetches the authorization server's configuration and signing keys on the first authenticated request. Make sure the authorization server is running on port 9000.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule-box">
+    <div class="rh">The standard</div>
+    <ol class="tight">
+      <li>An API ships with a one-command build that runs every test, and a way to run it locally with realistic data.</li>
+      <li>Local development never needs production credentials: tokens come from a local authorization server.</li>
+    </ol>
+  </div>
+</section>

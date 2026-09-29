@@ -104,7 +104,7 @@ public class BrokerageClient {
     /** Cancels an order, if and only if the server still offers the cancel link. */
     public Order cancel(Order order) {
         URI cancel = order.link("bk:cancel").orElseThrow(() -> new IllegalStateException(
-                "Order " + order.id() + " is " + order.status() + " and can no longer be cancelled"));
+                "Order " + order.id() + " is " + order.status() + " and can no longer be canceled"));
         return http.post(Link.of(cancel.toString()), null, headers -> { }).as(Order.class);
     }
 

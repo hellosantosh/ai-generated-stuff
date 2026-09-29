@@ -1,6 +1,6 @@
 POST /accounts/ACC-1001/orders HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Idempotency-Key: 7d0e4c9a-3b1f-4e6d-8a52-9c0f1e2b3a4d
 Content-Type: application/json
@@ -60,7 +60,7 @@ Idempotent-Replayed: true
   "status": "OPEN",
   "filledQuantity": "0",
   "fills": [],
-  "createdAt": "2026-09-28T23:33:22.811774Z",
-  "updatedAt": "2026-09-28T23:33:22.811774Z",
+  "createdAt": "2026-09-29T10:45:28.998175Z",
+  "updatedAt": "2026-09-29T10:45:28.998175Z",
   "remainingQuantity": "10"
 }

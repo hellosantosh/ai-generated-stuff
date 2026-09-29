@@ -1,4 +1,4 @@
-GET /oauth2/authorize?response_type=code&client_id=brokerage-web&scope=openid%20accounts:read%20market-data:read%20orders:read&redirect_uri=http://127.0.0.1:3000/callback&state=af0ifjsldkj&code_challenge=zEBBb9cOEF_yKHjUk206gWbxNoR4_RCdoHs7e2BRtpE&code_challenge_method=S256 HTTP/1.1
+GET /oauth2/authorize?response_type=code&client_id=brokerage-web&scope=openid%20accounts:read%20market-data:read%20orders:read&redirect_uri=http://127.0.0.1:3000/callback&state=af0ifjsldkj&code_challenge=bsRU3YzijizgUG3WIskNMlooqcx3_TCXps9JbAEFzPA&code_challenge_method=S256 HTTP/1.1
 Host: localhost:9000
 
 HTTP/1.1 302 Found

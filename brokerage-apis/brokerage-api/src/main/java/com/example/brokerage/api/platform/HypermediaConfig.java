@@ -24,7 +24,7 @@ import org.springframework.hateoas.mediatype.hal.forms.HalFormsOptions;
  * <p>HAL (application/hal+json) is the default. Clients that ask for HAL-FORMS
  * (application/prs.hal-forms+json) also receive "_templates": machine-readable
  * descriptions of the state transitions available right now, such as placing,
- * changing or cancelling an order.
+ * changing or canceling an order.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableHypermediaSupport(type = { HypermediaType.HAL, HypermediaType.HAL_FORMS })

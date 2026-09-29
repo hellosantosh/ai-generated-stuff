@@ -1,6 +1,6 @@
 GET /accounts/ACC-1001/transactions?type=DIVIDEND HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -16,8 +16,8 @@ Content-Type: application/hal+json
         "amount": "26.85",
         "instrumentId": "ETF-SPY",
         "symbol": "SPY",
-        "occurredAt": "2026-09-08T21:13:20.581902Z",
-        "settlesOn": "2026-09-08"
+        "occurredAt": "2026-09-09T08:25:26.876260Z",
+        "settlesOn": "2026-09-09"
       },
       {
         "id": "TXN-1006",
@@ -26,8 +26,8 @@ Content-Type: application/hal+json
         "amount": "13.00",
         "instrumentId": "EQ-AAPL",
         "symbol": "AAPL",
-        "occurredAt": "2026-08-14T23:18:20.581886Z",
-        "settlesOn": "2026-08-14"
+        "occurredAt": "2026-08-15T10:30:26.876245Z",
+        "settlesOn": "2026-08-15"
       }
     ]
   },

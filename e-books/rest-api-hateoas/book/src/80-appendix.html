@@ -1,0 +1,281 @@
+<!-- ====================================================================
+     APPENDIX A - QUICK REFERENCE
+     ==================================================================== -->
+<section class="chapter" id="appA" data-foot="Appendix A · Quick reference">
+  <div class="chnum">Appendix A</div>
+  <h1 class="title">Quick reference</h1>
+  <p class="lede">Everything you need at the keyboard: commands, clients, demo data and every
+  endpoint with the scope it requires.</p>
+
+  <h2>Commands</h2>
+  <p class="small">Run from the <code>brokerage-apis</code> folder, with JDK&nbsp;27.</p>
+  <table class="dense">
+    <thead><tr><th style="width:30%">Task</th><th>Command</th></tr></thead>
+    <tbody>
+      <tr><td>Build and run all tests</td><td class="m">./mvnw verify</td></tr>
+      <tr><td>Build the jars only</td><td class="m">./mvnw -q -DskipTests package</td></tr>
+      <tr><td>Start the authorization server</td><td class="m">java -jar auth-server/target/auth-server-1.0.0.jar</td></tr>
+      <tr><td>Start the API</td><td class="m">java -jar brokerage-api/target/brokerage-api-1.0.0.jar</td></tr>
+      <tr><td>Run the client demo</td><td class="m">./mvnw -q -pl brokerage-client compile exec:java<br>&nbsp;&nbsp;-Dexec.mainClass=com.example.brokerage.client.Demo</td></tr>
+      <tr><td>Run the agent</td><td class="m">ANTHROPIC_API_KEY=… java -jar<br>&nbsp;&nbsp;brokerage-agent/target/brokerage-agent-1.0.0.jar</td></tr>
+      <tr><td>Get a token</td><td class="m">curl -u brokerage-cli:cli-secret<br>&nbsp;&nbsp;http://localhost:9000/oauth2/token<br>&nbsp;&nbsp;-d grant_type=client_credentials<br>&nbsp;&nbsp;-d scope="accounts:read market-data:read orders:read orders:write"</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Clients and the demo customer</h2>
+  <table class="dense">
+    <thead><tr><th style="width:17%">Client</th><th style="width:13%">Secret</th><th style="width:25%">Grant</th><th>Tokens and notes</th></tr></thead>
+    <tbody>
+      <tr><td class="k">brokerage-cli</td><td class="k">cli-secret</td><td>client_credentials</td><td>15-minute access tokens; customer <code>cust-1001</code></td></tr>
+      <tr><td class="k">brokerage-agent</td><td class="k">agent-secret</td><td>client_credentials</td><td>5-minute access tokens; <code>cust-1001</code>; <code>trading_limit</code> 5000</td></tr>
+      <tr><td class="k">brokerage-web</td><td class="k">web-secret</td><td>authorization_code + PKCE; refresh_token</td><td>10-minute access tokens; 8-hour refresh tokens, rotated; consent; redirect <code>http://127.0.0.1:3000/callback</code></td></tr>
+    </tbody>
+  </table>
+  <p class="small">The browser sign-in user is <code>alice</code>, password <code>wonderland</code>, customer
+  <code>cust-1001</code>. Every client may request the scopes <code>accounts:read</code>,
+  <code>market-data:read</code>, <code>orders:read</code> and <code>orders:write</code>; <code>brokerage-web</code> may also
+  request <code>openid</code>. These credentials exist for local development only.</p>
+
+  <h2>Demo data</h2>
+  <table class="dense">
+    <thead><tr><th style="width:17%">Account</th><th style="width:17%">Customer</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td class="k">ACC-1001</td><td class="k">cust-1001</td><td>Individual margin account: cash, AAPL, MSFT, SPY and AMZN positions, dividends, and a resting limit order for MSFT</td></tr>
+      <tr><td class="k">ACC-1002</td><td class="k">cust-1001</td><td>Roth IRA (a cash account) holding NVDA</td></tr>
+      <tr><td class="k">ACC-2001</td><td class="k">cust-2002</td><td>Another customer's account, invisible to <code>cust-1001</code>'s tokens</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Instruments: <code>EQ-AAPL</code>, <code>EQ-MSFT</code>, <code>EQ-NVDA</code>, <code>EQ-AMZN</code>,
+  <code>ETF-SPY</code>, <code>EQ-HALT</code> (not tradable), and AAPL options for the next two monthly
+  expirations at strikes 220, 230 and 240.</p>
+
+  <h2>Endpoints</h2>
+  <table class="dense">
+    <thead><tr><th style="width:9%">Method</th><th style="width:46%">Path</th><th style="width:19%">Scope</th><th>Success</th></tr></thead>
+    <tbody>
+      <tr><td class="k">GET</td><td class="m">/</td><td>none</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/.well-known/oauth-protected-resource</td><td>none</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/openapi.yaml</td><td>none</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts</td><td>accounts:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}</td><td>accounts:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/balances</td><td>accounts:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/positions[/{instrumentId}]</td><td>accounts:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/transactions</td><td>accounts:read</td><td>200</td></tr>
+      <tr><td class="k">POST</td><td class="m">/accounts/{accountId}/order-previews</td><td>orders:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/orders</td><td>orders:read</td><td>200</td></tr>
+      <tr><td class="k">POST</td><td class="m">/accounts/{accountId}/orders</td><td>orders:write</td><td>201</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/orders/{orderId}</td><td>orders:read</td><td>200, 304</td></tr>
+      <tr><td class="k">PATCH</td><td class="m">/accounts/{accountId}/orders/{orderId}</td><td>orders:write</td><td>200</td></tr>
+      <tr><td class="k">POST</td><td class="m">…/orders/{orderId}/cancellation</td><td>orders:write</td><td>202</td></tr>
+      <tr><td class="k">GET</td><td class="m">/accounts/{accountId}/order-events</td><td>orders:read</td><td>200 (stream)</td></tr>
+      <tr><td class="k">GET</td><td class="m">/instruments</td><td>market-data:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/instruments/{instrumentId}</td><td>market-data:read</td><td>200</td></tr>
+      <tr><td class="k">GET</td><td class="m">/instruments/{instrumentId}/quote</td><td>market-data:read</td><td>200, 304</td></tr>
+      <tr><td class="k">GET</td><td class="m">/instruments/{instrumentId}/option-chain</td><td>market-data:read</td><td>200</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Clients should reach each of these by following links from <code>/</code>; the paths are
+  listed for reference and debugging.</p>
+</section>
+
+<!-- ====================================================================
+     APPENDIX B - STATUS CODES AND PROBLEM TYPES
+     ==================================================================== -->
+<section class="chapter" id="appB" data-foot="Appendix B · Status codes and problem types">
+  <div class="chnum">Appendix B</div>
+  <h1 class="title">Status codes and problem types</h1>
+  <p class="lede">Every problem type the API can return, what it means, and what a well-written
+  client does about it. Each type is <code>https://docs.brokerage.example/problems/</code> followed by
+  the name in the first column.</p>
+
+  <table class="dense">
+    <thead><tr><th style="width:24%">Type</th><th style="width:7%">Status</th><th style="width:36%">Meaning</th><th>Client action</th></tr></thead>
+    <tbody>
+      <tr><td class="k">invalid-request</td><td>400</td><td>Malformed body, invalid fields (listed in <code>errors</code>), inconsistent prices, a bad cursor or limit</td><td>Fix the request; show field messages</td></tr>
+      <tr><td class="k">idempotency-key-missing</td><td>400</td><td>A new order was sent without <code>Idempotency-Key</code></td><td>Add a unique key per order</td></tr>
+      <tr><td class="k">unsupported-api-version</td><td>400</td><td><code>API-Version</code> names an unknown version; <code>supportedVersions</code> lists the valid ones</td><td>Pin a supported version</td></tr>
+      <tr><td class="k">unauthorized</td><td>401</td><td>No valid access token</td><td>Get a token (see <code>WWW-Authenticate</code>), retry</td></tr>
+      <tr><td class="k">insufficient-scope</td><td>403</td><td>The token lacks the operation's scope</td><td>Request the scope; do not retry as is</td></tr>
+      <tr><td class="k">trading-limit-exceeded</td><td>403</td><td>The order's notional exceeds the client's delegated limit (<code>tradingLimit</code>)</td><td>Place a smaller order, or use a client with more authority</td></tr>
+      <tr><td class="k">not-found</td><td>404</td><td>No such resource for this caller</td><td>Re-navigate from the root</td></tr>
+      <tr><td class="k">method-not-allowed</td><td>405</td><td>The resource does not support the method</td><td>Use the method its link or template names</td></tr>
+      <tr><td class="k">not-acceptable</td><td>406</td><td>No representation matches <code>Accept</code></td><td>Accept HAL or HAL-FORMS</td></tr>
+      <tr><td class="k">order-not-cancellable</td><td>409</td><td>The order is final and cannot be canceled</td><td>Re-read the order</td></tr>
+      <tr><td class="k">order-not-replaceable</td><td>409</td><td>The order is final and cannot be changed</td><td>Re-read the order</td></tr>
+      <tr><td class="k">precondition-failed</td><td>412</td><td>The order changed since it was read (<code>currentEtag</code>)</td><td>Re-read, reapply, resend with the new ETag</td></tr>
+      <tr><td class="k">unsupported-media-type</td><td>415</td><td>The body's content type is not accepted here</td><td>Send JSON, or a merge patch for changes</td></tr>
+      <tr><td class="k">idempotency-key-reused</td><td>422</td><td>The key was already used for a different request</td><td>Use a new key for a new order</td></tr>
+      <tr><td class="k">insufficient-buying-power</td><td>422</td><td>The purchase needs more than is available (<code>required</code>, <code>available</code>)</td><td>Show the amounts to the user</td></tr>
+      <tr><td class="k">insufficient-position</td><td>422</td><td>Not enough shares to sell (<code>available</code>); short selling is not supported</td><td>Reduce the quantity</td></tr>
+      <tr><td class="k">instrument-not-tradable</td><td>422</td><td>The instrument does not exist, is halted, or cannot trade this way</td><td>Check the instrument's properties</td></tr>
+      <tr><td class="k">precondition-required</td><td>428</td><td>A change was sent without <code>If-Match</code></td><td>Read the ETag first</td></tr>
+      <tr><td class="k">rate-limited</td><td>429</td><td>The client's quota for the window is used up</td><td>Wait for <code>Retry-After</code>, retry with the same key</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Every problem also carries <code>instance</code> (the request path) and <code>requestId</code>.
+  An unexpected server error is a 500 problem with a request ID; quote it to support.</p>
+</section>
+
+<!-- ====================================================================
+     APPENDIX C - GLOSSARY
+     ==================================================================== -->
+<section class="chapter" id="appC" data-foot="Appendix C · Glossary">
+  <div class="chnum">Appendix C</div>
+  <h1 class="title">Glossary</h1>
+  <p class="lede">Every term in one place, with the chapter that explains it.</p>
+
+  <div class="grid g2" style="gap:0 20pt">
+    <dl class="defs gloss" style="margin-top:0">
+      <dt>Affordance</dt><dd>A description of an action a client can take, such as a HAL-FORMS template. (Ch.&nbsp;12)</dd>
+      <dt>API root</dt><dd>The one URL a hypermedia client is configured with; everything else is reached by links. (Ch.&nbsp;9)</dd>
+      <dt>Audience</dt><dd>The <code>aud</code> claim naming the API a token was issued for. (Ch.&nbsp;20)</dd>
+      <dt>Backend for frontend (BFF)</dt><dd>A server-side component that runs OAuth for a browser app, so tokens never reach the browser. (Ch.&nbsp;20)</dd>
+      <dt>Buying power</dt><dd>What a new purchase may spend: free cash, doubled in a margin account. (Ch.&nbsp;7)</dd>
+      <dt>CURIE</dt><dd>A compact URI such as <code>bk:orders</code>, which expands to an extension relation's URI. (Ch.&nbsp;10)</dd>
+      <dt>Cursor</dt><dd>An opaque marker of a position in a sorted collection, used for the next page. (Ch.&nbsp;17)</dd>
+      <dt>Deprecation, Sunset</dt><dd>Response headers announcing that something is deprecated, and when it will stop working. (Ch.&nbsp;19)</dd>
+      <dt>ETag</dt><dd>An entity tag identifying one version of a representation. (Ch.&nbsp;8, 15)</dd>
+      <dt>Extension relation</dt><dd>A link relation defined by an API owner as a URI. (Ch.&nbsp;10)</dd>
+      <dt>HAL</dt><dd>JSON Hypertext Application Language: JSON with <code>_links</code> and <code>_embedded</code>. (Ch.&nbsp;10)</dd>
+      <dt>HAL-FORMS</dt><dd>HAL plus <code>_templates</code> describing the requests a client may send. (Ch.&nbsp;12)</dd>
+      <dt>HATEOAS</dt><dd>Hypermedia as the engine of application state: clients advance by following links. (Ch.&nbsp;9)</dd>
+      <dt>Idempotency key</dt><dd>A client-generated value that makes a retried request return the original result. (Ch.&nbsp;14)</dd>
+      <dt>Idempotent method</dt><dd>A method whose effect is the same whether sent once or many times. (Ch.&nbsp;3)</dd>
+      <dt>Link relation</dt><dd>The name of a link's meaning, such as <code>self</code>, <code>next</code> or <code>bk:cancel</code>. (Ch.&nbsp;10)</dd>
+      <dt>Merge patch</dt><dd>A partial JSON document whose members replace the resource's (RFC&nbsp;7396). (Ch.&nbsp;15)</dd>
+    </dl>
+    <dl class="defs gloss" style="margin-top:0">
+      <dt>OCC symbol</dt><dd>The industry symbol for a listed option: root, expiration, C or P, strike times 1,000. (Ch.&nbsp;8)</dd>
+      <dt>Optimistic concurrency</dt><dd>Allowing a change only if the resource is still the version the client saw. (Ch.&nbsp;15)</dd>
+      <dt>PKCE</dt><dd>Proof Key for Code Exchange: binds an authorization code to the client that requested it. (Ch.&nbsp;20)</dd>
+      <dt>Problem details</dt><dd>The RFC&nbsp;9457 format for errors: <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>instance</code>. (Ch.&nbsp;16)</dd>
+      <dt>Protected resource metadata</dt><dd>An API's RFC&nbsp;9728 document naming its authorization servers and scopes. (Ch.&nbsp;20)</dd>
+      <dt>Representation</dt><dd>A document describing a resource's current state in some media type. (Ch.&nbsp;2)</dd>
+      <dt>Resource</dt><dd>Anything important enough to have its own URI. (Ch.&nbsp;2, 5)</dd>
+      <dt>Richardson maturity model</dt><dd>Four levels of REST adoption, from one endpoint to hypermedia. (Ch.&nbsp;2)</dd>
+      <dt>Safe method</dt><dd>A method that does not change server state the client is responsible for, such as GET. (Ch.&nbsp;3)</dd>
+      <dt>Scope</dt><dd>A named permission carried by a token, such as <code>orders:write</code>. (Ch.&nbsp;20)</dd>
+      <dt>Server-sent events</dt><dd>A one-way stream of events over HTTP, with IDs for replay. (Ch.&nbsp;18)</dd>
+      <dt>T+1</dt><dd>Settlement one business day after the trade date. (Ch.&nbsp;6)</dd>
+      <dt>Tolerant reader</dt><dd>A client that ignores what it does not understand. (Ch.&nbsp;6, 23)</dd>
+      <dt>Tool (AI)</dt><dd>A function an AI model may call, described by a name and a parameter schema. (Ch.&nbsp;25)</dd>
+      <dt>Trading limit</dt><dd>The largest order a delegated client may place, carried in its token. (Ch.&nbsp;20, 25)</dd>
+      <dt>URI template</dt><dd>An RFC&nbsp;6570 pattern such as <code>{?status,symbol}</code> that a client expands. (Ch.&nbsp;10)</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ====================================================================
+     APPENDIX D - FURTHER READING
+     ==================================================================== -->
+<section class="chapter" id="appD" data-foot="Appendix D · Further reading">
+  <div class="chnum">Appendix D</div>
+  <h1 class="title">Further reading</h1>
+  <p class="lede">The standards behind each chapter, and the best places to go deeper. RFCs
+  are at <span class="mono">rfc-editor.org/rfc/rfcNNNN</span>; Internet-Drafts at
+  <span class="mono">datatracker.ietf.org</span>.</p>
+
+  <h2>HTTP and the Web</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:23%"><b>RFC 9110</b></td><td>HTTP Semantics: methods, status codes, conditional requests, content negotiation</td></tr>
+      <tr><td><b>RFC 9111</b></td><td>HTTP Caching</td></tr>
+      <tr><td><b>RFC 6585</b></td><td>Additional HTTP Status Codes, including 428 and 429</td></tr>
+      <tr><td><b>RFC 8288</b></td><td>Web Linking: link relations and the IANA registry</td></tr>
+      <tr><td><b>RFC 6570</b></td><td>URI Template</td></tr>
+      <tr><td><b>RFC 8631</b></td><td>Link Relation Types for Web Services: <code>service-desc</code>, <code>service-doc</code></td></tr>
+      <tr><td><b>RFC 9457</b></td><td>Problem Details for HTTP APIs</td></tr>
+      <tr><td><b>RFC 7396</b></td><td>JSON Merge Patch</td></tr>
+      <tr><td><b>RFC 9745, RFC 8594</b></td><td>The Deprecation and Sunset HTTP header fields</td></tr>
+      <tr><td><b>RFC 3339</b></td><td>Date and Time on the Internet: Timestamps</td></tr>
+      <tr><td><b>Drafts</b></td><td>The Idempotency-Key HTTP Header Field; RateLimit header fields for HTTP (IETF HTTP APIs working group)</td></tr>
+      <tr><td><b>WHATWG HTML</b></td><td>Server-sent events and <code>EventSource</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Hypermedia and REST</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:23%"><b>Roy T. Fielding</b></td><td><i>Architectural Styles and the Design of Network-based Software Architectures</i>, doctoral dissertation, University of California, Irvine, 2000. Chapter 5 defines REST.</td></tr>
+      <tr><td><b>Martin Fowler</b></td><td>&ldquo;Richardson Maturity Model&rdquo; (2010) and &ldquo;Tolerant Reader&rdquo; (2011), martinfowler.com</td></tr>
+      <tr><td><b>HAL</b></td><td>JSON Hypertext Application Language, Internet-Draft draft-kelly-json-hal</td></tr>
+      <tr><td><b>HAL-FORMS</b></td><td>The HAL-FORMS media type specification, by Mike Amundsen, rwcbook.github.io/hal-forms</td></tr>
+      <tr><td><b>Spring HATEOAS</b></td><td>Reference documentation, docs.spring.io/spring-hateoas</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Security</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:23%"><b>OAuth 2.1</b></td><td>The OAuth 2.1 Authorization Framework, Internet-Draft draft-ietf-oauth-v2-1</td></tr>
+      <tr><td><b>RFC 7636</b></td><td>Proof Key for Code Exchange (PKCE)</td></tr>
+      <tr><td><b>RFC 6750</b></td><td>Bearer Token Usage, including <code>WWW-Authenticate</code> errors</td></tr>
+      <tr><td><b>RFC 8414, RFC 9728</b></td><td>Authorization Server Metadata; Protected Resource Metadata</td></tr>
+      <tr><td><b>RFC 9449, RFC 8705</b></td><td>DPoP and mutual-TLS sender-constrained tokens</td></tr>
+      <tr><td><b>Browser-based apps</b></td><td>OAuth 2.0 for Browser-Based Applications, Internet-Draft draft-ietf-oauth-browser-based-apps</td></tr>
+      <tr><td><b>Spring Security</b></td><td>Reference documentation for the resource server and the authorization server</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Contracts, clients and agents</h2>
+  <table class="dense">
+    <tbody>
+      <tr><td style="width:23%"><b>OpenAPI 3.2</b></td><td>The OpenAPI Specification, spec.openapis.org/oas/v3.2.0.html, and its JSON Schema</td></tr>
+      <tr><td><b>Spring Framework 7</b></td><td>Reference documentation: API versioning, MockMvcTester, RestClient</td></tr>
+      <tr><td><b>Spring AI</b></td><td>Reference documentation: ChatClient, tool calling, chat memory, the Anthropic starter</td></tr>
+      <tr><td><b>Claude API</b></td><td>Anthropic's documentation for models, tool use and refusal handling, docs.claude.com</td></tr>
+      <tr><td><b>Webull OpenAPI</b></td><td>developer.webull.com/apis/docs, the RPC-style API compared in Chapter&nbsp;24</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ====================================================================
+     APPENDIX E - COMPLETE SOURCE CODE
+     ==================================================================== -->
+<section class="chapter listings" id="appE" data-foot="Appendix E · Complete source code">
+  <div class="chnum">Appendix E</div>
+  <h1 class="title">Complete source code</h1>
+  <p class="lede">Every file of the sample application, printed from the tested source when this
+  book was built: __LISTED_FILES__ files and __LISTED_LINES__ lines. With this appendix, the book
+  contains everything you need to rebuild the brokerage from nothing.</p>
+  <p class="small">Two kinds of file are not reprinted. The OpenAPI&nbsp;3.2 meta-schema that
+  <code>ContractTest</code> validates against (<code>brokerage-api/src/test/resources/oas-3.2-schema.json</code>)
+  is published by the OpenAPI Initiative at
+  <span class="mono">spec.openapis.org/oas/3.2/schema/2025-09-17</span>. The Maven Wrapper scripts
+  (<code>mvnw</code>, <code>mvnw.cmd</code> and <code>.mvn/wrapper</code>) are generated by
+  <code>mvn wrapper:wrapper</code>.</p>
+  <!-- SOURCE-LISTINGS -->
+</section>
+
+<!-- ====================================================================
+     BACK MATTER
+     ==================================================================== -->
+<section class="chapter" id="back" data-foot="Smiroh Publishers">
+  <div class="chnum">About this book</div>
+  <h1 class="title">From the publisher</h1>
+
+  <h2>About the author</h2>
+  <p>Smiroh Dev writes practical, standards-first guides for software engineers who build and
+  secure web systems. Every Smiroh book is built around working code that runs on your own machine,
+  because the best way to understand a standard is to watch it do its job.</p>
+
+  <h2>Also from Smiroh Publishers</h2>
+  <div class="grid g2">
+    <div class="panel" style="margin:0">
+      <h3 style="margin-top:0">The Ultimate Developer's Guide to OAuth 2.1 and PKCE</h3>
+      <p class="small" style="margin:0">A complete OAuth&nbsp;2.1 deployment on your laptop, with an identity
+      provider, an authorization server, an API and a client, taken apart in hands-on labs. The natural
+      companion to Chapter&nbsp;20.</p>
+    </div>
+    <div class="panel" style="margin:0">
+      <h3 style="margin-top:0">The Ultimate Developer's Guide to CORS: Border Control for the Web</h3>
+      <p class="small" style="margin:0">Cross-Origin Resource Sharing from first principles: the same-origin
+      policy, preflights, credentials, real incidents and secure configuration, with eight labs.</p>
+    </div>
+  </div>
+
+  <div class="pull" style="margin-top:22pt">Design the API you would want to be a client of. Then write
+  the standard down, so everyone else can build it too.</div>
+  <p class="small muted">Thank you for reading. Corrections and suggestions are welcome through the
+  publisher's store page.</p>
+</section>

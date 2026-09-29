@@ -200,7 +200,7 @@ public class Ledger {
         BigDecimal cash = new BigDecimal(amount);
         book.cash = book.cash.add(cash);
         Instant at = daysAgo(daysAgo);
-        LocalDate paid = at.atZone(ZoneOffset.UTC).toLocalDate(); // dividends are paid in cash, settled
+        LocalDate paid = at.atZone(ZoneOffset.UTC).toLocalDate(); // a dividend settles when it is paid
         book.transactions.add(new Transaction(nextTransactionId(), Type.DIVIDEND,
                 "Cash dividend " + instrument.symbol(), cash, instrument.id(), instrument.symbol(),
                 null, null, null, at, paid));

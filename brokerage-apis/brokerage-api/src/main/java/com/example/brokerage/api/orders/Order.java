@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.hateoas.server.core.Relation;
 
 /**
- * An order and its lifecycle. Orders are never deleted: a cancelled or filled order stays
- * readable, which is why cancelling is a state change (POST .../cancellation), not DELETE.
+ * An order and its lifecycle. Orders are never deleted: a canceled or filled order stays
+ * readable, which is why canceling is a state change (POST .../cancellation), not DELETE.
  *
  * <pre>
  *   OPEN ──fill──▶ PARTIALLY_FILLED ──fill──▶ FILLED
@@ -35,13 +35,13 @@ public record Order(String id, String accountId, String clientOrderId, String in
 
     public enum Type { MARKET, LIMIT, STOP, STOP_LIMIT }
 
-    /** DAY orders expire at the close; GTC ("good 'til cancelled") orders stay working. */
+    /** DAY orders expire at the close; GTC ("good 'til canceled") orders stay working. */
     public enum TimeInForce { DAY, GTC }
 
     public enum Status {
         OPEN, PARTIALLY_FILLED, FILLED, PENDING_CANCEL, CANCELLED, REJECTED;
 
-        /** Can still fill, and so can still be changed or cancelled. */
+        /** Can still fill, and so can still be changed or canceled. */
         public boolean isWorking() {
             return this == OPEN || this == PARTIALLY_FILLED;
         }

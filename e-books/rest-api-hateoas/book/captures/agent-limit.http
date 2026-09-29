@@ -1,6 +1,6 @@
 POST /accounts/ACC-1001/orders HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 Idempotency-Key: c0ffee00-0000-4000-8000-000000000004
 Content-Type: application/json
@@ -21,6 +21,6 @@ Content-Type: application/problem+json
   "status": 403,
   "title": "The order exceeds the trading limit delegated to this client",
   "type": "https://docs.brokerage.example/problems/trading-limit-exceeded",
-  "requestId": "310821fa-6eb9-4335-87be-fe22c3cbd7bc",
+  "requestId": "8c2cb3c7-092d-4043-b7d4-f812552f5286",
   "tradingLimit": "5000"
 }

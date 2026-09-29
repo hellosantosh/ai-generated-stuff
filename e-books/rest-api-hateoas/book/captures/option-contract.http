@@ -1,6 +1,6 @@
 GET /instruments/OPT-AAPL-261016-C-240 HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 API-Version: 2
 
 HTTP/1.1 200 OK
@@ -26,7 +26,7 @@ Content-Type: application/hal+json
     ]
   },
   "id": "OPT-AAPL-261016-C-240",
-  "symbol": "AAPL",
+  "symbol": "AAPL261016C00240000",
   "name": "AAPL 2026-10-16 $240 CALL",
   "type": "OPTION",
   "exchange": "OPRA",

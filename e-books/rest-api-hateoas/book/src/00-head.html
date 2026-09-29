@@ -151,7 +151,7 @@ figure.code figcaption{
 figure.code figcaption .path{ font-weight:700; color:#3a4260; }
 figure.code figcaption .note{ font-family:var(--sans); text-align:right; }
 figure.code pre{
-  margin:0; padding:6pt 9pt 7pt; font:7.45pt/1.46 var(--mono); color:#1d2433;
+  margin:0; padding:6pt 8pt 7pt; font:7.2pt/1.47 var(--mono); color:#1d2433;
   white-space:pre-wrap; overflow-wrap:anywhere; tab-size:4;
 }
 pre .kw{ color:#6b3fc4; } pre .an{ color:#9c5a08; } pre .st{ color:#0a6c4a; }
@@ -291,7 +291,7 @@ pre.listing .ln{ color:#b3bbd2; display:inline-block; width:4ch; text-align:righ
 .story{
   position:relative; margin:4pt 0 12pt; padding:11pt 14pt 10pt 16pt;
   background:#fbf8f2; border:0.5pt solid #eadfc9; border-radius:6pt;
-  font-family:var(--serif); font-size:10.4pt; line-height:1.58; color:#2b2620;
+  font-family:var(--serif); font-size:10.4pt; line-height:1.58; color:#2b2620; break-inside:avoid;
 }
 .story::before{ content:""; position:absolute; left:0; top:10pt; bottom:10pt; width:3pt;
   border-radius:0 2pt 2pt 0; background:linear-gradient(180deg,#e0a84a,#c46a3c); }
@@ -316,6 +316,8 @@ dl.defs dd{ margin:1pt 0 0 0; font-size:9.4pt; }
 
 .checklist{ list-style:none; padding-left:0; }
 .checklist li{ position:relative; padding-left:16pt; }
+.onepage h3{ font-size:9.8pt; margin:7pt 0 2pt; }
+.onepage li{ font-size:8.4pt; line-height:1.38; margin-bottom:0.6pt; }
 .checklist li::before{ content:""; position:absolute; left:1pt; top:3pt; width:8pt; height:8pt;
   border:1pt solid var(--accent); border-radius:2pt; }
 

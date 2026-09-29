@@ -14,7 +14,7 @@ import org.springframework.web.client.RestClient;
  * and the API first, then run:
  *
  * <pre>
- *   ./mvnw -q -pl brokerage-client exec:java -Dexec.mainClass=com.example.brokerage.client.Demo
+ *   ./mvnw -q -pl brokerage-client compile exec:java -Dexec.mainClass=com.example.brokerage.client.Demo
  * </pre>
  */
 public final class Demo {
@@ -45,7 +45,7 @@ public final class Demo {
         System.out.printf("%nAAPL %s  bid %s  ask %s  (%s%%)%n",
                 quote.last(), quote.bid().price(), quote.ask().price(), quote.changePercent());
 
-        // A limit order well below the market, so that it rests and can be cancelled.
+        // A limit order well below the market, so that it rests and can be canceled.
         BigDecimal price = quote.last().multiply(new BigDecimal("0.90"))
                 .setScale(2, java.math.RoundingMode.DOWN);
         OrderTicket ticket = OrderTicket.limit("EQ-AAPL", "BUY", new BigDecimal("5"), price);
@@ -54,7 +54,7 @@ public final class Demo {
                 price, preview.estimatedTotal(), preview.acceptable());
 
         Order order = brokerage.place("ACC-1001", ticket, UUID.randomUUID().toString());
-        System.out.printf("Placed %s: %s, cancellable: %s%n", order.id(), order.status(),
+        System.out.printf("Placed %s: %s, cancelable: %s%n", order.id(), order.status(),
                 order.isCancellable());
 
         order = brokerage.cancel(order);
@@ -63,7 +63,7 @@ public final class Demo {
             Thread.sleep(500);
             order = brokerage.refresh(order);
         }
-        System.out.printf("Now %s, cancellable: %s%n", order.status(), order.isCancellable());
+        System.out.printf("Now %s, cancelable: %s%n", order.status(), order.isCancellable());
     }
 
     private Demo() {

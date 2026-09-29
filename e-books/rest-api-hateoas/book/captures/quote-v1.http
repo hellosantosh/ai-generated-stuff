@@ -1,6 +1,6 @@
 GET /instruments/EQ-AAPL/quote HTTP/1.1
 Host: localhost:8080
-Authorization: Bearer eyJraWQiOiI5ZjlkYzAw…
+Authorization: Bearer eyJraWQiOiI3MTE1NmVl…
 
 HTTP/1.1 200 OK
 ETag: "q3"
@@ -34,5 +34,5 @@ Link: <https://docs.brokerage.example/migrations/v2>; rel="sunset"; type="text/h
   "bidSize": "500",
   "askSize": "500",
   "volume": 1250184,
-  "asOf": "2026-09-28T23:33:21.893816Z"
+  "asOf": "2026-09-29T10:45:28.216609Z"
 }
