@@ -126,8 +126,16 @@ def load_market_data(
     force: bool = False,
     max_tickers: int | None = None,
     with_fundamentals: bool = True,
+    members_as_of: dt.date | None = None,
 ) -> LoadedData:
-    """Build a ``MarketData`` for the configured universe and window."""
+    """Build a ``MarketData`` for the configured universe and window.
+
+    ``members_as_of`` restricts the load to index members on that one date.
+    A backtest needs every company that was ever a member, including the ones
+    that later left; a single-date ranking does not, and skipping the several
+    hundred delisted tickers makes the weekly run far quicker without
+    changing its output.
+    """
     end = end or config.backtest.end_date
     window_start = start or config.backtest.start_date
     if window_start is None:
@@ -143,7 +151,14 @@ def load_market_data(
     sector_map = universe_provider.sector_map()
     company_names = universe_provider.company_names()
 
-    tickers = membership.all_tickers()
+    if members_as_of is not None:
+        tickers = membership.members_on(members_as_of)
+        log.info(
+            "restricting to the %d member(s) of %s on %s (of %d ever-members)",
+            len(tickers), membership.name, members_as_of, len(membership),
+        )
+    else:
+        tickers = membership.all_tickers()
     if max_tickers:
         tickers = tickers[:max_tickers]
     benchmarks = list(config.benchmark.all_tickers)
@@ -176,7 +191,8 @@ def load_market_data(
             f"every comparison metric."
         )
 
-    _assess_survivorship_coverage(membership, tickers, prices, benchmarks, price_provider.name)
+    if members_as_of is None:
+        _assess_survivorship_coverage(membership, tickers, prices, benchmarks, price_provider.name)
 
     fundamentals: dict[str, FundamentalSeries] = {}
     if fundamental_provider is not None:

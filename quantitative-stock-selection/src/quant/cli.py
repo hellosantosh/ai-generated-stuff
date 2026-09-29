@@ -253,7 +253,10 @@ def _rank_as_of(config: AppConfig, data, as_of: dt.date):
 def cmd_rank(args: argparse.Namespace) -> int:
     config = _load(args)
     _print(BANNER)
-    data = load_market_data(config, max_tickers=args.max_tickers)
+    data = load_market_data(
+        config, max_tickers=args.max_tickers,
+        members_as_of=args.as_of or config.backtest.end_date,
+    )
     _warn_if_synthetic(data)
 
     as_of = args.as_of or data.market.calendar[-1].date()
@@ -305,7 +308,10 @@ def cmd_rank(args: argparse.Namespace) -> int:
 def cmd_weekly_report(args: argparse.Namespace) -> int:
     config = _load(args)
     _print(BANNER)
-    data = load_market_data(config, max_tickers=args.max_tickers)
+    data = load_market_data(
+        config, max_tickers=args.max_tickers,
+        members_as_of=args.as_of or config.backtest.end_date,
+    )
     _warn_if_synthetic(data)
     market = data.market
 
@@ -324,6 +330,26 @@ def cmd_weekly_report(args: argparse.Namespace) -> int:
         execution_date = market.next_trading_day(as_of)
     except QuantError:
         execution_date = None
+
+    _print("")
+    _print(f"decision date: {as_of}  (latest session in the loaded data)")
+    if execution_date:
+        _print(f"modeled fill:  {execution_date} at the open")
+    staleness = (dt.date.today() - as_of).days
+    if staleness > 7:
+        _print(
+            f"WARNING: that session is {staleness} days old. Check backtest.end_date "
+            f"in config/settings.yaml is null, and re-run update-data."
+        )
+    elif as_of == dt.date.today() and as_of.weekday() < 5:
+        # Providers serve a live, partial bar while the session is open. Every
+        # factor would then be computed from an intraday price that is not the
+        # close the model assumes.
+        _print(
+            "WARNING: the decision date is today and the market may still be open, so "
+            "the last bar could be a partial session. Run after the close, or pass "
+            "--as-of with the previous trading day."
+        )
 
     markdown = render_weekly_report(
         ranking=ranking,

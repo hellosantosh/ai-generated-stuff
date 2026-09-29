@@ -179,15 +179,22 @@ class BacktestConfig:
     strict_point_in_time: bool
     variants: tuple[str, ...]
     risk_free_rate: float
+    # False when end_date was resolved to today rather than read from config.
+    end_date_pinned: bool = True
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "BacktestConfig":
         day_raw = str(_require(raw, "contribution_day", "backtest")).lower()
         if day_raw not in WEEKDAYS:
             raise ConfigError(f"backtest.contribution_day: {day_raw!r} is not a weekday name")
-        end_date = _as_date(_require(raw, "end_date", "backtest"), "backtest.end_date")
+        # A null end_date means "the latest session available", so a weekly
+        # habit picks up new data without anyone editing the config. A pinned
+        # date is kept exactly as written, which is what reproducing an old
+        # run needs.
+        end_date = _as_date(raw.get("end_date"), "backtest.end_date")
+        end_date_pinned = end_date is not None
         if end_date is None:
-            raise ConfigError("backtest.end_date is required")
+            end_date = dt.date.today()
         start_date = _as_date(raw.get("start_date"), "backtest.start_date")
         num_weeks = int(raw.get("num_weeks", 360))
         if start_date is None and num_weeks <= 0:
@@ -225,6 +232,7 @@ class BacktestConfig:
             strict_point_in_time=bool(raw.get("strict_point_in_time", True)),
             variants=variants,
             risk_free_rate=float(raw.get("risk_free_rate", 0.0)),
+            end_date_pinned=end_date_pinned,
         )
 
     @property

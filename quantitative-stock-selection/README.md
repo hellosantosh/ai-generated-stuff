@@ -27,6 +27,27 @@ pip install -r requirements.txt
 cp .env.example .env               # then fill in SEC_USER_AGENT (see below)
 ```
 
+### Weekly use
+
+`backtest.end_date` is `null` by default, meaning "the latest session available",
+so a Sunday-night run picks up Friday's close without anyone editing config:
+
+```bash
+python main.py weekly-report        # writes reports/weekly_report_<date>.md and .html
+```
+
+The report ends with a **Basket** table: every position with its weight as a share
+of the contribution, so the same basket works whether you put in $500 or $2,000
+that week. A ticker selected by both sleeves appears once carrying the sum of its
+weights. Run it after the market closes — the CLI warns if the last bar is from a
+session that may still be open, or if the data is more than a week stale.
+
+Note what the report is and is not: it is the **target portfolio** for new money,
+not a trade list. It has no knowledge of what you already hold, so it cannot tell
+you what to sell. See [Honest limitations](#honest-limitations).
+
+### First run
+
 Run the whole pipeline offline first, on generated data, to confirm the install:
 
 ```bash
@@ -213,6 +234,11 @@ than 2% of historical members cannot be priced, stating the number and the reaso
 in the report. To genuinely remove the bias you need a provider that serves
 delisted securities (CRSP, Norgate, Sharadar).
 
+**Dual share classes are counted twice.** GOOG and GOOGL are separate index
+members, so both can be selected and the basket then holds roughly double the
+intended weight in one company. The same applies to FOX/FOXA and NWS/NWSA. The
+model has no concept of a corporate parent.
+
 **Fundamentals history decides whether the model you configured is the model that
 runs.** Yahoo serves roughly five quarters of statements. Year-over-year TTM growth
 needs eight. With `--fundamentals yfinance`, the growth category — 30% of the
@@ -244,7 +270,22 @@ free fractional trading would change the result materially.
 **Dividends are reinvested at weekly granularity.** Credited as cash on the ex-date
 and redeployed at the next contribution, not reinvested intraday.
 
-**Taxes are not modeled.** All figures are pre-tax.
+**Taxes are not modeled.** All figures are pre-tax. The sector sleeve turns over
+roughly 100% a year in backtest and the growth sleeve roughly 350%; in a taxable
+account most of that is short-term gains taxed as ordinary income.
+
+**The weekly report does not track your positions.** It prints the target portfolio
+for this week's money. It does not know what you already own, so it never says
+SELL. The backtest, by contrast, rebalances the sector sleeve quarterly and the
+growth sleeve monthly — it sells names that drop out of the selection. If you buy
+each week's basket and never sell, your holdings drift steadily away from the
+strategy that was measured, accumulating a long tail of names that have since
+fallen out of the rankings. Closing that gap needs position tracking, which
+version 1 does not have.
+
+**SEC company facts are large.** A full 503-ticker fundamentals cache is about
+2.8 GB under `data/raw/sec/`. It is git-ignored, and re-running is served from
+disk.
 
 **Drawdowns are measured on the time-weighted index, not the dollar balance.** In a
 DCA strategy the balance keeps climbing on new contributions, so a value-based

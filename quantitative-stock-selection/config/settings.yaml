@@ -35,7 +35,9 @@ growth_strategy:
 backtest:
   # `num_weeks` counts backwards from end_date when start_date is null.
   start_date: null
-  end_date: 2026-09-25
+  # null means "the latest session available", so a weekly run always picks up
+  # new data. Pin an explicit date only to reproduce an earlier run exactly.
+  end_date: null
   num_weeks: 360
   frequency: weekly
   # Day of week whose close produces the decision. 0=Mon ... 4=Fri.

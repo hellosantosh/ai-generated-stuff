@@ -27,7 +27,12 @@ from quant.reports.tables import (
     monthly_returns_table,
     rankings_frame,
 )
-from quant.reports.weekly import markdown_to_html, render_weekly_report, write_weekly_report
+from quant.reports.weekly import (
+    basket_weights,
+    markdown_to_html,
+    render_weekly_report,
+    write_weekly_report,
+)
 
 EXPECTED_SHEETS = [
     "Summary", "Portfolio", "IVV Benchmark", "Transactions", "Stock Rankings",
@@ -94,11 +99,59 @@ def test_weekly_report_states_the_execution_convention(market, config, view):
     assert "next trading day open" in markdown or "that close" in markdown
 
 
-def test_weekly_report_allocations_sum_to_the_contribution(market, config, view):
+def test_basket_weights_sum_to_one(view, config):
+    factors, _ = compute_universe_factors(view, view.universe(), config)
+    ranking = rank_and_select(factors, config, view.as_of)
+    basket, budgets = basket_weights(ranking, config)
+
+    assert basket
+    assert sum(weight for _, weight, _, _ in basket) == pytest.approx(1.0)
+    assert sum(budgets.values()) == pytest.approx(1.0)
+
+
+def test_basket_lists_each_ticker_once_with_combined_weight(view, config):
+    """A name picked by both sleeves is one position, not two."""
+    factors, _ = compute_universe_factors(view, view.universe(), config)
+    ranking = rank_and_select(factors, config, view.as_of)
+    basket, budgets = basket_weights(ranking, config)
+
+    tickers = [ticker for ticker, _, _, _ in basket]
+    assert len(tickers) == len(set(tickers)), "a ticker appears twice in the basket"
+
+    overlap = set(ranking.tickers("sector_leaders")) & set(ranking.tickers("high_growth"))
+    if overlap:
+        ticker = sorted(overlap)[0]
+        weight = next(w for t, w, _, _ in basket if t == ticker)
+        sleeves = next(sl for t, _, sl, _ in basket if t == ticker)
+        expected = (
+            budgets["sector_leaders"] / len(ranking.sector_leaders)
+            + budgets["high_growth"] / len(ranking.high_growth)
+        )
+        assert weight == pytest.approx(expected)
+        assert "+" in sleeves
+
+
+def test_an_empty_sleeve_redistributes_rather_than_leaving_a_gap(view, config):
+    factors, _ = compute_universe_factors(view, view.universe(), config)
+    ranking = rank_and_select(factors, config, view.as_of)
+    ranking.high_growth.clear()
+    basket, budgets = basket_weights(ranking, config)
+
+    assert budgets["high_growth"] == 0.0
+    assert sum(weight for _, weight, _, _ in basket) == pytest.approx(1.0)
+
+
+def test_weekly_report_quotes_weights_not_dollars(market, config, view):
     factors, _ = compute_universe_factors(view, view.universe(), config)
     ranking = rank_and_select(factors, config, view.as_of)
     markdown = render_weekly_report(ranking, config, view, market)
-    assert money(config.strategy.weekly_contribution) in markdown
+
+    assert "## Basket" in markdown
+    assert "Share of contribution" in markdown
+    assert "any contribution size" in markdown
+    # The allocation tables must not quote a fixed dollar target.
+    allocation = markdown.split("## Recommended allocation")[1].split("## Sector rankings")[0]
+    assert "$" not in allocation, "the allocation section still quotes dollar amounts"
 
 
 def test_weekly_report_writes_markdown_and_html(market, config, view, tmp_path):

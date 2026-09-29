@@ -17,7 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from ..errors import ProviderError
+from ..errors import DataError, ProviderError
 from ..logging_config import get_logger
 from .cache import RawCache, safe_key
 from .http import HttpClient, RateLimiter
@@ -227,6 +227,7 @@ class SECProvider:
                 if any(metric in bucket for bucket in buckets.values()):
                     break
 
+        skipped = 0
         for (period_end, fiscal_period), metrics in buckets.items():
             if not metrics:
                 continue
@@ -234,17 +235,31 @@ class SECProvider:
             form = next((f for _, _, f in metrics.values() if f), "")
             values = {name: value for name, (_, value, _) in metrics.items()}
             values = _derive(values)
-            series.add(
-                FundamentalRecord(
-                    ticker=ticker,
-                    period_end_date=period_end,
-                    fiscal_period=fiscal_period,
-                    filing_date=filing_date,
-                    data_available_date=filing_date + self.availability_lag,
-                    metrics=values,
-                    provider=self.name,
-                    form=form,
+            try:
+                series.add(
+                    FundamentalRecord(
+                        ticker=ticker,
+                        period_end_date=period_end,
+                        fiscal_period=fiscal_period,
+                        filing_date=filing_date,
+                        data_available_date=filing_date + self.availability_lag,
+                        metrics=values,
+                        provider=self.name,
+                        form=form,
+                    )
                 )
+            except DataError as exc:
+                # Drop the offending period, keep the company. One malformed
+                # XBRL context must not silently remove a whole index member
+                # from the universe.
+                skipped += 1
+                log.debug("%s: skipping period %s - %s", ticker, period_end, exc)
+
+        if skipped:
+            log.warning(
+                "%s: skipped %d malformed fiscal period(s) out of %d; the remaining "
+                "history is used",
+                ticker, skipped, len(series.records) + skipped,
             )
         log.debug("%s: parsed %d SEC fundamental periods", ticker, len(series.records))
         return series
@@ -276,6 +291,13 @@ def _parse_observation(
         filed = dt.date.fromisoformat(str(observation["filed"]))
         value = float(observation["val"])
     except (KeyError, TypeError, ValueError):
+        return None
+
+    if filed < end:
+        # A report about a period cannot predate the end of that period. These
+        # appear in EDGAR for companies with non-calendar fiscal years, where a
+        # fact's context resolves to a period end later than the filing. Keeping
+        # one would let a decision see a period that had not finished.
         return None
 
     form = str(observation.get("form", ""))

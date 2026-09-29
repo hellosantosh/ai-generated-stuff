@@ -216,3 +216,66 @@ def test_cache_key_distinguishes_class_shares():
     assert safe_key("BRK.B") != safe_key("BRK-B") or True   # both normalize safely
     assert safe_key("BRK.B") == "BRK.B"
     assert "/" not in safe_key("A/B")
+
+
+# --- SEC parsing -----------------------------------------------------------
+def test_sec_rejects_a_fact_filed_before_its_period_ended():
+    """A report cannot predate the end of the period it describes.
+
+    EDGAR carries these for companies with non-calendar fiscal years. Keeping
+    one would let a decision date see a quarter that had not finished.
+    """
+    from quant.data.sec import _parse_observation
+
+    observation = {
+        "end": "2012-12-31", "start": "2012-10-01", "filed": "2012-03-27",
+        "val": 1.0, "form": "10-Q", "fp": "Q4",
+    }
+    assert _parse_observation("revenue", observation) is None
+
+
+def test_sec_accepts_a_normally_filed_fact():
+    from quant.data.sec import _parse_observation
+
+    observation = {
+        "end": "2012-12-31", "start": "2012-10-01", "filed": "2013-02-15",
+        "val": 100.0, "form": "10-Q", "fp": "Q4",
+    }
+    parsed = _parse_observation("revenue", observation)
+    assert parsed is not None
+    end, period, filed, value, form = parsed
+    assert end == dt.date(2012, 12, 31)
+    assert filed == dt.date(2013, 2, 15)
+    assert value == 100.0
+
+
+def test_one_malformed_period_does_not_drop_the_whole_company(tmp_path):
+    """A single bad XBRL context must not remove an index member entirely."""
+    import json
+
+    from quant.data.cache import RawCache
+    from quant.data.sec import SECProvider
+
+    raw = RawCache(tmp_path)
+    raw.write("sec", "company_tickers", {"0": {"ticker": "TEST", "cik_str": 1}})
+    # Two good quarters, plus one fact whose filing predates its period end.
+    observations = [
+        {"end": "2023-03-31", "start": "2023-01-01", "filed": "2023-05-01",
+         "val": 100.0, "form": "10-Q", "fp": "Q1"},
+        {"end": "2023-06-30", "start": "2023-04-01", "filed": "2023-08-01",
+         "val": 110.0, "form": "10-Q", "fp": "Q2"},
+        {"end": "2023-09-30", "start": "2023-07-01", "filed": "2023-01-01",
+         "val": 120.0, "form": "10-Q", "fp": "Q3"},
+    ]
+    raw.write("sec", "companyfacts_TEST", {
+        "facts": {"us-gaap": {"Revenues": {"units": {"USD": observations}}}}
+    })
+
+    provider = SECProvider(raw, user_agent="Test Runner test@example.com")
+    series = provider.fetch_fundamentals("TEST")
+
+    periods = {record.period_end_date for record in series.records}
+    assert dt.date(2023, 3, 31) in periods
+    assert dt.date(2023, 6, 30) in periods
+    assert dt.date(2023, 9, 30) not in periods, "the malformed period should be dropped"
+    assert len(series.records) == 2, "the good periods must survive"

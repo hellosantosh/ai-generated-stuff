@@ -22,6 +22,9 @@ from ..config import AppConfig
 from ..data.store import MarketData, PointInTimeView
 from ..logging_config import get_logger
 from ..ranking.sector_ranker import GROWTH_SLEEVE, SECTOR_SLEEVE, RankingResult, Selection
+
+# The benchmark core is not a ranked sleeve, so it needs its own budget key.
+IVV_LABEL = "core"
 from .formatting import (
     DISCLAIMER,
     frame_to_markdown,
@@ -36,7 +39,68 @@ from .formatting import (
 log = get_logger(__name__)
 
 
-def _market_summary(view: PointInTimeView, config: AppConfig) -> list[tuple[str, str]]:
+def basket_weights(
+    ranking: RankingResult, config: AppConfig
+) -> tuple[list[tuple[str, float, str, float]], dict[str, float]]:
+    """Consolidated portfolio weights as fractions of one contribution.
+
+    Returns ``(rows, sleeve_totals)`` where each row is
+    ``(ticker, weight, sleeves, score)``. Weights are expressed as a share of
+    whatever is contributed, not as dollars, so the same basket can be traded
+    at any contribution size.
+
+    A ticker selected by both sleeves gets the **sum** of its two weights - it
+    is one position in the basket, and listing it twice would understate it.
+    An empty sleeve has its budget redistributed across the sleeves that did
+    produce holdings, so the weights always total 100%.
+    """
+    strategy = config.strategy
+    sector = ranking.sector_leaders
+    growth = ranking.high_growth
+
+    budgets = {
+        IVV_LABEL: strategy.ivv_allocation,
+        SECTOR_SLEEVE: strategy.sector_allocation if sector else 0.0,
+        GROWTH_SLEEVE: strategy.growth_allocation if growth else 0.0,
+    }
+    total_budget = sum(budgets.values())
+    if total_budget <= 0:
+        return [], {}
+    # Renormalize so an empty sleeve does not leave the basket short.
+    budgets = {name: value / total_budget for name, value in budgets.items()}
+
+    weights: dict[str, float] = {}
+    sleeves: dict[str, list[str]] = {}
+    scores: dict[str, float] = {}
+
+    benchmark = config.benchmark.ticker
+    if budgets[IVV_LABEL] > 0:
+        weights[benchmark] = budgets[IVV_LABEL]
+        sleeves[benchmark] = ["core"]
+        scores[benchmark] = float("nan")
+
+    for selections, sleeve_name, label in (
+        (sector, SECTOR_SLEEVE, "sector"),
+        (growth, GROWTH_SLEEVE, "growth"),
+    ):
+        if not selections or budgets[sleeve_name] <= 0:
+            continue
+        per_name = budgets[sleeve_name] / len(selections)
+        for selection in selections:
+            weights[selection.ticker] = weights.get(selection.ticker, 0.0) + per_name
+            sleeves.setdefault(selection.ticker, []).append(label)
+            scores[selection.ticker] = selection.total_score
+
+    rows = [
+        (ticker, weight, " + ".join(sleeves[ticker]), scores.get(ticker, float("nan")))
+        for ticker, weight in weights.items()
+    ]
+    # Core first, then by weight: that is the order you would enter a basket.
+    rows.sort(key=lambda row: (row[2] != "core", -row[1], row[0]))
+    return rows, budgets
+
+
+def _market_summary(view: PointInTimeView, config: AppConfig) -> list[tuple[str, float]]:
     """Benchmark returns, volatility and current drawdown at the decision date."""
     rows: list[tuple[str, str]] = []
     benchmark = config.benchmark.ticker
@@ -66,7 +130,7 @@ def _market_summary(view: PointInTimeView, config: AppConfig) -> list[tuple[str,
 
 def _selection_rows(
     selections: Sequence[Selection],
-    allocation_per_stock: Mapping[str, float],
+    weight_per_stock: Mapping[str, float],
     held: set[str],
 ) -> list[list[str]]:
     rows = []
@@ -82,7 +146,7 @@ def _selection_rows(
             selection.ticker,
             selection.sector,
             f"{selection.total_score:.1f}",
-            money(allocation_per_stock.get(selection.ticker, 0.0)),
+            percent(weight_per_stock.get(selection.ticker, 0.0), 3),
             reason,
             str(selection.previous_rank) if selection.previous_rank is not None else "-",
             action,
@@ -128,25 +192,55 @@ def render_weekly_report(
     lines.append("")
     sector_selections = ranking.sector_leaders
     growth_selections = ranking.high_growth
-    sector_budget = strategy.weekly_contribution * strategy.sector_allocation
-    growth_budget = strategy.weekly_contribution * strategy.growth_allocation
-    ivv_budget = strategy.weekly_contribution * strategy.ivv_allocation
+    basket, budgets = basket_weights(ranking, config)
 
-    per_sector_stock = sector_budget / len(sector_selections) if sector_selections else 0.0
-    per_growth_stock = growth_budget / len(growth_selections) if growth_selections else 0.0
-    allocation_per_stock = {s.ticker: per_sector_stock for s in sector_selections}
-    growth_allocation = {s.ticker: per_growth_stock for s in growth_selections}
+    per_sector_weight = (
+        budgets.get(SECTOR_SLEEVE, 0.0) / len(sector_selections) if sector_selections else 0.0
+    )
+    per_growth_weight = (
+        budgets.get(GROWTH_SLEEVE, 0.0) / len(growth_selections) if growth_selections else 0.0
+    )
+    allocation_per_stock = {s.ticker: per_sector_weight for s in sector_selections}
+    growth_allocation = {s.ticker: per_growth_weight for s in growth_selections}
 
+    lines.append(
+        "Weights are shares of whatever you contribute this week, so the same basket "
+        "works at any contribution size."
+    )
+    lines.append("")
     lines.append(markdown_table(
         [
-            [f"{config.benchmark.ticker} core", money(ivv_budget), "1 holding"],
-            ["Sector leaders", money(sector_budget), f"{len(sector_selections)} holdings, {money(per_sector_stock)} each"],
-            ["High growth", money(growth_budget), f"{len(growth_selections)} holdings, {money(per_growth_stock)} each"],
-            ["**Total**", f"**{money(strategy.weekly_contribution)}**", ""],
+            [f"{config.benchmark.ticker} core", percent(budgets.get(IVV_LABEL, 0.0)), "1 holding"],
+            ["Sector leaders", percent(budgets.get(SECTOR_SLEEVE, 0.0)),
+             f"{len(sector_selections)} holdings, {percent(per_sector_weight, 3)} each"],
+            ["High growth", percent(budgets.get(GROWTH_SLEEVE, 0.0)),
+             f"{len(growth_selections)} holdings, {percent(per_growth_weight, 3)} each"],
+            ["**Total**", f"**{percent(sum(budgets.values()))}**", ""],
         ],
-        ["Sleeve", "Weekly amount", "Detail"],
+        ["Sleeve", "Share of contribution", "Detail"],
         ["left", "right", "left"],
     ))
+    lines.append("")
+
+    # --- the basket -----------------------------------------------------
+    lines.append("## Basket")
+    lines.append("")
+    if not basket:
+        lines.append("_No holdings could be selected this week._")
+    else:
+        lines.append(
+            f"{len(basket)} positions. A ticker chosen by both sleeves appears once, "
+            f"carrying the sum of its two weights."
+        )
+        lines.append("")
+        rows = [
+            [ticker, percent(weight, 3), sleeves, "" if pd.isna(score) else f"{score:.1f}"]
+            for ticker, weight, sleeves, score in basket
+        ]
+        rows.append(["**Total**", f"**{percent(sum(r[1] for r in basket))}**", "", ""])
+        lines.append(markdown_table(
+            rows, ["Ticker", "Weight", "Sleeve", "Score"], ["left", "right", "left", "right"]
+        ))
     lines.append("")
 
     # --- sector rankings ----------------------------------------------
@@ -198,7 +292,7 @@ def render_weekly_report(
     lines.append("")
     rows = _selection_rows(sector_selections, allocation_per_stock, held)
     lines.append(markdown_table(
-        rows, ["Ticker", "Sector", "Score", "Allocation", "Reason for selection", "Prev rank", "Action"],
+        rows, ["Ticker", "Sector", "Score", "Weight", "Reason for selection", "Prev rank", "Action"],
         ["left", "left", "right", "right", "left", "right", "left"],
     ) if rows else "_No sector leaders selected._")
     lines.append("")
@@ -208,7 +302,7 @@ def render_weekly_report(
     lines.append("")
     rows = _selection_rows(growth_selections, growth_allocation, held_growth)
     lines.append(markdown_table(
-        rows, ["Ticker", "Sector", "Score", "Allocation", "Reason for selection", "Prev rank", "Action"],
+        rows, ["Ticker", "Sector", "Score", "Weight", "Reason for selection", "Prev rank", "Action"],
         ["left", "left", "right", "right", "left", "right", "left"],
     ) if rows else "_No high-growth names selected._")
     lines.append("")
@@ -268,8 +362,18 @@ def render_weekly_report(
         usable = [v for v in volatilities if v is not None]
         if usable:
             risk_rows.append(["Average risk score of selections (higher is safer)", f"{np.mean(usable):.1f}"])
-    risk_rows.append(["Largest single position weight (target)",
-                      percent(1.0 / max(1, len(sector_selections) + len(growth_selections) + 1))])
+    if basket:
+        heaviest = max(basket, key=lambda row: row[1])
+        risk_rows.append([
+            f"Largest single position ({heaviest[0]})", percent(heaviest[1])
+        ])
+        stock_only = [row for row in basket if row[2] != "core"]
+        if stock_only:
+            risk_rows.append([
+                f"Largest single stock ({max(stock_only, key=lambda r: r[1])[0]})",
+                percent(max(row[1] for row in stock_only)),
+            ])
+        risk_rows.append(["Positions in the basket", str(len(basket))])
     risk_rows.append(["Risk controls active", "yes" if config.risk_controls.any_active else "no (default)"])
     risk_rows.append(["Concentration limits enforced", "yes" if config.limits.enforce else "no (reported only)"])
     lines.append(markdown_table(risk_rows, ["Measure", "Value"], ["left", "right"]))
