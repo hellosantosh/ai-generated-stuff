@@ -1,0 +1,96 @@
+# Composite scoring model. Weights within each block must sum to 1.0.
+
+# Strategy v1.0 - the sector-leader sleeve (REQUIREMENTS 13).
+weights:
+  growth: 0.30
+  momentum: 0.30
+  quality: 0.20
+  valuation: 0.10
+  risk: 0.10
+
+# The cross-sector high-growth/momentum sleeve (REQUIREMENTS 17).
+growth_weights:
+  growth: 0.35
+  momentum: 0.35
+  quality: 0.15
+  relative_strength: 0.10
+  risk: 0.05
+
+normalization:
+  # percentile | zscore | winsorized_zscore
+  method: percentile
+  # Factors are ranked against peers in the same sector by default
+  # (REQUIREMENTS 14). Set to `universe` to rank against everything.
+  group_by: sector
+  winsorize_lower: 0.02
+  winsorize_upper: 0.98
+  # Minimum group size before a sector-relative rank is meaningful; smaller
+  # groups fall back to universe-relative ranking.
+  min_group_size: 5
+
+# Within-category factor weights. Missing inputs are dropped and the remaining
+# weights are renormalized; a factor is never silently treated as zero.
+factors:
+  growth:
+    revenue_growth_yoy: 0.20
+    revenue_cagr_3y: 0.15
+    revenue_cagr_5y: 0.10
+    eps_growth_yoy: 0.20
+    eps_cagr_3y: 0.15
+    fcf_growth: 0.10
+    revenue_acceleration: 0.05
+    earnings_acceleration: 0.05
+  momentum:
+    return_12m: 0.30
+    return_6m: 0.25
+    return_3m: 0.20
+    return_1m: 0.05
+    price_to_200dma: 0.10
+    ma50_to_ma200: 0.05
+    dist_52w_high: 0.05
+  quality:
+    gross_margin: 0.15
+    operating_margin: 0.15
+    net_margin: 0.10
+    roe: 0.15
+    roic: 0.15
+    fcf_margin: 0.15
+    debt_to_equity: 0.05
+    current_ratio: 0.05
+    interest_coverage: 0.05
+  valuation:
+    earnings_yield: 0.20
+    fcf_yield: 0.25
+    price_to_sales: 0.15
+    price_to_fcf: 0.15
+    ev_to_ebitda: 0.15
+    peg: 0.10
+  risk:
+    volatility_1y: 0.30
+    max_drawdown_1y: 0.25
+    downside_volatility: 0.20
+    beta: 0.15
+    drawdown_52w: 0.10
+  relative_strength:
+    rs_vs_market_12m: 0.40
+    rs_vs_market_6m: 0.30
+    rs_vs_sector_12m: 0.30
+
+# Factors where a LOWER raw value is better. Their percentile is inverted so a
+# high normalized score always means "more attractive".
+lower_is_better:
+  - debt_to_equity
+  - net_debt_to_ebitda
+  - price_to_sales
+  - price_to_fcf
+  - ev_to_ebitda
+  - ev_to_sales
+  - peg
+  - trailing_pe
+  - forward_pe
+  - volatility_1y
+  - downside_volatility
+  - beta
+  - max_drawdown_1y
+  - drawdown_52w
+  - dist_52w_high

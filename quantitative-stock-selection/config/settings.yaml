@@ -1,0 +1,123 @@
+# Quantitative Stock Selection & DCA Backtesting - main configuration.
+#
+# Every value here is user editable. The application validates the file on
+# startup and fails loudly rather than falling back to silent defaults.
+
+strategy:
+  # Strategy version is recorded with every backtest run. Bump it whenever the
+  # economic meaning of the model changes (see config/scoring.yaml).
+  version: "1.0"
+  weekly_contribution: 1000.0
+  # Allocations are fractions of the weekly contribution and must sum to 1.0.
+  ivv_allocation: 0.50
+  sector_allocation: 0.30
+  growth_allocation: 0.20
+
+sector_strategy:
+  stocks_per_sector: 3
+  # weekly | monthly | quarterly | semiannual | annual | threshold
+  rebalance_frequency: quarterly
+  # equal | score | market_cap | volatility | custom
+  weighting: equal
+  # Only used when rebalance_frequency is `threshold`.
+  threshold:
+    max_weight_drift: 0.25
+    max_rank: 10
+
+growth_strategy:
+  number_of_stocks: 10
+  rebalance_frequency: monthly
+  weighting: equal
+  threshold:
+    max_weight_drift: 0.25
+    max_rank: 20
+
+backtest:
+  # `num_weeks` counts backwards from end_date when start_date is null.
+  start_date: null
+  end_date: 2026-09-25
+  num_weeks: 360
+  frequency: weekly
+  # Day of week whose close produces the decision. 0=Mon ... 4=Fri.
+  contribution_day: friday
+  # next_open  -> decide on `contribution_day` close, buy at the next trading
+  #               day's open. No signal/execution overlap. This is the default.
+  # same_close -> decide on the PREVIOUS trading day's close, buy at the
+  #               `contribution_day` close. Also leak free.
+  execution: next_open
+  # total_return uses raw prices plus separately credited cash dividends.
+  # price_return ignores dividends entirely.
+  return_mode: total_return
+  # When true the run aborts if point-in-time provenance cannot be verified.
+  strict_point_in_time: true
+  # Portfolios simulated side by side for the comparison table.
+  variants: [ivv, sector_leaders, high_growth, combined]
+  risk_free_rate: 0.0
+
+benchmark:
+  ticker: IVV
+  # Extra tickers priced and reported but not invested in.
+  additional: [SPY, QQQ]
+
+transaction_cost:
+  commission_per_trade: 0.0
+  slippage_bps: 5.0
+
+limits:
+  max_single_stock_weight: 0.05
+  max_sector_weight: 0.20
+  max_positions: 40
+  # When false, limit breaches are reported but the selection is not altered.
+  enforce: false
+
+risk_controls:
+  # All risk controls are disabled by default (REQUIREMENTS 55).
+  skip_below_200dma: false
+  reduce_when_market_below_200dma: false
+  market_below_200dma_scale: 0.5
+  min_average_dollar_volume: 0.0
+
+eligibility:
+  min_price_history_weeks: 52
+  min_price: 1.0
+  max_stale_days: 10
+  require_fundamentals: false
+
+universe:
+  # sp500 | custom
+  name: sp500
+  # wikipedia   -> current membership plus the published changes table, walked
+  #                backwards to reconstruct historical membership.
+  # static      -> config/universe_static.csv (clearly survivorship biased).
+  # synthetic   -> generated universe, offline demo and tests only.
+  source: wikipedia
+  custom_tickers: []
+
+data:
+  # yfinance | alphavantage | synthetic
+  provider: yfinance
+  # Providers tried in order when the primary returns nothing for a ticker.
+  fallback_providers: []
+  # SEC EDGAR company facts supply point-in-time fundamentals.
+  fundamentals_provider: sec
+  cache_dir: data/cache
+  raw_dir: data/raw
+  processed_dir: data/processed
+  database_path: data/database/quant.sqlite
+  # Days before a cached price series is considered stale and refreshed.
+  cache_ttl_days: 1
+  max_retries: 4
+  backoff_base_seconds: 1.5
+  request_timeout_seconds: 30
+
+reporting:
+  output_dir: reports
+  chart_dir: reports/charts
+  generate_charts: true
+  generate_excel: true
+
+logging:
+  level: INFO
+  file: logs/app.log
+  max_bytes: 10485760
+  backup_count: 5

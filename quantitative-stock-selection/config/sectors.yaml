@@ -1,0 +1,32 @@
+# GICS 11-sector framework (REQUIREMENTS 8).
+#
+# `canonical` is the sector identifier stored in the database. `aliases` maps
+# the spellings used by data providers onto it. A stock whose sector cannot be
+# mapped is rejected rather than bucketed into a catch-all.
+
+sectors:
+  - canonical: Information Technology
+    aliases: [Technology, Info Tech, InformationTechnology, Tech]
+  - canonical: Health Care
+    aliases: [Healthcare, Health-Care, HealthCare]
+  - canonical: Financials
+    aliases: [Financial Services, Financial, Finance]
+  - canonical: Consumer Discretionary
+    aliases: [Consumer Cyclical, ConsumerDiscretionary]
+  - canonical: Communication Services
+    aliases: [Communication Service, Telecom, Telecommunication Services]
+  - canonical: Industrials
+    aliases: [Industrial, Industrial Goods]
+  - canonical: Consumer Staples
+    aliases: [Consumer Defensive, ConsumerStaples]
+  - canonical: Energy
+    aliases: [Oil & Gas]
+  - canonical: Utilities
+    aliases: [Utility]
+  - canonical: Real Estate
+    aliases: [RealEstate, Realestate]
+  - canonical: Materials
+    aliases: [Basic Materials, Material]
+
+# Sectors excluded from selection entirely (empty by default).
+excluded: []

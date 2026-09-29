@@ -1,0 +1,28 @@
+# Secrets
+.env
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+build/
+dist/
+
+# Generated data and output
+data/raw/
+data/processed/
+data/cache/
+data/database/
+logs/
+reports/*
+!reports/.gitkeep
+
+# OS
+.DS_Store
