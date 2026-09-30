@@ -27,53 +27,7 @@ pip install -r requirements.txt
 cp .env.example .env               # then fill in SEC_USER_AGENT (see below)
 ```
 
-### Weekly use
-
-`backtest.end_date` is `null` by default, meaning "the latest session available",
-so a Sunday-night run picks up Friday's close without anyone editing config:
-
-```bash
-python main.py weekly-report        # writes reports/weekly_report_<date>.md and .html
-```
-
-The report ends with a **Basket** table: every position with its weight as a share
-of the contribution, so the same basket works whether you put in $500 or $2,000
-that week. A ticker selected by both sleeves appears once carrying the sum of its
-weights. Run it after the market closes — the CLI warns if the last bar is from a
-session that may still be open, or if the data is more than a week stale.
-
-Note what the report is and is not: it is the **target portfolio** for new money,
-not a trade list. It has no knowledge of what you already hold, so it cannot tell
-you what to sell. See [Honest limitations](#honest-limitations).
-
-### Web UI
-
-```bash
-python main.py serve            # http://127.0.0.1:8000
-```
-
-A dashboard over the same service layer the CLI uses: this week's basket, a trade
-plan diffed against your positions, rankings, holdings editing, backtest results
-with charts, and a job runner for the long operations. The API is documented at
-`/docs`. It binds to loopback and has **no authentication** — do not expose it to a
-network without putting auth in front of it. There is no trading endpoint.
-
-### Tracking positions
-
-The weekly report can only say SELL if it knows what you own.
-
-```bash
-python main.py holdings set --ticker AAPL --shares 25 --cost-basis 5200
-python main.py holdings import --file broker_export.csv
-python main.py trade-plan --contribution 1000
-```
-
-`trade-plan` diffs your holdings against the target basket. Between rebalances it
-proposes buys only and flags holdings that have dropped out of the selection as
-DRIFT; on a rebalance week it proposes the full set of buys and sells to reach
-target. Every line is a proposal — nothing is ordered.
-
-### First run
+### First run: prove the install
 
 Run the whole pipeline offline first, on generated data, to confirm the install:
 
@@ -82,17 +36,169 @@ python main.py backtest --provider synthetic --weeks 100
 ```
 
 That writes `reports/backtest_report.html`, ten charts, an Excel workbook and the
-CSV set — with a loud banner saying the data is synthetic. Then run it for real:
+CSV set — with a loud banner saying the data is synthetic. Then download real data
+and run the real thing:
 
 ```bash
 python main.py update-data              # download and cache prices + filings
 python main.py validate-data            # data-quality checks
 python main.py backtest                 # the 360-week backtest
-python main.py weekly-report            # this week's recommendation
 ```
 
 A full 360-week run over the whole S&P 500 universe takes roughly 10–20 minutes,
 most of it in the first `update-data`. Subsequent runs are served from the cache.
+
+**Read the backtest before you use the basket.** On this repository's own data the
+stock selection *lost* to simply buying the benchmark — see
+[Measured results](#measured-results). The app puts that verdict in a banner across
+the top of the weekly screen, computed from your own most recent run.
+
+---
+
+## Your Sunday night routine
+
+```bash
+python main.py serve            # then open http://127.0.0.1:8000
+```
+
+The **Sunday run** tab is the whole ritual, in three numbered steps. Everything the
+app produces is a proposal: it has no broker connection and places no orders.
+
+If you would rather not read the steps, press **Do the whole run for me**. It
+downloads this week's data and then builds your order list, and you can go and make
+tea while it works.
+
+### Step 1 — get this week's prices
+
+**Yes, this has to happen every week, before step 2.** Prices and filings are cached
+on disk and nothing re-downloads them by itself, so skipping this step scores
+companies on last week's closes.
+
+You do not have to remember it:
+
+* the freshness bar at the top of the page turns amber after three days and red
+  after seven;
+* **Do the whole run for me** always does this step first;
+* or put it in cron and it is done before you sit down:
+
+  ```
+  0 18 * * 0 cd /path/to/quantitative-stock-selection && .venv/bin/python main.py update-data
+  ```
+
+A weekly top-up takes well under a minute. The very first download, which fetches
+every S&P 500 member plus its SEC filings, takes a few minutes.
+
+### Step 2 — say how much you are investing
+
+Type an amount and press **Show me what to buy**. The model works in *percentages*,
+so $250 and $2,000 buy the same basket in different sizes; there is no fixed $1,000.
+
+Pressing that button does three things: it scores every eligible company as of the
+last close, builds the **target basket** (what you should end up holding, as
+percentages), and diffs that target against what you already own to produce the
+**trade plan**. The first build of a session takes about half a minute because it
+loads and scores the whole universe; after that it is instant.
+
+### Step 3 — place the orders, then record them
+
+The table is your order list for Monday morning: an action, a ticker, a dollar
+amount, and the approximate share count at the last close. Copy it as CSV if your
+broker takes a basket upload.
+
+When your broker has *actually filled* the orders, press **I placed these orders**.
+That records the trades in `data/holdings.json` — it does not, and cannot, place
+anything. Recording matters because it is the only way next Sunday knows what you
+own, and therefore the only way the app can ever say *sell*. Skip it and every week
+looks like your first week.
+
+---
+
+### What a trade plan is
+
+The target basket says what you *should hold*. The trade plan is the **difference
+between that and what you actually hold** — the orders that close the gap. Without
+recorded positions the difference is the whole basket, so the plan can only ever say
+buy.
+
+Each line carries one of six actions:
+
+| Action | Meaning |
+|---|---|
+| **Buy new** | You do not own it yet. Open the position. |
+| **Buy more** | You own it, but less than the target weight. |
+| **Trim** | You own more than the target weight. Sell part. |
+| **Sell all** | The model no longer picks it. Close the position. |
+| **Hold** | Within tolerance (10%) of the target. Do nothing. |
+| **Keep for now** | The model dropped it, but this is a buy-only week, so it is not sold yet. Expect *Sell all* at the next rebalance. |
+
+### The three modes
+
+The **Mode** control is an override. Leave it on *Let the app decide* — the app
+already picks from the calendar and from the date you last rebalanced.
+
+| Mode | What it does | When the app picks it |
+|---|---|---|
+| **Let the app decide** | Chooses one of the two below | Always, unless you override |
+| **Only add new money** | Spends this week's cash on the names furthest below target. Never sells, not even a name the model has dropped (those show as *Keep for now*). Keeps trading costs and taxable events down. | Most weeks |
+| **Rebalance everything** | Treats your whole portfolio plus this week's cash as one pot and trades it back to target. Includes trims and sells. | When a sleeve's rebalance period rolls over — sector leaders quarterly, high growth monthly — or when nothing has been recorded as traded yet |
+
+The banner at the top of step 3 always says which one ran and why, so you never have
+to open the control to know what you are looking at.
+
+### Where the five numbers come from
+
+| | |
+|---|---|
+| **Portfolio value now** | Every position on the *My portfolio* tab times its last close, added up. `$0` until you record something. Cash is not counted. |
+| **Cash going in** | Exactly what you typed in step 2. |
+| **Buying** | The buy lines added up. In buy-only mode this equals your contribution, less anything dropped for being under the $5 minimum order. On a rebalance week it can exceed the contribution, because money freed by sells is redeployed. |
+| **Selling** | The sell and trim lines added up. Always `$0` in buy-only mode. |
+| **Portfolio after** | Value now plus your contribution. Buys and sells move money *between* positions, so they never change this total — only the contribution does. Commission, spread and tax are not modeled. |
+
+Two things the list assumes. Share counts are dollars divided by the last close, so
+most are fractions: place them as dollar-based orders, or round and accept some
+drift. And any target position that works out below $5 is dropped and reported in a
+note rather than shown as a $2 order.
+
+### Starting from zero
+
+Leave *My portfolio* empty. Your first run has nothing to sell, so the plan is
+simply the whole basket — with a $1,000 contribution, roughly 35 buy orders, half of
+it into the benchmark ETF and the rest spread across the picked stocks. Press
+**I placed these orders** afterward and the portfolio fills itself in.
+
+If you already hold things, record them first: *My portfolio → Add a position*, or
+*Import a broker CSV* (a header row with `ticker` and `shares`; `cost_basis`
+optional). Positions live in `data/holdings.json`, which is in `.gitignore` and never
+leaves your machine.
+
+### The same thing from the command line
+
+```bash
+python main.py update-data                     # step 1
+python main.py weekly-report                   # the target basket, as Markdown + HTML
+python main.py trade-plan --contribution 1000  # the order list
+python main.py holdings set --ticker AAPL --shares 25 --cost-basis 5200
+```
+
+`weekly-report` writes `reports/weekly_report_<date>.md` and `.html`, ending in a
+**Basket** table of weights. `backtest.end_date` is `null` by default, meaning "the
+latest session available", so a Sunday-night run picks up Friday's close without
+anyone editing config. Both warn if the last bar is from a session that may still be
+open, or if the data is more than a week stale.
+
+### The other tabs
+
+| Tab | What it is for |
+|---|---|
+| **My portfolio** | What you own. The app cannot see your broker; this is the only way it knows. |
+| **Why these picks** | Every company's score, ranked within its own sector, with the five category scores behind it. A ✓ marks a name in this week's basket. |
+| **Track record** | The backtest: does picking stocks actually beat the benchmark? Read it first. |
+| **Data & logs** | Downloads and backtests running in the background, plus every generated report file. |
+
+The API behind all of it is documented at `/docs`. The server binds to loopback and
+has **no authentication** — do not expose it to a network without putting auth in
+front of it. There is no trading endpoint.
 
 ---
 
@@ -186,6 +292,9 @@ pytest tests/test_lookahead.py -v
 | `backtest` | The historical backtest plus the full report set |
 | `export` | Re-export a stored run from SQLite |
 | `runs` | List stored backtest runs |
+| `serve` | Start the web UI and JSON API on loopback |
+| `holdings` | Show, set or import what you own (`set`, `import`, `show`) |
+| `trade-plan` | Diff your holdings against this week's basket (`--contribution`, `--mode`) |
 | `schedule` | Print the contribution schedule, to audit decision-vs-execution dates |
 
 Useful flags:

@@ -225,3 +225,81 @@ pre.log {
   main { padding: 1rem .9rem 4rem; }
   th, td { padding: .45rem .5rem; }
 }
+
+/* ---------- the Sunday run: freshness bar and numbered steps ---------- */
+.freshbar {
+  display: flex; align-items: center; gap: .55rem; flex-wrap: wrap;
+  padding: .6rem .9rem; margin-bottom: 1rem; font-size: .85rem;
+  border: 1px solid var(--rule); border-left: 3px solid var(--text-muted);
+  border-radius: 8px; background: var(--surface-2); color: var(--text-secondary);
+}
+.freshbar strong { color: var(--text-primary); }
+.freshbar.ok    { border-left-color: var(--good); }
+.freshbar.stale { border-left-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 9%, var(--surface-2)); }
+.freshbar.bad   { border-left-color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 9%, var(--surface-2)); }
+
+/* A step is a card with its number in the gutter, so the order to work in is
+   visible without reading anything. */
+.step {
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--surface-2); box-shadow: var(--shadow);
+  padding: 1rem 1.1rem; margin-bottom: 1rem;
+}
+.step-head { display: flex; align-items: center; gap: .6rem; }
+.step-head h3 { margin: 0; font-size: 1rem; color: var(--text-primary); font-weight: 620; }
+.step-num {
+  flex: 0 0 auto; width: 1.55rem; height: 1.55rem; border-radius: 50%;
+  display: grid; place-items: center; font-size: .82rem; font-weight: 700;
+  background: var(--surface-3); color: var(--text-secondary);
+  border: 1px solid var(--rule);
+}
+.step.active .step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.step.done .step-num   { background: var(--good); border-color: var(--good); color: #fff; }
+.step.done .step-num::after { content: "✓"; }
+.step.done .step-num span { display: none; }
+.step-state { margin-left: auto; font-size: .78rem; color: var(--text-muted); text-align: right; }
+.step-body { margin-top: .75rem; }
+.step-text { font-size: .875rem; color: var(--text-secondary); margin: 0 0 .8rem; max-width: 70ch; }
+.step-body .log { margin-top: .7rem; }
+
+button.big { font-size: .92rem; padding: .55rem 1.1rem; }
+.amount { font-size: 1rem; color: var(--text-secondary); gap: .25rem; }
+.amount input { font-size: 1.05rem; font-weight: 600; width: 120px; padding: .45rem .55rem;
+  font-variant-numeric: tabular-nums; }
+label.inline { font-size: .8rem; }
+.tablecap { font-size: .9rem; }
+
+/* ---------- inline explainers ---------- */
+details.help {
+  margin: .85rem 0 0; padding: .55rem .8rem; font-size: .84rem;
+  border: 1px solid var(--rule); border-radius: 8px;
+  background: var(--surface); color: var(--text-secondary);
+}
+details.help > summary {
+  cursor: pointer; font-weight: 600; font-size: .83rem; color: var(--text-primary);
+  list-style: none;
+}
+details.help > summary::before { content: "▸ "; color: var(--text-muted); }
+details.help[open] > summary::before { content: "▾ "; }
+details.help > summary::-webkit-details-marker { display: none; }
+details.help[open] > summary { margin-bottom: .55rem; }
+details.help p { margin: .4rem 0; max-width: 78ch; }
+details.help code {
+  font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--surface-3); padding: .05rem .3rem; border-radius: 4px;
+}
+table.plain { width: 100%; font-size: .83rem; }
+table.plain td { border-bottom: 1px solid var(--rule); vertical-align: top;
+  white-space: normal; padding: .4rem .5rem; }
+table.plain td:first-child { white-space: nowrap; width: 1%; }
+table.plain tr:last-child td { border-bottom: 0; }
+
+fieldset.choices { border: 0; margin: .5rem 0 0; padding: 0; display: grid; gap: .55rem; }
+fieldset.choices label { display: grid; grid-template-columns: auto 1fr; gap: .5rem;
+  align-items: start; font-size: .84rem; }
+fieldset.choices input { margin-top: .25rem; }
+
+/* "Show model detail" toggles the columns most people never need. */
+body:not(.show-detail) .detail { display: none; }

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quant Stock Selector</title>
-<meta name="description" content="Research dashboard for a quantitative stock-selection and DCA backtesting model. Not investment advice.">
+<meta name="description" content="Weekly basket recommendations from a quantitative stock-selection model, with backtest evidence. Research only — not investment advice.">
 <link rel="stylesheet" href="app.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#128200;</text></svg>">
 </head>
@@ -16,12 +16,11 @@
     <span class="sub" id="brandSub">research &amp; backtesting — no trades are placed</span>
   </div>
   <nav class="tabs" role="tablist" id="tabs">
-    <button class="tab" role="tab" data-panel="dashboard" aria-selected="true">Dashboard</button>
-    <button class="tab" role="tab" data-panel="plan" aria-selected="false">Trade plan</button>
-    <button class="tab" role="tab" data-panel="rankings" aria-selected="false">Rankings</button>
-    <button class="tab" role="tab" data-panel="holdings" aria-selected="false">Holdings</button>
-    <button class="tab" role="tab" data-panel="backtest" aria-selected="false">Backtest</button>
-    <button class="tab" role="tab" data-panel="jobs" aria-selected="false">Data &amp; jobs</button>
+    <button class="tab" role="tab" data-panel="sunday" aria-selected="true">Sunday run</button>
+    <button class="tab" role="tab" data-panel="portfolio" aria-selected="false">My portfolio</button>
+    <button class="tab" role="tab" data-panel="picks" aria-selected="false">Why these picks</button>
+    <button class="tab" role="tab" data-panel="record" aria-selected="false">Track record</button>
+    <button class="tab" role="tab" data-panel="data" aria-selected="false">Data &amp; logs</button>
   </nav>
   <button id="themeToggle" title="Toggle light and dark" aria-label="Toggle theme">◐</button>
 </header>
@@ -29,126 +28,234 @@
 <main>
   <div id="banners"></div>
 
-  <!-- ============ DASHBOARD ============ -->
-  <div class="panel" id="panel-dashboard">
+  <!-- ============ SUNDAY RUN ============ -->
+  <div class="panel" id="panel-sunday">
     <section>
-      <h2>This week's basket</h2>
+      <h2>Your Sunday run</h2>
       <p class="lede">
-        Target portfolio for this week's contribution, as percentages so it scales to
-        whatever you put in. A ticker chosen by both sleeves appears once, carrying the
-        sum of its weights.
+        Work down the three steps. At the end you get a list of orders to place on
+        Monday morning, in dollars and approximate shares.
+        <strong>Nothing here is ordered for you</strong> — this app has no connection to
+        any broker.
       </p>
-      <div class="grid kpi" id="dashKpis"></div>
-    </section>
 
-    <section>
+      <div class="freshbar" id="freshBar">
+        <span class="spinner"></span> checking how fresh the data is…
+      </div>
+
+      <div class="row" style="margin-bottom:1.4rem">
+        <button class="primary big" id="runEverything">Do the whole run for me</button>
+        <span class="muted">Downloads this week's prices, then builds your order list. One click, a few minutes.</span>
+      </div>
+
+      <!-- STEP 1 -->
+      <div class="step" id="step1">
+        <div class="step-head">
+          <span class="step-num"><span>1</span></span>
+          <h3>Get this week's prices</h3>
+          <span class="step-state" id="step1State"></span>
+        </div>
+        <div class="step-body">
+          <p class="step-text" id="step1Text">Loading…</p>
+          <div class="row" style="margin-bottom:0">
+            <button id="updateData">Download latest prices &amp; filings</button>
+            <span class="muted" id="step1Hint"></span>
+          </div>
+          <pre class="log" id="step1Log" hidden></pre>
+          <details class="help">
+            <summary>Do I have to do this every Sunday?</summary>
+            <p>
+              Yes — once per week, before step 2. Prices and company filings are cached on
+              disk, and nothing re-downloads them by itself, so without this step the app
+              would score companies on last week's closes and quietly hand you a stale
+              basket.
+            </p>
+            <p>
+              You do not have to remember it. The bar above turns amber, then red, as the
+              cache ages, and <strong>Do the whole run for me</strong> always does this step
+              before building your orders.
+            </p>
+            <p>
+              To have it happen unattended, put the download in your crontab — then the page
+              is already current when you open it on Sunday evening:
+            </p>
+            <p><code>0 18 * * 0 cd /path/to/quantitative-stock-selection &amp;&amp; .venv/bin/python main.py update-data</code></p>
+          </details>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step" id="step2">
+        <div class="step-head">
+          <span class="step-num"><span>2</span></span>
+          <h3>Say how much you are investing</h3>
+          <span class="step-state" id="step2State"></span>
+        </div>
+        <div class="step-body">
+          <p class="step-text">
+            Any amount. The model works in percentages, so $250 and $2,000 buy the same
+            basket in different sizes.
+          </p>
+          <div class="row">
+            <label class="amount">$
+              <input type="number" id="contribution" value="1000" min="1" step="50" aria-label="Amount to invest this week">
+            </label>
+            <button class="primary big" id="buildPlan">Show me what to buy</button>
+            <span class="muted" id="step2Hint">The first build takes about half a minute — it scores every company in the index.</span>
+          </div>
+
+          <details class="help" id="modeBox">
+            <summary>Advanced: buy-only or full rebalance <span class="muted" id="modeSummary"></span></summary>
+            <p>
+              Leave this alone unless you have a reason. The app already picks the right
+              one from the calendar and from when you last rebalanced.
+            </p>
+            <fieldset class="choices">
+              <label><input type="radio" name="mode" value="" checked>
+                <span><strong>Let the app decide</strong> — recommended. Buy-only most weeks,
+                full rebalance when a sleeve's rebalance period rolls over
+                (sector leaders quarterly, high growth monthly).</span></label>
+              <label><input type="radio" name="mode" value="contribute">
+                <span><strong>Only add new money</strong> — spend this week's cash on the
+                names furthest below their target weight. Never sells anything, even a
+                holding the model has dropped. Keeps your trading costs and taxable
+                events down.</span></label>
+              <label><input type="radio" name="mode" value="rebalance">
+                <span><strong>Rebalance everything</strong> — treat your whole portfolio plus
+                this week's cash as one pot and trade it back to the target weights.
+                Includes sells and trims. This is what the backtest does on rebalance
+                weeks.</span></label>
+            </fieldset>
+          </details>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step" id="step3">
+        <div class="step-head">
+          <span class="step-num"><span>3</span></span>
+          <h3>Place these orders, then tell the app you did</h3>
+          <span class="step-state" id="step3State"></span>
+        </div>
+        <div class="step-body">
+          <div id="planMeta"></div>
+          <div class="grid kpi" id="planKpis"></div>
+
+          <div class="row" style="margin:1rem 0 .6rem">
+            <strong class="tablecap">Orders for Monday morning</strong>
+            <span style="margin-left:auto"></span>
+            <label class="inline"><input type="checkbox" id="showDetail"> Show model detail</label>
+            <button id="copyPlan">Copy as CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table id="planTable">
+              <thead><tr>
+                <th>Do this</th><th>Ticker</th><th>Why it is in the basket</th>
+                <th class="num">Amount</th><th class="num">≈ Shares</th><th class="num">Last price</th>
+                <th class="num detail">Weight now</th><th class="num detail">Target</th>
+                <th class="num detail">Score</th><th>Reason</th>
+              </tr></thead>
+              <tbody><tr><td colspan="10" class="empty">Finish step 2 and your orders appear here.</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="row" style="margin:1rem 0 0">
+            <button class="primary" id="applyPlan" disabled>I placed these orders</button>
+            <span class="muted">
+              Click only after your broker has filled them. This records the trades in
+              your portfolio so next Sunday knows what you own. It places nothing.
+            </span>
+          </div>
+
+          <details class="help">
+            <summary>Fractional shares, and what this list assumes</summary>
+            <p>
+              The share counts are dollar amounts divided by the last close, so most of them
+              are fractions. Place these as <strong>dollar-based orders</strong> if your broker
+              supports them. If it only takes whole shares, round each line and accept that
+              your weights will drift from the target — with a $1,000 contribution spread over
+              30-odd names, a single $500 share cannot be bought at all.
+            </p>
+            <p>
+              Prices are the last close, not what you will pay. Monday's open will differ, and
+              the list ignores commission, spread and tax.
+            </p>
+          </details>
+
+          <details class="help">
+            <summary>Where the five numbers above come from</summary>
+            <table class="plain">
+              <tr><td><strong>Portfolio value now</strong></td>
+                  <td>Every position on the <em>My portfolio</em> tab, multiplied by its last
+                      close, added up. Zero until you record something. Cash is not counted.</td></tr>
+              <tr><td><strong>Cash going in</strong></td>
+                  <td>Exactly the amount you typed in step 2.</td></tr>
+              <tr><td><strong>Buying</strong></td>
+                  <td>The buy lines added up. In buy-only mode this equals your contribution,
+                      minus anything dropped for being under the $5 minimum order.
+                      On a rebalance week it can be larger, because money freed by sells is
+                      redeployed.</td></tr>
+              <tr><td><strong>Selling</strong></td>
+                  <td>The sell and trim lines added up. Always $0 in buy-only mode.</td></tr>
+              <tr><td><strong>Portfolio after</strong></td>
+                  <td>Value now plus your contribution. Buys and sells move money between
+                      positions, so they do not change this total — only the contribution does.
+                      It ignores commissions, spread and tax.</td></tr>
+            </table>
+          </details>
+
+          <details class="help">
+            <summary>What the words in the first column mean</summary>
+            <table class="plain">
+              <tr><td><span class="pill new">Buy new</span></td><td>You do not own it yet. Open the position.</td></tr>
+              <tr><td><span class="pill buy">Buy more</span></td><td>You own it but hold less than the target weight.</td></tr>
+              <tr><td><span class="pill sell">Trim</span></td><td>You hold more than the target. Sell part of it.</td></tr>
+              <tr><td><span class="pill exit">Sell all</span></td><td>The model no longer picks it. Close the position.</td></tr>
+              <tr><td><span class="pill hold">Hold</span></td><td>Close enough to target. Do nothing.</td></tr>
+              <tr><td><span class="pill drift">Keep for now</span></td><td>You own it, the model has dropped it, but this is a
+                  buy-only week so it is not sold yet. Expect a <em>Sell all</em> at the next rebalance.</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+
+      <h3>The target basket this week</h3>
+      <p class="lede">
+        What the model wants you to end up holding, as percentages. Your orders above are
+        the difference between this and what you already own.
+      </p>
       <div class="row">
-        <strong style="font-size:.9rem">Basket</strong>
-        <span class="muted" id="basketMeta"></span>
+        <span class="muted" id="basketMeta">Built in step 2.</span>
         <span style="margin-left:auto"></span>
         <button id="copyBasket">Copy as CSV</button>
-        <button id="refreshWeekly">Recompute</button>
       </div>
       <div class="table-wrap">
         <table id="basketTable">
           <thead><tr>
-            <th>Ticker</th><th>Sleeve</th>
+            <th>Ticker</th><th>Why it is in the basket</th>
             <th class="num">Weight</th><th class="num">Score</th>
-            <th class="num">At contribution</th>
+            <th class="num">At your contribution</th>
           </tr></thead>
-          <tbody><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
-        </table>
-      </div>
-      <p class="muted" style="margin-top:.6rem">
-        Set a contribution to see dollar amounts:
-        <input type="number" id="dashContribution" value="1000" min="1" step="50" style="width:110px">
-      </p>
-    </section>
-  </div>
-
-  <!-- ============ TRADE PLAN ============ -->
-  <div class="panel" id="panel-plan" hidden>
-    <section>
-      <h2>Trade plan</h2>
-      <p class="lede">
-        Your recorded holdings diffed against this week's target. Between rebalances the
-        strategy adds new money only and never sells; on a rebalance week it trades the
-        whole portfolio toward target. <strong>These are proposals — nothing is ordered.</strong>
-      </p>
-      <div class="row">
-        <label>Contribution <input type="number" id="planContribution" value="1000" min="1" step="50" style="width:110px"></label>
-        <label>Mode
-          <select id="planMode">
-            <option value="">Automatic (follow schedule)</option>
-            <option value="contribute">Contribute only</option>
-            <option value="rebalance">Full rebalance</option>
-          </select>
-        </label>
-        <button class="primary" id="runPlan">Build plan</button>
-        <span style="margin-left:auto"></span>
-        <button id="copyPlan">Copy as CSV</button>
-        <button id="applyPlan" class="danger" disabled>Record as traded</button>
-      </div>
-      <div id="planMeta"></div>
-      <div class="grid kpi" id="planKpis" style="margin-bottom:.9rem"></div>
-      <div class="table-wrap">
-        <table id="planTable">
-          <thead><tr>
-            <th>Action</th><th>Ticker</th><th>Sleeve</th>
-            <th class="num">Amount</th><th class="num">Shares</th><th class="num">Price</th>
-            <th class="num">Now</th><th class="num">Target</th><th>Reason</th>
-          </tr></thead>
-          <tbody><tr><td colspan="9" class="empty">Build a plan to see proposed trades.</td></tr></tbody>
+          <tbody><tr><td colspan="5" class="empty">Finish step 2 to see the basket.</td></tr></tbody>
         </table>
       </div>
     </section>
   </div>
 
-  <!-- ============ RANKINGS ============ -->
-  <div class="panel" id="panel-rankings" hidden>
+  <!-- ============ MY PORTFOLIO ============ -->
+  <div class="panel" id="panel-portfolio" hidden>
     <section>
-      <h2>Rankings</h2>
+      <h2>My portfolio</h2>
       <p class="lede">
-        Composite score, 0–100, ranked within GICS sector. Category scores are
-        sector-relative percentiles; a blank means the factor could not be computed and
-        its weight was redistributed, never treated as zero.
+        What you actually own. The app cannot see your brokerage account, so this is the
+        only way it knows — and without it step 3 can only ever say <em>buy</em>, never
+        <em>sell</em>. If you are starting from zero, leave it empty; the first Sunday run
+        will fill it.
       </p>
       <div class="row">
-        <label>Sleeve
-          <select id="rankSleeve">
-            <option value="sector_leaders">Sector leaders</option>
-            <option value="high_growth">High growth</option>
-          </select>
-        </label>
-        <label>Rows per sector <input type="number" id="rankLimit" value="5" min="1" max="50" style="width:70px"></label>
-        <button id="loadRankings">Load</button>
-      </div>
-      <div class="table-wrap">
-        <table id="rankTable">
-          <thead><tr>
-            <th class="num">#</th><th>Ticker</th><th>Company</th><th>Sector</th>
-            <th class="num">Score</th><th class="num">Growth</th><th class="num">Mom</th>
-            <th class="num">Quality</th><th class="num">Value</th><th class="num">Risk</th>
-          </tr></thead>
-          <tbody><tr><td colspan="10" class="empty">Press Load.</td></tr></tbody>
-        </table>
-      </div>
-    </section>
-  </div>
-
-  <!-- ============ HOLDINGS ============ -->
-  <div class="panel" id="panel-holdings" hidden>
-    <section>
-      <h2>Holdings</h2>
-      <p class="lede">
-        What you actually own. The trade plan needs this to tell you what to sell.
-        Edit inline, import a broker CSV with ticker and shares columns, or let
-        “Record as traded” update it after you trade.
-      </p>
-      <div class="row">
-        <button class="primary" id="addPosition">Add position</button>
-        <button id="saveHoldings">Save</button>
-        <label class="btn" style="cursor:pointer">Import CSV
+        <button class="primary" id="addPosition">Add a position</button>
+        <button id="saveHoldings">Save changes</button>
+        <label class="btn" style="cursor:pointer">Import a broker CSV
           <input type="file" id="importCsv" accept=".csv" hidden>
         </label>
         <span style="margin-left:auto"></span>
@@ -157,31 +264,80 @@
       <div class="table-wrap">
         <table id="holdingsTable">
           <thead><tr>
-            <th>Ticker</th><th class="num">Shares</th><th class="num">Cost basis</th>
-            <th class="num">Price</th><th class="num">Value</th><th class="num">Weight</th>
-            <th class="num">Unrealized</th><th></th>
+            <th>Ticker</th><th class="num">Shares</th><th class="num">What you paid</th>
+            <th class="num">Last price</th><th class="num">Value</th><th class="num">Share of portfolio</th>
+            <th class="num">Gain/loss</th><th></th>
           </tr></thead>
           <tbody><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <details class="help">
+        <summary>CSV format, and where this is stored</summary>
+        <p>
+          The import needs a header row with a <code>ticker</code> column and a
+          <code>shares</code> column; <code>cost_basis</code> is optional. Most broker
+          exports work after you rename the columns.
+        </p>
+        <p>
+          Positions live in <code>data/holdings.json</code> in the project folder. That path
+          is in <code>.gitignore</code>, so your positions are never committed, and they
+          never leave your machine.
+        </p>
+      </details>
+    </section>
+  </div>
+
+  <!-- ============ WHY THESE PICKS ============ -->
+  <div class="panel" id="panel-picks" hidden>
+    <section>
+      <h2>Why these picks</h2>
+      <p class="lede">
+        Every company scored 0–100 and ranked against the others <em>in its own sector</em>,
+        so a utility is not judged against a chip designer. The five category columns are
+        sector-relative percentiles. A blank means that factor could not be computed from
+        the filings, and its weight was spread over the factors that could — never scored
+        as zero.
+      </p>
+      <div class="row">
+        <label>Sleeve
+          <select id="rankSleeve">
+            <option value="sector_leaders">Sector leaders (top names in each sector)</option>
+            <option value="high_growth">High growth (best across all sectors)</option>
+          </select>
+        </label>
+        <label>Rows per sector <input type="number" id="rankLimit" value="5" min="1" max="50" style="width:70px"></label>
+        <button id="loadRankings">Reload</button>
+        <span class="muted">A ✓ marks a name that made this week's basket.</span>
+      </div>
+      <div class="table-wrap">
+        <table id="rankTable">
+          <thead><tr>
+            <th class="num">#</th><th>Ticker</th><th>Company</th><th>Sector</th>
+            <th class="num">Score</th><th class="num">Growth</th><th class="num">Momentum</th>
+            <th class="num">Quality</th><th class="num">Value</th><th class="num">Risk</th>
+          </tr></thead>
+          <tbody><tr><td colspan="10" class="empty">Loading…</td></tr></tbody>
         </table>
       </div>
     </section>
   </div>
 
-  <!-- ============ BACKTEST ============ -->
-  <div class="panel" id="panel-backtest" hidden>
+  <!-- ============ TRACK RECORD ============ -->
+  <div class="panel" id="panel-record" hidden>
     <section>
-      <h2>Backtest</h2>
+      <h2>Track record</h2>
       <p class="lede">
-        Historical simulation of the same weekly contribution into each variant.
-        Time-weighted return removes contribution timing and is the like-for-like
+        A historical simulation of the same weekly contribution into each variant, so you
+        can see whether picking stocks beat just buying the benchmark.
+        <strong>Read this before you trust the basket.</strong>
+        Time-weighted return strips out contribution timing and is the like-for-like
         comparison; XIRR keeps it and is what the money actually earned.
       </p>
       <div class="row">
         <label>Run <select id="runSelect"><option>Loading…</option></select></label>
-        <button id="loadRun">Load</button>
         <span style="margin-left:auto"></span>
         <label>Weeks <input type="number" id="btWeeks" value="360" min="4" max="2000" style="width:80px"></label>
-        <button class="primary" id="startBacktest">Run new backtest</button>
+        <button id="startBacktest">Run a new backtest</button>
       </div>
       <div id="runBias"></div>
       <div class="table-wrap" style="margin-bottom:1.2rem">
@@ -195,15 +351,16 @@
     </section>
   </div>
 
-  <!-- ============ JOBS ============ -->
-  <div class="panel" id="panel-jobs" hidden>
+  <!-- ============ DATA & LOGS ============ -->
+  <div class="panel" id="panel-data" hidden>
     <section>
-      <h2>Data &amp; jobs</h2>
+      <h2>Data &amp; logs</h2>
       <p class="lede">
-        Long operations run in the background, one at a time. Progress streams below.
+        The plumbing behind the Sunday run. Downloads and backtests run in the background,
+        one at a time, and stream their output here.
       </p>
       <div class="row">
-        <button class="primary" id="startUpdate">Update market data</button>
+        <button class="primary" id="startUpdate">Download latest prices &amp; filings</button>
         <button id="refreshJobs">Refresh</button>
         <span class="muted" id="jobStatus"></span>
       </div>
@@ -219,10 +376,10 @@
       </div>
       <h3>Data status</h3>
       <div class="grid kpi" id="statusKpis"></div>
-      <h3>Report files</h3>
+      <h3>Generated reports</h3>
       <div class="table-wrap">
         <table id="reportsTable">
-          <thead><tr><th>File</th><th class="num">Size</th><th>Modified</th></tr></thead>
+          <thead><tr><th>File</th><th class="num">Size</th><th>Written</th></tr></thead>
           <tbody><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
         </table>
       </div>

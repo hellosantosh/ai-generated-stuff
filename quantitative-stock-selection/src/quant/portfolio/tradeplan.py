@@ -186,11 +186,18 @@ def build_trade_plan(
 
     current_weights = {t: v / value_before for t, v in held_values.items()} if value_before > 0 else {}
 
+    # Orders too small to be worth placing are dropped, which leaves part of the
+    # contribution unspent. Track them so the plan can say so out loud rather
+    # than quietly reporting a buy total below what was contributed.
+    dropped: list[tuple[str, float]] = []
+
     def add(ticker: str, action: str, amount: float, reason: str) -> None:
         price = prices.get(ticker)
         if price is None or price <= 0:
             return
         if abs(amount) < MIN_TRADE_AMOUNT and action in ("BUY", "SELL", "NEW", "EXIT"):
+            if abs(amount) > 0.005:
+                dropped.append((ticker, abs(amount)))
             return
         plan.trades.append(
             PlannedTrade(
@@ -265,6 +272,17 @@ def build_trade_plan(
 
     order = {"EXIT": 0, "SELL": 1, "NEW": 2, "BUY": 3, "HOLD": 4, "DRIFT": 5}
     plan.trades.sort(key=lambda t: (order.get(t.action, 9), -t.amount))
+
+    if dropped:
+        total_dropped = sum(amount for _, amount in dropped)
+        plan.notes.append(
+            f"{len(dropped)} target position(s) worth ${total_dropped:,.2f} in total came out "
+            f"below the ${MIN_TRADE_AMOUNT:,.0f} minimum order and were dropped "
+            f"({', '.join(t for t, _ in dropped[:6])}"
+            f"{', and others' if len(dropped) > 6 else ''}). That much is left unspent and "
+            f"those names are not held; carry it into next week, or contribute more per week "
+            f"so every position in the basket clears the minimum."
+        )
 
     if mode == "contribute" and plan.drift:
         drift_value = sum(t.amount for t in plan.drift)

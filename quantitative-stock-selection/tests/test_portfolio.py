@@ -14,6 +14,7 @@ from quant.data.types import PriceHistory, ProviderInfo
 from quant.errors import ConfigError
 from quant.portfolio.dca import ContributionEvent, build_schedule, split_contribution
 from quant.portfolio.portfolio import Portfolio
+from quant.portfolio.holdings import Holdings
 from quant.portfolio.rebalance import (
     RebalanceCalendar,
     check_limits,
@@ -21,6 +22,7 @@ from quant.portfolio.rebalance import (
     target_weights,
     threshold_triggered,
 )
+from quant.portfolio.tradeplan import apply_plan, build_trade_plan, rebalance_due
 
 FREE = TransactionCostConfig(commission_per_trade=0.0, slippage_bps=0.0)
 
@@ -354,3 +356,115 @@ def test_concentration_limits_are_reported_with_stable_keys():
 def test_no_breach_when_within_limits():
     report = check_limits({"A": 0.05}, {"A": "Energy"}, 0.10, 0.20, 10)
     assert not report
+
+
+# --- trade plan ------------------------------------------------------------
+# The plan is the one output a person acts on with real money, so each mode's
+# promise is pinned down here: buy-only never sells, rebalance closes dropped
+# names, and money that cannot be spent is reported rather than lost.
+TARGETS = {"IVV": 0.50, "AAA": 0.30, "BBB": 0.20}
+PRICES = {"IVV": 100.0, "AAA": 50.0, "BBB": 25.0}
+MONDAY = dt.date(2024, 1, 8)
+
+
+def test_an_empty_portfolio_gets_the_whole_basket_as_new_buys():
+    plan = build_trade_plan(
+        holdings=Holdings(), target_weights=TARGETS, prices=PRICES,
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+    )
+    assert {t.ticker for t in plan.buys} == {"IVV", "AAA", "BBB"}
+    assert all(t.action == "NEW" for t in plan.buys)
+    assert not plan.sells
+    assert plan.portfolio_value_before == 0.0
+    assert plan.total_buys == pytest.approx(1000.0)
+    # Weights apply to the post-contribution portfolio, not to the cash alone.
+    amounts = {t.ticker: t.amount for t in plan.buys}
+    assert amounts["IVV"] == pytest.approx(500.0)
+
+
+def test_contribute_mode_never_sells_a_dropped_holding():
+    holdings = Holdings()
+    holdings.set_position("CCC", shares=10, cost_basis=1000.0)   # not in the target
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices={**PRICES, "CCC": 100.0},
+        contribution=1000.0, as_of=MONDAY, mode="contribute",
+    )
+    assert not plan.sells
+    assert [t.ticker for t in plan.drift] == ["CCC"]
+    assert plan.total_buys == pytest.approx(1000.0)
+    assert any("does not sell" in note for note in plan.notes)
+
+
+def test_rebalance_mode_exits_a_dropped_holding():
+    holdings = Holdings()
+    holdings.set_position("CCC", shares=10, cost_basis=1000.0)
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices={**PRICES, "CCC": 100.0},
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+    )
+    exits = [t for t in plan.trades if t.action == "EXIT"]
+    assert [t.ticker for t in exits] == ["CCC"]
+    assert exits[0].amount == pytest.approx(1000.0)
+
+
+def test_rebalance_trims_a_position_that_has_run_above_target():
+    holdings = Holdings()
+    holdings.set_position("AAA", shares=40, cost_basis=1000.0)    # 2000 of a 3000 book
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices=PRICES,
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+    )
+    sells = {t.ticker: t.amount for t in plan.sells}
+    # Target is 30% of 3,000 = 900, so 1,100 comes off.
+    assert sells["AAA"] == pytest.approx(1100.0)
+
+
+def test_orders_below_the_minimum_are_dropped_and_reported():
+    """A tiny contribution cannot fund every position; the shortfall is stated."""
+    plan = build_trade_plan(
+        holdings=Holdings(), target_weights={"IVV": 0.98, "AAA": 0.01, "BBB": 0.01},
+        prices=PRICES, contribution=100.0, as_of=MONDAY, mode="contribute",
+    )
+    assert [t.ticker for t in plan.buys] == ["IVV"]
+    assert plan.total_buys == pytest.approx(98.0)
+    assert any("minimum order" in note for note in plan.notes)
+
+
+def test_an_unpriced_holding_is_reported_not_valued_at_zero():
+    holdings = Holdings()
+    holdings.set_position("ZZZ", shares=5, cost_basis=500.0)
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices=PRICES,
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+    )
+    assert plan.unpriced == ["ZZZ"]
+    assert plan.portfolio_value_before == 0.0
+    assert any("No price for ZZZ" in note for note in plan.notes)
+
+
+def test_applying_a_plan_records_the_trades_and_the_rebalance_date():
+    holdings = Holdings()
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices=PRICES,
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+    )
+    updated = apply_plan(Holdings(), plan)
+    assert updated.shares("IVV") == pytest.approx(5.0)     # 500 at 100
+    assert updated.shares("BBB") == pytest.approx(8.0)     # 200 at 25
+    assert updated.last_rebalance == MONDAY
+    assert updated.updated_at == MONDAY
+
+
+def test_a_contribution_week_does_not_reset_the_rebalance_date():
+    plan = build_trade_plan(
+        holdings=Holdings(), target_weights=TARGETS, prices=PRICES,
+        contribution=1000.0, as_of=MONDAY, mode="contribute",
+    )
+    updated = apply_plan(Holdings(), plan)
+    assert updated.last_rebalance is None
+
+
+def test_the_first_week_is_always_a_rebalance(config):
+    due, reason = rebalance_due(config, MONDAY, last_rebalance=None)
+    assert due
+    assert "no rebalance" in reason

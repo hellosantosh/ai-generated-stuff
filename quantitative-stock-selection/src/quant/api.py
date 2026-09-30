@@ -336,8 +336,25 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             for table, count in counts.items():
                 emit(f"  {table}: {count:,} rows")
             service.invalidate()
+
+            # Score the week here rather than making the UI wait for it. The
+            # weekly view takes tens of seconds to build, and the person who
+            # just pressed "download" is about to ask for exactly this.
+            emit("scoring this week's basket...")
+            weekly = service.weekly(force_reload=True)
+            emit(
+                f"basket ready for {weekly.as_of}: {len(weekly.basket)} positions "
+                f"from {weekly.eligible} eligible companies"
+            )
+            for warning in weekly.ranking.warnings:
+                emit(f"  warning: {warning}")
             emit("done")
-            return {"price_series": len(data.market.prices), "failures": len(data.failures)}
+            return {
+                "price_series": len(data.market.prices),
+                "failures": len(data.failures),
+                "basket_as_of": weekly.as_of.isoformat(),
+                "basket_positions": len(weekly.basket),
+            }
 
         try:
             job = service.jobs.submit("update-data", work)
