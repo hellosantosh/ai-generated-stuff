@@ -179,3 +179,16 @@ def test_an_empty_window_is_an_error_rather_than_an_empty_chart():
     frame, caps, benchmark = _cohort_inputs()
     with pytest.raises(DataError):
         cohort_performance(frame.iloc[0:0], caps, benchmark, DATES[0].date(), DATES[99].date())
+
+
+def test_a_top_one_cohort_is_just_the_largest_company():
+    """Offered because people ask for it; it is one bet, and the numbers say so."""
+    frame, caps, benchmark = _cohort_inputs()
+    result = cohort_performance(frame, caps, benchmark, DATES[0].date(), DATES[99].date(),
+                                sizes=(1, 5))
+    single = result["cohorts"][0]
+    assert single["members"] == ["BIG"]
+    assert single["total_return"] == pytest.approx(1.0)     # the whole weight on a double
+    assert single["cap_share"] == pytest.approx(0.9)
+    # Only three companies exist here, so a top 5 cannot be built.
+    assert [c["size"] for c in result["cohorts"]] == [1]

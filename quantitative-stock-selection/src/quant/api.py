@@ -25,7 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from . import __version__
-from .analysis.indices import COHORT_SIZES, MAJOR_INDICES
+from .analysis.indices import COHORT_SIZES, DEFAULT_INDICES, MAJOR_INDICES
 from .errors import QuantError
 from .logging_config import configure_logging, get_logger
 from .portfolio.holdings import Holdings
@@ -222,7 +222,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             "indices": [
                 {"ticker": p.ticker, "label": p.label, "note": p.note} for p in MAJOR_INDICES
             ],
-            "default": [p.ticker for p in MAJOR_INDICES[:4]],
+            "default": list(DEFAULT_INDICES),
             "cohort_sizes": list(COHORT_SIZES),
             "benchmark": service.config.benchmark.ticker,
             "earliest": "1993-01-01",

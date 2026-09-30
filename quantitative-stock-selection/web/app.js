@@ -759,13 +759,13 @@ async function loadReports() {
    switched on and off - color follows the entity, never its rank. */
 const SERIES_COLORS = [
   'var(--accent)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
-  'var(--series-5)', 'var(--series-6)', 'var(--series-7)',
+  'var(--series-5)', 'var(--series-6)', 'var(--series-7)', 'var(--series-8)',
 ];
 /* One hue, four steps. Four is a hard cap: an eighth step in a single ramp is
    not tellable from its neighbors, which is why the picker enforces it. */
 const RAMP_COLORS = ['var(--ramp-1)', 'var(--ramp-2)', 'var(--ramp-3)', 'var(--ramp-4)'];
 const MAX_COHORT_LINES = 4;
-const DEFAULT_COHORTS = [10, 50, 100, 250];
+const DEFAULT_COHORTS = [1, 10, 100, 250];
 
 const isoDay = (date) => date.toISOString().slice(0, 10);
 

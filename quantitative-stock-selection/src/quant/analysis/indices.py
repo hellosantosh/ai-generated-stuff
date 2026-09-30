@@ -47,6 +47,11 @@ class IndexProxy:
 MAJOR_INDICES: tuple[IndexProxy, ...] = (
     IndexProxy("IVV", "S&P 500", "500 US large caps, cap weighted"),
     IndexProxy("QQQ", "Nasdaq-100", "the 100 largest non-financial Nasdaq listings"),
+    IndexProxy(
+        "QQQM", "Nasdaq-100 (QQQM)",
+        "the same index as QQQ at a lower fee; launched October 2020, so it has no "
+        "history before then",
+    ),
     IndexProxy("DIA", "Dow Jones Industrial Average", "30 US blue chips, price weighted"),
     IndexProxy("IWM", "Russell 2000", "US small caps"),
     IndexProxy("IJH", "S&P MidCap 400", "US mid caps"),
@@ -56,9 +61,15 @@ MAJOR_INDICES: tuple[IndexProxy, ...] = (
 
 PROXY_BY_TICKER = {proxy.ticker: proxy for proxy in MAJOR_INDICES}
 
+# What the tab charts before anyone touches it. QQQM is left off deliberately:
+# it tracks the same index as QQQ, so the two plot as one line drawn twice, and
+# its 2020 inception would flag a late start on any longer window.
+DEFAULT_INDICES: tuple[str, ...] = ("IVV", "QQQ", "DIA", "IWM")
+
 # The cohort sizes the UI offers. Anything larger than about half the index
-# stops being a "top N" and starts being the index.
-COHORT_SIZES: tuple[int, ...] = (10, 20, 50, 75, 100, 150, 200, 250)
+# stops being a "top N" and starts being the index; at the other end, "top 1"
+# is a single company rather than a portfolio, which the UI says out loud.
+COHORT_SIZES: tuple[int, ...] = (1, 5, 10, 20, 50, 75, 100, 150, 200, 250)
 
 # Daily data over twenty years is 5,000 points per line, which no screen can
 # resolve and no browser enjoys drawing. Thin to this many, keeping the first

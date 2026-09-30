@@ -22,6 +22,7 @@
   --series-5:       #e87ba4;
   --series-6:       #008300;
   --series-7:       #4a3aa7;
+  --series-8:       #e34948;
   /* Ordinal ramp for the size cohorts: one hue, four steps with visible gaps.
      Four is the cap - an eighth step in one hue stops being readable. */
   --ramp-1:         #86b6ef;
@@ -52,6 +53,7 @@
     --series-5:       #d55181;
   --series-6:       #008300;
   --series-7:       #9085e9;
+  --series-8:       #e66767;
   --ramp-1:         #b7d3f6;
   --ramp-2:         #6da7ec;
   --ramp-3:         #2a78d6;
@@ -79,6 +81,7 @@
   --series-5:       #d55181;
   --series-6:       #008300;
   --series-7:       #9085e9;
+  --series-8:       #e66767;
   --ramp-1:         #b7d3f6;
   --ramp-2:         #6da7ec;
   --ramp-3:         #2a78d6;

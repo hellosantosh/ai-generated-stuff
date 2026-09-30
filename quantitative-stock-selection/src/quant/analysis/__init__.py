@@ -2,6 +2,7 @@
 
 from .indices import (
     COHORT_SIZES,
+    DEFAULT_INDICES,
     MAJOR_INDICES,
     IndexProxy,
     cohort_performance,
@@ -10,6 +11,7 @@ from .indices import (
 
 __all__ = [
     "COHORT_SIZES",
+    "DEFAULT_INDICES",
     "MAJOR_INDICES",
     "IndexProxy",
     "cohort_performance",

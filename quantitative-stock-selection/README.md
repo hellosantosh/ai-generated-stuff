@@ -212,10 +212,17 @@ questions answered over that window.
 
 ### The major indices
 
-Seven indices, each drawn through the ETF that tracks it, because that is what a
-person can actually buy: S&P 500 (IVV), Nasdaq-100 (QQQ), Dow Jones Industrial
+Eight proxies, each an ETF that tracks an index, because that is what a person can
+actually buy: S&P 500 (IVV), Nasdaq-100 (QQQ **and** QQQM), Dow Jones Industrial
 Average (DIA), Russell 2000 (IWM), S&P MidCap 400 (IJH), S&P SmallCap 600 (IJR) and
-the total US market (VTI). Tick any subset; four are on by default.
+the total US market (VTI). Tick any subset.
+
+IVV, QQQ, DIA and IWM are on by default. QQQM is not, for two reasons rather than
+any judgment about it: it tracks the same index as QQQ, so on by default the two
+would plot as one line drawn twice, and it launched in October 2020, so on a longer
+window it flags a late start. Tick both to see the tracking difference — over the
+five years to September 2026 QQQM returned 115.0% against QQQ's 114.3%, which is
+roughly the fee gap.
 
 Every line is a **total return** — dividends reinvested at the close on the day they
 went ex — rebased to 100 on your from date, so the vertical gap between two lines is
@@ -225,8 +232,10 @@ rather than pretending to match the others up to that point.
 
 ### Top N of the S&P 500 against the S&P 500
 
-Cohorts of the 10, 20, 50, 75, 100, 150, 200 and 250 largest index members. The
-method matters more than the picture:
+Cohorts of the 1, 5, 10, 20, 50, 75, 100, 150, 200 and 250 largest index members.
+Top 1 is a single company — whichever was largest on your from date — so read it as
+one bet rather than a portfolio; top 5 is barely more diversified. The method
+matters more than the picture:
 
 * Members are the index constituents **on your from date** — point-in-time
   membership reconstructed from the index change log, not today's list.
@@ -533,7 +542,7 @@ src/quant/
   service.py       the layer the CLI and the API share
   api.py           FastAPI app: JSON endpoints plus the static UI
 web/               the UI: one page, hand-rolled SVG charts, no build step
-tests/             238 tests, no network required
+tests/             239 tests, no network required
 main.py            CLI
 ```
 
@@ -591,7 +600,7 @@ python main.py export --run-id BACKTEST-20260928-001
 ## Testing
 
 ```bash
-pytest                       # 238 tests, ~90 seconds, no network
+pytest                       # 239 tests, ~85 seconds, no network
 pytest tests/test_lookahead.py -v          # the integrity suite
 ```
 
