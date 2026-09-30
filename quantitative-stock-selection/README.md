@@ -603,27 +603,35 @@ rather than a market move or a provider outage.
 ## Measured results
 
 A 360-week backtest to 2026-09-28, full S&P 500 universe, SEC fundamentals,
-5 bps slippage (`BACKTEST-REAL-002`):
+5 bps slippage (`BACKTEST-REAL-003`, run after the market-cap fix):
 
 | | IVV only | Sector leaders | High growth | Combined |
 |---|---:|---:|---:|---:|
-| Ending balance | **$647,112** | $163,223 | $111,444 | $598,223 |
-| CAGR (time-weighted) | **15.86%** | 10.75% | 12.38% | 13.75% |
-| XIRR | **16.93%** | 11.93% | 12.62% | 14.66% |
-| Max drawdown | **-33.59%** | -38.79% | -31.10% | -34.63% |
-| Sharpe | **0.873** | 0.626 | 0.614 | 0.774 |
-| Annual turnover | **0%** | 196% | 452% | 145% |
-| Weeks beating IVV | — | 49.6% | 50.7% | 47.9% |
+| Ending balance | **$647,112** | $162,753 | $111,444 | $597,753 |
+| CAGR (time-weighted) | **15.86%** | 10.81% | 12.38% | 13.77% |
+| XIRR | **16.93%** | 11.85% | 12.62% | 14.64% |
+| Max drawdown | **-33.59%** | -38.93% | -31.10% | -34.67% |
+| Sharpe | **0.873** | 0.625 | 0.614 | 0.774 |
+| Annual turnover | **0%** | 206% | 452% | 148% |
+| Weeks beating IVV | — | 47.9% | 50.7% | 48.2% |
 
 **The stock selection lost to the benchmark.** The combined portfolio ended
-$48,889 behind buying IVV alone with the same contributions, with a slightly deeper
-drawdown, a worse Sharpe ratio, and 145% annual turnover. It underperformed in all
-three sub-periods (-9.3%, -3.3%, -5.1%) and in five of seven calendar years.
+$49,359 behind buying IVV alone with the same contributions, with a deeper
+drawdown, a worse Sharpe ratio, and 148% annual turnover. It underperformed in all
+three sub-periods (-7.7%, -5.3%, -4.2%) and beat IVV in only two of eight calendar
+years: 2024 (30.5% against 25.4%) and 2022, where it lost less (-15.9% against
+-18.8%).
 
 Two caveats both point the same way: 24% of historical index members could not be
 priced, which removes failed companies and therefore *flatters* the strategy; and
-taxes are not modeled, which would penalize a 145%-turnover strategy far more than
+taxes are not modeled, which would penalize a 148%-turnover strategy far more than
 a 0%-turnover one. The real gap is probably wider than the table shows.
+
+The market-cap fix described under [Honest limitations](#honest-limitations) moved
+these numbers, but barely: the combined portfolio ended $470 lower than in the
+previous run and the verdict did not change. Valuation is the smallest of the five
+scoring categories, and only companies that split between a filing and a decision
+date were mispriced by the bug.
 
 Reproduce with `python main.py backtest --weeks 360`.
 
