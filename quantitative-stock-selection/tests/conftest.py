@@ -45,6 +45,9 @@ def config(project_root: Path) -> AppConfig:
             }
         },
         project_root=project_root,
+        # The suite runs on generated data on purpose: offline, deterministic,
+        # and able to carry filing dates chosen to probe the look-ahead guard.
+        allow_synthetic=True,
     )
 
 

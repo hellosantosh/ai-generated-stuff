@@ -15,6 +15,11 @@ __pycache__/
 build/
 dist/
 
+# Personal financial data - never commit
+data/holdings.json
+data/holdings*.json
+*.holdings.csv
+
 # Generated data and output
 data/raw/
 data/processed/

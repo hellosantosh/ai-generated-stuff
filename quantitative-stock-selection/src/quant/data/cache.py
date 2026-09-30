@@ -97,6 +97,7 @@ class FrameCache:
             retrieved_at=retrieved_at,
             endpoint=meta.get("endpoint"),
             notes=meta.get("notes"),
+            split_adjusted=bool(meta.get("split_adjusted", False)),
         )
         return frame, info
 
@@ -108,6 +109,7 @@ class FrameCache:
         endpoint: str | None = None,
         notes: str | None = None,
         retrieved_at: dt.datetime | None = None,
+        split_adjusted: bool = False,
     ) -> ProviderInfo:
         data_path, meta_path = self._paths(provider, key)
         data_path.parent.mkdir(parents=True, exist_ok=True)
@@ -120,6 +122,7 @@ class FrameCache:
             retrieved_at=retrieved_at or dt.datetime.now(),
             endpoint=endpoint,
             notes=notes,
+            split_adjusted=split_adjusted,
         )
         meta_path.write_text(json.dumps(info.to_dict(), indent=2), encoding="utf-8")
         return info

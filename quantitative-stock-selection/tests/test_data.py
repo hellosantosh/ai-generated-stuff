@@ -279,3 +279,126 @@ def test_one_malformed_period_does_not_drop_the_whole_company(tmp_path):
     assert dt.date(2023, 6, 30) in periods
     assert dt.date(2023, 9, 30) not in periods, "the malformed period should be dropped"
     assert len(series.records) == 2, "the good periods must survive"
+
+
+# --- synthetic data guardrails ---------------------------------------------
+def test_synthetic_cannot_be_selected_from_configuration_alone(project_root):
+    """Generated prices must never be reachable by a stray config edit."""
+    from quant.config import load_config
+    from quant.errors import ConfigError
+
+    with pytest.raises(ConfigError, match="must not be reached from configuration alone"):
+        load_config(
+            project_root / "config",
+            overrides={"settings": {"data": {"provider": "synthetic"}}},
+            project_root=project_root,
+        )
+
+
+def test_synthetic_fundamentals_are_guarded_too(project_root):
+    from quant.config import load_config
+    from quant.errors import ConfigError
+
+    with pytest.raises(ConfigError):
+        load_config(
+            project_root / "config",
+            overrides={"settings": {"data": {"fundamentals_provider": "synthetic"}}},
+            project_root=project_root,
+        )
+
+
+def test_synthetic_is_available_with_an_explicit_opt_in(project_root):
+    from quant.config import load_config
+
+    config = load_config(
+        project_root / "config",
+        overrides={"settings": {"data": {"provider": "synthetic",
+                                         "fundamentals_provider": "synthetic"}}},
+        project_root=project_root,
+        allow_synthetic=True,
+    )
+    assert config.data.provider == "synthetic"
+
+
+def test_shipped_configuration_uses_real_providers(project_root):
+    """The defaults an investor inherits must be real data."""
+    from quant.config import load_config
+
+    config = load_config(project_root / "config", project_root=project_root)
+    assert config.data.provider != "synthetic"
+    assert config.data.fundamentals_provider != "synthetic"
+    assert config.universe.source != "synthetic"
+
+
+def test_synthetic_reports_are_marked_in_the_filename(tmp_path):
+    """A banner is invisible in a file listing; the filename is not."""
+    from quant.reports.weekly import write_weekly_report
+
+    paths = write_weekly_report("# test", tmp_path, dt.date(2026, 9, 25), prefix="SYNTHETIC_")
+    assert paths["markdown"].name.startswith("SYNTHETIC_")
+    assert paths["html"].name.startswith("SYNTHETIC_")
+
+
+# --- split-adjustment convention -------------------------------------------
+def test_provider_pre_adjusted_prices_are_not_adjusted_again():
+    """Yahoo back-adjusts for splits; adjusting again is a 50x phantom gain.
+
+    Modeled on Chipotle's 50-for-1 split in June 2024, where the cached close
+    runs 64.29 -> 65.86 -> 62.41 straight through the split date.
+    """
+    dates = ["2024-06-24", "2024-06-25", "2024-06-26", "2024-06-27"]
+    closes = [63.87, 65.66, 65.86, 62.41]
+    splits = [1.0, 1.0, 50.0, 1.0]
+    frame = _frame(dates, closes, splits=splits)
+    history = PriceHistory.from_frame("CMG", frame, _info(), split_adjusted=True)
+
+    adjusted = history.frame["adj_close"]
+    assert adjusted.iloc[0] == pytest.approx(63.87), "a pre-adjusted price was adjusted again"
+    assert list(adjusted) == pytest.approx(closes)
+    returns = adjusted.pct_change().dropna().abs()
+    assert returns.max() < 0.10
+
+
+def test_raw_provider_prices_are_adjusted():
+    """Alpha Vantage supplies raw OHLC, which does need adjusting."""
+    dates = ["2024-06-24", "2024-06-25", "2024-06-26", "2024-06-27"]
+    closes = [3193.5, 3283.0, 65.86, 62.41]      # raw: price collapses on the split
+    splits = [1.0, 1.0, 50.0, 1.0]
+    history = PriceHistory.from_frame(
+        "CMG", _frame(dates, closes, splits=splits), _info(), split_adjusted=False
+    )
+    adjusted = history.frame["adj_close"]
+    assert adjusted.iloc[0] == pytest.approx(3193.5 / 50)
+    returns = adjusted.pct_change().dropna().abs()
+    assert returns.max() < 0.10, "the raw series was not made continuous"
+
+
+def test_pre_adjusted_dividends_are_left_alone():
+    """Yahoo also back-adjusts dividends, so they must pass through unchanged."""
+    dates = ["2024-03-05", "2024-06-10", "2024-06-11"]
+    frame = _frame(dates, [86.0, 120.0, 120.9], dividends=[0.004, 0.0, 0.01],
+                   splits=[1.0, 10.0, 1.0])
+    history = PriceHistory.from_frame("NVDA", frame, _info(), split_adjusted=True)
+    assert history.frame["adj_dividend"].iloc[0] == pytest.approx(0.004)
+
+
+def test_split_convention_comes_from_the_provider_by_default():
+    from quant.data.types import ProviderInfo
+
+    info = ProviderInfo(name="p", retrieved_at=dt.datetime(2024, 1, 1), split_adjusted=True)
+    frame = _frame(["2024-06-25", "2024-06-26"], [65.66, 65.86], splits=[1.0, 50.0])
+    history = PriceHistory.from_frame("X", frame, info)
+    assert history.frame["adj_close"].iloc[0] == pytest.approx(65.66)
+
+
+def test_yfinance_provider_declares_pre_adjusted_prices():
+    """A regression guard on the provider's own convention."""
+    import inspect
+
+    from quant.data.yfinance_provider import YFinanceProvider
+
+    source = inspect.getsource(YFinanceProvider)
+    assert source.count("split_adjusted=True") >= 3, (
+        "YFinanceProvider must declare split_adjusted=True everywhere it builds a "
+        "PriceHistory or stores to cache"
+    )

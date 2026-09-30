@@ -36,6 +36,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The web UI and JSON API; the CLI works without these.
+web = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "python-multipart>=0.0.9"]
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
 
 [project.scripts]

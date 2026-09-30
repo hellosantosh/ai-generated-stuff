@@ -46,6 +46,33 @@ Note what the report is and is not: it is the **target portfolio** for new money
 not a trade list. It has no knowledge of what you already hold, so it cannot tell
 you what to sell. See [Honest limitations](#honest-limitations).
 
+### Web UI
+
+```bash
+python main.py serve            # http://127.0.0.1:8000
+```
+
+A dashboard over the same service layer the CLI uses: this week's basket, a trade
+plan diffed against your positions, rankings, holdings editing, backtest results
+with charts, and a job runner for the long operations. The API is documented at
+`/docs`. It binds to loopback and has **no authentication** — do not expose it to a
+network without putting auth in front of it. There is no trading endpoint.
+
+### Tracking positions
+
+The weekly report can only say SELL if it knows what you own.
+
+```bash
+python main.py holdings set --ticker AAPL --shares 25 --cost-basis 5200
+python main.py holdings import --file broker_export.csv
+python main.py trade-plan --contribution 1000
+```
+
+`trade-plan` diffs your holdings against the target basket. Between rebalances it
+proposes buys only and flags holdings that have dropped out of the selection as
+DRIFT; on a rebalance week it proposes the full set of buys and sells to reach
+target. Every line is a proposal — nothing is ordered.
+
 ### First run
 
 Run the whole pipeline offline first, on generated data, to confirm the install:
@@ -274,14 +301,10 @@ and redeployed at the next contribution, not reinvested intraday.
 roughly 100% a year in backtest and the growth sleeve roughly 350%; in a taxable
 account most of that is short-term gains taxed as ordinary income.
 
-**The weekly report does not track your positions.** It prints the target portfolio
-for this week's money. It does not know what you already own, so it never says
-SELL. The backtest, by contrast, rebalances the sector sleeve quarterly and the
-growth sleeve monthly — it sells names that drop out of the selection. If you buy
-each week's basket and never sell, your holdings drift steadily away from the
-strategy that was measured, accumulating a long tail of names that have since
-fallen out of the rankings. Closing that gap needs position tracking, which
-version 1 does not have.
+**Position tracking is a manual record, not a broker connection.** `holdings.json`
+is whatever you last told it. It does not reconcile with your broker, model
+corporate actions on your positions, or track tax lots. If you trade and forget to
+record it, the next trade plan is wrong.
 
 **SEC company facts are large.** A full 503-ticker fundamentals cache is about
 2.8 GB under `data/raw/sec/`. It is git-ignored, and re-running is served from
@@ -384,6 +407,33 @@ All tests run on the seeded synthetic provider, so a failure means a code change
 rather than a market move or a provider outage.
 
 ---
+
+## Measured results
+
+A 360-week backtest to 2026-09-28, full S&P 500 universe, SEC fundamentals,
+5 bps slippage (`BACKTEST-REAL-002`):
+
+| | IVV only | Sector leaders | High growth | Combined |
+|---|---:|---:|---:|---:|
+| Ending balance | **$647,112** | $163,223 | $111,444 | $598,223 |
+| CAGR (time-weighted) | **15.86%** | 10.75% | 12.38% | 13.75% |
+| XIRR | **16.93%** | 11.93% | 12.62% | 14.66% |
+| Max drawdown | **-33.59%** | -38.79% | -31.10% | -34.63% |
+| Sharpe | **0.873** | 0.626 | 0.614 | 0.774 |
+| Annual turnover | **0%** | 196% | 452% | 145% |
+| Weeks beating IVV | — | 49.6% | 50.7% | 47.9% |
+
+**The stock selection lost to the benchmark.** The combined portfolio ended
+$48,889 behind buying IVV alone with the same contributions, with a slightly deeper
+drawdown, a worse Sharpe ratio, and 145% annual turnover. It underperformed in all
+three sub-periods (-9.3%, -3.3%, -5.1%) and in five of seven calendar years.
+
+Two caveats both point the same way: 24% of historical index members could not be
+priced, which removes failed companies and therefore *flatters* the strategy; and
+taxes are not modeled, which would penalize a 145%-turnover strategy far more than
+a 0%-turnover one. The real gap is probably wider than the table shows.
+
+Reproduce with `python main.py backtest --weeks 360`.
 
 ## What this deliberately does not do
 

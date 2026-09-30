@@ -138,10 +138,17 @@ def _parse_weights(text: str) -> dict[str, float]:
 
 def _load(args: argparse.Namespace) -> AppConfig:
     load_env(PROJECT_ROOT)
+    # Passing --provider synthetic (or --fundamentals synthetic) on the command
+    # line is the deliberate act that unlocks generated data. Configuration
+    # alone cannot.
+    wants_synthetic = "synthetic" in {
+        getattr(args, "provider", None), getattr(args, "fundamentals", None)
+    }
     config = load_config(
         config_dir=PROJECT_ROOT / (args.config or "config"),
         overrides=_overrides(args) or None,
         project_root=PROJECT_ROOT,
+        allow_synthetic=wants_synthetic,
     )
     configure_logging(
         level=args.log_level or config.logging.level,
@@ -363,7 +370,10 @@ def cmd_weekly_report(args: argparse.Namespace) -> int:
     if data.banner:
         markdown = f"> **{data.banner}**\n\n" + markdown
 
-    paths = write_weekly_report(markdown, config.path(config.reporting.output_dir), as_of)
+    paths = write_weekly_report(
+        markdown, config.path(config.reporting.output_dir), as_of,
+        prefix="SYNTHETIC_" if data.synthetic else "",
+    )
     _print("")
     for kind, path in paths.items():
         _print(f"wrote {kind:<9}{path}")
@@ -523,6 +533,104 @@ def cmd_runs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    """Start the local web UI and JSON API."""
+    config = _load(args)
+    _print(BANNER)
+    _print("")
+    _print(f"  dashboard  http://{args.host}:{args.port}/")
+    _print(f"  API docs   http://{args.host}:{args.port}/docs")
+    _print("")
+    if args.host not in ("127.0.0.1", "localhost"):
+        _print(
+            "WARNING: binding to a non-loopback address. This server has no "
+            "authentication and exposes your research data. Put a proxy with "
+            "auth in front of it, or bind to 127.0.0.1."
+        )
+        _print("")
+    from quant.api import run_server
+
+    run_server(host=args.host, port=args.port, reload=args.reload)
+    return 0
+
+
+def cmd_holdings(args: argparse.Namespace) -> int:
+    """Show, set or import the live position file."""
+    config = _load(args)
+    from quant.portfolio.holdings import Holdings, default_path
+
+    path = default_path(PROJECT_ROOT)
+    if args.action == "import":
+        if not args.file:
+            _print("ERROR: --file is required for `holdings import`")
+            return 2
+        holdings = Holdings.from_csv(config.path(args.file))
+        existing = Holdings.load(path)
+        holdings.last_rebalance = existing.last_rebalance
+        holdings.save(path)
+        _print(f"imported {len(holdings.positions)} position(s) into {path}")
+        return 0
+
+    if args.action == "set":
+        if not args.ticker or args.shares is None:
+            _print("ERROR: --ticker and --shares are required for `holdings set`")
+            return 2
+        holdings = Holdings.load(path)
+        holdings.set_position(args.ticker, args.shares, args.cost_basis)
+        holdings.updated_at = dt.date.today()
+        holdings.save(path)
+        _print(f"{args.ticker.upper()}: {args.shares} shares")
+        return 0
+
+    if args.action == "clear":
+        Holdings(updated_at=dt.date.today()).save(path)
+        _print(f"cleared {path}")
+        return 0
+
+    holdings = Holdings.load(path)
+    if not holdings.positions:
+        _print(f"no positions recorded in {path}")
+        return 0
+    _print(f"{len(holdings.positions)} position(s), updated {holdings.updated_at}, "
+           f"last rebalance {holdings.last_rebalance or 'never'}")
+    _print(f"{'TICKER':<10}{'SHARES':>14}{'COST BASIS':>14}")
+    for lot in sorted(holdings.positions.values(), key=lambda l: l.ticker):
+        _print(f"{lot.ticker:<10}{lot.shares:>14,.4f}{lot.cost_basis:>14,.2f}")
+    return 0
+
+
+def cmd_trade_plan(args: argparse.Namespace) -> int:
+    """Diff current holdings against this week's target basket."""
+    config = _load(args)
+    _print(BANNER)
+    from quant.service import AppService
+
+    service = AppService(PROJECT_ROOT, config)
+    plan, meta = service.trade_plan(args.contribution, args.mode, args.as_of)
+
+    _print("")
+    _print(f"decision date {plan.as_of} | mode {plan.mode} ({meta['rebalance_reason']})")
+    _print(f"portfolio {plan.portfolio_value_before:,.0f} -> {plan.portfolio_value_after:,.0f} "
+           f"with a {plan.contribution:,.0f} contribution")
+    _print("")
+    if not plan.trades:
+        _print("no trades proposed")
+        return 0
+    _print(f"{'ACTION':<8}{'TICKER':<8}{'AMOUNT':>12}{'SHARES':>12}{'NOW':>8}{'TARGET':>8}  REASON")
+    for trade in plan.trades:
+        _print(
+            f"{trade.action:<8}{trade.ticker:<8}{trade.amount:>12,.2f}{trade.shares:>12,.4f}"
+            f"{trade.current_weight * 100:>7.2f}%{trade.target_weight * 100:>7.2f}%  {trade.reason}"
+        )
+    _print("")
+    _print(f"buys {plan.total_buys:,.2f} | sells {plan.total_sells:,.2f}")
+    for note in plan.notes:
+        _print(f"note: {note}")
+    _print("")
+    _print("These are proposals. Nothing has been ordered.")
+    return 0
+
+
 def cmd_schedule(args: argparse.Namespace) -> int:
     """Print the contribution schedule, to audit the decision/execution split."""
     config = _load(args)
@@ -626,6 +734,28 @@ def build_parser() -> argparse.ArgumentParser:
     runs = subparsers.add_parser("runs", help="list stored backtest runs")
     runs.add_argument("--limit", type=int, default=20)
     runs.set_defaults(func=cmd_runs)
+
+    serve = subparsers.add_parser("serve", help="start the web UI and JSON API")
+    serve.add_argument("--host", default="127.0.0.1", help="bind address (default: loopback only)")
+    serve.add_argument("--port", type=int, default=8000)
+    serve.add_argument("--reload", action="store_true", help="auto-reload on code changes")
+    serve.set_defaults(func=cmd_serve)
+
+    holdings = subparsers.add_parser("holdings", help="show or edit your live positions")
+    holdings.add_argument("action", nargs="?", default="show",
+                          choices=["show", "set", "import", "clear"])
+    holdings.add_argument("--ticker")
+    holdings.add_argument("--shares", type=float)
+    holdings.add_argument("--cost-basis", type=float, default=None)
+    holdings.add_argument("--file", help="broker CSV with ticker and shares columns")
+    holdings.set_defaults(func=cmd_holdings)
+
+    plan = subparsers.add_parser("trade-plan", help="diff your holdings against this week's target")
+    add_common(plan)
+    plan.add_argument("--contribution", type=float, default=None)
+    plan.add_argument("--mode", choices=["contribute", "rebalance"], default=None)
+    plan.add_argument("--as-of", type=_parse_date, default=None)
+    plan.set_defaults(func=cmd_trade_plan)
 
     schedule = subparsers.add_parser("schedule", help="print the contribution schedule")
     add_common(schedule)

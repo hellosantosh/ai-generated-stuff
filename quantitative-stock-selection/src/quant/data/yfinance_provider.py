@@ -54,11 +54,13 @@ class YFinanceProvider:
             if cached is not None:
                 frame, info = cached
                 log.debug("price cache hit for %s (%s)", ticker, info.retrieved_at)
-                return PriceHistory.from_frame(ticker, frame, info)
+                return PriceHistory.from_frame(ticker, frame, info, split_adjusted=True)
 
         yf = self._module()
-        # auto_adjust=False keeps raw OHLC alongside explicit Dividends and
-        # Stock Splits columns, which is what the split/dividend model needs.
+        # auto_adjust=False keeps the dividend out of the price series and
+        # exposes explicit Dividends and Stock Splits columns. It does NOT
+        # give raw prices: Yahoo always back-adjusts OHLC *and* dividends for
+        # splits, so this series must not be split-adjusted again.
         try:
             raw = yf.Ticker(self._yahoo_symbol(ticker)).history(
                 start=start.isoformat(),
@@ -80,12 +82,13 @@ class YFinanceProvider:
             key,
             frame,
             endpoint=f"yfinance://history/{ticker}?start={start}&end={end}",
+            split_adjusted=True,
         )
         if self.raw_dir is not None:
             target = self.raw_dir / self.name / f"{safe_key(ticker)}.csv"
             target.parent.mkdir(parents=True, exist_ok=True)
             raw.to_csv(target)
-        return PriceHistory.from_frame(ticker, frame, info)
+        return PriceHistory.from_frame(ticker, frame, info, split_adjusted=True)
 
     def fetch_prices_bulk(
         self, tickers: Sequence[str], start: dt.date, end: dt.date, force: bool = False
@@ -111,7 +114,7 @@ class YFinanceProvider:
                 continue
             frame, info = cached
             try:
-                histories[ticker] = PriceHistory.from_frame(ticker, frame, info)
+                histories[ticker] = PriceHistory.from_frame(ticker, frame, info, split_adjusted=True)
             except (DataError, InsufficientDataError) as exc:
                 failures[ticker] = f"cached data unusable: {exc}"
                 pending.append(ticker)
@@ -159,8 +162,9 @@ class YFinanceProvider:
                 info = self.cache.store(
                     self.name, key, frame,
                     endpoint=f"yfinance://download/{ticker}?start={start}&end={end}",
+                    split_adjusted=True,
                 )
-                histories[ticker] = PriceHistory.from_frame(ticker, frame, info)
+                histories[ticker] = PriceHistory.from_frame(ticker, frame, info, split_adjusted=True)
             except (DataError, InsufficientDataError, KeyError, ValueError) as exc:
                 failures[ticker] = f"parse failed: {exc}"
 

@@ -622,12 +622,22 @@ def _inline(text: str) -> str:
 
 
 def write_weekly_report(
-    markdown: str, directory: Path, decision_date: dt.date, title: str | None = None
+    markdown: str,
+    directory: Path,
+    decision_date: dt.date,
+    title: str | None = None,
+    prefix: str = "",
 ) -> dict[str, Path]:
-    """Write the Markdown and HTML forms of the weekly report."""
+    """Write the Markdown and HTML forms of the weekly report.
+
+    ``prefix`` marks generated-data output in the *filename*, so a synthetic
+    report cannot be mistaken for a real one in a file listing, an email
+    attachment or a chat thread - places where the in-document banner is not
+    visible.
+    """
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    stem = f"weekly_report_{decision_date:%Y-%m-%d}"
+    stem = f"{prefix}weekly_report_{decision_date:%Y-%m-%d}"
 
     markdown_path = directory / f"{stem}.md"
     markdown_path.write_text(markdown, encoding="utf-8")

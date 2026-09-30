@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quant Stock Selector</title>
+<meta name="description" content="Research dashboard for a quantitative stock-selection and DCA backtesting model. Not investment advice.">
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#128200;</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <h1>Quant Stock Selector</h1>
+    <span class="sub" id="brandSub">research &amp; backtesting — no trades are placed</span>
+  </div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-panel="dashboard" aria-selected="true">Dashboard</button>
+    <button class="tab" role="tab" data-panel="plan" aria-selected="false">Trade plan</button>
+    <button class="tab" role="tab" data-panel="rankings" aria-selected="false">Rankings</button>
+    <button class="tab" role="tab" data-panel="holdings" aria-selected="false">Holdings</button>
+    <button class="tab" role="tab" data-panel="backtest" aria-selected="false">Backtest</button>
+    <button class="tab" role="tab" data-panel="jobs" aria-selected="false">Data &amp; jobs</button>
+  </nav>
+  <button id="themeToggle" title="Toggle light and dark" aria-label="Toggle theme">◐</button>
+</header>
+
+<main>
+  <div id="banners"></div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="panel" id="panel-dashboard">
+    <section>
+      <h2>This week's basket</h2>
+      <p class="lede">
+        Target portfolio for this week's contribution, as percentages so it scales to
+        whatever you put in. A ticker chosen by both sleeves appears once, carrying the
+        sum of its weights.
+      </p>
+      <div class="grid kpi" id="dashKpis"></div>
+    </section>
+
+    <section>
+      <div class="row">
+        <strong style="font-size:.9rem">Basket</strong>
+        <span class="muted" id="basketMeta"></span>
+        <span style="margin-left:auto"></span>
+        <button id="copyBasket">Copy as CSV</button>
+        <button id="refreshWeekly">Recompute</button>
+      </div>
+      <div class="table-wrap">
+        <table id="basketTable">
+          <thead><tr>
+            <th>Ticker</th><th>Sleeve</th>
+            <th class="num">Weight</th><th class="num">Score</th>
+            <th class="num">At contribution</th>
+          </tr></thead>
+          <tbody><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin-top:.6rem">
+        Set a contribution to see dollar amounts:
+        <input type="number" id="dashContribution" value="1000" min="1" step="50" style="width:110px">
+      </p>
+    </section>
+  </div>
+
+  <!-- ============ TRADE PLAN ============ -->
+  <div class="panel" id="panel-plan" hidden>
+    <section>
+      <h2>Trade plan</h2>
+      <p class="lede">
+        Your recorded holdings diffed against this week's target. Between rebalances the
+        strategy adds new money only and never sells; on a rebalance week it trades the
+        whole portfolio toward target. <strong>These are proposals — nothing is ordered.</strong>
+      </p>
+      <div class="row">
+        <label>Contribution <input type="number" id="planContribution" value="1000" min="1" step="50" style="width:110px"></label>
+        <label>Mode
+          <select id="planMode">
+            <option value="">Automatic (follow schedule)</option>
+            <option value="contribute">Contribute only</option>
+            <option value="rebalance">Full rebalance</option>
+          </select>
+        </label>
+        <button class="primary" id="runPlan">Build plan</button>
+        <span style="margin-left:auto"></span>
+        <button id="copyPlan">Copy as CSV</button>
+        <button id="applyPlan" class="danger" disabled>Record as traded</button>
+      </div>
+      <div id="planMeta"></div>
+      <div class="grid kpi" id="planKpis" style="margin-bottom:.9rem"></div>
+      <div class="table-wrap">
+        <table id="planTable">
+          <thead><tr>
+            <th>Action</th><th>Ticker</th><th>Sleeve</th>
+            <th class="num">Amount</th><th class="num">Shares</th><th class="num">Price</th>
+            <th class="num">Now</th><th class="num">Target</th><th>Reason</th>
+          </tr></thead>
+          <tbody><tr><td colspan="9" class="empty">Build a plan to see proposed trades.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ RANKINGS ============ -->
+  <div class="panel" id="panel-rankings" hidden>
+    <section>
+      <h2>Rankings</h2>
+      <p class="lede">
+        Composite score, 0–100, ranked within GICS sector. Category scores are
+        sector-relative percentiles; a blank means the factor could not be computed and
+        its weight was redistributed, never treated as zero.
+      </p>
+      <div class="row">
+        <label>Sleeve
+          <select id="rankSleeve">
+            <option value="sector_leaders">Sector leaders</option>
+            <option value="high_growth">High growth</option>
+          </select>
+        </label>
+        <label>Rows per sector <input type="number" id="rankLimit" value="5" min="1" max="50" style="width:70px"></label>
+        <button id="loadRankings">Load</button>
+      </div>
+      <div class="table-wrap">
+        <table id="rankTable">
+          <thead><tr>
+            <th class="num">#</th><th>Ticker</th><th>Company</th><th>Sector</th>
+            <th class="num">Score</th><th class="num">Growth</th><th class="num">Mom</th>
+            <th class="num">Quality</th><th class="num">Value</th><th class="num">Risk</th>
+          </tr></thead>
+          <tbody><tr><td colspan="10" class="empty">Press Load.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ HOLDINGS ============ -->
+  <div class="panel" id="panel-holdings" hidden>
+    <section>
+      <h2>Holdings</h2>
+      <p class="lede">
+        What you actually own. The trade plan needs this to tell you what to sell.
+        Edit inline, import a broker CSV with ticker and shares columns, or let
+        “Record as traded” update it after you trade.
+      </p>
+      <div class="row">
+        <button class="primary" id="addPosition">Add position</button>
+        <button id="saveHoldings">Save</button>
+        <label class="btn" style="cursor:pointer">Import CSV
+          <input type="file" id="importCsv" accept=".csv" hidden>
+        </label>
+        <span style="margin-left:auto"></span>
+        <span class="muted" id="holdingsMeta"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="holdingsTable">
+          <thead><tr>
+            <th>Ticker</th><th class="num">Shares</th><th class="num">Cost basis</th>
+            <th class="num">Price</th><th class="num">Value</th><th class="num">Weight</th>
+            <th class="num">Unrealized</th><th></th>
+          </tr></thead>
+          <tbody><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ BACKTEST ============ -->
+  <div class="panel" id="panel-backtest" hidden>
+    <section>
+      <h2>Backtest</h2>
+      <p class="lede">
+        Historical simulation of the same weekly contribution into each variant.
+        Time-weighted return removes contribution timing and is the like-for-like
+        comparison; XIRR keeps it and is what the money actually earned.
+      </p>
+      <div class="row">
+        <label>Run <select id="runSelect"><option>Loading…</option></select></label>
+        <button id="loadRun">Load</button>
+        <span style="margin-left:auto"></span>
+        <label>Weeks <input type="number" id="btWeeks" value="360" min="4" max="2000" style="width:80px"></label>
+        <button class="primary" id="startBacktest">Run new backtest</button>
+      </div>
+      <div id="runBias"></div>
+      <div class="table-wrap" style="margin-bottom:1.2rem">
+        <table id="runTable">
+          <thead><tr><th>Metric</th></tr></thead>
+          <tbody><tr><td class="empty">Select a run.</td></tr></tbody>
+        </table>
+      </div>
+      <h3>Charts</h3>
+      <div class="chart-grid" id="chartGrid"></div>
+    </section>
+  </div>
+
+  <!-- ============ JOBS ============ -->
+  <div class="panel" id="panel-jobs" hidden>
+    <section>
+      <h2>Data &amp; jobs</h2>
+      <p class="lede">
+        Long operations run in the background, one at a time. Progress streams below.
+      </p>
+      <div class="row">
+        <button class="primary" id="startUpdate">Update market data</button>
+        <button id="refreshJobs">Refresh</button>
+        <span class="muted" id="jobStatus"></span>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h3 style="margin-top:0">Recent jobs</h3>
+          <div id="jobList" class="muted">Loading…</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">Output</h3>
+          <pre class="log" id="jobLog">Select a job.</pre>
+        </div>
+      </div>
+      <h3>Data status</h3>
+      <div class="grid kpi" id="statusKpis"></div>
+      <h3>Report files</h3>
+      <div class="table-wrap">
+        <table id="reportsTable">
+          <thead><tr><th>File</th><th class="num">Size</th><th>Modified</th></tr></thead>
+          <tbody><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <p class="disclaimer">
+    This is research software. It places no trades and gives no investment advice.
+    Every figure is a model output subject to the data limitations listed in the
+    generated reports. Historical backtest results do not establish that a strategy
+    will perform similarly in future.
+  </p>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

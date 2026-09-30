@@ -30,12 +30,19 @@ DERIVED_COLUMNS = ["adj_open", "adj_close", "adj_dividend", "total_return_index"
 
 @dataclass(frozen=True)
 class ProviderInfo:
-    """Where a series came from, recorded for reproducibility (REQUIREMENTS 39)."""
+    """Where a series came from, recorded for reproducibility (REQUIREMENTS 39).
+
+    ``split_adjusted`` records whether the provider already back-adjusted its
+    OHLC and dividend columns for splits. Getting this wrong adjusts the
+    series twice, which turns a 50-for-1 split into a 50x phantom gain, so it
+    is a property of the provider rather than something inferred.
+    """
 
     name: str
     retrieved_at: dt.datetime
     endpoint: str | None = None
     notes: str | None = None
+    split_adjusted: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -43,6 +50,7 @@ class ProviderInfo:
             "retrieved_at": self.retrieved_at.isoformat(timespec="seconds"),
             "endpoint": self.endpoint,
             "notes": self.notes,
+            "split_adjusted": self.split_adjusted,
         }
 
 
@@ -56,8 +64,21 @@ class PriceHistory:
 
     @classmethod
     def from_frame(
-        cls, ticker: str, frame: pd.DataFrame, provider: ProviderInfo
+        cls,
+        ticker: str,
+        frame: pd.DataFrame,
+        provider: ProviderInfo,
+        split_adjusted: bool | None = None,
     ) -> "PriceHistory":
+        """Build a history, applying split adjustment only if it is needed.
+
+        ``split_adjusted`` says the incoming prices and dividends are *already*
+        back-adjusted. Providers pass it explicitly rather than relying on
+        cached metadata, so a stale cache entry cannot cause a double
+        adjustment. Yahoo back-adjusts even with ``auto_adjust=False``; Alpha
+        Vantage's daily-adjusted endpoint does not, and supplies raw OHLC with
+        a separate split coefficient.
+        """
         df = frame.copy()
         if "date" in df.columns:
             df = df.set_index("date")
@@ -97,7 +118,10 @@ class PriceHistory:
             df[col] = df[col].astype(float).fillna(df["close"].astype(float))
         df["close"] = df["close"].astype(float)
 
-        df = _apply_split_adjustment(df)
+        already_adjusted = (
+            provider.split_adjusted if split_adjusted is None else bool(split_adjusted)
+        )
+        df = _apply_split_adjustment(df, already_adjusted=already_adjusted)
         return cls(ticker=ticker, frame=df, provider=provider)
 
     # --- access ---------------------------------------------------------
@@ -161,12 +185,20 @@ class PriceHistory:
         return divs[divs > 0]
 
 
-def _apply_split_adjustment(df: pd.DataFrame) -> pd.DataFrame:
-    """Add split-adjusted price/dividend columns and a total-return index."""
+def _apply_split_adjustment(df: pd.DataFrame, already_adjusted: bool = False) -> pd.DataFrame:
+    """Add split-adjusted price/dividend columns and a total-return index.
+
+    When ``already_adjusted`` the divisor is 1 throughout: the provider's
+    prices are taken as given and the split coefficients are retained only as
+    a record of what happened.
+    """
     split = df["split_coef"].astype(float).to_numpy()
-    # cum_future[i] = product of split coefficients strictly after bar i.
-    reversed_cum = np.cumprod(split[::-1])[::-1]
-    cum_future = reversed_cum / split
+    if already_adjusted:
+        cum_future = np.ones(len(split))
+    else:
+        # cum_future[i] = product of split coefficients strictly after bar i.
+        reversed_cum = np.cumprod(split[::-1])[::-1]
+        cum_future = reversed_cum / split
     df = df.copy()
     df["adj_open"] = df["open"].to_numpy() / cum_future
     df["adj_close"] = df["close"].to_numpy() / cum_future

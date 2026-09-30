@@ -231,6 +231,7 @@ def test_same_close_convention_also_avoids_overlap(market, config, project_root)
             "universe": {"source": "synthetic"},
         }},
         project_root=project_root,
+        allow_synthetic=True,
     )
     schedule = build_schedule(market, alternative)
     for event in schedule:

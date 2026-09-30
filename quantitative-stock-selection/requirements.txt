@@ -11,5 +11,10 @@ PyYAML>=6.0
 lxml>=4.9
 yfinance>=0.2.40
 
+# Web UI and API (python main.py serve)
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+
 # Development
 pytest>=7.4

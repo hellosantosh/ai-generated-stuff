@@ -370,6 +370,14 @@ class UniverseConfig:
         )
 
 
+# Synthetic data exists for the test suite and for verifying an install
+# offline. It must never be reachable by editing one line of settings.yaml,
+# because a report built from generated prices looks exactly like a real one
+# to anyone who does not read the banner. Reaching it takes a deliberate,
+# per-invocation act: the CLI's --provider synthetic flag, or this variable.
+SYNTHETIC_OPT_IN_ENV = "QUANT_ALLOW_SYNTHETIC"
+
+
 @dataclass(frozen=True)
 class DataConfig:
     provider: str = "yfinance"
@@ -385,20 +393,35 @@ class DataConfig:
     request_timeout_seconds: float = 30.0
 
     @classmethod
-    def from_dict(cls, raw: Mapping[str, Any] | None) -> "DataConfig":
+    def from_dict(
+        cls, raw: Mapping[str, Any] | None, allow_synthetic: bool = False
+    ) -> "DataConfig":
         raw = raw or {}
         providers = {"yfinance", "alphavantage", "synthetic"}
+        provider = _check_enum(str(raw.get("provider", "yfinance")), providers, "data.provider")
+        fundamentals = _check_enum(
+            str(raw.get("fundamentals_provider", "sec")),
+            {"sec", "yfinance", "synthetic", "none"},
+            "data.fundamentals_provider",
+        )
+
+        uses_synthetic = "synthetic" in (provider, fundamentals)
+        permitted = allow_synthetic or os.environ.get(SYNTHETIC_OPT_IN_ENV, "").strip() in {"1", "true", "yes"}
+        if uses_synthetic and not permitted:
+            raise ConfigError(
+                "synthetic data is generated, not observed, and must not be reached from "
+                "configuration alone. Run with `--provider synthetic` to opt in for a "
+                f"single command, or set {SYNTHETIC_OPT_IN_ENV}=1 in the environment. "
+                "For investing decisions leave data.provider as a real provider."
+            )
+
         return cls(
-            provider=_check_enum(str(raw.get("provider", "yfinance")), providers, "data.provider"),
+            provider=provider,
             fallback_providers=tuple(
                 _check_enum(str(p), providers, "data.fallback_providers")
                 for p in (raw.get("fallback_providers") or ())
             ),
-            fundamentals_provider=_check_enum(
-                str(raw.get("fundamentals_provider", "sec")),
-                {"sec", "yfinance", "synthetic", "none"},
-                "data.fundamentals_provider",
-            ),
+            fundamentals_provider=fundamentals,
             cache_dir=Path(raw.get("cache_dir", "data/cache")),
             raw_dir=Path(raw.get("raw_dir", "data/raw")),
             processed_dir=Path(raw.get("processed_dir", "data/processed")),
@@ -641,11 +664,16 @@ def load_config(
     config_dir: str | os.PathLike[str] = "config",
     overrides: Mapping[str, Any] | None = None,
     project_root: str | os.PathLike[str] | None = None,
+    allow_synthetic: bool = False,
 ) -> AppConfig:
     """Load and validate settings.yaml, scoring.yaml and sectors.yaml.
 
     ``overrides`` is a nested mapping merged over the file contents; the CLI
     uses it to apply flags such as ``--start`` without mutating the files.
+
+    ``allow_synthetic`` permits the generated data provider. It is False by
+    default so that a real-money workflow cannot end up on generated prices
+    through a stray config edit.
     """
     config_path = Path(config_dir)
     root = Path(project_root) if project_root is not None else config_path.resolve().parent
@@ -674,7 +702,7 @@ def load_config(
         risk_controls=RiskControlsConfig.from_dict(settings.get("risk_controls")),
         eligibility=EligibilityConfig.from_dict(settings.get("eligibility")),
         universe=UniverseConfig.from_dict(settings.get("universe")),
-        data=DataConfig.from_dict(settings.get("data")),
+        data=DataConfig.from_dict(settings.get("data"), allow_synthetic=allow_synthetic),
         reporting=ReportingConfig.from_dict(settings.get("reporting")),
         logging=LoggingConfig.from_dict(settings.get("logging")),
         scoring=ScoringConfig.from_dict(scoring),
