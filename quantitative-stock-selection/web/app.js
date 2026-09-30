@@ -119,6 +119,16 @@ function sleevePill(sleeve) {
   return `<span class="pill ${esc(cls)}" title="${esc(SLEEVE_TITLE[key] || '')}">${esc(SLEEVE_LABEL[key] || key)}</span>`;
 }
 
+/* The benchmark ETF spans every sector and anything held outside the index has no
+   classification at all. Both are shown as "—" rather than bucketed somewhere. */
+function sectorCell(sector, sleeve) {
+  if (sector) return `<span class="sector">${esc(sector)}</span>`;
+  const why = sleeve === 'core'
+    ? 'An index ETF: it holds every sector, so it belongs to none.'
+    : 'No sector classification for this ticker.';
+  return `<span class="muted" title="${esc(why)}">—</span>`;
+}
+
 const ACTION = {
   NEW:   { label: 'Buy new',     cls: 'new',   title: 'You do not own this yet.' },
   BUY:   { label: 'Buy more',    cls: 'buy',   title: 'You own less than the target weight.' },
@@ -235,8 +245,10 @@ function renderFreshness() {
   }
 
   bar.className = `freshbar ${tone}`;
-  bar.innerHTML = `${text} <span style="margin-left:auto"></span>
-    <span class="muted">${esc(String(s.provider))} prices · ${esc(String(s.fundamentals_provider))} fundamentals</span>`;
+  /* One span per flex item: loose text nodes beside a <strong> would each become
+     their own item and pick up the container's gap as stray whitespace. */
+  bar.innerHTML = `<span>${text}</span>
+    <span class="muted" style="margin-left:auto">${esc(String(s.provider))} prices · ${esc(String(s.fundamentals_provider))} fundamentals</span>`;
 
   setStep(1, stepState, stepState === 'done' ? 'data is current' : 'needs a refresh');
   $('#step1Text').textContent = stepText;
@@ -263,7 +275,7 @@ async function buildPlan() {
     if (mode) query.set('mode', mode);
     state.plan = await api(`/trade-plan?${query}`);
   } catch (err) {
-    rowsOrEmpty(tbody, [], 10, err.message);
+    rowsOrEmpty(tbody, [], 11, err.message);
     setStep(2, 'active', 'failed');
     toast(err.message, true);
     return;
@@ -328,6 +340,7 @@ function renderPlan() {
     <td>${actionPill(t.action)}</td>
     <td class="ticker">${esc(t.ticker)}</td>
     <td>${sleevePill(t.sleeve)}</td>
+    <td>${sectorCell(t.sector, t.sleeve)}</td>
     <td class="num">${t.action === 'HOLD' ? '—' : money(t.amount)}</td>
     <td class="num">${t.action === 'HOLD' ? '—' : num(t.shares, 3)}</td>
     <td class="num">${money(t.price)}</td>
@@ -338,21 +351,21 @@ function renderPlan() {
   </tr>`);
   if (buys.length || sells.length) {
     rows.push(`<tr class="total">
-      <td>Total</td><td></td><td></td>
+      <td>Total</td><td></td><td></td><td></td>
       <td class="num">${money(plan.total_buys - plan.total_sells, 0)} net</td>
       <td class="num"></td><td class="num"></td>
       <td class="num detail"></td><td class="num detail"></td><td class="num detail"></td>
       <td class="muted">${esc(money(plan.total_buys, 0))} of buys, ${esc(money(plan.total_sells, 0))} of sells</td></tr>`);
   }
-  rowsOrEmpty($('#planTable tbody'), rows, 10,
+  rowsOrEmpty($('#planTable tbody'), rows, 11,
     'No orders proposed — everything is already within tolerance of the target.');
   $('#applyPlan').disabled = !(buys.length || sells.length);
 }
 
 function planCsv() {
-  const lines = ['action,ticker,amount_usd,shares,price,current_weight_pct,target_weight_pct,reason'];
+  const lines = ['action,ticker,sleeve,sector,amount_usd,shares,price,current_weight_pct,target_weight_pct,reason'];
   (state.plan?.trades || []).forEach(t => lines.push([
-    t.action, t.ticker, t.amount, t.shares, t.price,
+    t.action, t.ticker, t.sleeve, `"${t.sector || ''}"`, t.amount, t.shares, t.price,
     (t.current_weight * 100).toFixed(4), (t.target_weight * 100).toFixed(4),
     `"${String(t.reason).replace(/"/g, '""')}"`,
   ].join(',')));
@@ -406,6 +419,7 @@ function renderBasket() {
   const rows = w.basket.map(b => `<tr>
     <td class="ticker">${esc(b.ticker)}</td>
     <td>${sleevePill(b.sleeve)}</td>
+    <td>${sectorCell(b.sector, b.sleeve)}</td>
     <td class="num">${pct(b.weight, 2)}</td>
     <td class="num scorecell">${b.score === null ? '—'
       : `<div class="bar" style="width:${Math.max(0, Math.min(100, b.score))}%"></div><span>${num(b.score, 1)}</span>`}</td>
@@ -413,18 +427,18 @@ function renderBasket() {
   </tr>`);
   const total = w.basket.reduce((sum, b) => sum + b.weight, 0);
   if (rows.length) {
-    rows.push(`<tr class="total"><td>Total</td><td></td>
+    rows.push(`<tr class="total"><td>Total</td><td></td><td></td>
       <td class="num">${pct(total, 2)}</td><td></td>
       <td class="num">${money(total * contribution)}</td></tr>`);
   }
-  rowsOrEmpty($('#basketTable tbody'), rows, 5, 'No basket available.');
+  rowsOrEmpty($('#basketTable tbody'), rows, 6, 'No basket available.');
 }
 
 function basketCsv() {
   const contribution = parseFloat($('#contribution').value) || 0;
-  const lines = ['ticker,weight_pct,sleeve,score,amount_usd'];
+  const lines = ['ticker,weight_pct,sleeve,sector,score,amount_usd'];
   (state.weekly?.basket || []).forEach(b => lines.push([
-    b.ticker, (b.weight * 100).toFixed(4), b.sleeve, b.score ?? '',
+    b.ticker, (b.weight * 100).toFixed(4), b.sleeve, `"${b.sector || ''}"`, b.score ?? '',
     (b.weight * contribution).toFixed(2),
   ].join(',')));
   return lines.join('\n');

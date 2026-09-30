@@ -101,9 +101,10 @@ loads and scores the whole universe; after that it is instant.
 
 ### Step 3 — place the orders, then record them
 
-The table is your order list for Monday morning: an action, a ticker, a dollar
-amount, and the approximate share count at the last close. Copy it as CSV if your
-broker takes a basket upload.
+The table is your order list for Monday morning: an action, a ticker, why it is in
+the basket, its GICS sector, a dollar amount, and the approximate share count at the
+last close. The sector column is blank for the benchmark ETF, which holds every
+sector and so belongs to none. Copy it as CSV if your broker takes a basket upload.
 
 When your broker has *actually filled* the orders, press **I placed these orders**.
 That records the trades in `data/holdings.json` — it does not, and cannot, place

@@ -146,6 +146,7 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                     "ticker": ticker,
                     "weight": weight,
                     "sleeve": sleeve,
+                    "sector": view.sectors.get(ticker),
                     "score": None if score != score else round(score, 1),
                 }
                 for ticker, weight, sleeve, score in view.basket

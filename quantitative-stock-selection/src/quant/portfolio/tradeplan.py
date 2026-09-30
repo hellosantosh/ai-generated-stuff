@@ -55,6 +55,7 @@ class PlannedTrade:
     current_weight: float
     target_weight: float
     sleeve: str = ""
+    sector: str = ""
     score: float = float("nan")
     reason: str = ""
 
@@ -68,6 +69,7 @@ class PlannedTrade:
             "current_weight": self.current_weight,
             "target_weight": self.target_weight,
             "sleeve": self.sleeve,
+            "sector": self.sector,
             "score": None if pd.isna(self.score) else round(float(self.score), 1),
             "reason": self.reason,
         }
@@ -157,6 +159,7 @@ def build_trade_plan(
     mode: Mode = "contribute",
     sleeves: Mapping[str, str] | None = None,
     scores: Mapping[str, float] | None = None,
+    sectors: Mapping[str, str] | None = None,
 ) -> TradePlan:
     """Diff the target basket against real holdings.
 
@@ -165,6 +168,7 @@ def build_trade_plan(
     """
     sleeves = sleeves or {}
     scores = scores or {}
+    sectors = sectors or {}
     plan = TradePlan(mode=mode, as_of=as_of, contribution=contribution)
 
     held_values = holdings.market_values(prices)
@@ -209,6 +213,7 @@ def build_trade_plan(
                 current_weight=current_weights.get(ticker, 0.0),
                 target_weight=float(target_weights.get(ticker, 0.0)),
                 sleeve=sleeves.get(ticker, ""),
+                sector=sectors.get(ticker, ""),
                 score=float(scores.get(ticker, float("nan"))),
                 reason=reason,
             )
@@ -266,6 +271,7 @@ def build_trade_plan(
                     ticker=ticker, action="DRIFT", amount=value,
                     shares=holdings.shares(ticker), price=prices.get(ticker, float("nan")),
                     current_weight=current_weights.get(ticker, 0.0), target_weight=0.0,
+                    sector=sectors.get(ticker, ""),
                     reason="held but no longer selected; not sold between rebalances",
                 )
             )

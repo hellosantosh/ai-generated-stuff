@@ -303,3 +303,7 @@ fieldset.choices input { margin-top: .25rem; }
 
 /* "Show model detail" toggles the columns most people never need. */
 body:not(.show-detail) .detail { display: none; }
+
+/* GICS sector names are long, so they read as a secondary label beside the
+   ticker rather than competing with it. */
+.sector { color: var(--text-secondary); font-size: .8rem; }

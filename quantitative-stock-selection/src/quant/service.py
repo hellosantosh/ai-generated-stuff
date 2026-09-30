@@ -155,6 +155,7 @@ class WeeklyView:
     execution_date: dt.date | None
     ranking: RankingResult
     basket: list[tuple[str, float, str, float]]
+    sectors: dict[str, str]
     budgets: dict[str, float]
     universe_size: int
     eligible: int
@@ -222,6 +223,7 @@ class AppService:
         factors, rejections = compute_universe_factors(view, universe, self._config)
         ranking = rank_and_select(factors, self._config, resolved, rejections=rejections)
         basket, budgets = basket_weights(ranking, self._config)
+        sectors = self.sectors_for([ticker for ticker, _, _, _ in basket], resolved, market)
         try:
             execution_date = market.next_trading_day(resolved)
         except QuantError:
@@ -232,6 +234,7 @@ class AppService:
             execution_date=execution_date,
             ranking=ranking,
             basket=basket,
+            sectors=sectors,
             budgets=budgets,
             universe_size=len(universe),
             eligible=ranking.universe_size,
@@ -251,6 +254,23 @@ class AppService:
 
     def save_holdings(self, holdings: Holdings) -> Path:
         return holdings.save(self.holdings_path)
+
+    def sectors_for(
+        self, tickers: Sequence[str], as_of: dt.date, market: Any | None = None
+    ) -> dict[str, str]:
+        """GICS sector per ticker, for the ones that have a classification.
+
+        The benchmark ETF and anything held outside the index have none, and are
+        left out rather than labeled "Unclassified" - a missing sector is a fact
+        about the holding, not a category to put it in.
+        """
+        source = market if market is not None else self.market(as_of).market
+        found: dict[str, str] = {}
+        for ticker in {t.upper() for t in tickers}:
+            sector = source.sectors.sector_of(ticker, as_of)
+            if sector:
+                found[ticker] = sector
+        return found
 
     def prices_for(self, tickers: Sequence[str], as_of: dt.date) -> dict[str, float]:
         """Last close at or before ``as_of`` for each ticker that has one."""
@@ -286,6 +306,10 @@ class AppService:
         sleeves = {ticker: sleeve for ticker, _, sleeve, _ in weekly.basket}
         scores = {ticker: score for ticker, _, _, score in weekly.basket}
         prices = self.prices_for(list(targets) + holdings.tickers(), weekly.as_of)
+        sectors = {
+            **weekly.sectors,
+            **self.sectors_for(holdings.tickers(), weekly.as_of),
+        }
 
         plan = build_trade_plan(
             holdings=holdings,
@@ -296,6 +320,7 @@ class AppService:
             mode=resolved_mode,  # type: ignore[arg-type]
             sleeves=sleeves,
             scores=scores,
+            sectors=sectors,
         )
         meta = {
             "rebalance_due": due,

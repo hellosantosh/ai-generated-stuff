@@ -468,3 +468,18 @@ def test_the_first_week_is_always_a_rebalance(config):
     due, reason = rebalance_due(config, MONDAY, last_rebalance=None)
     assert due
     assert "no rebalance" in reason
+
+
+def test_a_plan_carries_the_sector_of_every_line():
+    """The order list names each holding's sector, and leaves the ETF's blank."""
+    holdings = Holdings()
+    holdings.set_position("CCC", shares=10, cost_basis=1000.0)
+    plan = build_trade_plan(
+        holdings=holdings, target_weights=TARGETS, prices={**PRICES, "CCC": 100.0},
+        contribution=1000.0, as_of=MONDAY, mode="rebalance",
+        sectors={"AAA": "Energy", "BBB": "Utilities", "CCC": "Financials"},
+    )
+    by_ticker = {t.ticker: t.sector for t in plan.trades}
+    assert by_ticker["AAA"] == "Energy"
+    assert by_ticker["CCC"] == "Financials"    # still labeled on the way out
+    assert by_ticker["IVV"] == ""              # an index ETF belongs to no sector
