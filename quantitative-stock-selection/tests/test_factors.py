@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from quant.data.types import FundamentalRecord
+from quant.data.store import MarketData
+from quant.data.types import FundamentalRecord, PriceHistory, ProviderInfo
 from quant.errors import DataError
 from quant.factors.momentum import momentum_factors, sector_relative_strength, trailing_return
 from quant.factors.panel import FundamentalPanel, safe_ratio
@@ -258,3 +259,73 @@ def test_missing_factors_are_none_never_zero(view):
     empty_panel = FundamentalPanel([])
     factors = quality_factors(view, view.universe()[0], empty_panel)
     assert all(value is None for value in factors.values())
+
+
+# --- market capitalization across splits -----------------------------------
+# A filing's share count is never restated for a later split, while a
+# back-adjusted price series restates every bar before one. Multiplying the two
+# straight together is how a company gets divided - or multiplied - by its own
+# split history.
+def _split_market(ticker: str, price: float, split_on: dt.date | None, split_coef: float,
+                  post_price: float, already_adjusted: bool) -> MarketData:
+    dates = pd.bdate_range("2023-01-02", "2023-12-29")
+    closes, splits = [], []
+    for day in dates:
+        after = split_on is not None and day.date() >= split_on
+        closes.append(post_price if after else price)
+        splits.append(split_coef if (split_on is not None and day.date() == split_on) else 1.0)
+    frame = pd.DataFrame(
+        {"open": closes, "high": closes, "low": closes, "close": closes,
+         "volume": [1e6] * len(dates), "dividend": [0.0] * len(dates), "split_coef": splits},
+        index=pd.DatetimeIndex(dates, name="date"),
+    )
+    info = ProviderInfo(name="test", retrieved_at=dt.datetime(2024, 1, 1))
+    history = PriceHistory.from_frame(ticker, frame, info, split_adjusted=already_adjusted)
+    return MarketData({ticker: history, "IVV": history}, benchmark="IVV")
+
+
+def test_market_cap_survives_a_forward_split():
+    """4-for-1: the share count quadruples, the price quarters, the value holds."""
+    # Yahoo-style: the series is already back-adjusted, so the pre-split bars
+    # read $25 even though the stock traded at $100 that day.
+    market = _split_market("TEST", price=25.0, split_on=dt.date(2023, 7, 3),
+                           split_coef=4.0, post_price=25.0, already_adjusted=True)
+    shares = [_record(dt.date(2023, 3, 31), shares_outstanding=1_000_000.0)]
+
+    before = valuation_factors(market.view(dt.date(2023, 6, 30)), "TEST", FundamentalPanel(shares))
+    after = valuation_factors(market.view(dt.date(2023, 9, 29)), "TEST", FundamentalPanel(shares))
+
+    # $100 x 1M shares before; $25 x 4M shares after. A split creates no value.
+    assert before["market_cap"] == pytest.approx(100_000_000.0)
+    assert after["market_cap"] == pytest.approx(100_000_000.0)
+
+
+def test_market_cap_survives_a_reverse_split():
+    """1-for-8, the GE case: without the fix the company looks eight times bigger."""
+    market = _split_market("TEST", price=100.0, split_on=dt.date(2023, 8, 1),
+                           split_coef=0.125, post_price=100.0, already_adjusted=True)
+    shares = [_record(dt.date(2023, 6, 30), shares_outstanding=8_000_000.0)]
+
+    after = valuation_factors(market.view(dt.date(2023, 9, 29)), "TEST", FundamentalPanel(shares))
+    # 8M shares became 1M; at the $100 quote that is $100M, not $800M.
+    assert after["market_cap"] == pytest.approx(100_000_000.0)
+
+
+def test_market_cap_needs_no_adjustment_without_a_split():
+    market = _split_market("TEST", price=50.0, split_on=None, split_coef=1.0,
+                           post_price=50.0, already_adjusted=True)
+    shares = [_record(dt.date(2023, 3, 31), shares_outstanding=2_000_000.0)]
+    factors = valuation_factors(market.view(dt.date(2023, 9, 29)), "TEST", FundamentalPanel(shares))
+    assert factors["market_cap"] == pytest.approx(100_000_000.0)
+
+
+def test_raw_close_is_the_price_actually_quoted():
+    """The derived column undoes the provider's back-adjustment, nothing else."""
+    market = _split_market("TEST", price=25.0, split_on=dt.date(2023, 7, 3),
+                           split_coef=4.0, post_price=25.0, already_adjusted=True)
+    frame = market.history("TEST").frame
+    pre = frame.loc[pd.Timestamp("2023-06-30")]
+    post = frame.loc[pd.Timestamp("2023-09-29")]
+    assert pre["adj_close"] == pytest.approx(25.0)    # comparable across the split
+    assert pre["raw_close"] == pytest.approx(100.0)   # what the screen said that day
+    assert post["raw_close"] == pytest.approx(25.0)

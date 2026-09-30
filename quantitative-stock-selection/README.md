@@ -195,11 +195,72 @@ open, or if the data is more than a week stale.
 | **My portfolio** | What you own. The app cannot see your broker; this is the only way it knows. |
 | **Why these picks** | Every company's score, ranked within its own sector, with the five category scores behind it. A ✓ marks a name in this week's basket. |
 | **Track record** | The backtest: does picking stocks actually beat the benchmark? Read it first. |
+| **Index performance** | The major indices, and the largest companies against the index, over any window you pick. |
 | **Data & logs** | Downloads and backtests running in the background, plus every generated report file. |
 
 The API behind all of it is documented at `/docs`. The server binds to loopback and
 has **no authentication** — do not expose it to a network without putting auth in
 front of it. There is no trading endpoint.
+
+---
+
+## Index performance
+
+A read-only tab, separate from the strategy: pick a **from** and **to** date — either
+from the calendar fields or the 1Y / 3Y / 5Y / 10Y / YTD / Max buttons — and get two
+questions answered over that window.
+
+### The major indices
+
+Seven indices, each drawn through the ETF that tracks it, because that is what a
+person can actually buy: S&P 500 (IVV), Nasdaq-100 (QQQ), Dow Jones Industrial
+Average (DIA), Russell 2000 (IWM), S&P MidCap 400 (IJH), S&P SmallCap 600 (IJR) and
+the total US market (VTI). Tick any subset; four are on by default.
+
+Every line is a **total return** — dividends reinvested at the close on the day they
+went ex — rebased to 100 on your from date, so the vertical gap between two lines is
+the difference in cumulative return since then, never a difference in share price.
+An ETF younger than your window says so and starts its line at its own inception
+rather than pretending to match the others up to that point.
+
+### Top N of the S&P 500 against the S&P 500
+
+Cohorts of the 10, 20, 50, 75, 100, 150, 200 and 250 largest index members. The
+method matters more than the picture:
+
+* Members are the index constituents **on your from date** — point-in-time
+  membership reconstructed from the index change log, not today's list.
+* They are ranked by **market cap as it was computable on that date**: the price
+  quoted that day times the share count in the filings available by then.
+* Weights are set once, on that date, and never touched. The cohort is bought and
+  held; it is not rebalanced, so a cohort that began as the 10 largest is not the 10
+  largest by the end. That drift is the thing the chart is showing.
+
+Nothing about the future picks the members. A "top 10" assembled with hindsight is a
+list of known winners and beats every index ever built; this one does not know which
+of the ten will work out.
+
+The bar chart is the headline — percentage points ahead of or behind the index over
+the whole window. The line chart below it is the same comparison over time, where
+100 means a cohort exactly kept pace. Four cohorts at once, because more lines in
+one color ramp stop being tellable apart.
+
+### What limits it
+
+Both are stated on the page, with the counts for your window:
+
+* **Cohorts can only contain companies this installation can price**, which is
+  today's index members. A company that was in the index on your from date and has
+  since left is missing, and companies mostly leave by failing. For a 2013 start
+  that is about 37% of the members; for a 2021 start, about 16%. It flatters every
+  cohort.
+* **Ranking needs a share count**, and a handful of companies report shares only per
+  share class, which this reader does not yet combine. Alphabet, Visa, Berkshire and
+  a few others therefore cannot be ranked at all and are listed under the table.
+* No commission, spread, tax or fund expense ratio is modeled anywhere on the page.
+
+The two endpoints behind the tab are `GET /api/index-performance` and
+`GET /api/cohort-performance`, both taking `start` and `end`.
 
 ---
 
@@ -360,6 +421,23 @@ variables. No key is ever read from a config file or hard-coded.
 Read these before you read a return number. They are also printed in section 17 of
 every backtest report, generated from the actual run rather than boilerplate.
 
+**Market capitalization needs both sides on the same day's scale.** A filing reports
+the share count as it stood then and is never restated for later splits, while a
+back-adjusted price series restates every bar before one. Multiplying the two
+straight together divides a company by every split it has had since — or multiplies
+it, for a reverse split, which is how General Electric, worth about $100bn in 2021,
+came out as the fourth largest company in the index. The fix is in
+`factors/valuation.py`: take the price as actually quoted on the valuation date and
+carry the reported share count forward through the splits since the filing. It
+changes every valuation factor at historical dates, so a backtest run before
+2026-09-29 is not comparable with one run after.
+
+**A few companies cannot be ranked by size at all.** The SEC's `companyfacts` API
+omits dimensioned facts, so a company that reports its share count only per share
+class — Alphabet before 2022, Visa, Berkshire — has no consolidated figure to read.
+Their valuation factors are reported as missing and their weight is redistributed,
+which is correct but means they are invisible to anything that ranks on size.
+
 **Survivorship bias is detected, not merely reconstructed.** Point-in-time
 membership fixes half the problem. The other half is whether the price provider can
 still serve the companies that left the index — and free providers usually cannot.
@@ -448,10 +526,14 @@ src/quant/
   data/            providers, cache, point-in-time store, validator, universe
   factors/         momentum, growth, quality, valuation, risk + TTM panel
   ranking/         normalization, composite scoring, sector ranker
-  portfolio/       accounting, DCA schedule, rebalancing
+  portfolio/       accounting, DCA schedule, rebalancing, holdings, trade plan
   backtest/        engine, metrics, drawdown, integrity + provenance
+  analysis/        index and size-cohort performance (the Index performance tab)
   reports/         charts, Excel, CSV, weekly and backtest reports
-tests/             193 tests, no network required
+  service.py       the layer the CLI and the API share
+  api.py           FastAPI app: JSON endpoints plus the static UI
+web/               the UI: one page, hand-rolled SVG charts, no build step
+tests/             238 tests, no network required
 main.py            CLI
 ```
 
@@ -509,7 +591,7 @@ python main.py export --run-id BACKTEST-20260928-001
 ## Testing
 
 ```bash
-pytest                       # 193 tests, ~80 seconds, no network
+pytest                       # 238 tests, ~90 seconds, no network
 pytest tests/test_lookahead.py -v          # the integrity suite
 ```
 

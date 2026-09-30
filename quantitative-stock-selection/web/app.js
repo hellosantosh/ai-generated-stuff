@@ -33,6 +33,12 @@ const state = {
   lastFinishedJob: null,
   rankingsLoaded: false,
   verdict: null,
+  indices: null,          // the catalog of proxies
+  indexData: null,
+  cohortData: null,
+  chosenIndices: null,    // Set of tickers
+  chosenCohorts: null,    // Set of sizes, max 4
+  marketLoaded: false,
 };
 
 /* ---------- helpers ---------- */
@@ -747,8 +753,286 @@ async function loadReports() {
   } catch { /* non-fatal */ }
 }
 
+/* ---------- index performance ---------- */
+/* Categorical slots in the fixed order of the validated palette. The proxies
+   are ordered in the API, so a given index keeps its color as others are
+   switched on and off - color follows the entity, never its rank. */
+const SERIES_COLORS = [
+  'var(--accent)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)',
+  'var(--series-5)', 'var(--series-6)', 'var(--series-7)',
+];
+/* One hue, four steps. Four is a hard cap: an eighth step in a single ramp is
+   not tellable from its neighbors, which is why the picker enforces it. */
+const RAMP_COLORS = ['var(--ramp-1)', 'var(--ramp-2)', 'var(--ramp-3)', 'var(--ramp-4)'];
+const MAX_COHORT_LINES = 4;
+const DEFAULT_COHORTS = [10, 50, 100, 250];
+
+const isoDay = (date) => date.toISOString().slice(0, 10);
+
+function setRange(from, to) {
+  $('#rangeFrom').value = from;
+  $('#rangeTo').value = to;
+}
+
+function currentRange() {
+  return { start: $('#rangeFrom').value, end: $('#rangeTo').value };
+}
+
+function applyPreset(button) {
+  const today = new Date();
+  const end = isoDay(today);
+  let start;
+  if (button.dataset.ytd) {
+    start = `${today.getFullYear() - 1}-12-31`;
+  } else if (button.dataset.max) {
+    start = state.indices?.earliest || '1993-01-01';
+  } else {
+    const years = parseInt(button.dataset.years, 10);
+    const from = new Date(today);
+    from.setFullYear(from.getFullYear() - years);
+    start = isoDay(from);
+  }
+  $$('#rangePresets button').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+  setRange(start, end);
+  loadMarketTab();
+}
+
+async function loadIndexCatalog() {
+  if (state.indices) return state.indices;
+  state.indices = await api('/indices');
+  state.chosenIndices = new Set(state.indices.default);
+  state.chosenCohorts = new Set(DEFAULT_COHORTS.filter(n => state.indices.cohort_sizes.includes(n)));
+  const today = new Date();
+  const fiveBack = new Date(today); fiveBack.setFullYear(today.getFullYear() - 5);
+  if (!$('#rangeFrom').value) setRange(isoDay(fiveBack), isoDay(today));
+  $('#rangeFrom').min = state.indices.earliest;
+  $('#rangeTo').min = state.indices.earliest;
+  $('#rangeFrom').max = isoDay(today);
+  $('#rangeTo').max = isoDay(today);
+  renderIndexLegend();
+  renderCohortPicker();
+  return state.indices;
+}
+
+function renderIndexLegend() {
+  const catalog = state.indices?.indices || [];
+  $('#indexLegend').innerHTML = catalog.map((proxy, i) => {
+    const on = state.chosenIndices.has(proxy.ticker);
+    return `<label class="${on ? '' : 'off'}" title="${esc(proxy.note)}">
+      <input type="checkbox" data-ticker="${esc(proxy.ticker)}" ${on ? 'checked' : ''}>
+      <span class="chip" style="background:${SERIES_COLORS[i % SERIES_COLORS.length]}"></span>
+      ${esc(proxy.label)}</label>`;
+  }).join('');
+}
+
+function renderCohortPicker() {
+  const sizes = state.indices?.cohort_sizes || [];
+  $('#cohortPicker').innerHTML = sizes.map(size => {
+    const on = state.chosenCohorts.has(size);
+    const index = [...state.chosenCohorts].sort((a, b) => a - b).indexOf(size);
+    return `<label class="${on ? '' : 'off'}">
+      <input type="checkbox" data-size="${size}" ${on ? 'checked' : ''}>
+      <span class="chip" style="background:${on ? RAMP_COLORS[index] : 'var(--rule)'}"></span>
+      Top ${size}</label>`;
+  }).join('');
+}
+
+async function loadMarketTab() {
+  await loadIndexCatalog();
+  await Promise.all([loadIndexChart(), loadCohortCharts()]);
+}
+
+async function loadIndexChart() {
+  const { start, end } = currentRange();
+  const tickers = [...state.chosenIndices];
+  const box = $('#indexChart');
+  if (!tickers.length) {
+    box.innerHTML = '<p class="empty">Tick an index to chart it.</p>';
+    rowsOrEmpty($('#indexTable tbody'), [], 6, 'Nothing selected.');
+    return;
+  }
+  box.innerHTML = '<p class="empty"><span class="spinner"></span> Loading prices…</p>';
+  try {
+    state.indexData = await api(
+      `/index-performance?start=${start}&end=${end}&tickers=${tickers.join(',')}`);
+  } catch (err) {
+    box.innerHTML = `<p class="empty">${esc(err.message)}</p>`;
+    return;
+  }
+  renderIndexChart();
+}
+
+/* The color of an index is its position in the catalog, not its position in the
+   current selection, so unticking one never repaints the others. */
+const indexColor = (ticker) => {
+  const i = (state.indices?.indices || []).findIndex(p => p.ticker === ticker);
+  return SERIES_COLORS[(i < 0 ? 0 : i) % SERIES_COLORS.length];
+};
+
+function renderIndexChart() {
+  const data = state.indexData;
+  if (!data) return;
+  Charts.line($('#indexChart'), {
+    series: data.series.map(row => ({
+      label: row.label, color: indexColor(row.ticker), points: row.points,
+    })),
+    baseline: 100,
+    baselineLabel: 'start',
+    format: (v) => v.toFixed(0),
+  });
+
+  const notes = [];
+  data.series.filter(row => row.late_start).forEach(row => notes.push(
+    `<div class="banner warn"><span class="icon">!</span><div>${esc(row.late_start)}</div></div>`));
+  (data.skipped || []).forEach(row => notes.push(
+    `<div class="banner"><span class="icon">·</span><div>${esc(row.label)} (${esc(row.ticker)}): ${esc(row.reason)}</div></div>`));
+  Object.entries(data.failures || {}).forEach(([ticker, message]) => notes.push(
+    `<div class="banner warn"><span class="icon">!</span><div>
+      ${esc(ticker)} could not be downloaded: ${esc(message)}</div></div>`));
+  $('#indexNotes').innerHTML = notes.join('');
+
+  const rows = data.series.map(row => `<tr>
+    <td><span class="chip" style="background:${indexColor(row.ticker)}"></span>
+        <strong>${esc(row.label)}</strong></td>
+    <td class="ticker">${esc(row.ticker)}</td>
+    <td class="num">${pct(row.total_return, 1)}</td>
+    <td class="num">${row.cagr === null ? '<span class="muted" title="the window is under a year">—</span>' : pct(row.cagr, 2)}</td>
+    <td class="num">${pct(row.max_drawdown, 1)}</td>
+    <td class="num">${row.volatility === null ? '—' : pct(row.volatility, 1)}</td>
+  </tr>`);
+  rowsOrEmpty($('#indexTable tbody'), rows, 6, 'No index data for this window.');
+}
+
+async function loadCohortCharts() {
+  const { start, end } = currentRange();
+  const bars = $('#cohortBars');
+  const chart = $('#cohortChart');
+  const loading = state.marketLoaded
+    ? 'Building cohorts…'
+    : 'Loading the index universe — about half a minute the first time…';
+  bars.innerHTML = `<p class="empty"><span class="spinner"></span> ${loading}</p>`;
+  chart.innerHTML = '<p class="empty"></p>';
+  try {
+    state.cohortData = await api(`/cohort-performance?start=${start}&end=${end}`);
+    state.marketLoaded = true;
+  } catch (err) {
+    bars.innerHTML = `<p class="empty">${esc(err.message)}</p>`;
+    chart.innerHTML = '';
+    rowsOrEmpty($('#cohortTable tbody'), [], 7, err.message);
+    return;
+  }
+  renderCohortCharts();
+}
+
+/* The largest names repeat in every cohort, so listing the first six tells you
+   nothing about which cohort you are reading. The ends do: they show where the
+   cutoff fell. */
+function cohortEdges(members) {
+  if (members.length <= 6) return members.join(', ');
+  return `${members.slice(0, 3).join(', ')} … ${members.slice(-3).join(', ')}`;
+}
+
+function renderCohortCharts() {
+  const data = state.cohortData;
+  if (!data) return;
+  const benchmark = data.benchmark;
+
+  Charts.bars($('#cohortBars'), {
+    items: data.cohorts.map(c => ({
+      label: c.label,
+      value: c.excess_return * 100,
+      title: `${c.label}: ${(c.total_return * 100).toFixed(1)}% against the index's ${(benchmark.total_return * 100).toFixed(1)}%`,
+    })),
+    format: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)} pp`,
+    positiveColor: 'var(--pos)',
+    negativeColor: 'var(--neg)',
+  });
+
+  const chosen = data.cohorts.filter(c => state.chosenCohorts.has(c.size));
+  Charts.line($('#cohortChart'), {
+    series: chosen.map((c, i) => ({
+      label: c.label, color: RAMP_COLORS[i % RAMP_COLORS.length], points: c.relative_points,
+    })),
+    baseline: 100,
+    baselineLabel: 'index',
+    format: (v) => v.toFixed(0),
+  });
+
+  const rows = data.cohorts.map(c => `<tr>
+    <td><strong>${esc(c.label)}</strong></td>
+    <td class="num">${pct(c.cap_share, 1)}</td>
+    <td class="num">${pct(c.total_return, 1)}</td>
+    <td class="num muted">${pct(benchmark.total_return, 1)}</td>
+    <td class="num ${c.excess_return >= 0 ? 'gain' : 'loss'}">
+      ${c.excess_return >= 0 ? '+' : ''}${(c.excess_return * 100).toFixed(1)} pp</td>
+    <td class="num">${pct(c.max_drawdown, 1)}</td>
+    <td class="muted">${esc(cohortEdges(c.members))}</td>
+  </tr>`);
+  rowsOrEmpty($('#cohortTable tbody'), rows, 7, 'No cohorts could be built for this window.');
+
+  const coverage = data.coverage || {};
+  const notes = (data.warnings || []).map(w =>
+    `<div class="banner warn"><span class="icon">!</span><div>${esc(w)}</div></div>`);
+  if (coverage.no_market_cap_examples?.length) {
+    notes.push(`<div class="banner"><span class="icon">·</span><div>
+      <strong>Not ranked, for want of a share count on that date:</strong>
+      ${esc(coverage.no_market_cap_examples.join(', '))}. These are companies whose filings
+      report shares only per share class, which this reader does not yet combine.</div></div>`);
+  }
+  if (data.carried_forward?.length) {
+    notes.push(`<div class="banner"><span class="icon">·</span><div>
+      ${esc(data.carried_forward.join(', '))} stopped trading inside the window and
+      ${data.carried_forward.length === 1 ? 'was' : 'were'} carried at the last price, as
+      if sold to cash and left there.</div></div>`);
+  }
+  notes.push(`<div class="banner"><span class="icon">i</span><div>
+    Cohorts drawn from ${esc(String(coverage.with_market_cap || 0))} rankable members of
+    ${esc(String(coverage.members_on_start || 0))} in the index on ${esc(data.start)}.
+    ${coverage.point_in_time_membership
+      ? 'Membership is point-in-time, reconstructed from the index change log.'
+      : 'Membership could not be verified point-in-time for this date.'}</div></div>`);
+  $('#cohortNotes').innerHTML = notes.join('');
+  renderCohortPicker();
+}
+
+function initMarketTab() {
+  $('#rangePresets').addEventListener('click', e => {
+    const button = e.target.closest('button');
+    if (button) applyPreset(button);
+  });
+  $('#applyRange').addEventListener('click', () => {
+    $$('#rangePresets button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    loadMarketTab();
+  });
+  $('#indexLegend').addEventListener('change', e => {
+    const box = e.target.closest('input[data-ticker]');
+    if (!box) return;
+    if (box.checked) state.chosenIndices.add(box.dataset.ticker);
+    else state.chosenIndices.delete(box.dataset.ticker);
+    renderIndexLegend();
+    loadIndexChart();
+  });
+  $('#cohortPicker').addEventListener('change', e => {
+    const box = e.target.closest('input[data-size]');
+    if (!box) return;
+    const size = Number(box.dataset.size);
+    if (box.checked) {
+      if (state.chosenCohorts.size >= MAX_COHORT_LINES) {
+        // Drop the oldest choice rather than refusing the click: the person
+        // asked for this line, and four is a legibility limit, not a rule.
+        state.chosenCohorts.delete([...state.chosenCohorts][0]);
+        toast(`Showing four cohorts at a time — dropped the earliest pick`);
+      }
+      state.chosenCohorts.add(size);
+    } else {
+      state.chosenCohorts.delete(size);
+    }
+    renderCohortCharts();
+  });
+}
+
 /* ---------- tabs and wiring ---------- */
-const PANELS = ['sunday', 'portfolio', 'picks', 'record', 'data'];
+const PANELS = ['sunday', 'portfolio', 'picks', 'record', 'market', 'data'];
 
 function switchTab(name) {
   if (!PANELS.includes(name)) name = 'sunday';
@@ -757,6 +1041,7 @@ function switchTab(name) {
   location.hash = name;
   if (name === 'portfolio') loadHoldings();
   if (name === 'record') loadRuns();
+  if (name === 'market' && !state.indexData) loadMarketTab();
   if (name === 'data') { pollJobs(); loadReports(); }
   if (name === 'picks' && !state.rankingsLoaded) loadRankings();
 }
@@ -824,6 +1109,7 @@ function init() {
     if (button) { state.activeJob = button.dataset.job; pollJobs(); }
   });
 
+  initMarketTab();
   setStep(2, 'active', '');
   setStep(3, '', 'waiting on step 2');
   switchTab((location.hash || '#sunday').slice(1));

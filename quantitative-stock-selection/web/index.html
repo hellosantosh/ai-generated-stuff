@@ -20,6 +20,7 @@
     <button class="tab" role="tab" data-panel="portfolio" aria-selected="false">My portfolio</button>
     <button class="tab" role="tab" data-panel="picks" aria-selected="false">Why these picks</button>
     <button class="tab" role="tab" data-panel="record" aria-selected="false">Track record</button>
+    <button class="tab" role="tab" data-panel="market" aria-selected="false">Index performance</button>
     <button class="tab" role="tab" data-panel="data" aria-selected="false">Data &amp; logs</button>
   </nav>
   <button id="themeToggle" title="Toggle light and dark" aria-label="Toggle theme">◐</button>
@@ -351,6 +352,120 @@
     </section>
   </div>
 
+
+  <!-- ============ INDEX PERFORMANCE ============ -->
+  <div class="panel" id="panel-market" hidden>
+    <section>
+      <h2>Index performance</h2>
+      <p class="lede">
+        How the major US indices did over a window you choose, and how the largest
+        companies in the S&amp;P 500 did against the index itself. Each index is drawn
+        through the ETF that tracks it, because that is the thing a person can buy.
+        Every line is a total return: dividends reinvested on the day they went ex.
+      </p>
+
+      <div class="rangebar">
+        <label class="field"><span>From</span>
+          <input type="date" id="rangeFrom" min="1993-01-01"></label>
+        <label class="field"><span>To</span>
+          <input type="date" id="rangeTo" min="1993-01-01"></label>
+        <div class="presets" id="rangePresets" role="group" aria-label="Quick ranges">
+          <button data-years="1" aria-pressed="false">1Y</button>
+          <button data-years="3" aria-pressed="false">3Y</button>
+          <button data-years="5" aria-pressed="true">5Y</button>
+          <button data-years="10" aria-pressed="false">10Y</button>
+          <button data-ytd="1" aria-pressed="false">YTD</button>
+          <button data-max="1" aria-pressed="false">Max</button>
+        </div>
+        <button class="primary" id="applyRange">Update charts</button>
+      </div>
+
+      <h3>The major indices, rebased to 100</h3>
+      <p class="caption">
+        Every line starts at 100 on your from date, so the gap between two lines at any
+        point is the difference in cumulative return since then — not a difference in
+        share price.
+      </p>
+      <div id="indexChart" class="chart"><p class="empty">Loading…</p></div>
+      <div class="legend" id="indexLegend"></div>
+      <div id="indexNotes"></div>
+      <div class="table-wrap" style="margin-top:1rem">
+        <table id="indexTable">
+          <thead><tr>
+            <th>Index</th><th>Proxy</th><th class="num">Total return</th>
+            <th class="num">Annualized</th><th class="num">Worst drawdown</th>
+            <th class="num">Volatility</th>
+          </tr></thead>
+          <tbody><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2rem">Top N of the S&amp;P 500 against the S&amp;P 500</h3>
+      <p class="caption">
+        Each cohort is the N largest index members <strong>as of your from date</strong>,
+        weighted by market cap on that date and held unchanged to your to date. Nothing
+        about the future picks the members: a &ldquo;top 10&rdquo; chosen with hindsight is
+        a list of known winners and beats every index ever built.
+      </p>
+      <div id="cohortBars" class="chart"><p class="empty">Loading…</p></div>
+      <p class="caption">
+        Percentage points of total return ahead of (blue) or behind (red) the index over
+        the whole window.
+      </p>
+
+      <h3>The same thing over time</h3>
+      <p class="caption">
+        100 means a cohort exactly kept pace with the index. Above 100 it is ahead,
+        below it is behind. Up to four cohorts at once — more lines in one color ramp
+        stop being tellable apart.
+      </p>
+      <div class="legend" id="cohortPicker"></div>
+      <div id="cohortChart" class="chart"><p class="empty">Loading…</p></div>
+
+      <div class="table-wrap" style="margin-top:1rem">
+        <table id="cohortTable">
+          <thead><tr>
+            <th>Cohort</th><th class="num">Share of index cap</th>
+            <th class="num">Total return</th><th class="num">Index</th>
+            <th class="num">Difference</th><th class="num">Worst drawdown</th>
+            <th>Largest … smallest members</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div id="cohortNotes" style="margin-top:1rem"></div>
+
+      <details class="help">
+        <summary>What these charts can and cannot tell you</summary>
+        <p>
+          <strong>The cohorts are built from the companies this installation can price.</strong>
+          That is today&rsquo;s index members, so a company that was in the index on your from
+          date and has since left is missing — and companies mostly leave by failing. The
+          note under the table says how many are missing for your window. It flatters every
+          cohort, and the wider ones most.
+        </p>
+        <p>
+          <strong>Ranking needs a share count.</strong> Market cap is price times shares
+          outstanding as reported in the filings available on your from date. A few companies
+          report shares only per share class, which this reader does not yet combine, so they
+          cannot be ranked at all and are listed under the table. Alphabet and Visa are the
+          notable ones.
+        </p>
+        <p>
+          <strong>A cohort is a buy-and-hold, not a strategy.</strong> Weights are set once and
+          left alone, so a cohort that started as the 10 largest is not the 10 largest by the
+          end. That drift is the point of the chart, not a flaw in it — but it means these
+          lines are not what an index fund tracking &ldquo;the top 10&rdquo; would have returned,
+          because such a fund would rebalance.
+        </p>
+        <p>
+          <strong>No costs.</strong> No commission, spread, tax or fund expense ratio is
+          modeled anywhere on this page.
+        </p>
+      </details>
+    </section>
+  </div>
+
   <!-- ============ DATA & LOGS ============ -->
   <div class="panel" id="panel-data" hidden>
     <section>
@@ -394,6 +509,7 @@
   </p>
 </main>
 
+<script src="chart.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

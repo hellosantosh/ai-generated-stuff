@@ -17,6 +17,9 @@ would be a look-ahead leak, so the factor is reported as ``None``.
 
 from __future__ import annotations
 
+import numpy as np
+import pandas as pd
+
 from .panel import FundamentalPanel, safe_ratio
 from ..data.store import PointInTimeView
 
@@ -49,9 +52,9 @@ def valuation_factors(
     if frame.empty:
         return factors
 
-    # Market cap needs the *unadjusted* price against the reported share count:
-    # both sit on the same pre-split scale as of the last filing.
-    price = float(frame["close"].iloc[-1])
+    # Dividend yield is a ratio of two columns on the same adjusted scale, so
+    # it is scale free. Market cap is not - see below.
+    price = float(frame["adj_close"].iloc[-1])
     trailing_dividends = float(frame["dividend"].iloc[-252:].sum()) if len(frame) >= 60 else None
     if trailing_dividends is not None and price > 0:
         factors["dividend_yield"] = trailing_dividends / price
@@ -59,11 +62,9 @@ def valuation_factors(
     if not panel:
         return factors
 
-    shares = panel.latest("shares_outstanding")
-    if shares is None or shares <= 0:
+    market_cap = _market_cap(frame, panel)
+    if market_cap is None:
         return factors
-
-    market_cap = price * shares
     factors["market_cap"] = market_cap
 
     net_income = panel.ttm("net_income")
@@ -92,3 +93,37 @@ def valuation_factors(
         factors["peg"] = trailing_pe / (growth * 100.0)
 
     return factors
+
+
+def _market_cap(frame: pd.DataFrame, panel: FundamentalPanel) -> float | None:
+    """Price times shares, with both sides on the same day's scale.
+
+    A filing reports the share count as it stood then and is never restated
+    for later splits, while a back-adjusted price series restates every bar
+    before a split. Multiplying one by the other silently divides the company
+    by every split since - or multiplies it, for a reverse split, which is how
+    a $100bn industrial ends up ranked among the ten largest companies in the
+    index.
+
+    So: take the price as it was actually quoted on the valuation date, and
+    carry the reported share count forward through the splits that happened
+    between the filing's period end and that date. Both are then on the scale
+    that was real on the day.
+    """
+    record = panel.latest_record("shares_outstanding")
+    if record is None:
+        return None
+    shares = record.get("shares_outstanding")
+    if shares is None or shares <= 0:
+        return None
+
+    column = "raw_close" if "raw_close" in frame.columns else "close"
+    price = float(frame[column].iloc[-1])
+    if not np.isfinite(price) or price <= 0:
+        return None
+
+    since = frame.loc[pd.Timestamp(record.period_end_date) + pd.Timedelta(days=1) :]
+    split_factor = float(since["split_coef"].prod()) if not since.empty else 1.0
+    if not np.isfinite(split_factor) or split_factor <= 0:
+        split_factor = 1.0
+    return price * float(shares) * split_factor

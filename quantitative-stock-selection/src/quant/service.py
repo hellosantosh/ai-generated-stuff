@@ -21,11 +21,24 @@ from typing import Any, Callable, Mapping, Sequence
 
 import pandas as pd
 
+from .analysis.indices import (
+    COHORT_SIZES,
+    MAJOR_INDICES,
+    cohort_performance,
+    index_performance,
+    window,
+)
 from .config import AppConfig, load_config, load_env
-from .errors import QuantError
+from .errors import DataError, QuantError
 from .factors import compute_universe_factors
+from .factors.valuation import valuation_factors
 from .logging_config import get_logger
-from .pipeline import LoadedData, load_market_data, open_project_database
+from .pipeline import (
+    LoadedData,
+    build_price_provider,
+    load_market_data,
+    open_project_database,
+)
 from .portfolio.holdings import Holdings, default_path
 from .portfolio.tradeplan import TradePlan, apply_plan, build_trade_plan, rebalance_due
 from .ranking import rank_and_select
@@ -35,6 +48,12 @@ from .reports.weekly import basket_weights
 log = get_logger(__name__)
 
 JOB_LINE_LIMIT = 2000
+
+# Index proxies are fetched once over a window wide enough to contain any
+# question the UI can ask, because the price cache keys on the requested dates:
+# asking for a different window would download the series again rather than
+# slicing the copy already on disk. 1993 is the oldest US equity ETF.
+INDEX_HISTORY_START = dt.date(1993, 1, 1)
 
 
 # --- jobs ------------------------------------------------------------------
@@ -174,6 +193,8 @@ class AppService:
         self.jobs = JobRunner()
         self._market_cache: tuple[Any, LoadedData] | None = None
         self._weekly_cache: WeeklyView | None = None
+        self._index_cache: dict[str, Any] = {}
+        self._cohort_cache: dict[Any, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
     # --- config ----------------------------------------------------------
@@ -190,6 +211,8 @@ class AppService:
         with self._lock:
             self._market_cache = None
             self._weekly_cache = None
+            self._index_cache = {}
+            self._cohort_cache = {}
 
     # --- data ------------------------------------------------------------
     def market(self, as_of: dt.date | None = None, force_reload: bool = False) -> LoadedData:
@@ -334,6 +357,166 @@ class AppService:
         holdings = apply_plan(self.holdings(), plan)
         self.save_holdings(holdings)
         return holdings
+
+    # --- index and cohort analytics --------------------------------------
+    def index_history(self, ticker: str, force: bool = False):
+        """One index proxy's full price history, cached in process."""
+        ticker = ticker.upper()
+        with self._lock:
+            cached = self._index_cache.get(ticker)
+        if cached is not None and not force:
+            return cached
+        provider = build_price_provider(self._config)
+        history = provider.fetch_prices(ticker, INDEX_HISTORY_START, dt.date.today(), force)
+        with self._lock:
+            self._index_cache[ticker] = history
+        return history
+
+    def index_performance(
+        self,
+        start: dt.date,
+        end: dt.date,
+        tickers: Sequence[str] | None = None,
+    ) -> dict[str, Any]:
+        wanted = [t.upper() for t in tickers] if tickers else [p.ticker for p in MAJOR_INDICES]
+        histories: dict[str, Any] = {}
+        failures: dict[str, str] = {}
+        for ticker in wanted:
+            try:
+                histories[ticker] = self.index_history(ticker)
+            except QuantError as exc:
+                failures[ticker] = str(exc)
+                log.warning("index proxy %s unavailable: %s", ticker, exc)
+        if not histories:
+            raise DataError(
+                "none of the requested index proxies could be priced: "
+                + "; ".join(f"{t} ({m})" for t, m in failures.items())
+            )
+        result = index_performance(histories, start, end)
+        result["failures"] = failures
+        return result
+
+    def cohort_performance(
+        self,
+        start: dt.date,
+        end: dt.date,
+        sizes: Sequence[int] = COHORT_SIZES,
+    ) -> dict[str, Any]:
+        """Top-N cohorts of the index, formed on ``start`` and held to ``end``.
+
+        The cohort can only be built from companies this installation has
+        prices for. That set is today's index members, so companies that left
+        the index between ``start`` and ``end`` are missing - and they left
+        mostly by failing. The result says how many are missing and in which
+        direction that bends the answer, rather than presenting the number as
+        clean.
+        """
+        key = (start, end, tuple(sizes))
+        with self._lock:
+            cached = self._cohort_cache.get(key)
+        if cached is not None:
+            return cached
+
+        market = self.market().market
+        benchmark_ticker = self._config.benchmark.ticker
+        if not market.has(benchmark_ticker):
+            raise DataError(f"benchmark {benchmark_ticker} is not loaded")
+
+        # The index ETFs go back to 1999; the company-level history here only
+        # goes back as far as the configured backtest window plus its warmup.
+        # Asking for more is a reasonable thing to do, so clamp and say so
+        # rather than failing the whole panel.
+        clamped: str | None = None
+        earliest = market.calendar[0].date()
+        if start < earliest:
+            clamped = (
+                f"Company-level history here starts {earliest}, so the cohorts begin there "
+                f"rather than on {start}. The index lines above go back further because an "
+                f"ETF is one series, while a cohort needs every member priced."
+            )
+            start = earliest
+
+        members = [t for t in market.universe.members_on(start)]
+        if not members:
+            raise DataError(
+                f"no index membership is recorded for {start}; the membership table here "
+                f"starts at {earliest}"
+            )
+        priced = [t for t in members if market.has(t)]
+        missing = sorted(set(members) - set(priced))
+
+        view = market.view(start, strict=self._config.backtest.strict_point_in_time)
+        caps: dict[str, float] = {}
+        no_cap: list[str] = []
+        for ticker in priced:
+            try:
+                value = valuation_factors(view, ticker).get("market_cap")
+            except QuantError:
+                value = None
+            if value is None or not pd.notna(value) or value <= 0:
+                no_cap.append(ticker)
+                continue
+            caps[ticker] = float(value)
+
+        columns = {}
+        for ticker in caps:
+            series = window(market.history(ticker).frame["total_return_index"], start, end)
+            if len(series) >= 2:
+                columns[ticker] = series
+        if not columns:
+            raise DataError(f"no company in the index has prices between {start} and {end}")
+
+        benchmark = window(
+            market.history(benchmark_ticker).frame["total_return_index"], start, end
+        )
+        frame = pd.DataFrame(columns).reindex(benchmark.index)
+
+        result = cohort_performance(
+            total_returns=frame,
+            market_caps=caps,
+            benchmark=benchmark,
+            start=start,
+            end=end,
+            sizes=sizes,
+            benchmark_label=f"{self._config.universe.name.upper()} ({benchmark_ticker})",
+        )
+        result["coverage"] = {
+            "members_on_start": len(members),
+            "priced": len(priced),
+            "with_market_cap": len(caps),
+            "missing_members": len(missing),
+            "missing_examples": missing[:10],
+            "no_market_cap_examples": no_cap[:10],
+            "point_in_time_membership": market.universe.survivorship_free,
+        }
+        result["warnings"] = self._cohort_warnings(members, priced, caps, start)
+        if clamped:
+            result["warnings"].insert(0, clamped)
+        with self._lock:
+            self._cohort_cache[key] = result
+        return result
+
+    @staticmethod
+    def _cohort_warnings(
+        members: Sequence[str], priced: Sequence[str], caps: Mapping[str, float], start: dt.date
+    ) -> list[str]:
+        warnings: list[str] = []
+        missing = len(members) - len(priced)
+        if missing > 0:
+            warnings.append(
+                f"{missing} of the {len(members)} index members on {start} have no price "
+                f"history here, because this installation prices today's members. Companies "
+                f"that left the index mostly left by failing, so excluding them flatters "
+                f"every cohort - and the smaller cohorts least, since the largest companies "
+                f"rarely drop out."
+            )
+        without_cap = len(priced) - len(caps)
+        if without_cap > 0:
+            warnings.append(
+                f"{without_cap} priced member(s) had no share count on file as of {start}, "
+                f"so no market cap could be computed and they were left out of the ranking."
+            )
+        return warnings
 
     # --- runs ------------------------------------------------------------
     def database(self):

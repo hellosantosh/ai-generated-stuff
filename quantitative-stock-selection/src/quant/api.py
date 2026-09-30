@@ -25,6 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
 from . import __version__
+from .analysis.indices import COHORT_SIZES, MAJOR_INDICES
 from .errors import QuantError
 from .logging_config import configure_logging, get_logger
 from .portfolio.holdings import Holdings
@@ -201,6 +202,66 @@ def create_app(project_root: Path | None = None) -> FastAPI:
                         "text": selection.explanation(),
                     }
         raise HTTPException(status_code=404, detail=f"{ticker} is not in the current selection")
+
+    # --- index and cohort performance ------------------------------------
+    def _resolve_window(start: dt.date | None, end: dt.date | None) -> tuple[dt.date, dt.date]:
+        """Default to the last five years, and refuse a window that is inside out."""
+        end = end or dt.date.today()
+        start = start or (end - dt.timedelta(days=365 * 5))
+        if start >= end:
+            raise HTTPException(
+                status_code=400,
+                detail=f"the from date ({start}) must be before the to date ({end})",
+            )
+        return start, end
+
+    @api.get("/indices")
+    def indices() -> dict[str, Any]:
+        """What the index tab can chart. Static: no data load, no network."""
+        return {
+            "indices": [
+                {"ticker": p.ticker, "label": p.label, "note": p.note} for p in MAJOR_INDICES
+            ],
+            "default": [p.ticker for p in MAJOR_INDICES[:4]],
+            "cohort_sizes": list(COHORT_SIZES),
+            "benchmark": service.config.benchmark.ticker,
+            "earliest": "1993-01-01",
+        }
+
+    @api.get("/index-performance")
+    def index_perf(
+        start: dt.date | None = None,
+        end: dt.date | None = None,
+        tickers: str | None = Query(default=None, description="comma separated, e.g. IVV,QQQ"),
+    ) -> dict[str, Any]:
+        window_start, window_end = _resolve_window(start, end)
+        wanted = [t.strip().upper() for t in tickers.split(",") if t.strip()] if tickers else None
+        if wanted is not None and len(wanted) > len(MAJOR_INDICES):
+            raise HTTPException(status_code=400, detail="too many tickers requested")
+        try:
+            return service.index_performance(window_start, window_end, wanted)
+        except QuantError as exc:
+            raise fail(exc)
+
+    @api.get("/cohort-performance")
+    def cohort_perf(
+        start: dt.date | None = None,
+        end: dt.date | None = None,
+        sizes: str | None = Query(default=None, description="comma separated, e.g. 10,50,100"),
+    ) -> dict[str, Any]:
+        window_start, window_end = _resolve_window(start, end)
+        chosen = COHORT_SIZES
+        if sizes:
+            try:
+                chosen = tuple(sorted({int(s) for s in sizes.split(",") if s.strip()}))
+            except ValueError:
+                raise HTTPException(status_code=400, detail="sizes must be whole numbers")
+            if not chosen or max(chosen) > 500 or min(chosen) < 1:
+                raise HTTPException(status_code=400, detail="sizes must be between 1 and 500")
+        try:
+            return service.cohort_performance(window_start, window_end, chosen)
+        except QuantError as exc:
+            raise fail(exc)
 
     # --- holdings --------------------------------------------------------
     @api.get("/holdings")

@@ -25,7 +25,7 @@ import pandas as pd
 from ..errors import DataError, InsufficientDataError
 
 PRICE_COLUMNS = ["open", "high", "low", "close", "volume", "dividend", "split_coef"]
-DERIVED_COLUMNS = ["adj_open", "adj_close", "adj_dividend", "total_return_index"]
+DERIVED_COLUMNS = ["adj_open", "adj_close", "adj_dividend", "raw_close", "total_return_index"]
 
 
 @dataclass(frozen=True)
@@ -193,18 +193,28 @@ def _apply_split_adjustment(df: pd.DataFrame, already_adjusted: bool = False) ->
     a record of what happened.
     """
     split = df["split_coef"].astype(float).to_numpy()
-    if already_adjusted:
-        cum_future = np.ones(len(split))
-    else:
-        # cum_future[i] = product of split coefficients strictly after bar i.
-        reversed_cum = np.cumprod(split[::-1])[::-1]
-        cum_future = reversed_cum / split
+    # future_splits[i] = product of split coefficients strictly after bar i.
+    # It is the factor between the two scales a price series can be on, and is
+    # needed even when the provider has already applied it.
+    reversed_cum = np.cumprod(split[::-1])[::-1]
+    future_splits = reversed_cum / split
+    cum_future = np.ones(len(split)) if already_adjusted else future_splits
     df = df.copy()
     df["adj_open"] = df["open"].to_numpy() / cum_future
     df["adj_close"] = df["close"].to_numpy() / cum_future
     df["adj_high"] = df["high"].to_numpy() / cum_future
     df["adj_low"] = df["low"].to_numpy() / cum_future
     df["adj_dividend"] = df["dividend"].to_numpy() / cum_future
+
+    # The price as it was actually quoted on the day, on whichever scale the
+    # provider stores. Market capitalization is the one calculation that needs
+    # it: share counts in filings are never restated for later splits, so
+    # multiplying a back-adjusted price by an as-reported share count divides
+    # the company's value by every split it has had since. That is how a
+    # $100bn company shows up as the fourth largest in the index.
+    df["raw_close"] = (
+        df["close"].to_numpy() * future_splits if already_adjusted else df["close"].to_numpy()
+    )
 
     # Total-return index: reinvest each dividend at that day's adjusted close.
     adj_close = df["adj_close"].to_numpy()

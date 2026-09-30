@@ -19,6 +19,17 @@
   --warning:        #fab219;
   --serious:        #ec835a;
   --critical:       #d03b3b;
+  --series-5:       #e87ba4;
+  --series-6:       #008300;
+  --series-7:       #4a3aa7;
+  /* Ordinal ramp for the size cohorts: one hue, four steps with visible gaps.
+     Four is the cap - an eighth step in one hue stops being readable. */
+  --ramp-1:         #86b6ef;
+  --ramp-2:         #3987e5;
+  --ramp-3:         #1c5cab;
+  --ramp-4:         #0d366b;
+  --pos:            #2a78d6;
+  --neg:            #e34948;
   --shadow:         0 1px 2px rgba(11,11,11,.06), 0 4px 12px rgba(11,11,11,.04);
   --radius:         10px;
 }
@@ -38,7 +49,16 @@
     --series-3:       #199e70;
     --series-4:       #c98500;
     --critical:       #e66767;
-    --shadow:         0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.3);
+    --series-5:       #d55181;
+  --series-6:       #008300;
+  --series-7:       #9085e9;
+  --ramp-1:         #b7d3f6;
+  --ramp-2:         #6da7ec;
+  --ramp-3:         #2a78d6;
+  --ramp-4:         #184f95;
+  --pos:            #3987e5;
+  --neg:            #e66767;
+  --shadow:         0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.3);
   }
 }
 :root[data-theme="dark"] {
@@ -56,6 +76,15 @@
   --series-3:       #199e70;
   --series-4:       #c98500;
   --critical:       #e66767;
+  --series-5:       #d55181;
+  --series-6:       #008300;
+  --series-7:       #9085e9;
+  --ramp-1:         #b7d3f6;
+  --ramp-2:         #6da7ec;
+  --ramp-3:         #2a78d6;
+  --ramp-4:         #184f95;
+  --pos:            #3987e5;
+  --neg:            #e66767;
   --shadow:         0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.3);
 }
 
@@ -307,3 +336,42 @@ body:not(.show-detail) .detail { display: none; }
 /* GICS sector names are long, so they read as a secondary label beside the
    ticker rather than competing with it. */
 .sector { color: var(--text-secondary); font-size: .8rem; }
+
+/* ---------- charts ---------- */
+.chart {
+  position: relative; width: 100%;
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--surface-2); padding: .6rem .4rem .2rem;
+}
+.chart svg { display: block; width: 100%; height: auto; font-family: inherit; }
+.chart-tip {
+  position: absolute; top: .8rem; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 8px;
+  box-shadow: var(--shadow); padding: .45rem .6rem; font-size: .8rem;
+  pointer-events: none; z-index: 5; min-width: 150px;
+}
+.chart-tip .when { color: var(--text-muted); font-size: .74rem; margin-bottom: .25rem; }
+.chart-tip .row { display: flex; align-items: center; gap: .4rem; }
+.chart-tip .row .name { color: var(--text-secondary); }
+.chart-tip .row .val { margin-left: auto; font-variant-numeric: tabular-nums;
+  font-weight: 600; color: var(--text-primary); }
+.chip { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; display: inline-block; }
+
+.legend { display: flex; flex-wrap: wrap; gap: .25rem .9rem; margin: .6rem 0 0; }
+.legend label, .legend span.item {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .8rem; color: var(--text-secondary); cursor: pointer;
+}
+.legend input { margin: 0; }
+.legend label.off { opacity: .45; }
+
+.rangebar { display: flex; flex-wrap: wrap; gap: .6rem; align-items: flex-end; margin-bottom: 1rem; }
+.rangebar .field { display: flex; flex-direction: column; gap: .2rem; }
+.rangebar .field span { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-muted); font-weight: 600; }
+.presets { display: flex; gap: .2rem; }
+.presets button { padding: .4rem .6rem; }
+.presets button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.caption { color: var(--text-muted); font-size: .78rem; margin: .5rem 0 0; max-width: 80ch; }
+td.gain { color: var(--good); }
+td.loss { color: var(--critical); }

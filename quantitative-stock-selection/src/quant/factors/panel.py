@@ -91,6 +91,18 @@ class FundamentalPanel:
                 return value
         return None
 
+    def latest_record(self, metric: str):
+        """The most recent record that actually carries ``metric``.
+
+        Callers that need to know *when* a value was reported - a share count
+        has to be scaled by every split since - need the record, not just the
+        number.
+        """
+        for record in reversed(self.records):
+            if record.get(metric) is not None:
+                return record
+        return None
+
     def latest_as_of_offset(self, metric: str, years_back: int) -> float | None:
         cutoff = self._offset_period(years_back)
         if cutoff is None:
