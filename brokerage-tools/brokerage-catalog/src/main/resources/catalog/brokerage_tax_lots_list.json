@@ -1,0 +1,104 @@
+{
+  "name": "brokerage_tax_lots_list",
+  "title": "List the tax lots behind one holding",
+  "description": "Returns the individual lots that make up one holding: when each block of shares was acquired, what it cost, whether it has been held long enough for long-term treatment, its unrealized gain or loss, and whether selling it could trigger a wash sale. Use before advising on any sale in a taxable account, when the customer asks about cost basis, holding period, capital gains, or which shares to sell. Do not use for the aggregate position, which is brokerage_positions_list, and do not use it in a retirement account, where none of it changes the outcome. Read longTerm first: short-term gains are taxed as ordinary income and the difference is often larger than the price move the customer is worried about. Read washSaleRisk before selling at a loss. The useful thing to do with this result is to offer the customer the choice rather than make it for them, because this tool does not select lots and this catalog has no tool that does — the firm's default method applies unless a human instructs otherwise. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account holding the shares, from brokerage_accounts_list."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "The ticker whose lots to list, from brokerage_positions_list."
+      }
+    },
+    "required": ["accountId", "symbol"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account these lots are in." },
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The ticker these lots are for." },
+      "taxable": { "type": "boolean", "description": "False in a retirement account, where holding period and wash sales do not apply. When false, none of the advice below is relevant." },
+      "defaultMethod": {
+        "type": "string",
+        "enum": ["FIFO", "LIFO", "HIGHEST_COST", "SPECIFIC"],
+        "description": "The method that applies if nobody chooses lots. Tell the customer which lots that would actually sell."
+      },
+      "lots": {
+        "type": "array",
+        "maxItems": 100,
+        "description": "Lots, oldest acquisition first.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "lotId": { "type": "string", "pattern": "^lot_[0-9A-HJKMNP-TV-Z]{12}$", "description": "Opaque lot identifier, for a human to quote when instructing a specific-lot sale." },
+            "quantity": { "type": "integer", "minimum": 1, "description": "Shares in this lot." },
+            "costBasisPerShare": { "$ref": "#/$defs/decimal", "description": "What each share in this lot cost." },
+            "acquiredOn": { "type": "string", "format": "date", "description": "Acquisition date, which starts the holding period." },
+            "longTerm": { "type": "boolean", "description": "True once held more than a year. Long-term gains are taxed at a lower rate than short-term." },
+            "unrealizedPnl": { "$ref": "#/$defs/decimal", "description": "Gain or loss on this lot at the current price. Negative is a loss." },
+            "washSaleRisk": { "type": "boolean", "description": "True when shares of this instrument were bought within the last 30 days, so a loss here may be disallowed." }
+          },
+          "required": ["lotId", "quantity", "costBasisPerShare", "acquiredOn", "longTerm", "unrealizedPnl", "washSaleRisk"],
+          "additionalProperties": false
+        }
+      },
+      "asOf": { "type": "string", "format": "date-time", "description": "When these figures were computed, in UTC." }
+    },
+    "required": ["accountId", "symbol", "taxable", "defaultMethod", "lots", "asOf"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "tax-reporting",
+        "contact": "tax-reporting@example.com",
+        "escalation": "pagerduty://tax-reporting"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:positions:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.taxLots.list",
+        "retention": "P7Y",
+        "regulatoryBasis": ["books-and-records", "tax-reporting"]
+      },
+      "cost": { "class": "medium", "p95LatencyMs": 300 },
+      "rateLimit": { "perPrincipalPerMinute": 30, "perPrincipalPerDay": 1000 },
+      "dependencies": ["position-service", "tax-lot-service", "market-data-feed"],
+      "availability": { "slo": "99.9", "killSwitch": "tools.brokerage.taxlots" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.94,
+        "refusalAccuracy": 0.98,
+        "argumentAccuracy": 0.99
+      }
+    }
+  }
+}

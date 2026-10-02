@@ -1,0 +1,23 @@
+{
+  "scenarioId": "trading-04-limit-needs-a-price",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_quotes_get",
+          "arguments": "{\"symbols\":[\"MSFT\"]}"
+        }
+      ],
+      "text": "MSFT is at 556.05 as of 14:30 UTC. What limit price would you like? A limit order needs one and I will not choose a price on your behalf."
+    }
+  ],
+  "reply": "MSFT is at 556.05 as of 14:30 UTC. What limit price would you like? A limit order needs one and I will not choose a price on your behalf."
+}

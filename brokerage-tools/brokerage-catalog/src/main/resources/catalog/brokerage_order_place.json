@@ -1,0 +1,141 @@
+{
+  "name": "brokerage_order_place",
+  "title": "Place an order the customer has approved",
+  "description": "Sends a real order to the market. Use only after brokerage_order_preview has returned canPlace true for these exact terms, the customer has been shown the summary and the estimated cost, and the customer has said yes. Every argument here must match the preview character for character; the confirmationToken is bound to those terms and the order will be refused if anything differs, including the quantity, the price or the time in force. Do not use this to change an existing order, which is brokerage_order_replace, and do not use it to find out whether an order is possible, which is brokerage_order_preview. The effect is immediate and cannot be undone: a filled order can only be reversed by trading in the opposite direction, at whatever the market then is, and the customer bears that difference. Read status on the result: FILLED means it is done at averageFillPrice, WORKING means it is live and waiting, and REJECTED means nothing happened and rejectReason says why. The token is single-use, so a retry of the same call returns the original order rather than placing a second one — never preview again simply to obtain a fresh token for an order the customer has not re-approved.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account that will trade. Must match the preview."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "The ticker to trade. Must match the preview."
+      },
+      "side": {
+        "type": "string",
+        "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"],
+        "description": "Direction. Must match the preview."
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000,
+        "description": "Whole shares. Must match the preview exactly; a different quantity is a different order and needs a new preview."
+      },
+      "orderType": {
+        "type": "string",
+        "enum": ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"],
+        "description": "How the order is priced. Must match the preview."
+      },
+      "limitPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "The worst acceptable price, as a decimal string. Required for LIMIT and STOP_LIMIT. Must match the preview."
+      },
+      "stopPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "Activation price, as a decimal string. Required for STOP and STOP_LIMIT. Must match the preview."
+      },
+      "timeInForce": {
+        "type": "string",
+        "enum": ["DAY", "GTC", "IOC", "FOK"],
+        "default": "DAY",
+        "description": "How long the order stays live. Must match the preview."
+      },
+      "extendedHours": {
+        "type": "boolean",
+        "default": false,
+        "description": "Whether the order may trade outside the regular session. Must match the preview."
+      },
+      "confirmationToken": {
+        "type": "string",
+        "pattern": "^cnf_[0-9A-HJKMNP-TV-Z]{24}$",
+        "description": "The token returned by brokerage_order_preview for these exact terms. Single-use and valid for 120 seconds. There is no other way to obtain one and it must never be invented."
+      }
+    },
+    "required": ["accountId", "symbol", "side", "quantity", "orderType", "confirmationToken"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The order's identifier. Give this to the customer and use it for any later question about the order." },
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account it was placed in." },
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The instrument traded." },
+      "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction of the order as placed." },
+      "quantity": { "type": "integer", "minimum": 1, "description": "Shares ordered." },
+      "filledQuantity": { "type": "integer", "minimum": 0, "description": "Shares filled already. Compare with quantity before saying the order went through." },
+      "status": {
+        "type": "string",
+        "enum": ["PENDING_NEW", "WORKING", "PARTIALLY_FILLED", "FILLED", "CANCELLED", "REJECTED", "EXPIRED"],
+        "description": "Where the order stands. FILLED is done; WORKING is live and waiting; REJECTED means nothing happened."
+      },
+      "averageFillPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "What it actually filled at, or null if nothing has filled yet. For a market order this is the number the customer will ask about." },
+      "commission": { "$ref": "#/$defs/decimal", "description": "Commission and regulatory fees charged." },
+      "rejectReason": { "type": ["string", "null"], "maxLength": 240, "description": "Why it was rejected, when it was. Relay this and do not retry." },
+      "duplicateOfPreviousCall": {
+        "type": "boolean",
+        "description": "True when this call repeated a spent token and the order described here was created by the earlier call. Nothing was placed twice; tell the customer about one order, not two."
+      },
+      "placedAt": { "type": "string", "format": "date-time", "description": "When the order was entered, in UTC." }
+    },
+    "required": ["orderId", "accountId", "symbol", "side", "quantity", "filledQuantity", "status", "averageFillPrice", "commission", "rejectReason", "duplicateOfPreviousCall", "placedAt"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L3",
+      "riskTier": 3,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:write"],
+      "approval": {
+        "mode": "confirm",
+        "confirmationTemplate": "Place this order?\n\n  {{side}} {{quantity}} {{symbol}} in {{accountNickname}}\n  {{orderTypeDescription}}, {{timeInForce}}\n\n  Estimated cost   {{estimatedCost}} {{currency}}\n  Buying power after   {{buyingPowerAfter}} {{currency}}\n\n{{warnings}}\n\nThis sends a real order to the market and cannot be undone.",
+        "expiresInSeconds": 120
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.order.place",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records", "order-audit-trail", "suitability", "best-execution"]
+      },
+      "cost": { "class": "high", "p95LatencyMs": 850 },
+      "rateLimit": { "perPrincipalPerMinute": 10, "perPrincipalPerDay": 100 },
+      "dependencies": ["risk-engine", "margin-engine", "order-management-system", "market-data-feed"],
+      "availability": { "slo": "99.99", "killSwitch": "tools.brokerage.trading.place" },
+      "evaluation": {
+        "suite": "evals/brokerage-trading",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.99,
+        "refusalAccuracy": 1.0,
+        "argumentAccuracy": 0.99
+      }
+    }
+  }
+}

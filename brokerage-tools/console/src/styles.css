@@ -1,0 +1,211 @@
+/*
+ * One stylesheet, tokens first.
+ *
+ * The console has a job rather than a look: it has to make a JSON Schema, a risk tier and a tool
+ * trace readable by somebody who is deciding whether to approve a catalog. So the palette is
+ * almost entirely neutral, and the only colors that carry meaning are the four risk tiers and the
+ * three outcome states. Anything else colored would compete with them.
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #fbfbfa;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --border: #e3e3df;
+  --border-strong: #cfcfc9;
+  --text: #1c1c1a;
+  --muted: #6d6d66;
+  --faint: #9a9a92;
+
+  --accent: #30608f;
+  --accent-soft: #e8eff6;
+
+  /* Risk tiers. Deliberately a sequence, not a traffic light: tier 1 is not "caution". */
+  --tier-0: #5c7a5c;
+  --tier-1: #6b7f99;
+  --tier-2: #a8762f;
+  --tier-3: #a8402f;
+
+  --ok: #4a7a4a;
+  --warn: #a8762f;
+  --bad: #a8402f;
+
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius: 6px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 8px rgba(0, 0, 0, 0.03);
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --bg: #17171a;
+    --surface: #1e1e22;
+    --surface-2: #26262b;
+    --border: #32323a;
+    --border-strong: #44444e;
+    --text: #e8e8e4;
+    --muted: #a0a099;
+    --faint: #70706a;
+    --accent: #7fa8d4;
+    --accent-soft: #23303d;
+    --tier-0: #8fb08f;
+    --tier-1: #9fb3cc;
+    --tier-2: #d4a765;
+    --tier-3: #d87f6f;
+    --ok: #86b886;
+    --warn: #d4a765;
+    --bad: #d87f6f;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #17171a;
+  --surface: #1e1e22;
+  --surface-2: #26262b;
+  --border: #32323a;
+  --border-strong: #44444e;
+  --text: #e8e8e4;
+  --muted: #a0a099;
+  --faint: #70706a;
+  --accent: #7fa8d4;
+  --accent-soft: #23303d;
+  --tier-0: #8fb08f;
+  --tier-1: #9fb3cc;
+  --tier-2: #d4a765;
+  --tier-3: #d87f6f;
+  --ok: #86b886;
+  --warn: #d4a765;
+  --bad: #d87f6f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 8px rgba(0, 0, 0, 0.2);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.01em; margin: 0 0 0.5rem; }
+h1 { font-size: 1.3rem; }
+h2 { font-size: 1.05rem; margin-top: 1.75rem; }
+h3 { font-size: 0.95rem; }
+p { margin: 0 0 0.75rem; max-width: 70ch; }
+a { color: var(--accent); }
+
+code, pre, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+pre {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+  overflow-x: auto;
+  margin: 0 0 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+button {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--surface-2); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+
+input, select, textarea {
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.5rem;
+}
+textarea { font-family: var(--mono); font-size: 0.82rem; resize: vertical; }
+
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; }
+th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.35rem 0.6rem 0.35rem 0;
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+td {
+  padding: 0.4rem 0.6rem 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem;
+}
+
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.small { font-size: 0.82rem; }
+.row { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+.stack { display: flex; flex-direction: column; gap: 1rem; }
+
+.tier {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.25rem 0.4rem;
+  border-radius: 3px;
+  color: #fff;
+}
+.tier-0 { background: var(--tier-0); }
+.tier-1 { background: var(--tier-1); }
+.tier-2 { background: var(--tier-2); }
+.tier-3 { background: var(--tier-3); }
+
+.pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 45%, transparent); }
+.pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+
+@media (max-width: 720px) {
+  table, thead, tbody, th, td, tr { display: block; }
+  th { display: none; }
+  td { border: none; padding: 0.1rem 0; }
+  tr { border-bottom: 1px solid var(--border); padding: 0.6rem 0; }
+}

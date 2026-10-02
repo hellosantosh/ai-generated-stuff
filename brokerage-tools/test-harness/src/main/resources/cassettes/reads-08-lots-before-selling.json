@@ -1,0 +1,23 @@
+{
+  "scenarioId": "reads-08-lots-before-selling",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_tax_lots_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\"}"
+        }
+      ],
+      "text": "You hold AAPL in two lots in Everyday brokerage. 240 shares bought on 14 March 2022 at 148.22, which is long-term and currently up 17,112.00. And 60 shares bought on 2 July 2026 at 221.40, which is short-term, currently down 112.80, and was bought recently enough that selling it at a loss could trigger a wash sale. Short-term gains are taxed as ordinary income and long-term at the lower rate. Which lots to sell is a decision for you and your accountant, and you can instruct a specific lot if you want to."
+    }
+  ],
+  "reply": "You hold AAPL in two lots in Everyday brokerage. 240 shares bought on 14 March 2022 at 148.22, which is long-term and currently up 17,112.00. And 60 shares bought on 2 July 2026 at 221.40, which is short-term, currently down 112.80, and was bought recently enough that selling it at a loss could trigger a wash sale. Short-term gains are taxed as ordinary income and long-term at the lower rate. Which lots to sell is a decision for you and your accountant, and you can instruct a specific lot if you want to."
+}

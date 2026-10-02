@@ -1,0 +1,120 @@
+{
+  "name": "brokerage_executions_list",
+  "title": "List fills in one account",
+  "description": "Returns individual executions in one account, newest first: the order they belong to, the quantity and price of each fill, the commission, the venue and the settlement date. Use when the customer asks what price they actually got, asks about trades over a period, asks when money from a sale will be available, or needs a record for their own accounting. Do not use to check whether an order went through, which is brokerage_orders_list or brokerage_order_get and answers that in one row rather than several. Read settlesOn when the customer asks when cash is available: proceeds are not spendable before that date, and quoting them the trade date is how a good-faith violation happens. Read price per fill rather than reporting an order's average when the customer asks what they paid, because a large order filled in pieces has several prices and only the fills show that. Fills are final and never change once reported. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account whose fills to list, from brokerage_accounts_list."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "Narrow to one ticker. Omit for every symbol."
+      },
+      "since": {
+        "type": "string",
+        "format": "date",
+        "description": "Earliest trade date to include. Omit for the last 30 days, which is the usual question."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 20,
+        "description": "How many fills to return at most, newest first."
+      },
+      "cursor": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_=-]{1,512}$",
+        "description": "Opaque forward cursor from a previous call's nextCursor. Pass it back unchanged."
+      }
+    },
+    "required": ["accountId"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account these fills are in." },
+      "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency for every amount here." },
+      "executions": {
+        "type": "array",
+        "maxItems": 50,
+        "description": "Fills, newest first.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "executionId": { "type": "string", "pattern": "^exec_[0-9A-HJKMNP-TV-Z]{16}$", "description": "Opaque identifier for this fill." },
+            "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The order this fill belongs to. Pass to brokerage_order_get for the whole order." },
+            "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The instrument traded." },
+            "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction of the trade." },
+            "quantity": { "type": "integer", "minimum": 1, "description": "Shares in this fill." },
+            "price": { "$ref": "#/$defs/decimal", "description": "Price per share. This is what the customer actually paid or received." },
+            "principal": { "$ref": "#/$defs/decimal", "description": "Quantity times price, before costs." },
+            "commission": { "$ref": "#/$defs/decimal", "description": "Commission and regulatory fees on this fill." },
+            "executedAt": { "type": "string", "format": "date-time", "description": "When it traded, in UTC." },
+            "settlesOn": { "type": "string", "format": "date", "description": "Settlement date. Proceeds are not spendable before this." },
+            "venue": { "type": "string", "maxLength": 16, "description": "Where it traded." }
+          },
+          "required": ["executionId", "orderId", "symbol", "side", "quantity", "price", "principal", "commission", "executedAt", "settlesOn", "venue"],
+          "additionalProperties": false
+        }
+      },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 512, "description": "Pass to a further call to continue, or null when this is everything." },
+      "asOf": { "type": "string", "format": "date-time", "description": "When this list was taken, in UTC." }
+    },
+    "required": ["accountId", "currency", "executions", "nextCursor", "asOf"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.executions.list",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records", "order-audit-trail", "trade-reporting"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 200 },
+      "rateLimit": { "perPrincipalPerMinute": 60, "perPrincipalPerDay": 2000 },
+      "dependencies": ["order-management-system", "clearing"],
+      "availability": { "slo": "99.95", "killSwitch": "tools.brokerage.orders" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.95,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 0.97
+      }
+    }
+  }
+}

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Brokerage Tools: the reference implementation for the book
+  "Tool Specifications and Design for the Brokerage Domain".
+
+    tool-contract      the descriptor, the ontology, the result envelope, the conformance linter
+    tool-runtime       the registry, the selection view, the invocation pipeline, the Spring AI binding
+    brokerage-domain   a self-contained brokerage: accounts, quotes, risk, the order book
+    brokerage-catalog  fourteen conformant descriptors and the handlers behind them
+    agent-service      the Spring AI agent over Claude, its HTTP surface, and the Angular console
+    test-harness       the agentic test harness: selection, arguments, trajectory, refusal
+    desktop-bridge     a local connector that presents the catalog to Claude Desktop
+
+  Build and test everything:   ./mvnw verify
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.example.brokerage</groupId>
+  <artifactId>brokerage-tools</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <name>Brokerage Tools</name>
+  <description>
+    Model-invocable tools for the brokerage domain: contract, registry, catalog, agent, harness
+  </description>
+
+  <modules>
+    <module>tool-contract</module>
+    <module>brokerage-domain</module>
+    <module>brokerage-catalog</module>
+    <module>tool-runtime</module>
+    <module>agent-service</module>
+    <module>test-harness</module>
+    <module>desktop-bridge</module>
+  </modules>
+
+  <properties>
+    <java.version>27</java.version>
+    <spring-ai.version>2.0.1</spring-ai.version>
+    <json-schema-validator.version>3.0.7</json-schema-validator.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.ai</groupId>
+        <artifactId>spring-ai-bom</artifactId>
+        <version>${spring-ai.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>${json-schema-validator.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example.brokerage</groupId>
+        <artifactId>tool-contract</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example.brokerage</groupId>
+        <artifactId>tool-runtime</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example.brokerage</groupId>
+        <artifactId>brokerage-domain</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.example.brokerage</groupId>
+        <artifactId>brokerage-catalog</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

@@ -1,0 +1,19 @@
+{
+  "scenarioId": "reads-05-history-not-quote",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_price_history_get",
+          "arguments": "{\"symbol\":\"NVDA\",\"days\":30}"
+        }
+      ],
+      "text": "Over the 22 trading days from 2 September to 1 October, NVDA closed between 165.37 and 169.24, finishing the period down 0.06 percent. That is price only and does not include dividends."
+    }
+  ],
+  "reply": "Over the 22 trading days from 2 September to 1 October, NVDA closed between 165.37 and 169.24, finishing the period down 0.06 percent. That is price only and does not include dividends."
+}

@@ -1,0 +1,110 @@
+{
+  "name": "brokerage_accounts_list",
+  "title": "List the customer's brokerage accounts",
+  "description": "Returns every brokerage account the signed-in customer holds, with its identifier, nickname, type, currency and whether it can currently trade. Use when the customer mentions an account by nickname, refers to \"my account\" without saying which, or when any other brokerage tool needs an accountId and none is in hand yet — this is the only tool that needs nothing to run, so it is the safe first call. Do not use to find out how much money is in an account; that is brokerage_balances_get. Read the type field before advising on anything: a CASH account cannot borrow, an IRA_TRADITIONAL or ROTH_IRA account cannot sell short, and any account whose tradeable field is false cannot place orders at all. Read restriction when tradeable is false and tell the customer the reason rather than retrying. When the customer has more than one account and has not said which, ask; nickname and type together are usually enough for them to choose. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "includeClosed": {
+        "type": "boolean",
+        "default": false,
+        "description": "Whether to include accounts that have been closed. Omitted means false, which is almost always what the customer means."
+      }
+    },
+    "required": [],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "accounts": {
+        "type": "array",
+        "maxItems": 50,
+        "description": "The customer's accounts, oldest first. Empty only for a customer with no brokerage relationship.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "string",
+              "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+              "description": "Opaque account identifier. Pass this to the other brokerage tools verbatim; never build one or edit one."
+            },
+            "nickname": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "What the customer calls this account. Use it when speaking to them; use accountId when calling tools."
+            },
+            "type": {
+              "type": "string",
+              "enum": ["CASH", "MARGIN", "IRA_TRADITIONAL", "ROTH_IRA"],
+              "description": "What the account may do. MARGIN can borrow and sell short; CASH can do neither; the two IRA types can do neither and have contribution and withdrawal rules this tool does not cover."
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 4217 currency the account is denominated in. All amounts for this account are in it."
+            },
+            "openedOn": {
+              "type": "string",
+              "format": "date",
+              "description": "The date the account was opened, which matters for some holding-period questions."
+            },
+            "tradeable": {
+              "type": "boolean",
+              "description": "Whether orders can be placed right now. False means do not attempt an order; read restriction and tell the customer."
+            },
+            "restriction": {
+              "type": ["string", "null"],
+              "enum": ["UNSETTLED_FUNDS", "DAY_TRADE_RESTRICTED", "FROZEN", null],
+              "description": "Why the account is limited, or null when it is not. UNSETTLED_FUNDS limits buying power to settled cash; DAY_TRADE_RESTRICTED allows closing orders only; FROZEN allows nothing."
+            }
+          },
+          "required": ["accountId", "nickname", "type", "currency", "openedOn", "tradeable", "restriction"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["accounts"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "brokerage-platform",
+        "contact": "brokerage-platform@example.com",
+        "escalation": "pagerduty://brokerage-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:accounts:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.accounts.list",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 120 },
+      "rateLimit": { "perPrincipalPerMinute": 60, "perPrincipalPerDay": 2000 },
+      "dependencies": ["account-service"],
+      "availability": { "slo": "99.95", "killSwitch": "tools.brokerage.accounts" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.99,
+        "refusalAccuracy": 1.0,
+        "argumentAccuracy": 1.0
+      }
+    }
+  }
+}

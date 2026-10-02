@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.example.brokerage</groupId>
+    <artifactId>brokerage-tools</artifactId>
+    <version>1.0.0</version>
+  </parent>
+
+  <artifactId>test-harness</artifactId>
+  <name>Tool Test Harness</name>
+  <description>
+    Scenario-driven agentic evaluation: selection, arguments, trajectory, refusal and cost, offline by
+    default
+  </description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.example.brokerage</groupId>
+      <artifactId>brokerage-catalog</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.example.brokerage</groupId>
+      <artifactId>tool-runtime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-anthropic</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>

@@ -1,0 +1,27 @@
+{
+  "scenarioId": "reads-07-what-did-i-pay",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_orders_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"state\":\"ALL\",\"symbol\":\"NVDA\"}"
+        },
+        {
+          "tool": "brokerage_order_get",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"orderId\":\"ord_M07KB16SEA01HW70\"}"
+        }
+      ],
+      "text": "That order filled in one execution: 100 shares of NVDA at 181.44, with no commission. It settled the next business day after the trade."
+    }
+  ],
+  "reply": "That order filled in one execution: 100 shares of NVDA at 181.44, with no commission. It settled the next business day after the trade."
+}

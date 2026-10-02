@@ -1,0 +1,23 @@
+{
+  "scenarioId": "reads-03-what-do-i-own",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_positions_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\"}"
+        }
+      ],
+      "text": "Everyday brokerage holds five positions, worth 277,043.25 USD in total as of 14:30 UTC: VOO 150 shares at 31.4 percent of the account, NVDA 400 shares at 24.2 percent, AAPL 300 shares at 23.8 percent, MSFT 85 shares at 17.1 percent, and GME 500 shares at 3.6 percent. GME is the only one showing a loss, down 31.0 percent."
+    }
+  ],
+  "reply": "Everyday brokerage holds five positions, worth 277,043.25 USD in total as of 14:30 UTC: VOO 150 shares at 31.4 percent of the account, NVDA 400 shares at 24.2 percent, AAPL 300 shares at 23.8 percent, MSFT 85 shares at 17.1 percent, and GME 500 shares at 3.6 percent. GME is the only one showing a loss, down 31.0 percent."
+}

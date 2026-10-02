@@ -1,0 +1,127 @@
+{
+  "name": "brokerage_orders_list",
+  "title": "List orders in one account",
+  "description": "Returns orders in one account, newest first, with status, filled quantity, prices and timestamps, filtered by state and optionally by symbol. Use when the customer asks what orders are open, whether something went through, what happened to an order, or asks to change or cancel one and has not given the order number. Do not use to find out what an order would cost before placing it — that is brokerage_order_preview — and do not use it for individual fills, which are in brokerage_executions_list. Read status before saying anything definite. WORKING and PARTIALLY_FILLED mean the order is still live and can still change; FILLED, CANCELLED, REJECTED and EXPIRED are final. Read filledQuantity against quantity on a partial fill, because \"your order went through\" is false when half of it did. Read rejectReason when status is REJECTED and relay it. The orderId returned here is what brokerage_order_get, brokerage_order_replace and brokerage_order_cancel need. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account whose orders to list, from brokerage_accounts_list."
+      },
+      "state": {
+        "type": "string",
+        "enum": ["WORKING", "TERMINAL", "ALL"],
+        "default": "WORKING",
+        "description": "Which orders to return. WORKING is anything still live and is the default because it is what the customer almost always means. TERMINAL is everything finished. ALL is both."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "Narrow to one ticker. Omit for every symbol."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "default": 20,
+        "description": "How many orders to return at most, newest first."
+      },
+      "cursor": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_=-]{1,512}$",
+        "description": "Opaque forward cursor from a previous call's nextCursor. Pass it back unchanged; never construct one."
+      }
+    },
+    "required": ["accountId"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account these orders are in." },
+      "orders": {
+        "type": "array",
+        "maxItems": 50,
+        "description": "Orders, newest first.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$", "description": "Opaque order identifier. Pass to brokerage_order_get, brokerage_order_replace or brokerage_order_cancel verbatim." },
+            "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The instrument being traded." },
+            "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction of the order." },
+            "quantity": { "type": "integer", "minimum": 1, "description": "Shares the order is for." },
+            "filledQuantity": { "type": "integer", "minimum": 0, "description": "Shares filled so far. Compare with quantity before telling the customer the order went through." },
+            "orderType": { "type": "string", "enum": ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"], "description": "How the order is priced." },
+            "limitPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "The worst acceptable price, or null for a market or plain stop order." },
+            "stopPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "The price at which the order activates, or null when there is none." },
+            "timeInForce": { "type": "string", "enum": ["DAY", "GTC", "IOC", "FOK"], "description": "How long the order stays live. DAY expires at the close of the current session." },
+            "status": {
+              "type": "string",
+              "enum": ["PENDING_NEW", "WORKING", "PARTIALLY_FILLED", "FILLED", "CANCELLED", "REJECTED", "EXPIRED"],
+              "description": "Where the order stands. The first three are live and can still change; the last four are final."
+            },
+            "averageFillPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Average price of the fills so far, or null when nothing has filled." },
+            "rejectReason": { "type": ["string", "null"], "maxLength": 240, "description": "Why the order was rejected, when status is REJECTED. Relay this to the customer." },
+            "placedAt": { "type": "string", "format": "date-time", "description": "When the order was entered, in UTC." },
+            "updatedAt": { "type": "string", "format": "date-time", "description": "When it last changed, in UTC." }
+          },
+          "required": ["orderId", "symbol", "side", "quantity", "filledQuantity", "orderType", "limitPrice", "stopPrice", "timeInForce", "status", "averageFillPrice", "rejectReason", "placedAt", "updatedAt"],
+          "additionalProperties": false
+        }
+      },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 512, "description": "Pass to a further call to continue, or null when this is everything." },
+      "asOf": { "type": "string", "format": "date-time", "description": "When this list was taken, in UTC. A working order can change immediately after." }
+    },
+    "required": ["accountId", "orders", "nextCursor", "asOf"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.orders.list",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records", "order-audit-trail"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 180 },
+      "rateLimit": { "perPrincipalPerMinute": 60, "perPrincipalPerDay": 3000 },
+      "dependencies": ["order-management-system"],
+      "availability": { "slo": "99.99", "killSwitch": "tools.brokerage.orders" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.98,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 0.98
+      }
+    }
+  }
+}

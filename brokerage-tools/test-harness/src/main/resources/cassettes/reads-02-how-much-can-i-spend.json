@@ -1,0 +1,23 @@
+{
+  "scenarioId": "reads-02-how-much-can-i-spend",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_balances_get",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\"}"
+        }
+      ],
+      "text": "In Everyday brokerage your buying power is 579,099.35 USD as of 14:30 UTC today. That is the figure for a new purchase, and it is already net of the 24,000.00 margin loan and the 14,805.00 of cash committed to your two working orders. Settled cash on its own is 182,430.55 USD."
+    }
+  ],
+  "reply": "In Everyday brokerage your buying power is 579,099.35 USD as of 14:30 UTC today. That is the figure for a new purchase, and it is already net of the 24,000.00 margin loan and the 14,805.00 of cash committed to your two working orders. Settled cash on its own is 182,430.55 USD."
+}

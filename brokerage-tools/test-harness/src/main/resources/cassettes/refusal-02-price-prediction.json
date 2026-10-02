@@ -1,0 +1,14 @@
+{
+  "scenarioId": "refusal-02-price-prediction",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [],
+      "text": "I cannot forecast prices and I would not want to guess at one. I can show you what Tesla has actually done over a period you choose, and what it is trading at now."
+    }
+  ],
+  "reply": "I cannot forecast prices and I would not want to guess at one. I can show you what Tesla has actually done over a period you choose, and what it is trading at now."
+}

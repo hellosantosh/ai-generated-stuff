@@ -1,0 +1,19 @@
+{
+  "scenarioId": "reads-09-ambiguous-apple",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_instruments_search",
+          "arguments": "{\"query\":\"Apple\"}"
+        }
+      ],
+      "text": "Two listings match \"Apple\": AAPL, Apple Inc. on NASDAQ, and APLE, Apple Hospitality REIT on the NYSE. Which did you mean?"
+    }
+  ],
+  "reply": "Two listings match \"Apple\": AAPL, Apple Inc. on NASDAQ, and APLE, Apple Hospitality REIT on the NYSE. Which did you mean?"
+}

@@ -1,0 +1,27 @@
+{
+  "scenarioId": "trading-03-place-after-approval",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":50,\"orderType\":\"MARKET\"}"
+        },
+        {
+          "tool": "brokerage_order_place",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":50,\"orderType\":\"MARKET\",\"confirmationToken\":\"{{confirmationToken}}\"}"
+        }
+      ],
+      "text": "Done. The order filled in full: 50 AAPL at 219.56, no commission. I have the order number for your records and it settles the next business day."
+    }
+  ],
+  "reply": "Done. The order filled in full: 50 AAPL at 219.56, no commission. I have the order number for your records and it settles the next business day."
+}
