@@ -18,7 +18,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 open http://localhost:8080/
 ```
 
-Requires JDK 27 and Node 22 or later. The API key is needed only for the chat page and for
+Requires JDK 25 and Node 22 or later. The API key is needed only for the chat page and for
 `./harness.sh --live`; everything else works without one, which is deliberate — a tool catalog you
 can only exercise through a language model is a catalog you cannot debug.
 
