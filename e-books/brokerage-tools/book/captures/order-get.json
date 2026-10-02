@@ -1,0 +1,36 @@
+{
+  "ok" : true,
+  "data" : {
+    "orderId" : "ord_M07KB16SEA01HW70",
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "symbol" : "NVDA",
+    "side" : "BUY",
+    "quantity" : 100,
+    "filledQuantity" : 100,
+    "orderType" : "MARKET",
+    "limitPrice" : null,
+    "stopPrice" : null,
+    "timeInForce" : "DAY",
+    "status" : "FILLED",
+    "averageFillPrice" : "181.44",
+    "commission" : "0.00",
+    "rejectReason" : null,
+    "placedAt" : "2026-09-30T14:30:00Z",
+    "updatedAt" : "2026-09-30T14:31:40Z",
+    "executions" : [ {
+      "executionId" : "exec_ND1FHVBSZHMN2QAF",
+      "quantity" : 100,
+      "price" : "181.44",
+      "executedAt" : "2026-09-30T14:31:40Z",
+      "settlesOn" : "2026-10-01",
+      "venue" : "NASDAQ"
+    } ]
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_28a13b7fb5a24adcad99",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,483 @@
+<!-- ============================================================== PART I plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part I</div>
+    <h1>Foundations</h1>
+    <p class="pl">
+      What changes when the caller is a language model, where the trust boundary actually runs, and
+      what the five components of a tool system are each responsible for.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 600 180" role="img"
+           aria-label="The five components: the model proposes, the runtime validates, the registry
+                       decides what exists, the handler acts, the system of record holds the truth">
+        <defs>
+          <marker id="p1-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8fa2d4"/>
+          </marker>
+        </defs>
+        <g font-family="monospace" font-size="10" fill="#dce5ff" text-anchor="middle">
+          <rect x="8" y="64" width="94" height="40" rx="6" fill="rgba(255,186,84,.14)"
+                stroke="rgba(255,203,122,.5)"/>
+          <text x="55" y="88" fill="#ffcb7a">model</text>
+          <rect x="138" y="64" width="94" height="40" rx="6" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/>
+          <text x="185" y="88">runtime</text>
+          <rect x="268" y="18" width="94" height="40" rx="6" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/>
+          <text x="315" y="42">registry</text>
+          <rect x="268" y="110" width="94" height="40" rx="6" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/>
+          <text x="315" y="134">handler</text>
+          <rect x="398" y="110" width="110" height="40" rx="6" fill="rgba(111,224,187,.14)"
+                stroke="rgba(111,224,187,.45)"/>
+          <text x="453" y="134" fill="#8fe8c8">system of record</text>
+        </g>
+        <path d="M102 84 L132 84" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p1-ar)"/>
+        <path d="M232 76 C252 76, 252 40, 262 40" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p1-ar)"/>
+        <path d="M232 94 C252 94, 252 130, 262 130" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p1-ar)"/>
+        <path d="M362 130 L392 130" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p1-ar)"/>
+        <path d="M120 40 L120 160" stroke="#ffcb7a" stroke-width="1.2" stroke-dasharray="5 4"/>
+        <text x="126" y="172" font-family="monospace" font-size="7.5" fill="#ffcb7a"
+              letter-spacing="1.2">TRUST BOUNDARY</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>1</b> What a tool is &nbsp;&middot;&nbsp;
+      <b>2</b> The five components &nbsp;&middot;&nbsp;
+      <b>3</b> Conformance levels
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ chapter 1 -->
+<section class="chapter" id="ch-1" data-foot="1 — What a tool is">
+  <div class="chnum">Chapter 1</div>
+  <h1 class="title">What a tool is</h1>
+  <p class="lede">
+    A tool is not an endpoint with a description attached. The difference is the caller, and the
+    caller changes almost everything.
+  </p>
+
+  <p>
+    Here is the sentence that most teams start from: <em>we already have a REST API, so we will
+    expose it as tools.</em> It is a reasonable instinct and it produces a catalog that works in a
+    demonstration and disappoints in production. The reason is worth being precise about, because
+    it is not that language models are unreliable. It is that an API and a tool are contracts with
+    different parties, and almost every property an API contract leaves to convention, a tool
+    contract has to state.
+  </p>
+
+  <h2>Five differences that matter</h2>
+
+  <table>
+    <thead>
+      <tr><th style="width:1.1in">&nbsp;</th><th>An API endpoint</th><th>A tool</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>The caller</b></td>
+        <td>
+          A developer who read the documentation once, wrote code, and now calls it the same way
+          forever. Mistakes are found at compile time or in a test.
+        </td>
+        <td>
+          A model that re-reads the description on every turn and decides fresh each time. Mistakes
+          are found in a conversation, by a customer.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Discovery</b></td>
+        <td>
+          Out of band. The developer browses the docs, picks the endpoint, and nothing in the API
+          itself has to help them choose.
+        </td>
+        <td>
+          In band. Choosing <em>which</em> tool is the hard part, and the only thing that helps is
+          the prose in the description &mdash; which is therefore the most load-bearing field.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Arguments</b></td>
+        <td>
+          Constructed by code from typed values. A malformed request is a bug in the client, and
+          there is one client.
+        </td>
+        <td>
+          Generated from a conversation that may contain anything the customer typed. The schema is
+          the only thing standing between that and your handler.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Errors</b></td>
+        <td>
+          A status code and a body. The client decides what to do about it, once, in code that was
+          reviewed.
+        </td>
+        <td>
+          Something the model has to read and act on in the moment. A bare 403 teaches it to try
+          the next tool; a sentence teaches it to stop.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Retries</b></td>
+        <td>
+          Deliberate, bounded, and configured by the client's author.
+        </td>
+        <td>
+          Enthusiastic. A model that reads an error as transient will try again politely for as
+          many turns as it has, and the only thing that stops it is the error saying not to.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pull">
+    An API is read once by a person and then called forever by a program. A tool is read on every
+    single call by something that is reasoning about it afresh.
+  </div>
+
+  <h2>What follows from that</h2>
+
+  <p>
+    Four consequences run through the rest of this book, and it is worth meeting them now.
+  </p>
+
+  <h3>The description is not documentation</h3>
+  <p>
+    In an API, the description is a courtesy. In a tool, it is the decision procedure. When an agent
+    picks the wrong tool, the cause is almost never that the model is incapable; it is that two
+    descriptions did not distinguish themselves, or that one of them failed to say when
+    <em>not</em> to use it. Chapter 6 spends its whole length on this one field, which is the right
+    proportion.
+  </p>
+
+  <h3>The schema is a boundary, not a type signature</h3>
+  <p>
+    A model follows a closed object schema with narrow patterns very reliably. &ldquo;Very
+    reliably&rdquo; is a probability, and the right standard for an order ticket is not a
+    probability. So the schema exists to be <em>enforced</em> at the boundary, every call, before a
+    handler sees an argument &mdash; and when it fails, the failure has to name the field, because
+    the caller is going to try again and should try again correctly.
+  </p>
+
+  <h3>Failures are data</h3>
+  <p>
+    A tool that throws gives the runtime a stack trace and gives the model a wall of text it was
+    never taught to read. A tool that returns <span class="icode">ok: false</span> with a code from
+    a closed set gives the model something to branch on and gives the agent's author something to
+    assert in a test. Every tool in this book returns the same envelope whether it succeeded or
+    not; chapter 8 is about that envelope and the fifteen codes inside it.
+  </p>
+
+  <h3>Some things cannot be left to the model's judgment</h3>
+  <p>
+    The model is a participant in the conversation, and the conversation contains whatever the
+    customer typed. So identity is never an argument. Approval is never a boolean the model sets.
+    The authority to place an order is a single-use token that only a read-only pricing tool can
+    mint. None of this is distrust of the model; it is the same reason a bank teller cannot approve
+    their own withdrawal.
+  </p>
+
+  <div class="callout warn"><p>
+    <span class="lbl">The one-sentence test.</span> If a property of your tool is enforced only by
+    the model choosing to respect it, it is not enforced. Write it down, then ask what in the
+    <em>runtime</em> makes it true. If the answer is &ldquo;the description asks nicely&rdquo;,
+    you have a convention, not a control.
+  </p></div>
+
+  <h2>What a tool is, then</h2>
+
+  <p>
+    A tool is a contract with four parts, three audiences and one promise.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">Definition</div>
+    <p style="margin-bottom:4pt">
+      A <b>tool</b> is a named, independently invocable capability, described well enough that a
+      language model can decide when to use it, constrained well enough that the firm can let it,
+      and governed well enough that somebody can be held responsible for it afterwards.
+    </p>
+    <ul class="tight" style="margin-bottom:0">
+      <li><b>For the model:</b> a name, a description and an input schema.</li>
+      <li><b>For the runtime:</b> an output schema and four behavioral annotations.</li>
+      <li><b>For the firm:</b> a governance block that never reaches the model at all.</li>
+    </ul>
+  </div>
+
+  <p>
+    That is the whole of chapter 4, and the next three hundred pages are what each part has to
+    contain, why, and what goes wrong when it does not.
+  </p>
+</section>
+
+<!-- ================================================================ chapter 2 -->
+<section class="chapter" id="ch-2" data-foot="2 — The five components">
+  <div class="chnum">Chapter 2</div>
+  <h1 class="title">The five components</h1>
+  <p class="lede">
+    Five things, one boundary, and a rule about which side each decision is made on.
+  </p>
+
+  <p>
+    Every tool system has the same five parts, whether or not anyone named them. Naming them is
+    useful because the most expensive mistakes are all mistakes about <em>which</em> component owns
+    a decision.
+  </p>
+
+  <dl class="defs">
+    <dt>The model</dt>
+    <dd>
+      Reads the catalog, decides which tool to call and with what arguments, reads what comes back,
+      and decides again. It is on the untrusted side of the boundary, which is not a judgment about
+      its competence &mdash; it is a statement about where its inputs come from.
+    </dd>
+
+    <dt>The runtime</dt>
+    <dd>
+      Everything that happens between the model emitting a call and a handler running: resolving
+      the name, validating the arguments, establishing who the call is for, checking entitlements,
+      applying the rate limit, consulting the approval gate, wrapping the result and writing the
+      audit record. This is where the controls live, because it is the first component on the
+      trusted side.
+    </dd>
+
+    <dt>The registry</dt>
+    <dd>
+      The one place that knows what tools exist, what each one promises, who may call it and what
+      code is behind it. Without one, the catalog is whatever happened to be on the classpath, and
+      four questions become unanswerable: what is the model being shown, who may call these, which
+      have been reviewed, and what breaks if we turn one off.
+    </dd>
+
+    <dt>The handler</dt>
+    <dd>
+      The domain code behind one tool. In a well-built catalog it is startlingly short, because
+      everything generic happens around it. If a handler is long, the tool is usually doing two
+      things.
+    </dd>
+
+    <dt>The system of record</dt>
+    <dd>
+      The brokerage itself: the ledger, the order management system, the risk engine, the market
+      data feed. It does not know a model exists and must not have to. Every rule it enforces for a
+      human caller it enforces identically here.
+    </dd>
+  </dl>
+
+  <h2>Where the boundary runs</h2>
+
+  <p>
+    The trust boundary is between the model and the runtime, and it is worth saying plainly what
+    that means, because it is routinely drawn in the wrong place.
+  </p>
+
+  <p>
+    It does <em>not</em> mean the model is adversarial. It means that everything the model emits is
+    derived from a conversation, and a conversation contains text that arrived from outside the
+    firm. A customer can type an account identifier that is not theirs. A document the customer
+    pasted can contain a sentence addressed to the model. An email the agent was asked to summarize
+    can say &ldquo;ignore your previous instructions&rdquo;. None of that is the model failing; it
+    is the model doing its job on an input it has no way to vet.
+  </p>
+
+  <p>
+    So the rule is mechanical:
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">The boundary rule</div>
+    <p style="margin-bottom:0">
+      A decision may be made on the model's side of the boundary only if a wrong answer is
+      recoverable by the firm's own side. Everything else &mdash; identity, entitlement, approval,
+      limits, idempotency &mdash; is decided by the runtime, from state the model cannot reach.
+    </p>
+  </div>
+
+  <p>
+    Applied to this book's catalog, that is a short and specific list.
+  </p>
+
+  <table class="dense">
+    <thead>
+      <tr><th style="width:1.9in">Decision</th><th style="width:0.85in">Decided by</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">which tool to call</td><td>the model</td>
+        <td>A wrong choice is refused, costs a turn, and nothing happens.</td></tr>
+      <tr><td class="k">which account</td><td>the model</td>
+        <td>It can only choose between accounts the customer holds; the handler checks.</td></tr>
+      <tr><td class="k">how many shares</td><td>the model</td>
+        <td>The risk engine prices it, the customer sees the number, and a human agrees.</td></tr>
+      <tr class="hl"><td class="k">who the customer is</td><td>the runtime</td>
+        <td>A customer identifier the model can set is an account anyone can read.</td></tr>
+      <tr class="hl"><td class="k">what scopes are held</td><td>the runtime</td>
+        <td>A scope the caller can name is not a scope.</td></tr>
+      <tr class="hl"><td class="k">whether a human agreed</td><td>the runtime</td>
+        <td>A boolean the model sets is a boolean the model will eventually set.</td></tr>
+      <tr class="hl"><td class="k">the idempotency key</td><td>the runtime</td>
+        <td>A model asked for a unique key will reuse one, or invent a new one on a retry.</td></tr>
+      <tr class="hl"><td class="k">how often it may call</td><td>the runtime</td>
+        <td>The failure mode being guarded against is a loop, and a loop will not self-limit.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The anatomy of one invocation</h2>
+
+  <p>
+    Here is a single call, end to end, with the component responsible for each step. Chapter 21
+    implements it; this is the shape to keep in mind until then.
+  </p>
+
+  <ol class="steps">
+    <li><b>The model emits a call.</b> A name and a JSON object. Nothing more. It has no session,
+      no identity and no way to set one.</li>
+    <li><b>The runtime resolves the name</b> against the registry's view <em>for this principal</em>.
+      A tool this session cannot use is not merely refused; it was never published.</li>
+    <li><b>The runtime validates the arguments</b> against the descriptor's input schema. A failure
+      names the field, because the model is about to try again.</li>
+    <li><b>The runtime establishes the principal</b> from the session &mdash; never from the
+      arguments &mdash; and checks every entitlement the descriptor requires.</li>
+    <li><b>The runtime applies the rate limit</b> for this principal and this tool.</li>
+    <li><b>The runtime consults the approval gate.</b> For a tier 2 or 3 tool with no live grant,
+      the call stops here and the customer is shown what they are being asked to agree to.</li>
+    <li><b>The handler runs.</b> It sees a descriptor, validated arguments and a principal. It does
+      not see the conversation, which is why it cannot be talked into anything.</li>
+    <li><b>The handler calls the system of record</b>, which applies every rule it would apply to
+      any other caller.</li>
+    <li><b>The runtime validates the payload</b> against the descriptor's own output schema and
+      fails closed if it has drifted.</li>
+    <li><b>The runtime wraps and records.</b> One envelope, with provenance; one audit record, with
+      field names and never values.</li>
+  </ol>
+
+  <div class="callout"><p>
+    <span class="lbl">Steps 6 and 9 are the ones people leave out.</span> Chapter 21 argues for both
+    at length. The short version: an approval the model can grant is not an approval, and an output
+    schema nobody enforces is a document the firm published and then stopped honoring.
+  </p></div>
+</section>
+
+<!-- ================================================================ chapter 3 -->
+<section class="chapter" id="ch-3" data-foot="3 — Conformance levels">
+  <div class="chnum">Chapter 3</div>
+  <h1 class="title">Conformance levels</h1>
+  <p class="lede">
+    Four levels, so that &ldquo;is this tool ready?&rdquo; has an answer shorter than a meeting.
+  </p>
+
+  <p>
+    A specification with no levels gets applied unevenly, because the first team to hit a deadline
+    discovers that most of it is optional in practice. Levels fix that by making the exemption
+    explicit: a tool is allowed to be L1, it is simply not allowed to be L1 and also place orders.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th style="width:0.5in">Level</th><th style="width:1.5in">Means</th><th>Requires</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="tag m">L0</span></td>
+        <td><b>Draft</b><br><span class="small muted">Not published</span></td>
+        <td>
+          A name and something resembling a description. Fine for an experiment on a branch. An L0
+          tool may not be served to a model by the registry, which refuses to start with one in an
+          active catalog.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="tag a">L1</span></td>
+        <td><b>Structurally conformant</b><br><span class="small muted">Read-only, internal</span></td>
+        <td>
+          All eight fields present. Name matches the grammar. Both schemas are closed objects inside
+          the profile, with a description on every property. All four annotations stated. A
+          governance block with an owner, an entitlement, an audit event and a retention. Passes the
+          linter with no errors.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="tag g">L2</span></td>
+        <td><b>Contract tested</b><br><span class="small muted">Customer-facing reads</span></td>
+        <td>
+          Everything in L1, plus: the description follows the seven-part template; every identifier
+          parameter carries the ontology's pattern; the handler has contract tests covering the
+          claims the description makes; the result envelope is enforced; the tool appears in a named
+          evaluation suite and its selection accuracy is recorded.
+        </td>
+      </tr>
+      <tr>
+        <td><span class="tag b">L3</span></td>
+        <td><b>Certified</b><br><span class="small muted">Anything that changes state</span></td>
+        <td>
+          Everything in L2, plus: a risk tier agreed at review rather than asserted by the author;
+          an approval mode with a confirmation template that shows the customer the <em>priced</em>
+          consequence; a named kill switch; a refusal suite; a trajectory suite; dual sign-off on
+          the descriptor; and re-certification each quarter against the live catalog.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>The rule that makes levels bite</h2>
+
+  <div class="rule-box">
+    <div class="rh">TS-GOV-08 &middot; TS-ANN-04</div>
+    <p style="margin-bottom:0">
+      An <b>active</b> tool must be at least <b>L1</b>. A tool at <b>risk tier 2 or above</b> must
+      be <b>L3</b> and must require approval. There is no path by which a tool that changes a
+      customer's position reaches a model without a human having signed the descriptor and a human
+      being asked at the moment it runs.
+    </p>
+  </div>
+
+  <p>
+    In this book's catalog that works out as ten tools at L2 and four at L3. The four are the
+    preview, which is read-only but mints authority, and the three that change something.
+  </p>
+
+  <pre data-label="the conformance gate, run on the committed catalog" data-cap="captured from CatalogLint" data-file="conformance.txt"></pre>
+
+  <p>
+    Zero errors and zero warnings is not a boast; it is the only state the build permits. The
+    registry refuses to start on any error, so a non-conformant descriptor physically cannot reach
+    a model. Chapter 31 shows the gate, and Appendix C lists every rule it enforces.
+  </p>
+
+  <h2>What each level actually buys</h2>
+
+  <p>
+    Levels are easy to treat as bureaucracy, so it is worth being concrete about what each one
+    prevents.
+  </p>
+
+  <ul>
+    <li>
+      <b>L1 prevents the catalog from becoming inconsistent.</b> Fourteen tools named four
+      different ways is a catalog the model cannot generalize over; it has to learn each one
+      separately, and it will get some of them wrong.
+    </li>
+    <li>
+      <b>L2 prevents the descriptions from being wrong.</b> A contract test asserts the claims the
+      prose makes &mdash; that buying power is net of reserved cash, that positions come back
+      largest first, that a lot knows its holding period. Without them the description is a wish.
+    </li>
+    <li>
+      <b>L3 prevents the interesting kind of incident.</b> Not a crash: a correct-looking order,
+      placed confidently, that nobody agreed to. The controls that stop it &mdash; the token, the
+      gate, the kill switch, the refusal suite &mdash; are exactly the L3 requirements.
+    </li>
+  </ul>
+
+  <div class="callout good"><p>
+    <span class="lbl">A practical note.</span> Do not try to start at L3. Start by getting every
+    read tool to L2 with a linter in CI, which takes about a week and removes most of the
+    inconsistency. Then take the first state-changing tool to L3 properly, once, and copy it.
+    Chapter 38 lays out a first year on that basis.
+  </p></div>
+</section>

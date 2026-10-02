@@ -1,0 +1,3 @@
+requestId                  tool                       tier  outcome            retention  argument fields
+req_f1429bf4b43746cb9477   brokerage_order_preview    T1    OK                 P6Y        accountId, symbol, side, quantity, orderType
+req_3af47e7fdaf248a7a1fe   brokerage_order_place      T3    APPROVAL_REQUIRED  P6Y        accountId, symbol, side, quantity, orderType, confirmationToken

@@ -1,0 +1,38 @@
+{
+  "ok" : true,
+  "data" : {
+    "canPlace" : false,
+    "blockers" : [ {
+      "code" : "ORDER_SIZE_LIMIT",
+      "message" : "A single order may not exceed 500000.00 in notional value. The largest size that would be accepted at this price is 899 shares.",
+      "maxPermissibleQuantity" : 899
+    }, {
+      "code" : "INSUFFICIENT_BUYING_POWER",
+      "message" : "This order needs 2224644.80 USD and the account has 9800.00 available. The largest size this account could buy at this price is 17 shares.",
+      "maxPermissibleQuantity" : 17
+    } ],
+    "warnings" : [ ],
+    "estimate" : {
+      "referencePrice" : "556.16",
+      "estimatedPrincipal" : "2224644.80",
+      "commission" : "0.00",
+      "estimatedCost" : "2224644.80",
+      "buyingPowerBefore" : "9800.00",
+      "buyingPowerAfter" : "0.00",
+      "currency" : "USD",
+      "isEstimate" : true
+    },
+    "confirmationToken" : null,
+    "expiresAt" : null,
+    "summary" : "BUY 4000 MSFT at market, DAY — estimated 2224644.80 USD, leaving 0.00 buying power",
+    "session" : "REGULAR",
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_8d80a2a2271242808cb1",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

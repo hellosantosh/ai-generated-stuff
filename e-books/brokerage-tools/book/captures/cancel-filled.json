@@ -1,0 +1,21 @@
+{
+  "ok" : true,
+  "data" : {
+    "cancelled" : false,
+    "orderId" : "ord_M07KB16SEA01HW70",
+    "symbol" : "NVDA",
+    "side" : "BUY",
+    "quantity" : 100,
+    "filledQuantity" : 100,
+    "status" : "FILLED",
+    "explanation" : "The order filled in full before the cancellation reached the venue, so there is nothing to cancel. The customer now owns the shares.",
+    "updatedAt" : "2026-09-30T14:31:40Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_589cc54e623e4ee3b79b",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "ok" : true,
+  "data" : {
+    "canPlace" : false,
+    "blockers" : [ {
+      "code" : "INSUFFICIENT_SHARES",
+      "message" : "The account holds 85 shares of MSFT and this order would sell 500. Selling more than is held is a short sale and must be entered as SELL_SHORT.",
+      "maxPermissibleQuantity" : 85
+    } ],
+    "warnings" : [ ],
+    "estimate" : {
+      "referencePrice" : "555.94",
+      "estimatedPrincipal" : "277969.40",
+      "commission" : "7.81",
+      "estimatedCost" : "277961.59",
+      "buyingPowerBefore" : "579099.35",
+      "buyingPowerAfter" : "857060.94",
+      "currency" : "USD",
+      "isEstimate" : true
+    },
+    "confirmationToken" : null,
+    "expiresAt" : null,
+    "summary" : "SELL 500 MSFT at market, DAY — estimated 277961.59 USD, leaving 857060.94 buying power",
+    "session" : "REGULAR",
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_c5b0eeb23696430982db",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

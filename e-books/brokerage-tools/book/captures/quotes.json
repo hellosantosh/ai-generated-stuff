@@ -1,0 +1,71 @@
+{
+  "ok" : true,
+  "data" : {
+    "session" : "REGULAR",
+    "quotes" : [ {
+      "symbol" : "AAPL",
+      "last" : "219.52",
+      "bid" : "219.4761",
+      "ask" : "219.5639",
+      "bidSize" : 1700,
+      "askSize" : 500,
+      "previousClose" : "219.6",
+      "change" : "-0.08",
+      "changePercent" : "-0.04",
+      "volume" : 8945301,
+      "spreadBasisPoints" : 4,
+      "currency" : "USD",
+      "asOf" : "2026-10-01T14:30:00Z"
+    }, {
+      "symbol" : "MSFT",
+      "last" : "556.05",
+      "bid" : "555.9388",
+      "ask" : "556.1612",
+      "bidSize" : 2000,
+      "askSize" : 2600,
+      "previousClose" : "556.78",
+      "change" : "-0.73",
+      "changePercent" : "-0.13",
+      "volume" : 4998418,
+      "spreadBasisPoints" : 4,
+      "currency" : "USD",
+      "asOf" : "2026-10-01T14:30:00Z"
+    }, {
+      "symbol" : "NVDA",
+      "last" : "167.47",
+      "bid" : "167.4365",
+      "ask" : "167.5035",
+      "bidSize" : 3600,
+      "askSize" : 3900,
+      "previousClose" : "165.37",
+      "change" : "2.10",
+      "changePercent" : "1.27",
+      "volume" : 8141371,
+      "spreadBasisPoints" : 4,
+      "currency" : "USD",
+      "asOf" : "2026-10-01T14:30:00Z"
+    }, {
+      "symbol" : "BRK.B",
+      "last" : "460.86",
+      "bid" : "460.7678",
+      "ask" : "460.9522",
+      "bidSize" : 1900,
+      "askSize" : 3100,
+      "previousClose" : "460.63",
+      "change" : "0.23",
+      "changePercent" : "0.05",
+      "volume" : 4921071,
+      "spreadBasisPoints" : 4,
+      "currency" : "USD",
+      "asOf" : "2026-10-01T14:30:00Z"
+    } ],
+    "unresolved" : [ ]
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_89efabf19b4a4a20bca7",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "ok" : true,
+  "data" : {
+    "canPlace" : false,
+    "blockers" : [ {
+      "code" : "SHORTING_NOT_PERMITTED",
+      "message" : "A Roth IRA account cannot sell short.",
+      "maxPermissibleQuantity" : null
+    } ],
+    "warnings" : [ ],
+    "estimate" : {
+      "referencePrice" : "378.79",
+      "estimatedPrincipal" : "37879.42",
+      "commission" : "1.07",
+      "estimatedCost" : "37878.35",
+      "buyingPowerBefore" : "48110.12",
+      "buyingPowerAfter" : "85988.47",
+      "currency" : "USD",
+      "isEstimate" : true
+    },
+    "confirmationToken" : null,
+    "expiresAt" : null,
+    "summary" : "SELL_SHORT 100 TSLA at market, DAY — estimated 37878.35 USD, leaving 85988.47 buying power",
+    "session" : "REGULAR",
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_d2f82e448b2f4679b8f6",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

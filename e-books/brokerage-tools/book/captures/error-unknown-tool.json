@@ -1,0 +1,15 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "UNKNOWN_TOOL",
+    "message" : "There is no tool called brokerage_order_place available in this session.",
+    "remediation" : "Use one of the tools you were given. Do not guess at names.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "requestId" : "req_ff1591a7a69449dfa442",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

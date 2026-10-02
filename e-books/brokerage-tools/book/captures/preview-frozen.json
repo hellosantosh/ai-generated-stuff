@@ -1,0 +1,16 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "PRECONDITION_FAILED",
+    "message" : "Account Rollover IRA is FROZEN and cannot place or change orders.",
+    "remediation" : "Tell the customer the account is restricted and that their service team can explain it. Do not try another account on their behalf.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_4ce0797f791949e8b198",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

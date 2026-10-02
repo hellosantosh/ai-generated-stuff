@@ -1,0 +1,16 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "INVALID_ARGUMENT",
+    "message" : "A LIMIT order requires limitPrice.",
+    "remediation" : "Ask the customer what price they want and re-send with limitPrice set.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_63a385a7b0fe42329202",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,9 @@
+Place this order?
+
+  BUY 50 AAPL in Everyday brokerage (Margin)
+  at market, DAY
+
+  Estimated cost   10978.20 USD
+  Buying power after   568121.16 USD
+
+This sends a real order to the market and cannot be undone.

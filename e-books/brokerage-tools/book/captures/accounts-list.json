@@ -1,0 +1,45 @@
+{
+  "ok" : true,
+  "data" : {
+    "accounts" : [ {
+      "accountId" : "acct_4RZ61FZAD0RMHNMM",
+      "nickname" : "Everyday brokerage",
+      "type" : "MARGIN",
+      "currency" : "USD",
+      "openedOn" : "2019-05-02",
+      "tradeable" : true,
+      "restriction" : null
+    }, {
+      "accountId" : "acct_2GDR417WM0WF031F",
+      "nickname" : "Cash account",
+      "type" : "CASH",
+      "currency" : "USD",
+      "openedOn" : "2019-05-02",
+      "tradeable" : true,
+      "restriction" : null
+    }, {
+      "accountId" : "acct_TF7KNH2A136X695X",
+      "nickname" : "Roth IRA",
+      "type" : "ROTH_IRA",
+      "currency" : "USD",
+      "openedOn" : "2019-05-02",
+      "tradeable" : true,
+      "restriction" : null
+    }, {
+      "accountId" : "acct_V5WR2E9BFKVE7J8F",
+      "nickname" : "Rollover IRA",
+      "type" : "IRA_TRADITIONAL",
+      "currency" : "USD",
+      "openedOn" : "2019-05-02",
+      "tradeable" : false,
+      "restriction" : "FROZEN"
+    } ]
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_ce633c83ac5542f28c3f",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

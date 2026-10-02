@@ -1,0 +1,24 @@
+{
+  "ok" : true,
+  "data" : {
+    "orderId" : "ord_GZZ3KCARPCXEBMXG",
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "symbol" : "AAPL",
+    "side" : "BUY",
+    "quantity" : 50,
+    "filledQuantity" : 50,
+    "status" : "FILLED",
+    "averageFillPrice" : "219.56",
+    "commission" : "0.00",
+    "rejectReason" : null,
+    "duplicateOfPreviousCall" : false,
+    "placedAt" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_ca2e818847a7423eb81e",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,501 @@
+<!-- ============================================================== APPENDIX A -->
+<section class="chapter" id="app-a" data-foot="Appendix A — The fourteen tools">
+  <div class="chnum">Appendix A</div>
+  <h1 class="title">The fourteen tools</h1>
+  <p class="lede">
+    The catalog on two pages, in publication order: the entry points, the rest of the reads, then
+    the four that change something.
+  </p>
+
+  <table class="dense">
+    <thead>
+      <tr><th style="width:1.75in">Tool</th><th style="width:0.35in">Tier</th>
+        <th style="width:0.9in">Consumes</th><th style="width:0.85in">Produces</th>
+        <th>What it is for</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="k">brokerage_accounts_list</td><td><span class="tier t0">T0</span></td>
+        <td class="small">&mdash;</td><td class="small">AccountId</td>
+        <td>The entry point. The only tool that needs nothing to run, and therefore the start of
+          every conversation that touches money.</td></tr>
+      <tr><td class="k">brokerage_instruments_search</td><td><span class="tier t0">T0</span></td>
+        <td class="small">&mdash;</td><td class="small">Symbol</td>
+        <td>Resolves a company name to candidates, and refuses to choose between them.</td></tr>
+      <tr><td class="k">brokerage_quotes_get</td><td><span class="tier t0">T0</span></td>
+        <td class="small">Symbol</td><td class="small">&mdash;</td>
+        <td>Up to ten symbols in one call, with the spread in basis points and the session.</td></tr>
+      <tr><td class="k">brokerage_price_history_get</td><td><span class="tier t0">T0</span></td>
+        <td class="small">Symbol</td><td class="small">&mdash;</td>
+        <td>Daily bars, with the period high, low and return already computed.</td></tr>
+      <tr><td class="k">brokerage_balances_get</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId</td><td class="small">&mdash;</td>
+        <td>Four different numbers, because a customer means a different one each time.</td></tr>
+      <tr><td class="k">brokerage_positions_list</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId</td><td class="small">Symbol</td>
+        <td>Holdings, largest first, with the portfolio weight already computed.</td></tr>
+      <tr><td class="k">brokerage_tax_lots_list</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId<br>Symbol</td><td class="small">LotId</td>
+        <td>Holding periods and wash-sale exposure, and a flag saying when none of it applies.</td></tr>
+      <tr><td class="k">brokerage_orders_list</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId</td><td class="small">OrderId</td>
+        <td>Working orders by default, which is the question that gets asked.</td></tr>
+      <tr><td class="k">brokerage_order_get</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId<br>OrderId</td><td class="small">&mdash;</td>
+        <td>One order, with every fill, because an average is not what the customer paid.</td></tr>
+      <tr><td class="k">brokerage_executions_list</td><td><span class="tier t0">T0</span></td>
+        <td class="small">AccountId</td><td class="small">ExecutionId</td>
+        <td>Fills and settlement dates. When the money is actually available.</td></tr>
+      <tr class="hl"><td class="k">brokerage_order_preview</td><td><span class="tier t1">T1</span></td>
+        <td class="small">AccountId<br>Symbol</td><td class="small">Confirmation<br>Token</td>
+        <td>Prices an order, changes nothing, and mints the only authority there is.</td></tr>
+      <tr class="hl"><td class="k">brokerage_order_place</td><td><span class="tier t3">T3</span></td>
+        <td class="small">AccountId<br>Symbol<br>Token</td><td class="small">OrderId</td>
+        <td>Sends a real order. Needs a token and a human.</td></tr>
+      <tr class="hl"><td class="k">brokerage_order_replace</td><td><span class="tier t3">T3</span></td>
+        <td class="small">AccountId<br>OrderId<br>Token</td><td class="small">OrderId</td>
+        <td>Amends a working order in place, keeping its identifier.</td></tr>
+      <tr class="hl"><td class="k">brokerage_order_cancel</td><td><span class="tier t2">T2</span></td>
+        <td class="small">AccountId<br>OrderId</td><td class="small">&mdash;</td>
+        <td>Requests a cancellation and reports what actually happened to the order.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What a session sees</h2>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.1in">Role</th><th style="width:0.45in">Tools</th>
+      <th>Entitlements</th></tr></thead>
+    <tbody>
+      <tr><td><b>RESEARCH</b></td><td>3</td>
+        <td class="m">reference:read, market-data:read</td></tr>
+      <tr><td><b>SERVICE</b></td><td>10</td>
+        <td class="m">&hellip; plus accounts:read, balances:read, positions:read, orders:read</td></tr>
+      <tr><td><b>TRADING</b></td><td>14</td>
+        <td class="m">&hellip; plus orders:write</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Every name, as published</h2>
+
+  <pre data-file="desktop-manifest-names.txt" data-lang="text"
+       data-label="read-only session, from the connector" data-wrap="no"></pre>
+
+  <h2>Deliberately absent</h2>
+
+  <ul class="tight">
+    <li><b>Lot selection.</b> Readable, not writable: the consequences outlive the conversation, so
+      a human instructs it. Chapter 16.</li>
+    <li><b>Money movement.</b> Out of scope for this catalog, and the agent says so rather than
+      reaching for the nearest thing.</li>
+    <li><b>A &ldquo;sell everything&rdquo; tool.</b> There is no capability that operates on a whole
+      account, which is what makes that instruction unperformable rather than merely refused.</li>
+    <li><b>Anything that writes a watchlist, a note or a preference.</b> Not because they are
+      dangerous, but because a catalog grows by inertia and every tool costs tokens on every
+      turn.</li>
+  </ul>
+</section>
+
+<!-- ============================================================== APPENDIX B -->
+<section class="chapter" id="app-b" data-foot="Appendix B — The error registry">
+  <div class="chnum">Appendix B</div>
+  <h1 class="title">The error registry</h1>
+  <p class="lede">
+    Fifteen codes, closed. Each one's retry semantics, what the agent should do, and where it comes
+    from in this catalog.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.35in">Code</th><th style="width:0.45in">retry</th>
+      <th style="width:0.4in">fix</th><th>The agent's next move</th></tr></thead>
+    <tbody>
+      <tr><td class="k">INVALID_ARGUMENT</td><td>no</td><td><b>yes</b></td>
+        <td>Fix the named field and call the same tool again. A different tool will have the same
+          problem.</td></tr>
+      <tr><td class="k">UNKNOWN_TOOL</td><td>no</td><td><b>yes</b></td>
+        <td>Use a tool from the list, spelled exactly as given. Do not guess at a similar name.</td></tr>
+      <tr><td class="k">NOT_FOUND</td><td>no</td><td><b>yes</b></td>
+        <td>Do not try variations of the identifier. Use the list tool the remediation names.</td></tr>
+      <tr><td class="k">NOT_ENTITLED</td><td>no</td><td>no</td>
+        <td>Say so plainly and stop. Do not look for another tool that might not check.</td></tr>
+      <tr><td class="k">APPROVAL_REQUIRED</td><td>no</td><td><b>yes</b></td>
+        <td>Show the customer the quoted summary, wait for a clear yes, then call again with
+          identical arguments.</td></tr>
+      <tr><td class="k">CONFIRMATION_EXPIRED</td><td>no</td><td><b>yes</b></td>
+        <td>Preview again, read the fresh figures, and proceed only if they agree again.</td></tr>
+      <tr><td class="k">PRECONDITION_FAILED</td><td>no</td><td>no</td>
+        <td>Tell the customer the reason in the message. Nothing you call will change it.</td></tr>
+      <tr><td class="k">CONFLICT</td><td>no</td><td><b>yes</b></td>
+        <td>Read the entity again, say what it says now, and ask before acting.</td></tr>
+      <tr><td class="k">RATE_LIMITED</td><td><b>yes</b></td><td>no</td>
+        <td>Wait <span class="mono">retryAfterSeconds</span>, say there is a short delay, and call
+          nothing else meanwhile.</td></tr>
+      <tr><td class="k">QUOTA_EXCEEDED</td><td>no</td><td>no</td>
+        <td>Waiting will not help in this conversation. Offer what is still visible.</td></tr>
+      <tr><td class="k">UPSTREAM_UNAVAILABLE</td><td><b>yes</b></td><td>no</td>
+        <td>Say the feature is unavailable right now. Do not retry in this conversation.</td></tr>
+      <tr><td class="k">UPSTREAM_TIMEOUT</td><td><b>yes</b></td><td>no</td>
+        <td>Never say it did or did not take effect. Read the entity back and report what you
+          find.</td></tr>
+      <tr><td class="k">AMBIGUOUS_REQUEST</td><td>no</td><td><b>yes</b></td>
+        <td>Read the candidates to the customer and ask. Do not pick for them.</td></tr>
+      <tr><td class="k">UNSUPPORTED</td><td>no</td><td>no</td>
+        <td>If the message names another tool, use it. Otherwise say it is not something you can
+          do.</td></tr>
+      <tr><td class="k">INTERNAL_ERROR</td><td><b>yes</b></td><td>no</td>
+        <td>Say the request failed, give the <span class="mono">requestId</span>, and stop.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Mapping upstream failures</h2>
+
+  <p>
+    Do not pass a status code through. The same code from two upstreams means different things to an
+    agent, and the right next move differs.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.15in">Upstream</th><th style="width:1.35in">Becomes</th>
+      <th>Because</th></tr></thead>
+    <tbody>
+      <tr><td>404 from the position service</td><td class="k">NOT_FOUND</td>
+        <td>The customer does not hold it. The agent should check the positions list.</td></tr>
+      <tr><td>404 from the instrument master</td><td class="k">NOT_FOUND</td>
+        <td>The ticker does not exist. The agent should search by name.</td></tr>
+      <tr><td>403 on another customer's account</td><td class="k">NOT_FOUND</td>
+        <td>Never confirm existence. Appendix D's checklist asks about this by name.</td></tr>
+      <tr><td>409 from the order management system</td><td class="k">CONFLICT</td>
+        <td>Something changed underneath. Re-read before deciding.</td></tr>
+      <tr><td>422 from the risk engine</td><td class="k">PRECONDITION_FAILED</td>
+        <td>Or, better, a <em>blocker</em> inside a successful preview, which is more useful.</td></tr>
+      <tr><td>429 from any upstream</td><td class="k">RATE_LIMITED</td>
+        <td>And carry the wait, or the agent waits zero seconds.</td></tr>
+      <tr><td>5xx, or a timeout</td><td class="k">UPSTREAM_UNAVAILABLE<br>UPSTREAM_TIMEOUT</td>
+        <td>Distinguish them: one means it certainly did not happen, the other means nobody knows.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Domain blocker codes</h2>
+
+  <p>
+    Not errors. These appear inside a <em>successful</em>
+    <span class="icode">brokerage_order_preview</span> response, because an order that would be
+    refused is a fact about the world rather than a failure of the call.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.9in">Blocker</th><th style="width:0.75in">Size hint</th>
+      <th>Means</th></tr></thead>
+    <tbody>
+      <tr><td class="k">INSUFFICIENT_BUYING_POWER</td><td>yes</td>
+        <td>Buying power in a margin account, settled cash in a cash account.</td></tr>
+      <tr><td class="k">INSUFFICIENT_SHARES</td><td>yes</td>
+        <td>Selling more than is held. A short sale, and it must be entered as one.</td></tr>
+      <tr><td class="k">ORDER_SIZE_LIMIT</td><td>yes</td>
+        <td>A per-order share or notional ceiling.</td></tr>
+      <tr><td class="k">MARKET_CLOSED</td><td>no</td>
+        <td>And the message says when the next regular session opens.</td></tr>
+      <tr><td class="k">ACCOUNT_RESTRICTED</td><td>no</td>
+        <td>Frozen. Direct the customer to their service team; do not try another account.</td></tr>
+      <tr><td class="k">SHORTING_NOT_PERMITTED</td><td>no</td>
+        <td>The account type. No smaller short would be allowed.</td></tr>
+      <tr><td class="k">MARGIN_NOT_PERMITTED</td><td>no</td>
+        <td>The instrument is not marginable; it needs settled cash.</td></tr>
+      <tr><td class="k">DAY_TRADE_LIMIT</td><td>no</td>
+        <td>Closing orders only until the flag clears.</td></tr>
+      <tr><td class="k">PRICE_AWAY_FROM_MARKET</td><td>no</td>
+        <td>More than 30 percent from the last price. A mistyped-price guard.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================== APPENDIX C -->
+<section class="chapter" id="app-c" data-foot="Appendix C — The rule index">
+  <div class="chnum">Appendix C</div>
+  <h1 class="title">The rule index</h1>
+  <p class="lede">
+    Every rule the linter enforces, by family, with the level it applies at.
+  </p>
+
+  <h2>NAM &mdash; names and titles</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-NAM-01</td><td>MUST</td>
+        <td><span class="mono">^[a-z][a-z0-9_]{2,63}$</span>. The intersection of what every runtime
+          accepts.</td></tr>
+      <tr><td class="k">TS-NAM-02</td><td>MUST</td>
+        <td>Three segments: <span class="mono">&lt;domain&gt;_&lt;entity&gt;_&lt;operation&gt;</span>.</td></tr>
+      <tr><td class="k">TS-NAM-07</td><td>MUST</td><td>A title of 3 to 60 characters.</td></tr>
+      <tr><td class="k">TS-NAM-08</td><td>SHOULD</td><td>No trailing period on the title.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>DSC &mdash; the description</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-DSC-01</td><td>MUST</td><td>At least 120 characters.</td></tr>
+      <tr><td class="k">TS-DSC-02</td><td>MUST</td><td>At most 2000.</td></tr>
+      <tr><td class="k">TS-DSC-03</td><td>SHOULD</td><td>Says when to use the tool.</td></tr>
+      <tr><td class="k">TS-DSC-04</td><td>SHOULD</td><td>Says when not to, and what instead.</td></tr>
+      <tr><td class="k">TS-DSC-06</td><td>SHOULD</td>
+        <td>A state-changing tool says what it changes and whether it can be undone.</td></tr>
+      <tr><td class="k">TS-DSC-07</td><td>SHOULD</td><td>Says how to read the result.</td></tr>
+      <tr><td class="k">TS-DSC-08</td><td>SHOULD</td><td>Plain prose; no markdown.</td></tr>
+      <tr><td class="k">TS-DSC-09</td><td>SHOULD</td><td>Not written in the first person.</td></tr>
+      <tr><td class="k">TS-DSC-10</td><td>MUST</td>
+        <td>Every tool named in the prose exists in the catalog.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>INP and OUT &mdash; the schemas</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-INP-01</td><td>MUST</td><td>Both schemas are JSON Schema objects.</td></tr>
+      <tr><td class="k">TS-INP-02</td><td>MUST</td><td>Top level is <span class="mono">type: object</span>.</td></tr>
+      <tr><td class="k">TS-INP-03</td><td>MUST</td><td>No prohibited keyword anywhere.</td></tr>
+      <tr><td class="k">TS-INP-04</td><td>SHOULD</td><td>No keyword outside the profile.</td></tr>
+      <tr><td class="k">TS-INP-05</td><td>MUST</td><td>Every object sets <span class="mono">additionalProperties</span>.</td></tr>
+      <tr><td class="k">TS-INP-06</td><td>MUST</td><td>And sets it to <span class="mono">false</span>.</td></tr>
+      <tr><td class="k">TS-INP-07</td><td>MUST</td><td>Every property has a description.</td></tr>
+      <tr><td class="k">TS-INP-08</td><td>SHOULD</td><td>At most 12 parameters.</td></tr>
+      <tr><td class="k">TS-INP-09</td><td>MUST</td><td>No reserved parameter name.</td></tr>
+      <tr><td class="k">TS-INP-10</td><td>SHOULD</td><td>Every string is constrained.</td></tr>
+      <tr><td class="k">TS-INP-11</td><td>MUST</td><td>Everything in <span class="mono">required</span> is a property.</td></tr>
+      <tr><td class="k">TS-INP-12</td><td>SHOULD</td><td>No JSON numbers in an input; money is a decimal string.</td></tr>
+      <tr><td class="k">TS-OUT-05</td><td>SHOULD</td><td>Every output array has <span class="mono">maxItems</span>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>ANN &mdash; annotations and approval</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-ANN-01</td><td>MUST</td><td>All four annotations stated explicitly.</td></tr>
+      <tr><td class="k">TS-ANN-02</td><td>MUST</td><td>Not both read-only and destructive.</td></tr>
+      <tr><td class="k">TS-ANN-03</td><td>MUST</td><td>A read-only tool is idempotent.</td></tr>
+      <tr><td class="k">TS-ANN-04</td><td>MUST</td><td>A tier 2+ state-changing tool requires approval.</td></tr>
+      <tr><td class="k">TS-ANN-05</td><td>MUST</td><td>An approval mode above notify has a confirmation template.</td></tr>
+      <tr><td class="k">TS-ANN-06</td><td>SHOULD</td><td>The approval expires.</td></tr>
+      <tr><td class="k">TS-ANN-07</td><td>SHOULD</td><td>A read-only tool above tier 1 explains itself.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>GOV &mdash; governance</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-GOV-01</td><td>MUST</td><td>A governance block under the reverse-DNS key.</td></tr>
+      <tr><td class="k">TS-GOV-02</td><td>MUST</td><td>A semantic version.</td></tr>
+      <tr><td class="k">TS-GOV-03</td><td>MUST</td><td>A team, a contact and a paging escalation.</td></tr>
+      <tr><td class="k">TS-GOV-04</td><td>MUST</td><td>At least one entitlement.</td></tr>
+      <tr><td class="k">TS-GOV-05</td><td>MUST</td><td>An audit event and a retention.</td></tr>
+      <tr><td class="k">TS-GOV-06</td><td>MUST</td><td>The retention is an ISO 8601 duration.</td></tr>
+      <tr><td class="k">TS-GOV-07</td><td>MUST</td><td>PII pointers when <span class="mono">containsPii</span> is true.</td></tr>
+      <tr><td class="k">TS-GOV-08</td><td>MUST</td><td>An active tool is at least L1.</td></tr>
+      <tr><td class="k">TS-GOV-09</td><td>SHOULD</td><td>A per-principal rate limit.</td></tr>
+      <tr><td class="k">TS-GOV-10</td><td>MUST</td><td>A tier 2+ tool cites an evaluation suite.</td></tr>
+      <tr><td class="k">TS-GOV-11</td><td>MUST</td><td>A tier 2+ tool names a kill switch.</td></tr>
+      <tr><td class="k">TS-GOV-12</td><td>SHOULD</td><td>A deprecated tool says so and names its replacement.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>ONT and SET &mdash; the ontology and the catalog</h2>
+  <table class="dense">
+    <thead><tr><th style="width:1in">Rule</th><th style="width:0.4in">Level</th><th>Requires</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-ONT-01</td><td>MUST</td><td>A capability for every descriptor.</td></tr>
+      <tr><td class="k">TS-ONT-02</td><td>MUST</td><td>The derived name.</td></tr>
+      <tr><td class="k">TS-ONT-03</td><td>MUST</td><td>A declared entity and operation.</td></tr>
+      <tr><td class="k">TS-ONT-04</td><td>MUST</td><td><span class="mono">readOnlyHint</span> agrees with the operation.</td></tr>
+      <tr><td class="k">TS-ONT-05</td><td>MUST</td><td>The policy's risk tier.</td></tr>
+      <tr><td class="k">TS-ONT-06</td><td>MUST</td><td>The policy's approval mode.</td></tr>
+      <tr><td class="k">TS-ONT-07</td><td>MUST</td><td>The entity's entitlement.</td></tr>
+      <tr><td class="k">TS-ONT-08</td><td>MUST</td><td>At least the entity's classification.</td></tr>
+      <tr><td class="k">TS-ONT-09</td><td>MUST</td><td>Every consumed identifier's pattern, exactly.</td></tr>
+      <tr><td class="k">TS-SET-01</td><td>MUST</td><td>No two tools share a title.</td></tr>
+      <tr><td class="k">TS-SET-02</td><td>MUST</td><td>Every declared capability is implemented.</td></tr>
+      <tr><td class="k">TS-SET-03</td><td>MUST</td><td>No consumed identifier without a producer.</td></tr>
+      <tr><td class="k">TS-SET-04</td><td>SHOULD</td><td>The catalog is mostly reads.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================== APPENDIX D -->
+<section class="chapter onepage" id="app-d" data-foot="Appendix D — The review checklist">
+  <div class="chnum">Appendix D</div>
+  <h1 class="title">The review checklist</h1>
+  <p class="lede">
+    One page, for the meeting. Everything above the line has already been checked by the build.
+  </p>
+
+  <div class="grid g2">
+    <div>
+      <h3>Before the meeting</h3>
+      <ul class="checklist tight">
+        <li>The linter passes with no errors and no warnings.</li>
+        <li>The contract tests cover each claim the description makes.</li>
+        <li>For tier 2 and above: a trajectory suite and a refusal suite exist and pass.</li>
+        <li>The evaluation scores in the governance block are from a run this week.</li>
+      </ul>
+
+      <h3>1. Is the description true?</h3>
+      <ul class="checklist tight">
+        <li>Every sentence holds, read as the model with no other knowledge.</li>
+        <li>&ldquo;When to use&rdquo; is in the customer's words, not the firm's.</li>
+        <li>&ldquo;How to read the result&rdquo; names fields that still exist.</li>
+        <li>It says which field to read <em>first</em>.</li>
+      </ul>
+
+      <h3>2. The nearest tool</h3>
+      <ul class="checklist tight">
+        <li>Name it out loud. Can the reviewer say which utterance hits which?</li>
+        <li>Each description names the other.</li>
+        <li>Both cross-references resolve.</li>
+      </ul>
+
+      <h3>3. The confused agent</h3>
+      <ul class="checklist tight">
+        <li>What is the worst thing a well-meaning misreading could do?</li>
+        <li>Would the customer be able to tell it was wrong?</li>
+        <li>For a write tool: does the answer end at the approval gate?</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>4. The confirmation</h3>
+      <ul class="checklist tight">
+        <li>Render it with real arguments and read it aloud.</li>
+        <li>No <span class="mono">(not given)</span> anywhere.</li>
+        <li>It states the priced consequence, not the tool name.</li>
+        <li>It says whether the effect can be undone.</li>
+        <li>It expires.</li>
+      </ul>
+
+      <h3>5. Failure</h3>
+      <ul class="checklist tight">
+        <li>Walk each error code the tool can return.</li>
+        <li>Say the agent's next move out loud for each.</li>
+        <li>Nothing leads to &ldquo;try another tool&rdquo; that should not.</li>
+        <li>Nothing loops.</li>
+        <li>Another customer's entity gives <span class="mono">NOT_FOUND</span>, not
+          <span class="mono">NOT_ENTITLED</span>.</li>
+      </ul>
+
+      <h3>6. Turning it off</h3>
+      <ul class="checklist tight">
+        <li>Trip the kill switch and watch the catalog shrink.</li>
+        <li>Nothing downstream breaks; it just becomes unavailable.</li>
+        <li>The agent stops seeing the tool rather than getting an error.</li>
+      </ul>
+
+      <h3>Signatures</h3>
+      <ul class="checklist tight">
+        <li><b>T0 / T1</b> &mdash; the owning team.</li>
+        <li><b>T2</b> &mdash; plus one reviewer outside the team.</li>
+        <li><b>T3</b> &mdash; plus risk or compliance, and a re-certification date.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout"><p>
+    <span class="lbl">If the meeting runs long on anything above, it is a sign.</span> Arguing about
+    a name means the ontology is missing a row. Arguing about a risk tier means the policy table is
+    missing a rule. Both of those are edits to one file, and both stop the argument happening again.
+  </p></div>
+</section>
+
+<!-- ============================================================== APPENDIX E -->
+<section class="chapter" id="app-e" data-foot="Appendix E — Glossary">
+  <div class="chnum">Appendix E</div>
+  <h1 class="title">Glossary</h1>
+  <p class="lede">
+    The words this book uses precisely, in the sense it uses them.
+  </p>
+
+  <dl class="defs gloss">
+    <dt>Annotation</dt>
+    <dd>One of four booleans on a descriptor &mdash; read-only, destructive, idempotent, open-world
+      &mdash; that tell the runtime how much to trust a call. Asserted by the author, which is why
+      the controls hang on the risk tier instead.</dd>
+
+    <dt>Approval reference</dt>
+    <dd>A hash of the tool name, the canonical arguments and the session. The thing a human's yes is
+      recorded against, and the reason an approval cannot be spent on a different order.</dd>
+
+    <dt>Blocker</dt>
+    <dd>A reason an order would be refused, returned inside a <em>successful</em> preview. Distinct
+      from a warning, which is something the customer should hear but which would not stop the
+      order.</dd>
+
+    <dt>Capability</dt>
+    <dd>One row of the ontology: an operation on an entity, with the identifiers it consumes and
+      produces. The tool's name, risk tier and approval mode are derived from it.</dd>
+
+    <dt>Cassette</dt>
+    <dd>A recording of the model's half of one evaluated conversation &mdash; which tools it chose,
+      with what arguments, in what order. Replayed through the real pipeline, so the suite runs
+      offline without becoming a mock.</dd>
+
+    <dt>Confirmation token</dt>
+    <dd>Single-use authority to place one exact order, issued only by the read-only preview and
+      bound to a fingerprint of the ticket, a session and an expiry.</dd>
+
+    <dt>Conformance level</dt>
+    <dd>L0 to L3. The answer to &ldquo;is this tool ready?&rdquo; in one token, with L3 required for
+      anything that changes state.</dd>
+
+    <dt>Descriptor</dt>
+    <dd>The eight-field JSON document that <em>is</em> the tool contract. Four fields the model
+      sees, one the caller sees, three only the firm sees.</dd>
+
+    <dt>Entity</dt>
+    <dd>A thing the domain is about, declared in the ontology with its identifier, its
+      classification floor and its entitlement floor.</dd>
+
+    <dt>Envelope</dt>
+    <dd>The uniform result shape: <span class="mono">ok</span>, <span class="mono">data</span>,
+      <span class="mono">error</span>, <span class="mono">meta</span>. Specified once rather than
+      repeated in every output schema.</dd>
+
+    <dt>Handler</dt>
+    <dd>The domain code behind one tool. Short, in a well-built catalog, because everything generic
+      happens in the pipeline around it.</dd>
+
+    <dt>Kill switch</dt>
+    <dd>A named, hierarchical switch that removes a tool from the published catalog without a
+      deployment. Required on every tool at tier 2 or above.</dd>
+
+    <dt>Ontology</dt>
+    <dd>The declaration of what a catalog is about: identifier types, entities, a closed operation
+      vocabulary, one capability per tool, and the policies that follow.</dd>
+
+    <dt>Pipeline</dt>
+    <dd>The ten steps between a model emitting a call and a result coming back. Identical for every
+      tool, which is why it is in one place.</dd>
+
+    <dt>Principal</dt>
+    <dd>Who a call is for. Established by the runtime from the session, never from an argument.</dd>
+
+    <dt>Producer graph</dt>
+    <dd>Which tool hands out each identifier, and therefore what must happen before what. Derived
+      from the capability table, drawn in the console, and written into the system prompt.</dd>
+
+    <dt>Registry</dt>
+    <dd>The one place that knows what tools exist, what they promise, who may call them and what
+      code is behind them. Refuses to start on a non-conformant catalog.</dd>
+
+    <dt>Risk tier</dt>
+    <dd>0 to 3, derived from the operation. Drives the approval mode, the evidence required and the
+      signatures needed. Not asserted by the tool's author.</dd>
+
+    <dt>Selection accuracy</dt>
+    <dd>Of the evaluated utterances that expected a tool, the share that got it. The headline number,
+      and the least interesting of the four on its own.</dd>
+
+    <dt>Trace</dt>
+    <dd>The ordered record of which tools a turn called, with arguments, outcomes and latencies. The
+      thing every evaluation assertion is about, and the thing most often missing.</dd>
+  </dl>
+</section>

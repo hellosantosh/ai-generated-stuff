@@ -1,0 +1,72 @@
+{
+  "ok" : true,
+  "data" : {
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "currency" : "USD",
+    "totalMarketValue" : "277043.25",
+    "positions" : [ {
+      "symbol" : "VOO",
+      "name" : "Vanguard S&P 500 ETF",
+      "sector" : "Broad Market",
+      "quantity" : 150,
+      "averageCost" : "512.9",
+      "lastPrice" : "579.8",
+      "marketValue" : "86970.00",
+      "unrealizedPnl" : "10035.00",
+      "unrealizedPnlPercent" : "13.04",
+      "portfolioWeight" : "31.39"
+    }, {
+      "symbol" : "NVDA",
+      "name" : "NVIDIA Corporation",
+      "sector" : "Information Technology",
+      "quantity" : 400,
+      "averageCost" : "132.55",
+      "lastPrice" : "167.47",
+      "marketValue" : "66988.00",
+      "unrealizedPnl" : "13968.00",
+      "unrealizedPnlPercent" : "26.34",
+      "portfolioWeight" : "24.18"
+    }, {
+      "symbol" : "AAPL",
+      "name" : "Apple Inc.",
+      "sector" : "Information Technology",
+      "quantity" : 300,
+      "averageCost" : "162.856",
+      "lastPrice" : "219.52",
+      "marketValue" : "65856.00",
+      "unrealizedPnl" : "16999.20",
+      "unrealizedPnlPercent" : "34.79",
+      "portfolioWeight" : "23.77"
+    }, {
+      "symbol" : "MSFT",
+      "name" : "Microsoft Corporation",
+      "sector" : "Information Technology",
+      "quantity" : 85,
+      "averageCost" : "398.1",
+      "lastPrice" : "556.05",
+      "marketValue" : "47264.25",
+      "unrealizedPnl" : "13425.75",
+      "unrealizedPnlPercent" : "39.68",
+      "portfolioWeight" : "17.06"
+    }, {
+      "symbol" : "GME",
+      "name" : "GameStop Corp.",
+      "sector" : "Consumer Discretionary",
+      "quantity" : 500,
+      "averageCost" : "28.9",
+      "lastPrice" : "19.93",
+      "marketValue" : "9965.00",
+      "unrealizedPnl" : "-4485.00",
+      "unrealizedPnlPercent" : "-31.04",
+      "portfolioWeight" : "3.60"
+    } ],
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_c54b9a880c2748938b60",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

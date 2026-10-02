@@ -1,0 +1,16 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "INVALID_ARGUMENT",
+    "message" : "The arguments do not match this tool's input schema: /symbols/0: does not match the regex pattern ^[A-Z]{1,5}(\\.[A-Z])?$",
+    "remediation" : "Fix the fields named above and call the tool again. Do not try a different tool.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_ea82809314b64af4a694",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

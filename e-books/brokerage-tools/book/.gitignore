@@ -1,0 +1,6 @@
+# Scratch that tools/capture.py compiles into; it cleans up after itself, and this is the
+# safety net for a run that was interrupted.
+captures/.build/
+captures/.graph/
+_cover.png
+_thumbnail.html
