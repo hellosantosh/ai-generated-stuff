@@ -1,0 +1,676 @@
+<!-- ============================================================== PART V plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part V</div>
+    <h1>The registry<br>and the runtime</h1>
+    <p class="pl">
+      Everything that happens around a handler: what exists, who may call it, in what order the
+      checks run, where a human says yes, and how the whole thing is published to Spring AI in one
+      class.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 600 190" role="img"
+           aria-label="The ten steps of the invocation pipeline, with the error each one can
+                       produce">
+        <g font-family="monospace" font-size="8">
+          <g fill="#dce5ff">
+            <rect x="14" y="20" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="33">1  resolve the name</text>
+            <rect x="14" y="42" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="55">2  kill switch</text>
+            <rect x="14" y="64" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="77">3  parse the arguments</text>
+            <rect x="14" y="86" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="99">4  validate against the schema</text>
+            <rect x="14" y="108" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="121">5  check entitlements</text>
+            <rect x="14" y="130" width="250" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="22" y="143">6  rate limit</text>
+            <rect x="302" y="20" width="268" height="18" rx="3" fill="rgba(255,186,84,.16)"/>
+            <text x="310" y="33" fill="#ffcb7a">7  the approval gate</text>
+            <rect x="302" y="42" width="268" height="18" rx="3" fill="rgba(111,224,187,.14)"/>
+            <text x="310" y="55" fill="#8fe8c8">8  the handler runs</text>
+            <rect x="302" y="64" width="268" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="310" y="77">9  verify the payload</text>
+            <rect x="302" y="86" width="268" height="18" rx="3" fill="rgba(255,255,255,.06)"/>
+            <text x="310" y="99">10 envelope and audit</text>
+          </g>
+          <g fill="#8f9cc4" font-size="7">
+            <text x="22" y="166">every step but the eighth can only refuse</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>20</b> The registry &nbsp;&middot;&nbsp;
+      <b>21</b> The invocation pipeline &nbsp;&middot;&nbsp;
+      <b>22</b> Approval, limits and switches &nbsp;&middot;&nbsp;
+      <b>23</b> The audit record &nbsp;&middot;&nbsp;
+      <b>24</b> Publishing to Spring AI
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== chapter 20 -->
+<section class="chapter" id="ch-20" data-foot="20 — The registry">
+  <div class="chnum">Chapter 20</div>
+  <h1 class="title">The registry</h1>
+  <p class="lede">
+    It sounds like plumbing and it is in fact the main architectural decision in a tool system.
+  </p>
+
+  <p>
+    Without a registry, the set of tools a model sees is whatever beans happened to be on the
+    classpath. That sounds harmless until somebody asks one of these four questions, all of which
+    get asked:
+  </p>
+
+  <ol class="tight">
+    <li>What is the model being shown right now?</li>
+    <li>Who is allowed to call each of these?</li>
+    <li>Which of them have been reviewed?</li>
+    <li>What breaks if we turn one off?</li>
+  </ol>
+
+  <p>
+    With a registry, all four are lookups.
+  </p>
+
+  <h2>Three rules, enforced at construction</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolRegistry.java"
+       data-from="    public ToolRegistry\(Ontology ontology" data-to="handlers with no descriptor" data-doc="no"></pre>
+
+  <p>
+    Deliberately early, so that a misconfigured catalog fails at startup rather than in a
+    conversation.
+  </p>
+
+  <dl class="defs">
+    <dt>Every descriptor has a handler and every handler has a descriptor</dt>
+    <dd>
+      A handler with no descriptor is dead code. A descriptor with no handler is worse: a tool the
+      model will choose and then be told does not work, which costs a turn and teaches it nothing.
+    </dd>
+
+    <dt>Every descriptor passes the conformance linter</dt>
+    <dd>
+      A registry that serves a non-conformant descriptor has made the specification advisory. The
+      findings are kept, so the console can show a reviewer what the gate saw, but any error stops
+      the application.
+    </dd>
+
+    <dt>Only active tools are served</dt>
+    <dd>
+      Draft and retired tools are skipped, however complete they look. The lifecycle field is the
+      switch between &ldquo;this exists in the repository&rdquo; and &ldquo;a model can call
+      this&rdquo;, and those should not be the same thing.
+    </dd>
+  </dl>
+
+  <h2>The selection view</h2>
+
+  <p>
+    The registry's most-used method is one line, and the reasoning behind it is the whole chapter.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolRegistry.java"
+       data-from="The tools this principal may actually call" data-to="^    \}"></pre>
+
+  <p>
+    Filtering before publication rather than refusing at execution is not an optimization. A tool
+    the principal cannot use, published into the model's context, costs tokens on every turn and
+    buys a wrong turn: the model will choose it, be refused, apologize, and choose again. Showing a
+    model only what it can do is the cheapest accuracy improvement available.
+  </p>
+
+  <h2>One catalog, three products</h2>
+
+  <p>
+    The same fourteen descriptors, the same handlers and the same pipeline, published to three
+    sessions that differ only in their entitlements.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:0.9in">Role</th><th style="width:0.5in">Tools</th>
+      <th>Sees</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag m">RESEARCH</span></td><td><b>3</b></td>
+        <td class="m">instruments_search, quotes_get, price_history_get</td></tr>
+      <tr><td><span class="tag a">SERVICE</span></td><td><b>10</b></td>
+        <td class="m">the three above, plus accounts_list, balances_get, positions_list,
+          tax_lots_list, orders_list, order_get, executions_list</td></tr>
+      <tr><td><span class="tag b">TRADING</span></td><td><b>14</b></td>
+        <td class="m">all of the above, plus order_preview, order_place, order_replace,
+          order_cancel</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Nothing is reconfigured to make that happen, and no tool is rewritten. There is an HTTP test
+    that asserts the three counts, because the day one of them changes silently is the day a
+    research session can read a customer's balances.
+  </p>
+
+  <pre data-src="agent-service/src/test/java/com/example/brokerage/agent/HttpSurfaceTest.java"
+       data-from="entitlementsChangeWhatIsVisible" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>And what is hidden, for the humans</h2>
+
+  <p>
+    The registry can also answer the inverse question &mdash; which tools this principal
+    <em>cannot</em> see, and which scope is missing. That is never shown to the model; it is for
+    the console, and for the support engineer wondering why the agent said it could not do
+    something.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolRegistry.java"
+       data-from="Which tools would be hidden from this principal" data-to="^    \}"></pre>
+</section>
+
+<!-- =============================================================== chapter 21 -->
+<section class="chapter" id="ch-21" data-foot="21 — The invocation pipeline">
+  <div class="chnum">Chapter 21</div>
+  <h1 class="title">The invocation pipeline</h1>
+  <p class="lede">
+    Ten steps, in an order that is argued for rather than assumed. This is the system.
+  </p>
+
+  <p>
+    A handler is domain code. The pipeline is the part that makes a tool catalog safe to point a
+    language model at, and it is identical for all fourteen tools &mdash; which is precisely why it
+    belongs in one place and not in any of them.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from=" \* <pre>" data-to=" \* </pre>" data-cap="the order of operations, from the class's own documentation"></pre>
+
+  <h2>Steps 1 and 2: resolve, and check the switch</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="        ToolRegistry.Entry entry = registry.find" data-to="principal, null\);" data-to-nth="2" data-doc="no"></pre>
+
+  <p>
+    Note that an unknown name and a name this principal cannot see produce the <em>same</em> error.
+    Telling the model &ldquo;that tool exists but is off limits&rdquo; is an oracle it will probe,
+    and since it cannot act on either answer there is no cost to the uninformative one.
+  </p>
+
+  <h2>Steps 3 and 4: parse and validate</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="        List<ArgumentValidator.Violation> violations" data-to="principal, arguments\);" data-doc="no"></pre>
+
+  <p>
+    The remediation is as important as the message. <i>&ldquo;Fix the fields named above and call
+    the tool again. Do not try a different tool.&rdquo;</i> An agent that reads an argument error as
+    &ldquo;this tool does not work&rdquo; will go looking for another one, and the other one will
+    have the same problem.
+  </p>
+
+  <h2>Step 5 after step 4, which looks backwards</h2>
+
+  <p>
+    Arguments are validated <em>before</em> entitlements are checked. For a human-facing API that is
+    the wrong order: you refuse the unauthorized caller first and tell them nothing else.
+  </p>
+
+  <p>
+    For a model it is the wrong order for a different reason. The useful answer to a malformed call
+    is &ldquo;your third argument is wrong&rdquo;, and giving it a bare
+    <span class="mono">NOT_ENTITLED</span> teaches it to retry the same malformed call against a
+    different tool. Nothing leaks, because the tool was already in this principal's
+    <em>visible</em> catalog before the pipeline ran &mdash; step 1 saw to that.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">The general form</div>
+    <p style="margin-bottom:0">
+      Information is withheld at the point where <b>visibility</b> is decided, not at the point
+      where a call is refused. Once a tool is visible to a session, that session may learn
+      everything about how to call it correctly.
+    </p>
+  </div>
+
+  <h2>Step 6: the rate limit</h2>
+
+  <p>
+    Rate limiting a tool catalog is not about load. It is about the one failure mode a language
+    model has that a human caller does not: a loop. An agent that misreads an error as transient
+    will retry it, politely, for as many turns as the budget allows.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="        Integer wait = rateLimiter.retryAfter" data-to="started, false\)\), null\);" data-doc="no"></pre>
+
+  <p>
+    The limit is per tool, not per catalog, because the limits that matter differ by two orders of
+    magnitude. And the error carries the wait, because &ldquo;too many requests&rdquo; with no
+    number means the agent waits zero seconds.
+  </p>
+
+  <h2>Step 7: the approval gate</h2>
+
+  <p>
+    Chapter 22 is about the gate itself. What matters here is where it sits: after validation, after
+    entitlement, after the rate limit, and <em>before</em> the handler. A human is asked about a
+    call that is already known to be well-formed and permitted, which is the only kind of call it is
+    reasonable to ask a human about.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="        String approvalReference = null;" data-to="approvalReference\);" data-to-nth="1" data-doc="no"></pre>
+
+  <h2>Step 8: the handler runs</h2>
+
+  <p>
+    And only now. Note what the handler is given.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Invocation.java"
+       data-from="public record Invocation" data-to="Instant startedAt"></pre>
+
+  <p>
+    A descriptor, validated arguments, a principal and a request identifier. Note what is
+    <em>not</em> there: the conversation. A handler cannot read the chat history, cannot see the
+    system prompt, and cannot be talked into anything, because it is never shown the talking. That
+    is the whole reason a tool is a safer surface than a prompt.
+  </p>
+
+  <h2>Step 9: verify the payload</h2>
+
+  <p>
+    This is the step people leave out, and the one worth the most argument.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="            Object payload = entry.handler\(\).handle" data-to="approvalReference\);" data-to-nth="1" data-doc="no"></pre>
+
+  <p>
+    Validating your own handler's output sounds like distrust of your colleagues. It is distrust of
+    <em>drift</em>. The output schema is the only description of the payload the model will ever
+    see. The day a handler adds a field, renames one, or starts returning null where it used to
+    return a number, the model is being misled by a document the firm published &mdash; and nothing
+    else in the system will notice.
+  </p>
+
+  <p>
+    Failing closed turns that into a caught bug with a request identifier, rather than a confusing
+    conversation three weeks later. The error returned to the model carries no detail at all,
+    because the model cannot act on it and a customer should not read it.
+  </p>
+
+  <h2>Step 10: envelope and audit</h2>
+
+  <p>
+    And the two things that happen on every path, successful or not.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="    private ToolResult.Meta meta" data-to="^    \}"></pre>
+
+  <h2>Everything a handler may throw</h2>
+
+  <p>
+    Exactly one thing, and the pipeline catches the rest.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="        \} catch \(ToolFailure failure\)" data-to="principal, arguments\);" data-doc="no"></pre>
+
+  <p>
+    A <span class="icode">ToolFailure</span> becomes the envelope the handler intended. Anything
+    else is logged with the request identifier and returned as
+    <span class="mono">INTERNAL_ERROR</span> with no detail &mdash; because the alternative is a
+    database constraint name in a customer conversation, and there is a test asserting it does not
+    happen.
+  </p>
+
+  <h2>What this buys, in one table</h2>
+
+  <table class="dense">
+    <thead><tr><th style="width:2.1in">Without the pipeline</th><th>With it</th></tr></thead>
+    <tbody>
+      <tr><td>Each handler validates, or does not</td>
+        <td>Every call validated against the published schema, once, in one place</td></tr>
+      <tr><td>Entitlements checked where somebody remembered</td>
+        <td>Checked for every tool, from the descriptor's own declaration</td></tr>
+      <tr><td>Approval is a convention in the prompt</td>
+        <td>A gate the model cannot route around, keyed to the exact arguments</td></tr>
+      <tr><td>Errors are whatever the handler threw</td>
+        <td>Fifteen codes, each with a next action the agent was taught</td></tr>
+      <tr><td>Audit is where somebody added a log line</td>
+        <td>Every invocation, written before the handler and completed after</td></tr>
+      <tr><td>A drifting handler misleads the model quietly</td>
+        <td>A drifting handler fails the call and names the request</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =============================================================== chapter 22 -->
+<section class="chapter" id="ch-22" data-foot="22 — Approval, limits and switches">
+  <div class="chnum">Chapter 22</div>
+  <h1 class="title">Approval, limits and switches</h1>
+  <p class="lede">
+    Where a human says yes, how to stop a loop, and how to turn a tool off at two in the morning.
+  </p>
+
+  <h2>The approval gate</h2>
+
+  <p>
+    The mechanism is a <b>reference</b> rather than a flag, and that distinction is the whole
+    design. A flag can be set by the thing being checked. A reference is a hash of the tool name,
+    the exact arguments and the session.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ApprovalGate.java"
+       data-from="The stable reference for this exact call" data-to="^    \}"></pre>
+
+  <p>
+    Canonical JSON, so that a re-ordered argument object is still the same approval and a changed
+    value is not. An approval granted for &ldquo;buy 50 AAPL at market&rdquo; cannot be spent on
+    &ldquo;buy 500&rdquo;, and an approval from one conversation cannot be spent in another.
+  </p>
+
+  <h3>Three steps, and it survives a restart</h3>
+
+  <ol class="steps">
+    <li><b>The agent calls a tool that needs approval.</b> The gate has no grant for that reference,
+      so the pipeline returns <span class="mono">APPROVAL_REQUIRED</span> with the reference and a
+      rendered summary of what is about to happen.</li>
+    <li><b>Something outside the model shows the summary to a human</b> and records their answer
+      against the reference. In this repository that is the Angular console; in production it is
+      whatever surface the customer is actually on.</li>
+    <li><b>The agent calls the tool again, byte for byte.</b> Now the grant matches and it runs.</li>
+  </ol>
+
+  <p>
+    Nothing about that flow requires the agent process to be the same one, or even to be running,
+    between steps 1 and 3.
+  </p>
+
+  <h3>Grants are single use and they expire</h3>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ApprovalGate.java"
+       data-from="    /\*\* True when a live grant exists" data-to="^    \}"></pre>
+
+  <p>
+    An approval with no window is a standing instruction, and nobody means to give one of those.
+    There are three tests, and between them they say the whole thing:
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="approvalsAreSingleUse" data-to="^    \}" data-doc="no"></pre>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="approvalsAreBoundToTheirArguments" data-to="^    \}" data-doc="no"></pre>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="approvalsDoNotCrossSessions" data-to="^    \}" data-doc="no"></pre>
+
+  <h3>The dialog, and the context behind it</h3>
+
+  <p>
+    Chapter 9 made the case; here is the mechanism. The template is rendered from the arguments
+    <em>plus</em> whatever the domain supplies, and the domain's values win.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ApprovalGate.java"
+       data-from="Fill a confirmation template from the arguments" data-to="        return out.toString"></pre>
+
+  <p>
+    An unresolved placeholder is left visible as <span class="mono">(not given)</span> rather than
+    blanked, because a dialog with a quietly empty field is how somebody approves an order whose
+    quantity they never saw. And the brokerage's own context re-prices the order at the moment of
+    the confirmation:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/BrokerageApprovalContext.java"
+       data-from="Re-price the order now" data-to="^    \}"></pre>
+
+  <p>
+    If the order can no longer be placed at all, the dialog says so instead of quoting a cost. A
+    confirmation prompt for an order that would be refused is worse than useless: the customer says
+    yes, the tool refuses, and they have learned that the approval step is theatre.
+  </p>
+
+  <h2>Rate limits</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/RateLimiter.java"
+       data-from="    /\*\* Null when the call is allowed" data-to="^    \}"></pre>
+
+  <p>
+    A sliding window per principal and per tool. The numbers in this catalog range from 180 a minute
+    for quotes to 10 a minute for placing an order, and the ratio is the point: a tool that is cheap
+    and idempotent should be generous, and a tool that spends money should not.
+  </p>
+
+  <h2>Kill switches</h2>
+
+  <p>
+    Every tool at tier 2 or above must name one, and the linter enforces it. The reason only becomes
+    obvious the first time you need it: when a tool starts behaving badly at two in the morning, the
+    options are to turn it off or to roll back, and only one of those takes less than a build.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/KillSwitches.java"
+       data-from="    /\*\* True when this switch" data-to="^    \}"></pre>
+
+  <p>
+    Switches are hierarchical by prefix, so <span class="icode">tools.brokerage.trading</span>
+    disables <span class="icode">tools.brokerage.trading.place</span> and its siblings with it. That
+    matters when the thing misbehaving is a dependency rather than a tool.
+  </p>
+
+  <p>
+    And the effect on the agent is the point: a tripped switch does not produce an error the agent
+    will retry. The tool leaves the catalog on the next turn, so the model does not see it at all.
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="killSwitchesTakeToolsOutOfService" data-to="^    \}" data-doc="no"></pre>
+</section>
+
+<!-- =============================================================== chapter 23 -->
+<section class="chapter" id="ch-23" data-foot="23 — The audit record">
+  <div class="chnum">Chapter 23</div>
+  <h1 class="title">The audit record</h1>
+  <p class="lede">
+    What to write, what never to write, and why it is written twice.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/AuditLog.java"
+       data-from="    public record Record" data-to="Governance.ApprovalMode approvalMode"></pre>
+
+  <h2>Written before, completed after</h2>
+
+  <p>
+    A record is written before the handler runs and completed after, so that a call which hangs or
+    crashes the process still leaves evidence it was attempted. Logging on the way out loses exactly
+    the invocations an incident review cares about.
+  </p>
+
+  <h2>What is deliberately absent</h2>
+
+  <p>
+    Arguments are recorded as a hash and a list of <em>field names</em>, never as values.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/InvocationPipeline.java"
+       data-from="Field names only" data-to="^    \}"></pre>
+
+  <p>
+    The reasoning: the record has to prove which call was made and let a reviewer match it against
+    an approval, and a hash does both. Storing the values themselves would put account identifiers,
+    order sizes and whatever the customer typed into a log with a six-year retention and a much
+    wider readership than the account itself.
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="everythingIsAuditedAndNothingSensitiveIsLogged" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>What an incident review actually needs</h2>
+
+  <p>
+    Here is the trail left by the preview-then-place sequence from chapter 17.
+  </p>
+
+  <pre data-file="audit-trail.txt" data-lang="text"
+       data-label="two calls, one session" data-wrap="no"></pre>
+
+  <p>
+    Four things an auditor can do with that, none of which require the application to be running:
+  </p>
+
+  <ul>
+    <li><b>Join the action to the approval.</b> Both place records carry the same approval
+      reference; one is the request and one is the execution.</li>
+    <li><b>Prove the order of operations.</b> The preview preceded the place, and the timestamps
+      say by how long.</li>
+    <li><b>Know the retention and the basis.</b> Each record carries its own, from the descriptor,
+      so a record does not have to be joined to a catalog that may have changed.</li>
+    <li><b>Find the conversation.</b> The session identifier, and the request identifier the
+      customer was given if they complained.</li>
+  </ul>
+
+  <p>
+    There is a test for the first of those, because it is the one that matters and the one a
+    refactor would silently break.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/TradingTrajectoryTest.java"
+       data-from="theAuditTrailTiesApprovalToAction" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>In production</h2>
+
+  <p>
+    This implementation keeps the last few thousand records in memory so the console can show them
+    and the tests can assert on them. In a real firm it writes to the immutable store, and the
+    interesting design question is not where but <em>what else</em>: the audit record is the only
+    artifact that survives the conversation, so anything you will want to ask later has to be in it
+    now.
+  </p>
+
+  <div class="callout"><p>
+    <span class="lbl">One field worth adding that this implementation does not have.</span> The
+    model and model version that made the call. When selection accuracy moves after a model
+    upgrade, the first question is which calls were made by which version, and the only place that
+    can be answered is here.
+  </p></div>
+</section>
+
+<!-- =============================================================== chapter 24 -->
+<section class="chapter" id="ch-24" data-foot="24 — Publishing to Spring AI">
+  <div class="chnum">Chapter 24</div>
+  <h1 class="title">Publishing to Spring AI</h1>
+  <p class="lede">
+    The whole binding, in one class, with no annotations anywhere.
+  </p>
+
+  <p>
+    Everything in this book so far has been about a contract that names no framework. This is where
+    it meets one, and the measure of whether the preceding chapters were right is how little code
+    this takes.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/DescriptorToolCallback.java"
+       data-from="public ToolDefinition getToolDefinition" data-to="^    \}" data-to-nth="2" data-doc="no"></pre>
+
+  <p>
+    Spring AI wants three strings per tool: a name, a description and a serialized input schema.
+    The descriptor has all three, so the adapter reads them off and hands them over. There is no
+    translation, no mapping table and no annotation processor.
+  </p>
+
+  <h2>What the callback deliberately does not do</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/DescriptorToolCallback.java"
+       data-from="public String call\(String arguments\) \{" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    It hands the raw argument string to the pipeline and returns whatever JSON comes back. It does
+    not validate, authorize, catch or format &mdash; because doing any of those here would mean
+    they happened only for callers who came through Spring AI, and the desktop connector and the
+    test harness would each need their own copy.
+  </p>
+
+  <h2>Contrast with the annotated approach</h2>
+
+  <p>
+    Spring AI supports <span class="icode">@Tool</span> on a method, which is the obvious thing to
+    reach for and is faster for the first three tools. Here is what it costs at fourteen.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:1.45in">&nbsp;</th><th>@Tool on a method</th><th>A descriptor file</th></tr></thead>
+    <tbody>
+      <tr><td><b>The description</b></td>
+        <td>A string literal in a Java file. Nobody lints it; a reviewer reading the diff is reading
+          Java.</td>
+        <td>Prose in a file, linted against ten rules, and a diff a product owner can read.</td></tr>
+      <tr><td><b>The input schema</b></td>
+        <td>Inferred from parameter types. You get the types; you do not get patterns, enums,
+          bounds or per-property descriptions without more annotations.</td>
+        <td>Written explicitly, and checked against a profile.</td></tr>
+      <tr><td><b>Seeing what the model gets</b></td>
+        <td>Start the application and inspect.</td>
+        <td><span class="mono">cat</span> the file.</td></tr>
+      <tr><td><b>Publishing elsewhere</b></td>
+        <td>Another framework's annotations, or a reflection pass.</td>
+        <td>An adapter of about forty lines that renames nothing.</td></tr>
+      <tr><td><b>Governance</b></td>
+        <td>Nowhere obvious. Usually a spreadsheet.</td>
+        <td>In the file, next to the thing it governs.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Publishing per turn, not per application</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolPublisher.java"
+       data-from="    public List<ToolCallback> publish" data-to="^    \}"></pre>
+
+  <p>
+    Each call builds fresh callbacks bound to this session's principal and to a fresh trace. Two
+    consequences follow: a research session and a trading session running at the same moment see
+    different catalogs, and every turn comes back with a complete record of what was called.
+  </p>
+
+  <h2>The agent</h2>
+
+  <pre data-src="agent-service/src/main/java/com/example/brokerage/agent/BrokerageAgent.java"
+       data-from="        ChatResponse response = ChatClient.create" data-to="            .chatResponse\(\);" data-doc="no"></pre>
+
+  <p>
+    There is no hand-rolled tool-call loop. Spring AI runs it, because there is nothing to gain from
+    driving it manually: the trace is collected inside each callback, so the visibility a manual
+    loop is usually written for is already there. Less machinery, same evidence.
+  </p>
+
+  <h2>The trace</h2>
+
+  <p>
+    Which brings us to the most useful artifact in the whole system, and the one that is almost
+    always missing.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolTrace.java"
+       data-from="    public record Step" data-to="^    \}"></pre>
+
+  <p>
+    When an agent gives a wrong answer, the question is never &ldquo;what did the model say&rdquo;
+    &mdash; you have that. It is &ldquo;which tools did it call, with what arguments, in what order,
+    and what came back&rdquo;. Without a trace you are reduced to reading the final prose and
+    guessing.
+  </p>
+
+  <p>
+    The trace is also what makes the test harness possible. Selection accuracy, argument accuracy
+    and trajectory assertions are all statements about this list, so the harness becomes a set of
+    expectations over a trace rather than a set of expectations over English. Part VII is about
+    that.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolTrace.java"
+       data-from="The tools called, in order" data-to="^    \}" data-to-nth="3"></pre>
+</section>

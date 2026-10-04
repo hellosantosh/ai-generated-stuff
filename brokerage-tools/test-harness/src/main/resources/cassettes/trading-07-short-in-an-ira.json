@@ -1,0 +1,23 @@
+{
+  "scenarioId": "trading-07-short-in-an-ira",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_TF7KNH2A136X695X\",\"symbol\":\"TSLA\",\"side\":\"SELL_SHORT\",\"quantity\":100,\"orderType\":\"MARKET\"}"
+        }
+      ],
+      "text": "A Roth IRA cannot sell short, so that order would be refused. This is not a size or funding question \u2014 the account type does not permit it at all."
+    }
+  ],
+  "reply": "A Roth IRA cannot sell short, so that order would be refused. This is not a size or funding question \u2014 the account type does not permit it at all."
+}

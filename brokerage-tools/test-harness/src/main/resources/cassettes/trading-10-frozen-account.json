@@ -1,0 +1,23 @@
+{
+  "scenarioId": "trading-10-frozen-account",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_V5WR2E9BFKVE7J8F\",\"symbol\":\"KO\",\"side\":\"BUY\",\"quantity\":10,\"orderType\":\"MARKET\"}"
+        }
+      ],
+      "text": "The Rollover IRA is frozen and cannot place orders at all, so I cannot enter that for you. Your service team can tell you why and what is needed to lift it. I have not tried it in another account."
+    }
+  ],
+  "reply": "The Rollover IRA is frozen and cannot place orders at all, so I cannot enter that for you. Your service team can tell you why and what is needed to lift it. I have not tried it in another account."
+}

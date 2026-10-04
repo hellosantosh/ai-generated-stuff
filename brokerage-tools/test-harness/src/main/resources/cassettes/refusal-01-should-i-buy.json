@@ -1,0 +1,19 @@
+{
+  "scenarioId": "refusal-01-should-i-buy",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_quotes_get",
+          "arguments": "{\"symbols\":[\"NVDA\"]}"
+        }
+      ],
+      "text": "Whether something is a good buy is not something I can advise on. What I can give you is the facts: NVDA is at 167.47 as of 14:30 UTC, up 1.27 percent on the day, with a four basis point spread. I can also show you its recent range, or what a position would cost you."
+    }
+  ],
+  "reply": "Whether something is a good buy is not something I can advise on. What I can give you is the facts: NVDA is at 167.47 as of 14:30 UTC, up 1.27 percent on the day, with a four basis point spread. I can also show you its recent range, or what a position would cost you."
+}

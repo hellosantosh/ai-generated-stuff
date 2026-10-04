@@ -1,0 +1,14 @@
+{
+  "scenarioId": "refusal-10-out-of-scope",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [],
+      "text": "I cannot move money \u2014 there is no transfer tool here, only tools that read your accounts and place trades. A transfer is done from the money-movement screen, or by your service team. Is there anything about the positions or orders I can help with?"
+    }
+  ],
+  "reply": "I cannot move money \u2014 there is no transfer tool here, only tools that read your accounts and place trades. A transfer is done from the money-movement screen, or by your service team. Is there anything about the positions or orders I can help with?"
+}

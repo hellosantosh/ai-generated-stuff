@@ -1,0 +1,31 @@
+{
+  "scenarioId": "trading-09-move-a-limit",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_orders_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\"}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"MSFT\",\"side\":\"BUY\",\"quantity\":25,\"orderType\":\"LIMIT\",\"limitPrice\":\"505.00\",\"replacesOrderId\":\"ord_CZ9R91DVFPMN5BX0\"}"
+        },
+        {
+          "tool": "brokerage_order_replace",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"orderId\":\"ord_CZ9R91DVFPMN5BX0\",\"quantity\":25,\"limitPrice\":\"505.00\",\"confirmationToken\":\"{{confirmationToken}}\"}"
+        }
+      ],
+      "text": "The limit on your MSFT order is now 505.00 and it keeps the same order number. MSFT is trading at 556.05, so at 505 the order is still well below the market and may sit unfilled."
+    }
+  ],
+  "reply": "The limit on your MSFT order is now 505.00 and it keeps the same order number. MSFT is trading at 556.05, so at 505 the order is still well below the market and may sit unfilled."
+}

@@ -1,0 +1,16 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "INVALID_ARGUMENT",
+    "message" : "That cursor was not issued by this tool.",
+    "remediation" : "Drop the cursor and call again from the start, or pass back a nextCursor exactly as it was returned.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_d1991465ec134d52841c",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

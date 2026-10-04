@@ -1,0 +1,116 @@
+{
+  "name": "brokerage_order_replace",
+  "title": "Change a working order the customer has approved",
+  "description": "Amends a working order in place: a new quantity, a new limit price, a new stop price, or any combination. The order keeps its identifier, so the number the customer was given still refers to their order. Use when the customer asks to move a price, change a size, or adjust an order that has not yet filled, and only after brokerage_order_preview has priced the new terms with replacesOrderId set and the customer has approved them. Do not use to cancel, which is brokerage_order_cancel, and do not use it to place something new, which is brokerage_order_place. Raising a limit by a dollar and buying at that dollar are the same economic act, which is why this needs the same approval as placing an order and cannot be done quietly. Read status on the result: an order can fill in the moment between the customer agreeing to a change and the venue acting on it, in which case the replacement is refused and the original terms are what happened. The effect is immediate and the previous terms are gone; a partially filled order keeps the shares that already filled and only the remainder is amended.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account holding the order, from brokerage_accounts_list."
+      },
+      "orderId": {
+        "type": "string",
+        "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The working order to amend, from brokerage_orders_list. Must be the order that was previewed."
+      },
+      "quantity": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000000,
+        "description": "The new total share count, including anything already filled. Must match the preview."
+      },
+      "limitPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "The new worst acceptable price, as a decimal string. Required when the order has a limit. Must match the preview."
+      },
+      "stopPrice": {
+        "type": "string",
+        "pattern": "^[0-9]{1,9}(\\.[0-9]{1,4})?$",
+        "description": "The new activation price, as a decimal string. Required when the order has a stop. Must match the preview."
+      },
+      "confirmationToken": {
+        "type": "string",
+        "pattern": "^cnf_[0-9A-HJKMNP-TV-Z]{24}$",
+        "description": "The token from a brokerage_order_preview that had replacesOrderId set to this order. Single-use, valid for 120 seconds, and bound to these exact terms."
+      }
+    },
+    "required": ["accountId", "orderId", "quantity", "confirmationToken"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "replaced": { "type": "boolean", "description": "Whether the amendment took effect. False means the order is as it was, or has already finished; read status and explanation." },
+      "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The order's identifier, unchanged by the amendment." },
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The instrument being traded." },
+      "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction, which an amendment cannot change." },
+      "quantity": { "type": "integer", "minimum": 1, "description": "Share count after the amendment." },
+      "filledQuantity": { "type": "integer", "minimum": 0, "description": "Shares already filled. These are not affected by the amendment." },
+      "limitPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Limit price after the amendment, or null when the order has none." },
+      "stopPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Stop price after the amendment, or null when the order has none." },
+      "status": {
+        "type": "string",
+        "enum": ["PENDING_NEW", "WORKING", "PARTIALLY_FILLED", "FILLED", "CANCELLED", "REJECTED", "EXPIRED"],
+        "description": "Where the order stands now. FILLED here means it filled before the amendment arrived and the old terms are what happened."
+      },
+      "explanation": { "type": "string", "maxLength": 400, "description": "What happened, in words that can be read to the customer. Always present, and the thing to say when replaced is false." },
+      "updatedAt": { "type": "string", "format": "date-time", "description": "When the order last changed, in UTC." }
+    },
+    "required": ["replaced", "orderId", "symbol", "side", "quantity", "filledQuantity", "limitPrice", "stopPrice", "status", "explanation", "updatedAt"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": false,
+    "destructiveHint": true,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L3",
+      "riskTier": 3,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:write"],
+      "approval": {
+        "mode": "confirm",
+        "confirmationTemplate": "Change this order?\n\n  Order {{orderId}}: {{side}} {{symbol}} in {{accountNickname}}\n\n  Was   {{previousTerms}}\n  Now   {{newTerms}}\n\n  Estimated cost   {{estimatedCost}} {{currency}}\n\nThis changes a live order and the previous terms are gone.",
+        "expiresInSeconds": 120
+      },
+      "recordKeeping": {
+        "auditEvent": "tool.order.replace",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records", "order-audit-trail", "best-execution"]
+      },
+      "cost": { "class": "high", "p95LatencyMs": 780 },
+      "rateLimit": { "perPrincipalPerMinute": 10, "perPrincipalPerDay": 100 },
+      "dependencies": ["risk-engine", "order-management-system", "market-data-feed"],
+      "availability": { "slo": "99.99", "killSwitch": "tools.brokerage.trading.replace" },
+      "evaluation": {
+        "suite": "evals/brokerage-trading",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.95,
+        "refusalAccuracy": 1.0,
+        "argumentAccuracy": 0.97
+      }
+    }
+  }
+}

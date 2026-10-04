@@ -1,0 +1,13 @@
+spring:
+  main:
+    # The connector speaks on standard output, so nothing else may write there.
+    web-application-type: none
+    banner-mode: off
+  application:
+    name: brokerage-desktop-bridge
+
+logging:
+  level:
+    root: error
+  pattern:
+    console: "%d{HH:mm:ss} %-5level %msg%n"

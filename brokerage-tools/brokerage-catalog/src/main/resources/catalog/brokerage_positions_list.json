@@ -1,0 +1,102 @@
+{
+  "name": "brokerage_positions_list",
+  "title": "List what one account holds",
+  "description": "Returns the holdings of one account: symbol, company name, sector, share count, average cost, last price, market value, unrealized profit or loss, and the weight each holding carries in the portfolio. Use when the customer asks what they own, how a holding is doing, whether they are too concentrated, or names a holding they want to sell. Do not use for a per-lot breakdown — holding periods and wash-sale exposure are in brokerage_tax_lots_list and are what a sale should actually be decided on. Do not use it for cash, which is brokerage_balances_get. Read the symbol field as the authoritative ticker for anything the customer already owns, so that \"sell my Apple\" needs no search. Read portfolioWeight when advising: anything above about 25 percent is concentrated and worth saying out loud. The average cost here is the account's blended basis across all lots and is not the figure to use for a tax conversation. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account whose holdings to list, from brokerage_accounts_list."
+      },
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "Narrow to one ticker. Omit to list everything, which is the usual case."
+      }
+    },
+    "required": ["accountId"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account these holdings belong to." },
+      "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency for every amount here." },
+      "totalMarketValue": { "$ref": "#/$defs/decimal", "description": "Market value of all holdings. The denominator behind portfolioWeight." },
+      "positions": {
+        "type": "array",
+        "maxItems": 200,
+        "description": "Holdings, largest first. Empty for an account that holds only cash, which is a real answer.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "Ticker. Use this for any order in this holding; no search is needed." },
+            "name": { "type": "string", "maxLength": 120, "description": "Full name of the instrument, for speaking to the customer." },
+            "sector": { "type": "string", "maxLength": 48, "description": "Sector, useful when discussing concentration across holdings." },
+            "quantity": { "type": "integer", "description": "Shares held. Negative means a short position, which can only be closed with BUY_TO_COVER." },
+            "averageCost": { "$ref": "#/$defs/decimal", "description": "Blended cost per share across all lots. Not the figure for a tax decision." },
+            "lastPrice": { "$ref": "#/$defs/decimal", "description": "Last traded price used for the valuation here." },
+            "marketValue": { "$ref": "#/$defs/decimal", "description": "Quantity times last price." },
+            "unrealizedPnl": { "$ref": "#/$defs/decimal", "description": "Market value less cost. Negative is a loss." },
+            "unrealizedPnlPercent": { "$ref": "#/$defs/decimal", "description": "The same, as a percentage of cost." },
+            "portfolioWeight": { "$ref": "#/$defs/decimal", "description": "Percentage of the account's market value in this holding. Above roughly 25, say it is concentrated." }
+          },
+          "required": ["symbol", "name", "sector", "quantity", "averageCost", "lastPrice", "marketValue", "unrealizedPnl", "unrealizedPnlPercent", "portfolioWeight"],
+          "additionalProperties": false
+        }
+      },
+      "asOf": { "type": "string", "format": "date-time", "description": "When these valuations were computed, in UTC." }
+    },
+    "required": ["accountId", "currency", "totalMarketValue", "positions", "asOf"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "brokerage-platform",
+        "contact": "brokerage-platform@example.com",
+        "escalation": "pagerduty://brokerage-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:positions:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.positions.list",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records"]
+      },
+      "cost": { "class": "medium", "p95LatencyMs": 280 },
+      "rateLimit": { "perPrincipalPerMinute": 60, "perPrincipalPerDay": 3000 },
+      "dependencies": ["position-service", "market-data-feed"],
+      "availability": { "slo": "99.95", "killSwitch": "tools.brokerage.positions" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.99,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 0.99
+      }
+    }
+  }
+}

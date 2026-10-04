@@ -1,0 +1,16 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "NOT_FOUND",
+    "message" : "Account acct_ZZZZZZZZZZZZZZZZ was not found.",
+    "remediation" : "Call brokerage_accounts_list to get the accounts this customer actually holds, and use an accountId from that result.",
+    "retryable" : false
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_b5b8f1094eb04a4c91e6",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "ok" : true,
+  "data" : {
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "currency" : "USD",
+    "executions" : [ {
+      "executionId" : "exec_ND1FHVBSZHMN2QAF",
+      "orderId" : "ord_M07KB16SEA01HW70",
+      "symbol" : "NVDA",
+      "side" : "BUY",
+      "quantity" : 100,
+      "price" : "181.44",
+      "principal" : "18144.00",
+      "commission" : "0.00",
+      "executedAt" : "2026-09-30T14:31:40Z",
+      "settlesOn" : "2026-10-01",
+      "venue" : "NASDAQ"
+    } ],
+    "nextCursor" : null,
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_5e26fd328161414296bb",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

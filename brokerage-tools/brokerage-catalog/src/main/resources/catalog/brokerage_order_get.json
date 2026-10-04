@@ -1,0 +1,114 @@
+{
+  "name": "brokerage_order_get",
+  "title": "Get one order by its identifier",
+  "description": "Returns the current state of one order with its full fill history: status, quantity filled against quantity ordered, average price, every execution with its price and settlement date, and the reason for a rejection. Use when the customer gives an order number, when brokerage_orders_list has already identified the order and more detail is needed, or immediately after a change to confirm what the order now looks like. Do not use to browse — that is brokerage_orders_list — and do not use it to decide whether a new order would be accepted, which is brokerage_order_preview. Read status before describing the order in the past tense, and read it again after any cancellation or replacement, because an order can fill in the moment between a decision and the venue acting on it. The executions array is the record of what actually happened and at what price; averageFillPrice is a summary of it. A NOT_FOUND error means this order does not exist in this account, not that it was canceled. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account the order belongs to, from brokerage_accounts_list."
+      },
+      "orderId": {
+        "type": "string",
+        "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The order to fetch, from brokerage_orders_list or from a previous place or replace."
+      }
+    },
+    "required": ["accountId", "orderId"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, so no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The order this describes." },
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account it is in." },
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The instrument being traded." },
+      "side": { "type": "string", "enum": ["BUY", "SELL", "SELL_SHORT", "BUY_TO_COVER"], "description": "Direction of the order." },
+      "quantity": { "type": "integer", "minimum": 1, "description": "Shares ordered." },
+      "filledQuantity": { "type": "integer", "minimum": 0, "description": "Shares filled so far." },
+      "orderType": { "type": "string", "enum": ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"], "description": "How the order is priced." },
+      "limitPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Worst acceptable price, or null." },
+      "stopPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Activation price, or null." },
+      "timeInForce": { "type": "string", "enum": ["DAY", "GTC", "IOC", "FOK"], "description": "How long the order stays live." },
+      "status": {
+        "type": "string",
+        "enum": ["PENDING_NEW", "WORKING", "PARTIALLY_FILLED", "FILLED", "CANCELLED", "REJECTED", "EXPIRED"],
+        "description": "Where the order stands now."
+      },
+      "averageFillPrice": { "type": ["string", "null"], "pattern": "^[0-9]{1,15}(\\.[0-9]{1,6})?$", "description": "Average of the fills, or null when nothing has filled." },
+      "commission": { "$ref": "#/$defs/decimal", "description": "Commission and regulatory fees charged so far." },
+      "rejectReason": { "type": ["string", "null"], "maxLength": 240, "description": "Why it was rejected, when it was. Relay this." },
+      "placedAt": { "type": "string", "format": "date-time", "description": "When the order was entered, in UTC." },
+      "updatedAt": { "type": "string", "format": "date-time", "description": "When it last changed, in UTC." },
+      "executions": {
+        "type": "array",
+        "maxItems": 50,
+        "description": "The fills that make up this order, oldest first. Empty when nothing has filled.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "executionId": { "type": "string", "pattern": "^exec_[0-9A-HJKMNP-TV-Z]{16}$", "description": "Opaque identifier for this fill." },
+            "quantity": { "type": "integer", "minimum": 1, "description": "Shares in this fill." },
+            "price": { "$ref": "#/$defs/decimal", "description": "Price this fill traded at." },
+            "executedAt": { "type": "string", "format": "date-time", "description": "When it traded, in UTC." },
+            "settlesOn": { "type": "string", "format": "date", "description": "Settlement date. Cash from a sale is not spendable before this." },
+            "venue": { "type": "string", "maxLength": 16, "description": "Where it traded." }
+          },
+          "required": ["executionId", "quantity", "price", "executedAt", "settlesOn", "venue"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["orderId", "accountId", "symbol", "side", "quantity", "filledQuantity", "orderType", "limitPrice", "stopPrice", "timeInForce", "status", "averageFillPrice", "commission", "rejectReason", "placedAt", "updatedAt", "executions"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "trading-platform",
+        "contact": "trading-platform@example.com",
+        "escalation": "pagerduty://trading-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:orders:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.order.get",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records", "order-audit-trail"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 140 },
+      "rateLimit": { "perPrincipalPerMinute": 90, "perPrincipalPerDay": 4000 },
+      "dependencies": ["order-management-system"],
+      "availability": { "slo": "99.99", "killSwitch": "tools.brokerage.orders" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.97,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 1.0
+      }
+    }
+  }
+}

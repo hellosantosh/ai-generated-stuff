@@ -1,0 +1,21 @@
+{
+  "ok" : true,
+  "data" : {
+    "cancelled" : true,
+    "orderId" : "ord_CZ9R91DVFPMN5BX0",
+    "symbol" : "MSFT",
+    "side" : "BUY",
+    "quantity" : 25,
+    "filledQuantity" : 0,
+    "status" : "CANCELLED",
+    "explanation" : "Cancellation accepted.",
+    "updatedAt" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_b1daad98fda54d54b46a",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

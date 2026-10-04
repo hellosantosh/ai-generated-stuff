@@ -1,0 +1,60 @@
+<svg viewBox="0 0 548 123" width="100%" role="img" aria-label="Which tool produces the identifiers each other tool needs; three state-changing tools sit behind one read-only preview">
+<defs><marker id="pgx" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b9c2da"/></marker></defs>
+<text x="6" y="14" font-family="monospace" font-size="6.4" fill="#8d95ab">needs nothing</text>
+<text x="140" y="14" font-family="monospace" font-size="6.4" fill="#8d95ab">needs an account</text>
+<text x="274" y="14" font-family="monospace" font-size="6.4" fill="#8d95ab">needs a symbol</text>
+<text x="408" y="14" font-family="monospace" font-size="6.4" fill="#8d95ab">needs an order or a confirmation</text>
+<path d="M 126 56.5 C 199.0 56.5, 199.0 34.5, 272 34.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 56.5 C 266.0 56.5, 266.0 34.5, 272 34.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 56.5 C 199.0 56.5, 199.0 56.5, 272 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 56.5 C 266.0 56.5, 266.0 56.5, 272 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 132.0 34.5, 132.0 34.5, 138 34.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 132.0 34.5, 132.0 56.5, 138 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 199.0 34.5, 199.0 78.5, 272 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 56.5 C 199.0 56.5, 199.0 78.5, 272 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 56.5 C 266.0 56.5, 266.0 78.5, 272 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 132.0 34.5, 132.0 78.5, 138 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 266.0 34.5, 266.0 34.5, 406 34.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 78.5 C 333.0 78.5, 333.0 34.5, 406 34.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 132.0 34.5, 132.0 100.5, 138 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 199.0 34.5, 199.0 100.5, 272 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 56.5 C 199.0 56.5, 199.0 100.5, 272 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 56.5 C 266.0 56.5, 266.0 100.5, 272 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 266.0 34.5, 266.0 56.5, 406 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 56.5 C 266.0 56.5, 266.0 56.5, 406 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 56.5 C 333.0 56.5, 333.0 56.5, 406 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 394 100.5 C 400.0 100.5, 400.0 56.5, 406 56.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 266.0 34.5, 266.0 78.5, 406 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 78.5 C 333.0 78.5, 333.0 78.5, 406 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 394 100.5 C 400.0 100.5, 400.0 78.5, 406 78.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 126 34.5 C 266.0 34.5, 266.0 100.5, 406 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<path d="M 260 78.5 C 333.0 78.5, 333.0 100.5, 406 100.5" fill="none" stroke="#b9c2da" stroke-width="0.6" opacity="0.85" marker-end="url(#pgx)"/>
+<rect x="6" y="26" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="11 " y="38" font-family="monospace" font-size="6.6" fill="#0d7a52">accounts_list</text>
+<rect x="6" y="48" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="11 " y="60" font-family="monospace" font-size="6.6" fill="#0d7a52">instruments_search</text>
+<rect x="274" y="26" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="279 " y="38" font-family="monospace" font-size="6.6" fill="#0d7a52">quotes_get</text>
+<rect x="274" y="48" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="279 " y="60" font-family="monospace" font-size="6.6" fill="#0d7a52">price_history_get</text>
+<rect x="140" y="26" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="145 " y="38" font-family="monospace" font-size="6.6" fill="#0d7a52">balances_get</text>
+<rect x="140" y="48" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="145 " y="60" font-family="monospace" font-size="6.6" fill="#0d7a52">positions_list</text>
+<rect x="274" y="70" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="279 " y="82" font-family="monospace" font-size="6.6" fill="#0d7a52">tax_lots_list</text>
+<rect x="140" y="70" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="145 " y="82" font-family="monospace" font-size="6.6" fill="#0d7a52">orders_list</text>
+<rect x="408" y="26" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="413 " y="38" font-family="monospace" font-size="6.6" fill="#0d7a52">order_get</text>
+<rect x="140" y="92" width="120" height="17" rx="3" fill="#e6f6ee" stroke="#0d7a52" stroke-width="0.6"/>
+<text x="145 " y="104" font-family="monospace" font-size="6.6" fill="#0d7a52">executions_list</text>
+<rect x="274" y="92" width="120" height="17" rx="3" fill="#eaeeff" stroke="#2f4fd0" stroke-width="0.6"/>
+<text x="279 " y="104" font-family="monospace" font-size="6.6" fill="#2f4fd0">order_preview</text>
+<rect x="408" y="48" width="120" height="17" rx="3" fill="#fdeaee" stroke="#c0203f" stroke-width="0.6"/>
+<text x="413 " y="60" font-family="monospace" font-size="6.6" fill="#c0203f">order_place</text>
+<rect x="408" y="70" width="120" height="17" rx="3" fill="#fdeaee" stroke="#c0203f" stroke-width="0.6"/>
+<text x="413 " y="82" font-family="monospace" font-size="6.6" fill="#c0203f">order_replace</text>
+<rect x="408" y="92" width="120" height="17" rx="3" fill="#fdf1e0" stroke="#a8620a" stroke-width="0.6"/>
+<text x="413 " y="104" font-family="monospace" font-size="6.6" fill="#a8620a">order_cancel</text>
+</svg>

@@ -1,0 +1,126 @@
+{
+  "name": "brokerage_quotes_get",
+  "title": "Get current quotes for up to ten symbols",
+  "description": "Returns the current two-sided market for each symbol given: last price, bid, ask, size, change on the day, volume, the spread in basis points, and the session the venue is in. Use when the customer asks what something is trading at, asks to compare instruments, or before explaining what an order would cost. Pass every symbol in one call rather than calling once per symbol. Do not use to look up a company by name — that is brokerage_instruments_search — and do not use it for past prices, which is brokerage_price_history_get. Read asOf before quoting a number to the customer: a quote is perishable and one taken minutes ago is not the market now. Read session too, and say so when it is not regular — in pre-market and after-hours the spread widens and the last price may be hours old. Read spreadBasisPoints before recommending a market order; above about 25 basis points the fill can be well away from the last price and a limit order is the better advice. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "symbols": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 10,
+        "uniqueItems": true,
+        "description": "The tickers to quote, uppercase, exactly as returned by brokerage_instruments_search or brokerage_positions_list.",
+        "items": {
+          "type": "string",
+          "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+          "description": "One ticker."
+        }
+      }
+    },
+    "required": ["symbols"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, so that no amount is rounded by binary floating point on the way here."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "session": {
+        "type": "string",
+        "enum": ["CLOSED", "PRE_MARKET", "REGULAR", "AFTER_HOURS"],
+        "description": "Which session the venue is in right now. Say this to the customer whenever it is not REGULAR."
+      },
+      "quotes": {
+        "type": "array",
+        "maxItems": 10,
+        "description": "One entry per symbol that resolved, in the order asked.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+              "description": "The ticker this quote is for."
+            },
+            "last": { "$ref": "#/$defs/decimal", "description": "Last traded price." },
+            "bid": { "$ref": "#/$defs/decimal", "description": "Best price a buyer is offering. A sale fills near here." },
+            "ask": { "$ref": "#/$defs/decimal", "description": "Best price a seller is asking. A purchase fills near here." },
+            "bidSize": { "type": "integer", "minimum": 0, "description": "Shares offered at the bid." },
+            "askSize": { "type": "integer", "minimum": 0, "description": "Shares offered at the ask." },
+            "previousClose": { "$ref": "#/$defs/decimal", "description": "Yesterday's closing price, the basis for the change figures." },
+            "change": { "$ref": "#/$defs/decimal", "description": "Change since the previous close, in currency." },
+            "changePercent": { "$ref": "#/$defs/decimal", "description": "Change since the previous close, as a percentage." },
+            "volume": { "type": "integer", "minimum": 0, "description": "Shares traded today." },
+            "spreadBasisPoints": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The bid-ask spread in basis points of the last price. Above roughly 25, warn before a market order."
+            },
+            "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency of these prices." },
+            "asOf": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When this quote was taken, in UTC. Quote it to the customer if any time has passed."
+            }
+          },
+          "required": ["symbol", "last", "bid", "ask", "bidSize", "askSize", "previousClose", "change", "changePercent", "volume", "spreadBasisPoints", "currency", "asOf"],
+          "additionalProperties": false
+        }
+      },
+      "unresolved": {
+        "type": "array",
+        "maxItems": 10,
+        "description": "Symbols that are not tradeable here. Tell the customer which ones rather than ignoring them, and consider brokerage_instruments_search.",
+        "items": { "type": "string", "maxLength": 12, "description": "A symbol that did not resolve." }
+      }
+    },
+    "required": ["session", "quotes", "unresolved"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "market-data",
+        "contact": "market-data@example.com",
+        "escalation": "pagerduty://market-data"
+      },
+      "dataClassification": "internal",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:market-data:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.quotes.get",
+        "retention": "P2Y",
+        "regulatoryBasis": ["books-and-records", "market-data-licensing"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 70 },
+      "rateLimit": { "perPrincipalPerMinute": 180, "perPrincipalPerDay": 10000 },
+      "dependencies": ["market-data-feed"],
+      "availability": { "slo": "99.99", "killSwitch": "tools.brokerage.marketdata" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.98,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 0.97
+      }
+    }
+  }
+}

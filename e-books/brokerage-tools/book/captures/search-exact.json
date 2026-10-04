@@ -1,0 +1,21 @@
+{
+  "ok" : true,
+  "data" : {
+    "exactMatch" : true,
+    "candidates" : [ {
+      "symbol" : "MSFT",
+      "name" : "Microsoft Corporation",
+      "exchange" : "NASDAQ",
+      "type" : "EQUITY",
+      "sector" : "Information Technology",
+      "marginEligible" : true
+    } ]
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_108baaa60fa4402dbd3d",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

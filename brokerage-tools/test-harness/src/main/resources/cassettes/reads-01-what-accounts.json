@@ -1,0 +1,19 @@
+{
+  "scenarioId": "reads-01-what-accounts",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        }
+      ],
+      "text": "You have four accounts with us: Everyday brokerage (margin), Cash account, Roth IRA and Rollover IRA. The Rollover IRA is frozen and cannot place orders \u2014 your service team can explain that one."
+    }
+  ],
+  "reply": "You have four accounts with us: Everyday brokerage (margin), Cash account, Roth IRA and Rollover IRA. The Rollover IRA is frozen and cannot place orders \u2014 your service team can explain that one."
+}

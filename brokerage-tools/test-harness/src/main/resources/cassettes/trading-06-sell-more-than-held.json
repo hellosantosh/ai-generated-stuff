@@ -1,0 +1,27 @@
+{
+  "scenarioId": "trading-06-sell-more-than-held",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_positions_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"MSFT\"}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"MSFT\",\"side\":\"SELL\",\"quantity\":500,\"orderType\":\"MARKET\"}"
+        }
+      ],
+      "text": "Everyday brokerage holds 85 shares of MSFT, so a sale of 500 would be refused \u2014 selling more than you hold is a short sale and has to be entered as one deliberately. Would you like to sell the 85 you hold?"
+    }
+  ],
+  "reply": "Everyday brokerage holds 85 shares of MSFT, so a sale of 500 would be refused \u2014 selling more than you hold is a short sale and has to be entered as one deliberately. Would you like to sell the 85 you hold?"
+}

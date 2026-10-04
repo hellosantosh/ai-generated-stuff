@@ -1,0 +1,158 @@
+<!-- ===================================================================== cover -->
+<section class="bookcover">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="spine"></div><div class="hair"></div>
+  <div class="inner">
+    <div class="imprint"><span>Smiroh Publishers</span></div>
+
+    <div class="kicker">A working specification</div>
+    <h1 class="bt">Tool<br>Specifications<br><span class="amp">&amp;</span> Design</h1>
+    <div class="trule"></div>
+    <p class="sub">
+      Building model-invocable tools for the brokerage domain &mdash; the descriptor, the ontology,
+      the registry, the runtime, and the test harness that proves a frontier model uses them the
+      way you intended.
+    </p>
+
+    <div class="art">
+      <svg viewBox="0 0 560 210" width="5.6in" role="img"
+           aria-label="A customer utterance reaching a frontier model, which chooses a tool;
+                       the call crosses a trust boundary into a pipeline that validates, entitles
+                       and gets a human approval before the handler runs">
+        <defs>
+          <marker id="cv-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8fa2d4"/>
+          </marker>
+        </defs>
+        <!-- the untrusted side -->
+        <rect x="2" y="24" width="190" height="160" rx="9" fill="rgba(255,186,84,.07)"
+              stroke="rgba(255,203,122,.35)"/>
+        <text x="12" y="42" font-family="monospace" font-size="8.5" fill="#ffcb7a"
+              letter-spacing="1.6">UNTRUSTED</text>
+        <rect x="20" y="58" width="152" height="34" rx="6" fill="rgba(255,255,255,.05)"
+              stroke="rgba(255,255,255,.2)"/>
+        <text x="34" y="79" font-family="monospace" font-size="11" fill="#eef2ff">the customer</text>
+        <rect x="20" y="118" width="152" height="34" rx="6" fill="rgba(255,255,255,.05)"
+              stroke="rgba(255,255,255,.2)"/>
+        <text x="34" y="139" font-family="monospace" font-size="11" fill="#eef2ff">Claude</text>
+        <path d="M96 92 L96 118" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#cv-ar)"/>
+
+        <!-- the boundary -->
+        <path d="M212 18 L212 192" stroke="#ffcb7a" stroke-width="1.3" stroke-dasharray="5 4"/>
+        <text x="218" y="28" font-family="monospace" font-size="8" fill="#ffcb7a"
+              letter-spacing="1.2">TRUST BOUNDARY</text>
+        <path d="M172 135 L250 135" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#cv-ar)"/>
+
+        <!-- the trusted side -->
+        <rect x="252" y="42" width="300" height="134" rx="9" fill="rgba(91,140,255,.09)"
+              stroke="rgba(91,140,255,.4)"/>
+        <text x="266" y="60" font-family="monospace" font-size="8.5" fill="#9db4ff"
+              letter-spacing="1.6">THE FIRM</text>
+        <g font-family="monospace" font-size="9.5" fill="#dce5ff">
+          <rect x="268" y="72" width="122" height="22" rx="4" fill="rgba(255,255,255,.06)"/>
+          <text x="278" y="87">validate schema</text>
+          <rect x="268" y="100" width="122" height="22" rx="4" fill="rgba(255,255,255,.06)"/>
+          <text x="278" y="115">check entitlement</text>
+          <rect x="268" y="128" width="122" height="22" rx="4" fill="rgba(255,186,84,.16)"/>
+          <text x="278" y="143" fill="#ffcb7a">human approves</text>
+          <rect x="412" y="100" width="122" height="22" rx="4" fill="rgba(111,224,187,.14)"/>
+          <text x="422" y="115" fill="#8fe8c8">the brokerage</text>
+        </g>
+        <path d="M390 139 C404 139, 404 111, 410 111" stroke="#8fa2d4" stroke-width="1.1"
+              fill="none" marker-end="url(#cv-ar)"/>
+      </svg>
+    </div>
+    <p class="artcap">fourteen tools &middot; one descriptor each &middot; nothing it can talk its way past</p>
+
+    <div class="badge">
+      <span><b>Java 27</b> &middot; Spring Boot 4 &middot; Spring AI 2 &middot; Angular 22 &middot;
+        <b>Claude</b></span>
+    </div>
+
+    <div class="byline">
+      <div>
+        <div class="author-lbl">Written by</div>
+        <div class="author">Smiroh Dev</div>
+      </div>
+      <div>
+        <div class="pubname">Smiroh Publishers</div>
+        <div class="pubsub">Edition 1 &middot; 2026</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ copyright -->
+<section class="copyright">
+  <div class="cp-mark"><span class="nm">Smiroh Publishers</span></div>
+  <h1 class="cp-title">Tool Specifications and Design<br>for the Brokerage Domain</h1>
+  <p class="cp-by">Building model-invocable tools a frontier model can use safely</p>
+
+  <dl style="margin-top:26pt">
+    <dt>Author</dt><dd>Smiroh Dev</dd>
+    <dt>Edition</dt><dd>First edition, 2026</dd>
+    <dt>Publisher</dt><dd>Smiroh Publishers</dd>
+    <dt>Pages</dt><dd>__PAGES__</dd>
+    <dt>Source</dt><dd>__LISTED_FILES__ files, __LISTED_LINES__ lines, reproduced in Appendix F</dd>
+    <dt>Language</dt><dd>US English</dd>
+  </dl>
+
+  <div class="legal" style="margin-top:26pt">
+    <h4>About this book</h4>
+    <p>
+      Every line of code printed here is read from the companion repository at build time. Every
+      figure that shows a tool's output &mdash; an envelope, an error, a confirmation dialog, the
+      generated system prompt, the conformance report, a run of the evaluation suite &mdash; is
+      recorded from the running system by <span class="mono">tools/capture.py</span> and pulled
+      into the text by the build. Nothing in this book is retyped, so a figure that disagrees with
+      the code is a build failure rather than a reader's discovery.
+    </p>
+
+    <h4>A note on protocol</h4>
+    <p>
+      This book specifies a <em>contract</em>, not a wire protocol. A conformant descriptor is a
+      JSON document; publishing it to any particular tool-calling runtime is an adapter, and the
+      two adapters in the companion repository are one class each. Nothing in the specification
+      names a transport, and nothing in it depends on one.
+    </p>
+
+    <h4>A note on the examples</h4>
+    <p>
+      The brokerage in these pages is a simulation. Its market data is generated deterministically,
+      its accounts hold imaginary money, and no order placed by any example reaches a venue. The
+      domain rules it enforces &mdash; settled cash, margin eligibility, short-sale permissions,
+      pattern day trading, wash sales, T+1 settlement &mdash; are modeled closely enough to make
+      the design decisions real, and loosely enough that nothing here should be mistaken for
+      regulatory guidance or investment advice.
+    </p>
+
+    <h4>Rights</h4>
+    <p>
+      &copy; 2026 Smiroh Publishers. All rights reserved. No part of this publication may be
+      reproduced, distributed, or transmitted in any form or by any means without the prior written
+      permission of the publisher, except for brief quotations in a review, and except that readers
+      may use the code in the companion repository in their own work.
+    </p>
+    <p>
+      Claude and Anthropic are trademarks of Anthropic, PBC. Spring, Spring Boot and Spring AI are
+      trademarks of Broadcom Inc. Angular is a trademark of Google LLC. Java is a trademark of
+      Oracle Corporation. The publisher is not affiliated with any of them, and their use here is
+      descriptive.
+    </p>
+    <p>
+      The information in this book is provided on an &ldquo;as is&rdquo; basis, without warranty.
+      Neither the author nor the publisher is liable for any damages arising from its use. Nothing
+      in this book is legal, regulatory, tax or investment advice. A firm adopting these patterns
+      is responsible for its own obligations.
+    </p>
+  </div>
+
+  <div class="colophon">
+    Set in Helvetica Neue, with Charter for the narrative passages and SF Mono for code.
+    Typeset from HTML by Chrome's paged-media engine; syntax highlighting, pagination and the
+    source appendix are generated by <span class="mono">tools/build.py</span>. The contents' page
+    numbers are not typed: the book is rendered once to find where each chapter landed, then
+    rendered again with the numbers filled in.
+  </div>
+</section>

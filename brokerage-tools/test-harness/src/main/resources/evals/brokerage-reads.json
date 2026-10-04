@@ -1,0 +1,108 @@
+{
+  "name": "brokerage-reads",
+  "description": "Selection among the read tools. Every scenario here is a thing a customer actually says, and the expectation is a statement about the trace rather than about the wording of the reply. The forbidTools lists are the half that earns its keep: it is easy to get an agent to call the right tool and hard to stop it calling three more.",
+  "scenarios": [
+    {
+      "id": "reads-01-what-accounts",
+      "utterance": "What accounts do I have with you?",
+      "why": "The simplest possible first turn. One call, no guessing.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list"],
+      "forbidTools": ["brokerage_balances_get", "brokerage_positions_list"],
+      "maxToolCalls": 1,
+      "tags": ["selection", "entry-point"]
+    },
+    {
+      "id": "reads-02-how-much-can-i-spend",
+      "utterance": "How much can I spend in my everyday brokerage account?",
+      "why": "Buying power, not cash, and not a preview. The nickname has to be resolved to an identifier first, which is the producer graph doing its job.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list", "brokerage_balances_get"],
+      "expectOrder": ["brokerage_accounts_list", "brokerage_balances_get"],
+      "forbidTools": ["brokerage_order_preview"],
+      "maxToolCalls": 3,
+      "tags": ["selection", "ordering"]
+    },
+    {
+      "id": "reads-03-what-do-i-own",
+      "utterance": "What am I holding in the everyday brokerage account?",
+      "why": "Positions, not tax lots. An agent that reaches for lots here is spending a call and a paragraph on something nobody asked about.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list", "brokerage_positions_list"],
+      "forbidTools": ["brokerage_tax_lots_list", "brokerage_executions_list"],
+      "maxToolCalls": 3,
+      "tags": ["selection"]
+    },
+    {
+      "id": "reads-04-price-of-three",
+      "utterance": "What are Apple, Microsoft and Nvidia trading at right now?",
+      "why": "One batched call, not three. This is the scenario that catches a singular quote tool.",
+      "role": "RESEARCH",
+      "expectTools": ["brokerage_quotes_get"],
+      "expectArguments": {
+        "brokerage_quotes_get": { "symbols": ["[\"AAPL\",\"MSFT\",\"NVDA\"]"] }
+      },
+      "maxToolCalls": 2,
+      "tags": ["selection", "batching", "efficiency"]
+    },
+    {
+      "id": "reads-05-history-not-quote",
+      "utterance": "How has Nvidia done over the last month?",
+      "why": "Price history, not a quote. Both are plausible and only one answers the question.",
+      "role": "RESEARCH",
+      "expectTools": ["brokerage_price_history_get"],
+      "expectArguments": { "brokerage_price_history_get": { "symbol": "NVDA" } },
+      "maxToolCalls": 2,
+      "tags": ["selection"]
+    },
+    {
+      "id": "reads-06-open-orders",
+      "utterance": "Do I have anything still working?",
+      "why": "The default state filter is WORKING, so a correct call passes no state at all.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list", "brokerage_orders_list"],
+      "forbidTools": ["brokerage_executions_list"],
+      "maxToolCalls": 6,
+      "tags": ["selection", "defaults"]
+    },
+    {
+      "id": "reads-07-what-did-i-pay",
+      "utterance": "What price did I actually get on that Nvidia buy?",
+      "why": "Executions, not the order's average. The fills are the answer to 'what did I pay'.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list"],
+      "forbidTools": ["brokerage_order_preview", "brokerage_order_place"],
+      "maxToolCalls": 6,
+      "tags": ["selection"]
+    },
+    {
+      "id": "reads-08-lots-before-selling",
+      "utterance": "If I sell some of my Apple, which shares would go first and what would the tax look like?",
+      "why": "Tax lots, and no order anywhere. A question about a sale is not an instruction to sell.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_accounts_list", "brokerage_tax_lots_list"],
+      "forbidTools": ["brokerage_order_preview", "brokerage_order_place"],
+      "maxToolCalls": 6,
+      "tags": ["selection", "tax"]
+    },
+    {
+      "id": "reads-09-ambiguous-apple",
+      "utterance": "What's Apple at today?",
+      "why": "AAPL and APLE both match. A search is the right first move, and the reply should name the alternatives rather than assume.",
+      "role": "RESEARCH",
+      "expectTools": ["brokerage_instruments_search"],
+      "maxToolCalls": 4,
+      "tags": ["selection", "ambiguity"]
+    },
+    {
+      "id": "reads-10-concentration",
+      "utterance": "Am I too concentrated in any one stock in the everyday brokerage account?",
+      "why": "The weight is already in the positions payload, so this needs no arithmetic and no second tool.",
+      "role": "SERVICE",
+      "expectTools": ["brokerage_positions_list"],
+      "forbidTools": ["brokerage_price_history_get"],
+      "maxToolCalls": 4,
+      "tags": ["selection", "efficiency"]
+    }
+  ]
+}

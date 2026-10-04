@@ -1,0 +1,547 @@
+<!-- ============================================================ PART III plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part III</div>
+    <h1>The ontology</h1>
+    <p class="pl">
+      What a catalog is <em>supposed</em> to cover, written down once, so that names, risk tiers and
+      prerequisites are derived rather than argued about. The investment that stops a catalog
+      decaying as it grows.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 620 170" role="img"
+           aria-label="An entity and an operation combine into a capability, from which the tool
+                       name, its risk tier and its approval mode are derived">
+        <defs>
+          <marker id="p3-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8fa2d4"/>
+          </marker>
+        </defs>
+        <g font-family="monospace" font-size="9.5" text-anchor="middle">
+          <rect x="10" y="26" width="118" height="30" rx="5" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/><text x="69" y="45" fill="#dce5ff">Order</text>
+          <rect x="10" y="94" width="118" height="30" rx="5" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/><text x="69" y="113" fill="#dce5ff">cancel</text>
+          <text x="69" y="18" font-size="7.5" fill="#7f8db8" letter-spacing="1.2">ENTITY</text>
+          <text x="69" y="140" font-size="7.5" fill="#7f8db8" letter-spacing="1.2">OPERATION</text>
+
+          <rect x="190" y="58" width="128" height="34" rx="5" fill="rgba(255,186,84,.16)"
+                stroke="rgba(255,203,122,.5)"/><text x="254" y="80" fill="#ffcb7a">capability</text>
+
+          <rect x="382" y="12" width="216" height="28" rx="5" fill="rgba(91,140,255,.14)"
+                stroke="rgba(91,140,255,.4)"/>
+          <text x="490" y="31" fill="#dce5ff" font-size="9">brokerage_order_cancel</text>
+          <rect x="382" y="60" width="216" height="28" rx="5" fill="rgba(91,140,255,.14)"
+                stroke="rgba(91,140,255,.4)"/>
+          <text x="490" y="79" fill="#dce5ff" font-size="9">risk tier 2</text>
+          <rect x="382" y="108" width="216" height="28" rx="5" fill="rgba(91,140,255,.14)"
+                stroke="rgba(91,140,255,.4)"/>
+          <text x="490" y="127" fill="#dce5ff" font-size="9">approval: confirm</text>
+        </g>
+        <path d="M128 41 C162 41, 162 70, 184 70" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p3-ar)"/>
+        <path d="M128 109 C162 109, 162 80, 184 80" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p3-ar)"/>
+        <path d="M318 72 C350 72, 350 26, 376 26" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p3-ar)"/>
+        <path d="M318 75 L376 75" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p3-ar)"/>
+        <path d="M318 78 C350 78, 350 122, 376 122" stroke="#8fa2d4" stroke-width="1.1" fill="none"
+              marker-end="url(#p3-ar)"/>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>11</b> Why a catalog needs one &nbsp;&middot;&nbsp;
+      <b>12</b> Entities, operations, capabilities &nbsp;&middot;&nbsp;
+      <b>13</b> The producer graph &nbsp;&middot;&nbsp;
+      <b>14</b> Conformance against the ontology
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== chapter 11 -->
+<section class="chapter" id="ch-11" data-foot="11 — Why a catalog needs one">
+  <div class="chnum">Chapter 11</div>
+  <h1 class="title">Why a catalog needs an ontology</h1>
+  <p class="lede">
+    It sounds like an academic luxury until the catalog passes about a dozen tools. Then three
+    problems arrive at once.
+  </p>
+
+  <p>
+    Nobody designs a tool catalog badly on purpose. What happens is that the first five tools are
+    written by one person in a week, the next fifteen by four people over a quarter, and the forty
+    after that by teams who have read the first twenty and drawn their own conclusions. By then the
+    catalog has three diseases, and they are not independent.
+  </p>
+
+  <h2>The three problems</h2>
+
+  <h3>One: the names stop agreeing</h3>
+
+  <p>
+    Here is a real-shaped catalog after a year without an ontology.
+  </p>
+
+  <figure class="code file"><figcaption><span class="path">a catalog that grew</span><span class="note">composite, lightly disguised</span></figcaption><pre>brokerage_accounts_list
+brokerage_get_balances
+<span class="cm">// list vs get, and the verb has moved to the middle</span>
+brokerage_position_list
+brokerage_positions
+<span class="cm">// singular, plural, and one with no verb at all</span>
+brokerage_order_place
+brokerage_submitOrder
+<span class="cm">// camelCase arrives with the third team</span>
+brokerage_cancel
+<span class="cm">// cancel what?</span></pre></figure>
+
+  <p>
+    The cost is not aesthetic. A model that has learned what <span class="icode">_list</span> means
+    on one tool generalizes it to the next, and a catalog with four naming schemes forces it to
+    learn each tool separately. Selection accuracy degrades gradually and nobody can point at the
+    change that caused it, because there wasn't one.
+  </p>
+
+  <h3>Two: nobody can say whether the catalog is complete</h3>
+
+  <p>
+    &ldquo;Do we cover everything a customer might ask about their account?&rdquo; is a reasonable
+    question from a product owner and an unanswerable one without a statement of what the catalog
+    ought to cover. In practice the answer is somebody's memory of what has been built, which is
+    how a firm ends up with four ways to read an order and no way to read an execution.
+  </p>
+
+  <h3>Three: the risk tiers become a matter of taste</h3>
+
+  <p>
+    This is the expensive one. Each descriptor asserts its own tier. The author of the cancellation
+    tool thinks tier 2; the author of the replacement tool thinks tier 1, because &ldquo;it's only
+    an amendment&rdquo;; and two years later an auditor asks why one tool that changes a customer's
+    exposure needs an approval and another does not. There is no good answer, because the two
+    decisions were made in different weeks by different people with no shared rule.
+  </p>
+
+  <div class="pull">
+    An ontology is not documentation about the catalog. It is the thing the catalog is generated
+    and checked against.
+  </div>
+
+  <h2>What an ontology fixes, mechanically</h2>
+
+  <p>
+    All three, and it fixes them by moving decisions from the descriptor to one reviewed file.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:1.6in">Instead of</th><th>The ontology gives you</th></tr></thead>
+    <tbody>
+      <tr><td><b>Choosing a name</b></td>
+        <td>A name derived from the entity and the operation. A descriptor whose name does not match
+          what the ontology derives fails the build (<span class="mono">TS-ONT-02</span>).</td></tr>
+      <tr><td><b>Asserting a risk tier</b></td>
+        <td>A tier that comes from the operation, with every exception recorded as an override and
+          a note that a reviewer reads (<span class="mono">TS-ONT-05</span>).</td></tr>
+      <tr><td><b>Asserting an approval mode</b></td>
+        <td>A mode that follows from the tier by a policy table edited in one place
+          (<span class="mono">TS-ONT-06</span>).</td></tr>
+      <tr><td><b>Hoping the entitlements are right</b></td>
+        <td>An entitlement floor per entity, so a tool that reads orders cannot be published without
+          the orders scope (<span class="mono">TS-ONT-07</span>).</td></tr>
+      <tr><td><b>Copying a regex between schemas</b></td>
+        <td>Identifier types declared once, and a check that every parameter consuming one carries
+          its pattern character for character (<span class="mono">TS-ONT-09</span>).</td></tr>
+      <tr><td><b>Guessing what the agent needs first</b></td>
+        <td>A producer graph: which tool hands out each identifier, and therefore what has to happen
+          before what. Chapter 13.</td></tr>
+      <tr><td><b>Asking whether the catalog is complete</b></td>
+        <td>A capability table. Completeness becomes a question about rows rather than about
+          memory, and a declared capability with no descriptor fails the build
+          (<span class="mono">TS-SET-02</span>).</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The cost</h2>
+
+  <p>
+    It is one file of about three hundred lines for this catalog, and an afternoon to write the
+    first version. The honest objection is not the cost but the timing: at three tools an ontology
+    is overhead, and at sixty it is a migration. The right moment is somewhere around ten, which is
+    also the moment nobody has time for it.
+  </p>
+
+  <div class="callout good"><p>
+    <span class="lbl">A cheap way to start.</span> Write the capability table first and nothing else
+    &mdash; one row per tool, with the operation, the entity and the identifiers it consumes and
+    produces. That table alone gives you the naming rule, the completeness question and the
+    producer graph. The entities, the policies and the identifier types can follow in a second pass,
+    and each one turns another review argument into a build step.
+  </p></div>
+</section>
+
+<!-- =============================================================== chapter 12 -->
+<section class="chapter" id="ch-12" data-foot="12 — Entities, operations, capabilities">
+  <div class="chnum">Chapter 12</div>
+  <h1 class="title">Entities, operations, capabilities</h1>
+  <p class="lede">
+    Building the brokerage ontology, one decision at a time, with the arguments.
+  </p>
+
+  <p>
+    The ontology has five sections and they are worth meeting in the order you would write them:
+    the identifier types that join calls together, the entities the domain is about, the operations
+    that may be performed, the capabilities that pair them, and the policies that follow.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="public record Ontology" data-to="Policies policies"></pre>
+
+  <h2>Identifier types</h2>
+
+  <p>
+    Start here, because identifiers are what make a multi-step conversation possible and what make
+    it go wrong.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from=".identifierTypes.: \{" data-to=".opaque.: true" data-to-nth="2"
+       data-cap="declared once, referenced by every schema"></pre>
+
+  <p>
+    Three properties, each load-bearing.
+  </p>
+
+  <p>
+    <b>They are prefixed.</b> <span class="icode">acct_</span> can never be mistaken for
+    <span class="icode">ord_</span>, which means a misrouted identifier fails at the schema rather
+    than in the handler, and the error names the field.
+  </p>
+
+  <p>
+    <b>They are opaque, and the ontology says so.</b> Nothing downstream may parse an account
+    identifier for a branch code or an open date, because the day somebody does is the day the
+    format can never change. The <span class="icode">opaque</span> flag is what the generated
+    briefing uses to tell the model which identifiers it must never construct.
+  </p>
+
+  <p>
+    <b>Their patterns are declared once.</b> This is the one that catches real bugs. Look at the
+    symbol pattern:
+  </p>
+
+  <div class="panel">
+    <p style="margin-bottom:4pt"><span class="mono">^[A-Z]{1,5}(\.[A-Z])?$</span></p>
+    <p class="small" style="margin-bottom:0">
+      The optional dot-suffix is the whole point. A pattern of
+      <span class="mono">^[A-Z]{1,5}$</span> looks right, passes every test anyone writes, and
+      silently rejects <span class="icode">BRK.B</span> &mdash; which is how a customer discovers
+      that your agent cannot price Berkshire Hathaway. Declaring the pattern once means fourteen
+      descriptors cannot each get it wrong in their own way.
+    </p>
+  </div>
+
+  <h2>Entities</h2>
+
+  <p>
+    An entity is a thing the domain is about. Each one carries the slugs that appear in tool names,
+    the identifier that addresses it, the classification floor and the entitlement floor for any
+    tool that touches it, and its relations to other entities.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="A thing the domain is about" data-to="boolean mutable, List<Relation> relations"></pre>
+
+  <p>
+    The brokerage ontology declares nine. Three decisions in that list are worth defending.
+  </p>
+
+  <h3>Balances is an entity, not a field on Account</h3>
+  <p>
+    The money view has its own entity because it has its own entitlement
+    (<span class="icode">brokerage:balances:read</span>), its own freshness and its own tool. A
+    service session that may list accounts does not automatically see what is in them; in a firm
+    with a support desk that distinction is the difference between a reasonable permission and an
+    unreasonable one.
+  </p>
+
+  <h3>TaxLot is an entity, not a detail of Position</h3>
+  <p>
+    Because selling is a choice between lots and the choice is worth money. Modeling lots as a
+    nested array inside the position payload would have meant that every &ldquo;what do I
+    own?&rdquo; question paid for a tax breakdown nobody asked for, and that a conversation about
+    tax could not happen without one about market value.
+  </p>
+
+  <h3>Order is the only mutable entity</h3>
+  <p>
+    <span class="icode">"mutable": true</span> appears exactly once in this ontology, and
+    everything expensive about the catalog is downstream of that sentence. Four tools touch it,
+    three of them change it, all three are tier 2 or above, and the whole of chapter 17 exists
+    because of it.
+  </p>
+
+  <h2>Operations</h2>
+
+  <p>
+    A closed vocabulary of seven verbs, each declaring whether it is read-only, whether it is
+    idempotent, and what risk tier it starts from.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from="^  .operations.: \{" data-to="safe first move."
+       data-cap="one of seven; the others are in Appendix F"></pre>
+
+  <p>
+    The <span class="icode">semantics</span> field is prose for humans and it is where the real
+    design lives. &ldquo;Never requires an identifier the agent does not already hold, which is
+    what makes a list tool a safe first move&rdquo; is a design rule, and writing it next to the
+    verb means the next person adding a list tool reads it.
+  </p>
+
+  <h2>Capabilities</h2>
+
+  <p>
+    A capability is one row: this tool is this operation on this entity, it needs these identifiers
+    and it hands back those. The table <em>is</em> the catalog's specification; the descriptors
+    implement it.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="One tool, stated as" data-to="Integer riskTier,"></pre>
+
+  <p>
+    Here are three rows from the brokerage table, chosen because each makes a different point.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from="brokerage_accounts_list.," data-to="only tool that needs nothing to run"
+       data-cap="the entry point: consumes nothing"></pre>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from="brokerage_quotes_get.," data-to="three times the audit."
+       data-cap="cardinality many, which is what makes the name plural"></pre>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from="brokerage_order_cancel.," data-to="stop an order would mean a customer in a hurry cannot stop one."
+       data-cap="an override, with the note that justifies it"></pre>
+
+  <p>
+    That last row is how an exception is supposed to look. <span class="icode">cancel</span> has a
+    base tier of 2 while its siblings have 3, and the note says why in a sentence a reviewer can
+    disagree with. An exception with no note is a rule somebody quietly opted out of.
+  </p>
+
+  <h2>Policies</h2>
+
+  <p>
+    Finally, the rules that turn a tier into an approval mode, and the ceiling on what one agent
+    turn may do without a human.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from="  .policies.: \{" data-to="^  \}"></pre>
+
+  <p>
+    These live in the ontology rather than in each descriptor so that raising the bar &mdash;
+    moving tier 2 from <span class="mono">confirm</span> to
+    <span class="mono">dualControl</span>, say &mdash; is one edit, reviewable in one diff, and
+    checked against every descriptor on the next build.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 13 -->
+<section class="chapter" id="ch-13" data-foot="13 — The producer graph">
+  <div class="chnum">Chapter 13</div>
+  <h1 class="title">The producer graph</h1>
+  <p class="lede">
+    The one thing an agent needs that no single descriptor can tell it: where the arguments come
+    from.
+  </p>
+
+  <p>
+    A descriptor describes one tool. It can say &ldquo;<span class="icode">accountId</span>, from
+    <span class="icode">brokerage_accounts_list</span>&rdquo; in a property description, and it
+    should. But that sentence is a claim one author made about another author's tool, and nothing
+    checks it. Multiply by fourteen and some of those claims are stale.
+  </p>
+
+  <p>
+    The producer graph derives the same facts from the capability table, which means they cannot be
+    stale, and makes them available as a whole rather than one tool at a time.
+  </p>
+
+  <h2>Two maps</h2>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="Identifier type to the tools that hand one out" data-to="^    \}"></pre>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="The tools that must run before this one" data-to="^    \}"></pre>
+
+  <p>
+    The first says, for each identifier type, which tools hand one out. The second inverts it: for
+    each tool, which tools must have run first because they are the only source of something it
+    needs. Both are computed, not written.
+  </p>
+
+  <h2>What it says about this catalog</h2>
+
+  <figure class="fig">
+    <!--SVG:producer-graph.svg-->
+    <figcaption>
+      <b>The producer graph.</b> An arrow from A to B means B needs a value that only A produces.
+      Green is a read, blue is the tier 1 tool that mints authority, amber and red change something.
+      The two tools in the first column need nothing, which is why an agent can always start. The
+      two that create exposure sit behind a single read-only tool, which is what makes
+      preview-before-place structural rather than advisory.
+      <br><span class="tiny">Drawn by <span class="mono">tools/capture.py</span> from the ontology,
+      using the same depth calculation the console uses, so the figure and the generated system
+      prompt cannot disagree.</span>
+    </figcaption>
+  </figure>
+
+  <h2>Preview is the only way in</h2>
+
+  <p>
+    Read the right-hand side again. <span class="icode">brokerage_order_place</span> consumes a
+    <span class="icode">ConfirmationToken</span>. Exactly one capability in this catalog produces
+    one, and it is the read-only preview. There is no other path.
+  </p>
+
+  <p>
+    That is a different kind of guarantee from a description that says &ldquo;please preview
+    first&rdquo;. The description does say it, and should. But the <em>reason</em> the agent cannot
+    skip the preview is not that it read the description and complied; it is that the argument does
+    not exist anywhere else. A test asserts the property directly:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/CatalogConformanceTest.java"
+       data-from="previewIsTheOnlyWayToTrade" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>Dead ends</h2>
+
+  <p>
+    The graph also answers a question nobody thinks to ask: is there an identifier some tool needs
+    that nothing in the catalog produces?
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java"
+       data-from="Identifier types nothing in the catalog produces" data-to="^    \}"></pre>
+
+  <p>
+    Every one is a tool the agent can read about and can never correctly call, because the argument
+    has to come from the customer typing an opaque identifier exactly right. It happens more than
+    you would expect &mdash; usually when a tool is ported from an internal API where the caller
+    already had the identifier from somewhere else. The linter makes it a build failure
+    (<span class="mono">TS-SET-03</span>).
+  </p>
+
+  <h2>And it writes the system prompt</h2>
+
+  <p>
+    The producer graph is not only a diagram. The toolset half of the system prompt is generated
+    from these two maps, so what the picture says and what the model is told cannot disagree.
+    Chapter 26 is about that; here is the paragraph it produces from the graph above.
+  </p>
+
+  <pre data-file="briefing-trading.md" data-lang="markdown"
+       data-from="Identifiers you cannot invent" data-to="ConfirmationToken looks like"
+       data-label="generated from the producer graph, on every turn"></pre>
+</section>
+
+<!-- =============================================================== chapter 14 -->
+<section class="chapter" id="ch-14" data-foot="14 — Conformance against the ontology">
+  <div class="chnum">Chapter 14</div>
+  <h1 class="title">Conformance against the ontology</h1>
+  <p class="lede">
+    Nine rules that turn a design document into a build step.
+  </p>
+
+  <p>
+    An ontology that nothing checks is a diagram on a wiki. These are the rules that make it bind,
+    and each one exists because of a specific way a catalog drifts from its own design.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:0.85in">Rule</th><th style="width:1.9in">Checks</th>
+      <th>The drift it catches</th></tr></thead>
+    <tbody>
+      <tr><td class="k">TS-ONT-01</td><td>Every descriptor has a capability</td>
+        <td>A tool built in a hurry that the ontology has never heard of &mdash; which usually means
+          it is doing something the domain was not designed to do.</td></tr>
+      <tr><td class="k">TS-ONT-02</td><td>The name matches what the ontology derives</td>
+        <td>A rename, a plural that should be singular, a verb in the wrong position.</td></tr>
+      <tr><td class="k">TS-ONT-03</td><td>The capability's entity and operation exist</td>
+        <td>A typo in the ontology itself.</td></tr>
+      <tr><td class="k">TS-ONT-04</td><td><span class="mono">readOnlyHint</span> agrees with the
+        operation</td>
+        <td>A write tool annotated read-only, which is the single most consequential annotation
+          error available.</td></tr>
+      <tr><td class="k">TS-ONT-05</td><td>The risk tier matches the policy</td>
+        <td>A tool quietly demoted to avoid an approval requirement.</td></tr>
+      <tr><td class="k">TS-ONT-06</td><td>The approval mode matches the tier</td>
+        <td>A tier 3 tool with <span class="mono">mode: none</span>, usually left over from
+          development.</td></tr>
+      <tr><td class="k">TS-ONT-07</td><td>The entity's entitlement is held</td>
+        <td>A reader of orders published without the orders scope, visible to every session.</td></tr>
+      <tr><td class="k">TS-ONT-08</td><td>The classification is not below the entity's</td>
+        <td>Customer data published as <span class="mono">internal</span>, which changes who may
+          see the logs.</td></tr>
+      <tr><td class="k">TS-ONT-09</td><td>Every consumed identifier's pattern is carried</td>
+        <td>A looser pattern on one tool than on its neighbors &mdash; how a malformed identifier
+          reaches a handler.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Two of them, as code</h2>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ConformanceLinter.java"
+       data-from="    private void ontology\(" data-to="patterns\(d, capability, out\);"
+       data-cap="TS-ONT-01 through TS-ONT-08"></pre>
+
+  <p>
+    And the pattern check, which is the one that catches the most bugs per line:
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ConformanceLinter.java"
+       data-from="Every identifier-typed parameter must carry" data-to="^    \}"></pre>
+
+  <h2>Rules about the set, not the tool</h2>
+
+  <p>
+    Three more rules look at the catalog as a whole, which is where the interesting gaps are.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ConformanceLinter.java"
+       data-from="Rules about the catalog rather than about any one descriptor" data-to="return out;"></pre>
+
+  <p>
+    <span class="mono">TS-SET-01</span> catches two tools sharing a title. <span class="mono">
+    TS-SET-02</span> catches a capability the ontology declares and nothing implements &mdash; which
+    is the completeness question, asked automatically. <span class="mono">TS-SET-03</span> catches
+    the dead ends from chapter 13. And <span class="mono">TS-SET-04</span> warns when most of a
+    catalog changes state, because a model needs reads to orient itself before it is safe to let it
+    write.
+  </p>
+
+  <h2>It fails at startup, not at call time</h2>
+
+  <p>
+    The registry runs the linter in its constructor and refuses to build if anything is in error.
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolRegistry.java"
+       data-from="        this.findings = new ConformanceLinter" data-to="catalog does not conform"></pre>
+
+  <p>
+    A non-conformant descriptor therefore cannot reach a model. Not &ldquo;should not&rdquo;;
+    cannot &mdash; the application does not start. The same rules also run as an ordinary unit test,
+    which is what fails the build for everyone, and as a command, which gives whoever is writing a
+    descriptor a one-second loop instead of a Maven cycle.
+  </p>
+
+  <div class="callout"><p>
+    <span class="lbl">Why both.</span> The test is the gate. The command is the ergonomics. A gate
+    with bad ergonomics gets worked around, and a gate that is worked around is a style guide.
+  </p></div>
+</section>

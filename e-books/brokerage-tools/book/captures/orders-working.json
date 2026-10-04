@@ -1,0 +1,46 @@
+{
+  "ok" : true,
+  "data" : {
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "orders" : [ {
+      "orderId" : "ord_799RE5N2G936K2H0",
+      "symbol" : "TSLA",
+      "side" : "BUY",
+      "quantity" : 10,
+      "filledQuantity" : 4,
+      "orderType" : "LIMIT",
+      "limitPrice" : "405",
+      "stopPrice" : null,
+      "timeInForce" : "DAY",
+      "status" : "PARTIALLY_FILLED",
+      "averageFillPrice" : "404.88",
+      "rejectReason" : null,
+      "placedAt" : "2026-10-01T13:30:00Z",
+      "updatedAt" : "2026-10-01T14:15:00Z"
+    }, {
+      "orderId" : "ord_CZ9R91DVFPMN5BX0",
+      "symbol" : "MSFT",
+      "side" : "BUY",
+      "quantity" : 25,
+      "filledQuantity" : 0,
+      "orderType" : "LIMIT",
+      "limitPrice" : "495",
+      "stopPrice" : null,
+      "timeInForce" : "GTC",
+      "status" : "WORKING",
+      "averageFillPrice" : null,
+      "rejectReason" : null,
+      "placedAt" : "2026-10-01T12:30:00Z",
+      "updatedAt" : "2026-10-01T12:30:00Z"
+    } ],
+    "nextCursor" : null,
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_898ce7dc14214cf99165",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

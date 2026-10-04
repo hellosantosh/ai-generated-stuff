@@ -1,0 +1,23 @@
+{
+  "scenarioId": "reads-06-open-orders",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_orders_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\"}"
+        }
+      ],
+      "text": "Yes, two orders are still working in Everyday brokerage. A buy of 25 MSFT at limit 495, with nothing filled \u2014 MSFT is at 556.05, so that limit is well below the market and may sit for a while. And a buy of 10 TSLA at limit 405 for the day, of which 4 shares have already filled."
+    }
+  ],
+  "reply": "Yes, two orders are still working in Everyday brokerage. A buy of 25 MSFT at limit 495, with nothing filled \u2014 MSFT is at 556.05, so that limit is well below the market and may sit for a while. And a buy of 10 TSLA at limit 405 for the day, of which 4 shares have already filled."
+}

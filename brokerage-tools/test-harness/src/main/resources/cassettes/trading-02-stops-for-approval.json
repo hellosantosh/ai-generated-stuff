@@ -1,0 +1,27 @@
+{
+  "scenarioId": "trading-02-stops-for-approval",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":50,\"orderType\":\"MARKET\"}"
+        },
+        {
+          "tool": "brokerage_order_place",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":50,\"orderType\":\"MARKET\",\"confirmationToken\":\"{{confirmationToken}}\"}"
+        }
+      ],
+      "text": "Before I place it: a market order to buy 50 AAPL in Everyday brokerage, estimated cost 10,978.20 USD, leaving 568,121.16 USD of buying power. It goes to the market immediately and cannot be undone. Shall I place it?"
+    }
+  ],
+  "reply": "Before I place it: a market order to buy 50 AAPL in Everyday brokerage, estimated cost 10,978.20 USD, leaving 568,121.16 USD of buying power. It goes to the market immediately and cannot be undone. Shall I place it?"
+}

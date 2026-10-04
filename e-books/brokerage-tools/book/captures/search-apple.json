@@ -1,0 +1,28 @@
+{
+  "ok" : true,
+  "data" : {
+    "exactMatch" : false,
+    "candidates" : [ {
+      "symbol" : "AAPL",
+      "name" : "Apple Inc.",
+      "exchange" : "NASDAQ",
+      "type" : "EQUITY",
+      "sector" : "Information Technology",
+      "marginEligible" : true
+    }, {
+      "symbol" : "APLE",
+      "name" : "Apple Hospitality REIT, Inc.",
+      "exchange" : "NYSE",
+      "type" : "EQUITY",
+      "sector" : "Real Estate",
+      "marginEligible" : true
+    } ]
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_69e7f8818286483d8396",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

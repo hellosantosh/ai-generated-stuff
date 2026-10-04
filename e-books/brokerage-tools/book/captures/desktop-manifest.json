@@ -1,0 +1,44 @@
+[
+  {
+    "name": "brokerage_accounts_list",
+    "description": "Returns every brokerage account the signed-in customer holds, with its identifier, nickname, type, currency and whether it can currently trade. Use when the customer mentions an account by nickname, refers to \"my account\" without saying which, or when any other brokerage tool needs an accountId and none is in hand yet \u2014 this is the only tool that needs nothing to run, so it is the safe first call. Do not use to find out how much money is in an account; that is brokerage_balances_get. Read the type field before advising on anything: a CASH account cannot borrow, an IRA_TRADITIONAL or ROTH_IRA account cannot sell short, and any account whose tradeable field is false cannot place orders at all. Read restriction when tradeable is false and tell the customer the reason rather than retrying. When the customer has more than one account and has not said which, ask; nickname and type together are usually enough for them to choose. This changes nothing and may be called freely.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "includeClosed": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to include accounts that have been closed. Omitted means false, which is almost always what the customer means."
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "brokerage_instruments_search",
+    "description": "Resolves what a customer said into candidate instruments, with the ticker, full legal name, exchange, type and sector of each. Use whenever the customer names a company rather than a ticker, when a ticker they gave does not look valid, or before any order where you are not certain which listing they mean. Do not use to get a price \u2014 that is brokerage_quotes_get \u2014 and do not use to find what the customer already owns, which is brokerage_positions_list and does not need a search at all. Read the candidates as a list to choose between, not an answer: when more than one is returned, or when exactMatch is false, name the alternatives and ask the customer which they mean. Several real cases need this. Apple is both AAPL and APLE, a hospitality trust. Alphabet trades as GOOGL and GOOG with different voting rights. Share classes carry a dot, as in BRK.B. Picking the first candidate silently is how the wrong company gets bought, and that error is not reversible once it fills. This changes nothing and may be called freely.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "What the customer called it: a company name, a partial name, or a ticker. Pass their words; do not clean them up first."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 5,
+          "description": "How many candidates to return at most. Five is usually enough to ask a sensible question."
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

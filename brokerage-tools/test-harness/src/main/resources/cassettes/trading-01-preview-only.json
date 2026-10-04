@@ -1,0 +1,23 @@
+{
+  "scenarioId": "trading-01-preview-only",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\",\"side\":\"BUY\",\"quantity\":50,\"orderType\":\"MARKET\"}"
+        }
+      ],
+      "text": "Buying 50 AAPL at market in Everyday brokerage would cost about 10,978.20 USD and leave 568,121.16 USD of buying power. That is an estimate based on the current ask around 219.56; a market order fills at whatever the market offers, so the final figure may differ. Nothing has been placed \u2014 say the word if you want me to."
+    }
+  ],
+  "reply": "Buying 50 AAPL at market in Everyday brokerage would cost about 10,978.20 USD and leave 568,121.16 USD of buying power. That is an estimate based on the current ask around 219.56; a market order fills at whatever the market offers, so the final figure may differ. Nothing has been placed \u2014 say the word if you want me to."
+}

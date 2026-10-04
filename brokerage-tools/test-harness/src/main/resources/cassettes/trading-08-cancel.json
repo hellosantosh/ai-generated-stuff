@@ -1,0 +1,27 @@
+{
+  "scenarioId": "trading-08-cancel",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_orders_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\"}"
+        },
+        {
+          "tool": "brokerage_order_cancel",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"orderId\":\"ord_CZ9R91DVFPMN5BX0\"}"
+        }
+      ],
+      "text": "Canceled. The buy of 25 MSFT at limit 495 is no longer working, and nothing had filled on it."
+    }
+  ],
+  "reply": "Canceled. The buy of 25 MSFT at limit 495 is no longer working, and nothing had filled on it."
+}

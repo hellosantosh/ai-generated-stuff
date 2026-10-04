@@ -1,0 +1,25 @@
+{
+  "ok" : true,
+  "data" : {
+    "accountId" : "acct_4RZ61FZAD0RMHNMM",
+    "currency" : "USD",
+    "cash" : "182430.55",
+    "settledCash" : "182430.55",
+    "cashReservedForOrders" : "14805.00",
+    "buyingPower" : "579099.35",
+    "marketValue" : "277043.25",
+    "totalEquity" : "435473.80",
+    "marginLoan" : "24000.00",
+    "maintenanceRequirement" : "69260.81",
+    "maintenanceExcess" : "366212.99",
+    "dayTradesUsed" : 2,
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_58f312001af24eb4859c",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

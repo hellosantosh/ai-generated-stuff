@@ -1,0 +1,1087 @@
+<!-- ============================================================= PART II plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part II</div>
+    <h1>The descriptor</h1>
+    <p class="pl">
+      Eight fields. Four of them decide what the model does, one is a promise to the caller, and
+      three never reach the model at all. This part is what each one has to contain and what goes
+      wrong when it does not.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 600 150" role="img"
+           aria-label="The eight descriptor fields, grouped by audience: four for the model,
+                       one for the caller, three for the firm">
+        <g font-family="monospace" font-size="9.5" text-anchor="middle">
+          <text x="100" y="22" fill="#ffcb7a" font-size="8" letter-spacing="1.4">THE MODEL SEES</text>
+          <text x="300" y="22" fill="#9db4ff" font-size="8" letter-spacing="1.4">THE CALLER SEES</text>
+          <text x="480" y="22" fill="#8fe8c8" font-size="8" letter-spacing="1.4">ONLY THE FIRM SEES</text>
+          <g fill="#dce5ff">
+            <rect x="12" y="38" width="80" height="30" rx="5" fill="rgba(255,186,84,.16)"
+                  stroke="rgba(255,203,122,.5)"/><text x="52" y="57">name</text>
+            <rect x="100" y="38" width="80" height="30" rx="5" fill="rgba(255,186,84,.16)"
+                  stroke="rgba(255,203,122,.5)"/><text x="140" y="57">title</text>
+            <rect x="12" y="76" width="80" height="30" rx="5" fill="rgba(255,186,84,.16)"
+                  stroke="rgba(255,203,122,.5)"/><text x="52" y="95">description</text>
+            <rect x="100" y="76" width="80" height="30" rx="5" fill="rgba(255,186,84,.16)"
+                  stroke="rgba(255,203,122,.5)"/><text x="140" y="95">inputSchema</text>
+            <rect x="248" y="57" width="104" height="30" rx="5" fill="rgba(91,140,255,.18)"
+                  stroke="rgba(91,140,255,.5)"/><text x="300" y="76">outputSchema</text>
+            <rect x="404" y="38" width="88" height="30" rx="5" fill="rgba(111,224,187,.14)"
+                  stroke="rgba(111,224,187,.45)"/><text x="448" y="57">annotations</text>
+            <rect x="500" y="38" width="88" height="30" rx="5" fill="rgba(111,224,187,.14)"
+                  stroke="rgba(111,224,187,.45)"/><text x="544" y="57">icons</text>
+            <rect x="404" y="76" width="184" height="30" rx="5" fill="rgba(111,224,187,.14)"
+                  stroke="rgba(111,224,187,.45)"/><text x="496" y="95">_meta / governance</text>
+          </g>
+        </g>
+        <path d="M212 30 L212 120" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+        <path d="M382 30 L382 120" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+        <text x="300" y="134" font-family="monospace" font-size="7.5" fill="#7f8db8"
+              text-anchor="middle">eight fields, three audiences, one file</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>4</b> The eight fields &nbsp;&middot;&nbsp;
+      <b>5</b> Names &nbsp;&middot;&nbsp;
+      <b>6</b> The description is the contract &nbsp;&middot;&nbsp;
+      <b>7</b> Schemas and the profile &nbsp;&middot;&nbsp;
+      <b>8</b> The envelope and the errors &nbsp;&middot;&nbsp;
+      <b>9</b> Annotations, tiers and approval &nbsp;&middot;&nbsp;
+      <b>10</b> Governance metadata
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ chapter 4 -->
+<section class="chapter" id="ch-4" data-foot="4 — The eight fields">
+  <div class="chnum">Chapter 4</div>
+  <h1 class="title">The eight fields</h1>
+  <p class="lede">
+    And only eight. Anything else is an implementation detail of whoever happens to be serving it.
+  </p>
+
+  <p>
+    A descriptor is a JSON document. That is a design decision rather than a format preference, and
+    it is worth defending before we look at the fields, because the alternative &mdash; assembling
+    the descriptor in code, from annotations &mdash; is what most teams reach for first.
+  </p>
+
+  <h2>Why the descriptor is data</h2>
+
+  <p>
+    There is no <span class="icode">@Tool</span> annotation anywhere in this book's repository. Each
+    tool is a file. The consequences are concrete:
+  </p>
+
+  <ul>
+    <li>A reviewer who does not write Java can read it, and a change to a description shows up in a
+      pull request as a diff of prose.</li>
+    <li>A linter can check it, which is how 58 rules become a build step rather than a style guide.</li>
+    <li>A desktop client can be handed it without the application running.</li>
+    <li>You can answer &ldquo;what exactly is the model being shown right now?&rdquo; by reading a
+      file, instead of starting a service and inspecting a builder.</li>
+    <li>Publishing to a second runtime is an adapter of about forty lines that renames nothing.</li>
+  </ul>
+
+  <p>
+    The annotated approach is faster for the first three tools and does not scale past a dozen,
+    because the thing that needs review is prose, and prose inside a Java string literal is prose
+    nobody reviews.
+  </p>
+
+  <h2>The eight fields, by audience</h2>
+
+  <div class="fieldmap">
+    <div class="f model"><div class="n">name</div><div class="w">model</div>
+      <p>The identity the model emits. Permanent. Lowercase, underscores, three segments.</p></div>
+    <div class="f model"><div class="n">title</div><div class="w">model &amp; humans</div>
+      <p>A short label for an approval dialog or an audit screen. Not a second description.</p></div>
+    <div class="f model"><div class="n">description</div><div class="w">model</div>
+      <p>The decision procedure. Seven parts. The field the model's choice actually turns on.</p></div>
+    <div class="f model"><div class="n">inputSchema</div><div class="w">model</div>
+      <p>A closed object inside the profile. Every property described, every string constrained.</p></div>
+    <div class="f"><div class="n">outputSchema</div><div class="w">caller</div>
+      <p>A promise about the payload, enforced on the way out so it cannot quietly become false.</p></div>
+    <div class="f"><div class="n">annotations</div><div class="w">runtime</div>
+      <p>Four booleans, all stated explicitly, that tell the runtime how much to trust the call.</p></div>
+    <div class="f"><div class="n">icons</div><div class="w">interfaces</div>
+      <p>Decorative only. No control anywhere may depend on an icon being present.</p></div>
+    <div class="f"><div class="n">_meta</div><div class="w">the firm</div>
+      <p>Governance, under a reverse-DNS key. Never rendered into the model's context.</p></div>
+  </div>
+
+  <p>
+    Here is the record, which is the whole specification expressed as a type.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolDescriptor.java" data-from="public record ToolDescriptor" data-to="Map<String, JsonNode> _meta\) \{"></pre>
+
+  <p>
+    And here is the smallest conformant descriptor in the catalog, in full. Everything in Part II is
+    an explanation of some part of it.
+  </p>
+
+  <pre data-label="brokerage_accounts_list, as the model receives it"
+       data-cap="name, description, input schema - and nothing else"
+       data-file="desktop-manifest.json"></pre>
+
+  <div class="callout"><p>
+    <span class="lbl">That figure is the manifest, not the file.</span> It is what the descriptor
+    becomes when it is published to a model: name, description, input schema, and nothing else. The
+    file itself carries five more fields that the model never sees. Appendix F prints all fourteen
+    in full; chapter 15 builds this one from nothing.
+  </p></div>
+
+  <h2>What the model actually receives</h2>
+
+  <p>
+    This is worth internalizing early, because it changes how you write every other field. When the
+    catalog is published, the model's context contains, for each tool, three strings: the name, the
+    description and the serialized input schema. That is all.
+  </p>
+
+  <p>
+    It does not contain the output schema. It does not contain the annotations, the risk tier, the
+    owner, the entitlements or the retention period. A model cannot read
+    <span class="icode">destructiveHint: true</span> and be careful, because it never sees it. If
+    you want the model to know that a tool cannot be undone, the description has to say so in
+    words.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">The context rule</div>
+    <p style="margin-bottom:0">
+      Anything the model must know in order to behave correctly belongs in the <b>description</b>.
+      Anything the runtime must know in order to behave correctly belongs in the
+      <b>annotations</b> or the <b>governance block</b>. Writing a fact in the wrong one of those
+      places is the same as not writing it.
+    </p>
+  </div>
+
+  <h2>What it costs</h2>
+
+  <p>
+    The catalog in this book is fourteen tools. Published to a trading session, the names,
+    descriptions and schemas come to about 26,000 characters &mdash; on the order of sixty-six
+    hundred tokens &mdash; and the generated briefing adds roughly fifteen hundred more. That is a real cost on every single turn, and it is the reason
+    chapter 6 gives the description a budget and chapter 7 gives the schema one.
+  </p>
+  <p>
+    It is also the reason the catalog is filtered by entitlement before it is published rather than
+    after. A research session sees three tools and pays for three; a read-only desktop session
+    sees ten and pays about fifteen thousand characters.
+  </p>
+</section>
+
+<!-- ================================================================ chapter 5 -->
+<section class="chapter" id="ch-5" data-foot="5 — Names">
+  <div class="chnum">Chapter 5</div>
+  <h1 class="title">Names</h1>
+  <p class="lede">
+    A name is the one field you can never change, so it is worth the twenty minutes.
+  </p>
+
+  <h2>The grammar</h2>
+
+  <div class="rule-box">
+    <div class="rh">TS-NAM-01 &middot; TS-NAM-02</div>
+    <p style="margin-bottom:3pt">
+      <span class="mono">^[a-z][a-z0-9_]{2,63}$</span>, with the shape
+      <span class="mono">&lt;domain&gt;_&lt;entity&gt;_&lt;operation&gt;</span>.
+    </p>
+    <p style="margin-bottom:0" class="small">
+      Lowercase and underscores because that is the intersection of what every tool-calling runtime
+      accepts. Three segments because two leave the model guessing which catalog a tool belongs to
+      when a firm has six of them.
+    </p>
+  </div>
+
+  <p>
+    The character set is not an aesthetic choice. Runtimes differ on hyphens, on dots, on
+    camelCase, on length and on leading digits, and the differences are discovered at the worst
+    possible time: when you publish an existing catalog somewhere new and a third of it is rejected
+    or, worse, silently renamed. The intersection is small and boring and it travels.
+  </p>
+
+  <h2>Dots never cross the wire</h2>
+
+  <p>
+    A catalog wants a hierarchy &mdash; <span class="icode">brokerage.orders.place</span> reads
+    better than <span class="icode">brokerage_orders_place</span> and sorts into a tree. So the
+    descriptor carries both, and they are derived from each other rather than maintained separately.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolDescriptor.java" data-from="The catalog identifier: dotted" data-to="^    \}"></pre>
+
+  <p>
+    The dotted form appears in the console, in dashboards and in configuration. The underscore form
+    is what the model emits. Because one is computed from the other, they cannot disagree.
+  </p>
+
+  <h2>The name is derived, not chosen</h2>
+
+  <p>
+    This is the part that surprises people, and it is the single highest-leverage idea in Part III.
+    In this catalog nobody <em>picks</em> a tool name. The ontology declares one capability row per
+    tool, and the name falls out of it:
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Ontology.java" data-from="The name this capability must carry" data-to="^    \}" data-cap="the whole of the naming convention, as code"></pre>
+
+  <p>
+    The entity supplies the term, the operation supplies the verb, and the capability's cardinality
+    decides between the singular and the plural form. So
+    <span class="icode">brokerage_order_cancel</span> could not have been called
+    <span class="icode">cancelOrder</span>, or <span class="icode">brokerage_cancel_order</span>, or
+    <span class="icode">brokerage_orders_cancel</span>. A linter rule compares the two and fails the
+    build if a descriptor has drifted.
+  </p>
+
+  <h2>The verb vocabulary is closed</h2>
+
+  <p>
+    Seven verbs, and a tool may use no others.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:0.8in">Verb</th><th style="width:0.6in">Read-only</th>
+      <th style="width:0.55in">Base tier</th><th>Means</th></tr></thead>
+    <tbody>
+      <tr><td class="k">list</td><td>yes</td><td><span class="tier t0">T0</span></td>
+        <td>The members of a collection, bounded and paged. Needs no identifier it does not already
+          have, which is what makes it a safe first move.</td></tr>
+      <tr><td class="k">get</td><td>yes</td><td><span class="tier t0">T0</span></td>
+        <td>One named entity, or a plain statement that it is not there.</td></tr>
+      <tr><td class="k">search</td><td>yes</td><td><span class="tier t0">T0</span></td>
+        <td>Free text to candidates. Returns a list to choose between, never a choice.</td></tr>
+      <tr><td class="k">preview</td><td>yes</td><td><span class="tier t1">T1</span></td>
+        <td>Computes exactly what a change would do, changes nothing, and mints the authority to go
+          ahead.</td></tr>
+      <tr><td class="k">place</td><td>no</td><td><span class="tier t3">T3</span></td>
+        <td>Commits a change the customer has seen and approved.</td></tr>
+      <tr><td class="k">replace</td><td>no</td><td><span class="tier t3">T3</span></td>
+        <td>Amends a live instruction in place, keeping its identifier.</td></tr>
+      <tr><td class="k">cancel</td><td>no</td><td><span class="tier t2">T2</span></td>
+        <td>Requests that a live instruction stop, and reports what actually happened to it.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    A closed vocabulary pays for itself twice. First, the model generalizes: having learned what
+    <span class="icode">list</span> means on one tool, it is right about it on the other four.
+    Second &mdash; and this is the part that matters at review time &mdash; the annotations and the
+    risk tier can be <em>checked against the name</em> instead of trusted from the descriptor,
+    which is the one place a tool author's optimism is most expensive.
+  </p>
+
+  <h2>Titles</h2>
+
+  <p>
+    Three to sixty characters, no trailing period, and unique across the catalog. The title is what
+    a human sees in an approval dialog and in an audit screen, which is the whole of its job.
+  </p>
+
+  <div class="callout warn"><p>
+    <span class="lbl">The rule that caught this book's own test fixture.</span>
+    Two tools may not share a title. A person approving one of two things both called
+    &ldquo;a fixture tool&rdquo; cannot tell which they are approving. The first thing the
+    linter found when the pipeline's test fixtures were written was exactly that, in this
+    book's own repository.
+  </p></div>
+
+  <h2>Names are permanent</h2>
+
+  <p>
+    Renaming a tool is a breaking change of an unusual kind: it breaks a model, and nothing
+    compiles differently. Every recorded evaluation references the old name. Every audit record for
+    the last six years references the old name. Any prompt a customer saved references the old
+    name. Chapter 36 covers the deprecation path, which is to publish both for a window and retire
+    one &mdash; but the cheaper answer is to spend twenty minutes on the ontology first.
+  </p>
+</section>
+
+<!-- ================================================================ chapter 6 -->
+<section class="chapter" id="ch-6" data-foot="6 — The description is the contract">
+  <div class="chnum">Chapter 6</div>
+  <h1 class="title">The description is the contract</h1>
+  <p class="lede">
+    This is the field. Everything else in the descriptor constrains what happens after the model
+    has chosen; this is the only field that affects whether it chooses correctly.
+  </p>
+
+  <p>
+    When an agent does the wrong thing, there are three candidate causes and they are not equally
+    likely. It is rarely that the model is incapable. It is sometimes that the toolset is missing a
+    tool. It is usually that two descriptions did not distinguish themselves, or that one of them
+    never said when <em>not</em> to use it.
+  </p>
+
+  <h2>The seven parts</h2>
+
+  <p>
+    A description is plain prose &mdash; no markdown, no bullet lists, no headings &mdash; and it
+    covers seven things in roughly this order.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:0.35in">&nbsp;</th><th style="width:1.5in">Part</th><th>What it has to do</th></tr></thead>
+    <tbody>
+      <tr><td><b>1</b></td><td><b>What it does</b></td>
+        <td>One sentence, naming the fields it returns. Specific enough that the model knows what
+          it will get back without calling it.</td></tr>
+      <tr><td><b>2</b></td><td><b>When to use it</b></td>
+        <td>The situations in the customer's words, not yours. &ldquo;Use when the customer asks
+          what they can spend&rdquo;, not &ldquo;retrieves account balance information&rdquo;.</td></tr>
+      <tr><td><b>3</b></td><td><b>When not to use it</b></td>
+        <td>And what to use instead, by name. This is the half nobody writes and the half that
+          does the work.</td></tr>
+      <tr><td><b>4</b></td><td><b>What has to happen first</b></td>
+        <td>Which identifiers it needs and where they come from. Redundant with the ontology, and
+          worth repeating because the model reads this and not the ontology.</td></tr>
+      <tr><td><b>5</b></td><td><b>What it changes</b></td>
+        <td>For a read tool, one sentence saying it changes nothing. For anything else, what the
+          change is and whether it can be undone.</td></tr>
+      <tr><td><b>6</b></td><td><b>How to read the result</b></td>
+        <td>Which field to look at first, and what a particular value means. This is where you
+          spend the model's attention well.</td></tr>
+      <tr><td><b>7</b></td><td><b>Limits and caveats</b></td>
+        <td>Staleness, estimates, pagination, anything that makes the answer less than it looks.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>A description, annotated</h2>
+
+  <p>
+    Here is the description of <span class="icode">brokerage_quotes_get</span>, which is a tool with
+    nothing clever about it, broken into its seven parts.
+  </p>
+
+  <div class="panel">
+    <p class="small" style="margin-bottom:6pt"><b>1 &mdash; what it does.</b>
+      <i>&ldquo;Returns the current two-sided market for each symbol given: last price, bid, ask,
+      size, change on the day, volume, the spread in basis points, and the session the venue is
+      in.&rdquo;</i></p>
+    <p class="small" style="margin-bottom:6pt"><b>2 &mdash; when to use it.</b>
+      <i>&ldquo;Use when the customer asks what something is trading at, asks to compare
+      instruments, or before explaining what an order would cost. Pass every symbol in one call
+      rather than calling once per symbol.&rdquo;</i></p>
+    <p class="small" style="margin-bottom:6pt"><b>3 &mdash; when not to.</b>
+      <i>&ldquo;Do not use to look up a company by name &mdash; that is
+      brokerage_instruments_search &mdash; and do not use it for past prices, which is
+      brokerage_price_history_get.&rdquo;</i></p>
+    <p class="small" style="margin-bottom:6pt"><b>6 &mdash; how to read it.</b>
+      <i>&ldquo;Read asOf before quoting a number to the customer: a quote is perishable and one
+      taken minutes ago is not the market now. Read session too, and say so when it is not regular.
+      Read spreadBasisPoints before recommending a market order; above about 25 basis points the
+      fill can be well away from the last price and a limit order is the better advice.&rdquo;</i></p>
+    <p class="small" style="margin-bottom:0"><b>5 and 7 &mdash; effect and caveats.</b>
+      <i>&ldquo;This changes nothing and may be called freely.&rdquo;</i></p>
+  </div>
+
+  <p>
+    Four hundred and sixty words of schema and about a hundred and thirty words of prose, and the
+    prose is what makes the model batch the call, warn about a wide spread, and not reach for this
+    tool when the customer said &ldquo;Apple&rdquo;.
+  </p>
+
+  <h2>The budget</h2>
+
+  <div class="rule-box">
+    <div class="rh">TS-DSC-01 &middot; TS-DSC-02</div>
+    <p style="margin-bottom:0">
+      At least <b>120</b> characters, at most <b>2000</b>. Below the floor a description cannot
+      have said when not to use the tool. Above the ceiling it crowds out the conversation and the
+      model starts skimming &mdash; and a skimmed description is worse than a short one, because
+      the part it skips is unpredictable.
+    </p>
+  </div>
+
+  <p>
+    The fourteen descriptions in this catalog run from 650 to 1,500 characters. The longest is the
+    preview tool, which earns it: it is the only tool whose misuse cannot be undone and the only
+    one that mints authority.
+  </p>
+
+  <h2>Writing for a model, not about a tool</h2>
+
+  <p>
+    Five habits, each of which measurably changes behavior.
+  </p>
+
+  <h3>Use the customer's words</h3>
+  <p>
+    The model is matching against an utterance. &ldquo;Use when the customer asks what they can
+    spend&rdquo; matches &ldquo;how much can I spend?&rdquo;. &ldquo;Retrieves account balance
+    information&rdquo; matches nothing a customer has ever said.
+  </p>
+
+  <h3>Name the alternative</h3>
+  <p>
+    &ldquo;Do not use this for X&rdquo; leaves the model with a prohibition and no plan. &ldquo;Do
+    not use this for X; that is <span class="icode">brokerage_other_tool</span>&rdquo; moves it
+    somewhere. The linter checks that every tool named in a description exists in the catalog,
+    because a dangling redirection is worse than none &mdash; the model will try it.
+  </p>
+
+  <h3>Say which field to read first</h3>
+  <p>
+    A payload with twelve fields has an order of importance that the JSON does not express. The
+    preview tool's description says <i>&ldquo;Read canPlace first: false means the order would be
+    refused.&rdquo;</i> That one sentence is the difference between an agent that relays a blocker
+    and an agent that reports a cost for an order that cannot be placed.
+  </p>
+
+  <h3>Give the stop condition</h3>
+  <p>
+    Models are helpful, and helpfulness under a refusal looks like trying something else. So the
+    descriptions say so explicitly: <i>&ldquo;tell the customer rather than retrying&rdquo;</i>,
+    <i>&ldquo;do not try another account on their behalf&rdquo;</i>, <i>&ldquo;never preview again
+    simply to obtain a fresh token for an order the customer has not re-approved&rdquo;</i>.
+  </p>
+
+  <h3>Write the consequence, not the mechanism</h3>
+  <p>
+    Compare &ldquo;this operation is not idempotent&rdquo; with &ldquo;the effect is immediate and
+    cannot be undone: a filled order can only be reversed by trading in the opposite direction, at
+    whatever the market then is, and the customer bears that difference&rdquo;. The second is
+    longer and it is the one that changes behavior.
+  </p>
+
+  <h2>What the linter can check</h2>
+
+  <p>
+    Prose quality is a review matter, but four things about it are mechanical, and mechanical
+    things belong in the build.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ConformanceLinter.java" data-from="    private void description\(" data-to="^    \}" data-cap="TS-DSC-01 through TS-DSC-10, as code"></pre>
+
+  <p>
+    Length, the presence of a &ldquo;when to use&rdquo; and a &ldquo;when not to&rdquo;, markdown,
+    the first person, cross-references that resolve, and &mdash; for anything that changes state
+    &mdash; whether the description says so. None of that is a substitute for someone reading it.
+    All of it is a substitute for someone <em>having to</em> read it before they can get to the
+    interesting question.
+  </p>
+
+  <div class="pull">
+    A reviewer should be arguing about whether the description tells the truth. Everything
+    mechanical belongs in the linter.
+  </div>
+</section>
+
+<!-- ================================================================ chapter 7 -->
+<section class="chapter" id="ch-7" data-foot="7 — Schemas and the profile">
+  <div class="chnum">Chapter 7</div>
+  <h1 class="title">Schemas and the profile</h1>
+  <p class="lede">
+    JSON Schema is much larger than any tool-calling runtime supports, and the parts supported
+    unevenly are exactly the parts that fail silently.
+  </p>
+
+  <p>
+    The failure mode is specific and worth seeing before the rules. You write a schema with
+    <span class="icode">oneOf</span>, describing two legitimate shapes of request. A runtime on the
+    way to the model drops the keyword, because its own schema translation does not support it. The
+    model is now shown a schema in which both branches' fields are simply optional. It produces an
+    object matching neither, cheerfully, and the runtime that dropped the keyword has no way to say
+    so. Your handler receives it, and whatever it does next, nobody was warned.
+  </p>
+
+  <h2>The profile is a whitelist</h2>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/SchemaProfile.java"
+       data-from="Keywords any schema" data-to="examples"></pre>
+
+  <p>
+    The rule behind it: a keyword is permitted when it either constrains a scalar in a way every
+    runtime forwards, or describes structure. Keywords that express alternation, negation or
+    conditionals are not, because they are the ones that get dropped.
+  </p>
+
+  <p>
+    Prohibited keywords are rejected rather than ignored, and each rejection carries the reason the
+    author needs to hear:
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/SchemaProfile.java" data-from="    public static final List<Prohibition> PROHIBITED" data-to="Negative constraints" data-cap="the first four of sixteen; the rest are in Appendix F"></pre>
+
+  <h2>Six rules that do most of the work</h2>
+
+  <dl class="defs">
+    <dt>Close every object</dt>
+    <dd>
+      <span class="icode">additionalProperties: false</span>, everywhere, without exception. An open
+      object means the model's invented extra field is silently accepted and silently ignored
+      &mdash; and the model has no way to learn that the field did nothing. Closing it turns an
+      invisible misunderstanding into an error that names the field.
+    </dd>
+
+    <dt>Describe every property</dt>
+    <dd>
+      The field name is not the contract. <span class="icode">quantity</span> could be shares or
+      dollars; <span class="icode">price</span> could be a limit or a last trade;
+      <span class="icode">since</span> could be a date or a cursor. Where the name is ambiguous the
+      model will pick the common reading, and the common reading is wrong about a third of the time
+      in a brokerage.
+    </dd>
+
+    <dt>Constrain every string</dt>
+    <dd>
+      An unconstrained string accepts anything the model invents. Every string in this catalog
+      carries an <span class="icode">enum</span>, a <span class="icode">pattern</span>, a
+      <span class="icode">format</span>, or at minimum a <span class="icode">maxLength</span>. A
+      pattern is best, because it is also what stops a malformed identifier reaching the handler.
+    </dd>
+
+    <dt>Money is a decimal string</dt>
+    <dd>
+      Never a JSON number. IEEE-754 binary doubles cannot represent 0.1, so a thousand shares at
+      $10.10 totals $10099.999999999998, and the model will read that back to a customer. The
+      linter warns on any <span class="icode">number</span> in an input schema for exactly this
+      reason. The pattern this book uses is
+      <span class="icode">^-?[0-9]{1,15}(\.[0-9]{1,6})?$</span>.
+    </dd>
+
+    <dt>Bound every array in an output</dt>
+    <dd>
+      <span class="icode">maxItems</span>, always. An unbounded array in a result is an unbounded
+      token bill, and it is discovered by a long-standing customer whose four years of fills arrive
+      in one payload on the first turn of a conversation.
+    </dd>
+
+    <dt>Twelve parameters is the practical ceiling</dt>
+    <dd>
+      Past about a dozen, a model starts omitting the ones it is least certain about, and the ones
+      it is least certain about are usually the ones you added last because they were subtle. A
+      tool with eighteen parameters is almost always two tools.
+    </dd>
+  </dl>
+
+  <h2>Reserved parameter names</h2>
+
+  <p>
+    Some names a tool may never use, because the runtime has claimed them and a tool that accepts
+    one has created a way around a check somebody wrote on purpose.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/SchemaProfile.java"
+       data-from="public static final Set<String> RESERVED_PARAMETERS"
+       data-to="toolName"></pre>
+
+  <p>
+    Note where the line is drawn. <span class="icode">accountId</span> is <em>not</em> reserved,
+    because choosing between the accounts a customer holds is exactly what the model is for.
+    <span class="icode">customerId</span> is reserved, because a customer identifier the model can
+    set is an account anyone can read. The distinction is between <em>scope within an established
+    identity</em> and <em>the identity itself</em>.
+  </p>
+
+  <div class="callout bad"><p>
+    <span class="lbl">The ones that look harmless.</span>
+    <span class="icode">dryRun</span>, <span class="icode">force</span>,
+    <span class="icode">skipValidation</span>, <span class="icode">override</span>. Each is a flag
+    that turns a control off, settable by the party the control exists to constrain. If a tool
+    genuinely needs both behaviors, that is two tools with two risk tiers and two descriptions
+    &mdash; which is precisely what <span class="icode">preview</span> and
+    <span class="icode">place</span> are.
+  </p></div>
+
+  <h2>Validation is not optional</h2>
+
+  <p>
+    Every invocation is validated against the input schema before a handler sees an argument, and
+    every payload is validated against the output schema before it is returned. The second surprises
+    people, so chapter 21 defends it properly. The short version is that the output schema is the
+    only description of the payload the model will ever see, and a handler that drifts from it is
+    misleading the model with a document the firm published.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ArgumentValidator.java" data-from="    public List<Violation> validateArguments" data-to="^    \}" data-cap="compiled once per tool and cached; a 200-line schema per call is measurable"></pre>
+
+  <p>
+    When validation fails, the violations are rendered for the model, pointer first, and capped at
+    five &mdash; because a model handed twenty violations fixes the first three and re-sends.
+  </p>
+
+  <pre data-label="a schema violation, as the model receives it" data-file="error-bad-argument.json" data-wrap="no"></pre>
+</section>
+
+<!-- ================================================================ chapter 8 -->
+<section class="chapter" id="ch-8" data-foot="8 — The envelope and the errors">
+  <div class="chnum">Chapter 8</div>
+  <h1 class="title">The envelope and the errors</h1>
+  <p class="lede">
+    Every tool returns the same shape whether it worked or not, and a failure is something the
+    model reads rather than something it survives.
+  </p>
+
+  <h2>One envelope</h2>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolResult.java"
+       data-from="public record ToolResult" data-to="Failure error, Meta meta"></pre>
+
+  <p>
+    Four fields. <span class="icode">ok</span> is the discriminator the model branches on.
+    <span class="icode">data</span> is the payload, and it is the thing the descriptor's
+    <span class="icode">outputSchema</span> describes. <span class="icode">error</span> is present
+    exactly when <span class="icode">ok</span> is false. And <span class="icode">meta</span> is
+    never optional.
+  </p>
+
+  <p>
+    The envelope is specified once, here, rather than repeated inside fourteen output schemas. That
+    is a deliberate trade: the model learns the shape once and carries it across the whole catalog,
+    and the schemas stay about the domain. It does mean the envelope has to be described to the
+    model somewhere, which is one short paragraph of the generated briefing in chapter 26.
+  </p>
+
+  <h3>Why meta is mandatory</h3>
+
+  <p>
+    Three of its fields answer questions that come up constantly and that a handler, left to its
+    own judgment, will sometimes omit.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolResult.java"
+       data-from="Provenance for the payload" data-to="Long latencyMs"></pre>
+
+  <ul>
+    <li><b><span class="icode">asOf</span></b> is the instant the data describes, not the instant
+      the envelope was written. The moment a quote is involved this is the difference between a
+      number and a misquote.</li>
+    <li><b><span class="icode">complete</span></b> says whether the model is looking at everything
+      or at a page. An agent that summarizes page one as though it were the whole is a specific and
+      very common failure, and this field is what prevents it.</li>
+    <li><b><span class="icode">requestId</span></b> is the only thing a customer can quote back to
+      support. Every error's remediation tells the agent to give it to them.</li>
+  </ul>
+
+  <h2>Failures are data</h2>
+
+  <p>
+    A handler says no by throwing a <span class="icode">ToolFailure</span>, which the pipeline turns
+    straight into an <span class="icode">ok: false</span> envelope. An exception is the handler's
+    convenience &mdash; a guard clause reads better than threading a result type through five calls
+    &mdash; and the model never sees an exception, a class name or a stack trace.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolFailure.java"
+       data-from="public static ToolFailure of" data-to="^    \}"></pre>
+
+  <p>
+    Nothing else may escape a handler. An unexpected exception is caught by the pipeline, logged
+    with the request identifier, and returned as <span class="icode">INTERNAL_ERROR</span> with no
+    detail &mdash; because the alternative is leaking a database constraint name into a customer
+    conversation. There is a test for exactly that.
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="unexpectedExceptionsLeakNothing" data-to="^    \}" data-doc="no"
+       data-cap="the assertion is about what is absent"></pre>
+
+  <h2>The taxonomy is closed</h2>
+
+  <p>
+    Fifteen codes, and a tool may return no others. A closed taxonomy exists so that the agent can
+    be taught once what to do about each code instead of inferring it from prose every time.
+  </p>
+
+  <p>
+    Each code carries three things: whether an identical retry could plausibly succeed, whether the
+    caller has anything to change, and the sentence the generated briefing shows the model. Keeping
+    the sentence next to the flags it has to agree with is the difference between a prompt that
+    matches the taxonomy and a prompt that used to.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ErrorCode.java"
+       data-from="Arguments failed the input schema" data-to="exists outside what this principal may see"
+       data-skip="UNKNOWN_TOOL..The named entity"
+       data-cap="three of fifteen; Appendix B has the register"></pre>
+
+  <p>
+    The two flags combine into four behaviors, and every code is one of them.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:0.75in">retryable</th><th style="width:0.9in">callerCanFix</th>
+      <th style="width:1.5in">The agent should</th><th>Codes</th></tr></thead>
+    <tbody>
+      <tr><td>no</td><td><b>yes</b></td><td>Fix the call and try the <em>same</em> tool again</td>
+        <td class="m">INVALID_ARGUMENT, UNKNOWN_TOOL, NOT_FOUND, APPROVAL_REQUIRED,
+          CONFIRMATION_EXPIRED, CONFLICT, AMBIGUOUS_REQUEST</td></tr>
+      <tr><td><b>yes</b></td><td>no</td><td>Wait if told how long, then report and stop</td>
+        <td class="m">RATE_LIMITED, UPSTREAM_UNAVAILABLE, UPSTREAM_TIMEOUT, INTERNAL_ERROR</td></tr>
+      <tr><td>no</td><td>no</td><td>Tell the customer and stop. Nothing else will help</td>
+        <td class="m">NOT_ENTITLED, PRECONDITION_FAILED, QUOTA_EXCEEDED, UNSUPPORTED</td></tr>
+      <tr><td colspan="2"><i>neither</i></td><td colspan="2" class="small muted">
+        There is no fourth combination: a code that is both retryable and the caller's to fix would
+        be telling the agent two different things at once, which is how retry loops start.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Three fields that make an error actionable</h2>
+
+  <h3>remediation, in the imperative</h3>
+  <p>
+    Not &ldquo;the account was not found&rdquo; but &ldquo;call
+    <span class="icode">brokerage_accounts_list</span> to get the accounts this customer actually
+    holds, and use an <span class="icode">accountId</span> from that result&rdquo;. The imperative
+    is the form an agent follows most reliably, and naming the next tool is what turns a dead end
+    into a step.
+  </p>
+
+  <figure class="code file"><figcaption><span class="path">a NOT_FOUND, with somewhere to go</span></figcaption><pre>&nbsp;</pre></figure>
+  <pre data-file="error-not-found.json" data-wrap="no"
+       data-label="brokerage_balances_get with an account the customer does not hold"></pre>
+
+  <h3>retryAfterSeconds</h3>
+  <p>
+    Only on <span class="icode">RATE_LIMITED</span>, and always when it appears. &ldquo;Too many
+    requests&rdquo; tells an agent to wait and gives it no way to decide how long, which in practice
+    means it waits for zero seconds.
+  </p>
+
+  <h3>candidates</h3>
+  <p>
+    Only on <span class="icode">AMBIGUOUS_REQUEST</span>. The whole point of that code is that the
+    tool refuses to choose, and a refusal without the choices attached makes the agent guess from
+    memory. In this catalog ambiguity is usually surfaced as a <em>successful</em> search returning
+    several candidates rather than as an error &mdash; which is a better design where it is
+    available, because an error is a thing to recover from and a list is a thing to ask about.
+  </p>
+
+  <h2>One mistake worth naming</h2>
+
+  <div class="callout bad"><p>
+    <span class="lbl">Do not map upstream status codes straight through.</span> A 404 from the
+    position service and a 404 from the market data service mean different things to an agent: one
+    means the customer does not hold it, the other means the ticker does not exist, and the right
+    next move differs. Map deliberately, at the handler, where you know which upstream it was.
+    Appendix B has the mapping table this catalog uses.
+  </p></div>
+</section>
+
+<!-- ================================================================ chapter 9 -->
+<section class="chapter" id="ch-9" data-foot="9 — Annotations, tiers and approval">
+  <div class="chnum">Chapter 9</div>
+  <h1 class="title">Annotations, tiers and approval</h1>
+  <p class="lede">
+    Four booleans the runtime trusts, four tiers it does not take on faith, and the difference
+    between the two.
+  </p>
+
+  <h2>The four annotations</h2>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ToolDescriptor.java"
+       data-from="Behavioral hints" data-to="public record Annotations"></pre>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.3in">Annotation</th><th>True when</th></tr></thead>
+    <tbody>
+      <tr><td class="k">readOnlyHint</td>
+        <td>The tool changes nothing anywhere. Not &ldquo;nothing the customer can see&rdquo; &mdash;
+          nothing.</td></tr>
+      <tr><td class="k">destructiveHint</td>
+        <td>A change may be irreversible or may overwrite existing state. A placed order is
+          destructive; a cancellation is not, because it removes exposure rather than creating it.</td></tr>
+      <tr><td class="k">idempotentHint</td>
+        <td>Repeating the identical call has no additional effect. Read tools get this for free.
+          A write tool earns it, usually with a key.</td></tr>
+      <tr><td class="k">openWorldHint</td>
+        <td>The tool reaches outside the firm's controlled domain &mdash; a market data feed, a
+          venue. It is the field that says &ldquo;the answer can change without anyone here doing
+          anything&rdquo;.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="rule-box">
+    <div class="rh">TS-ANN-01</div>
+    <p style="margin-bottom:0">
+      All four are stated explicitly on every descriptor, even where the value is the
+      specification's default. &ldquo;Absent&rdquo; and &ldquo;false&rdquo; are read differently by
+      different runtimes, and a trading tool cannot afford that ambiguity.
+    </p>
+  </div>
+
+  <p>
+    Two combinations are contradictions and the linter rejects them: a tool cannot be both read-only
+    and destructive, and a read-only tool is idempotent by construction.
+  </p>
+
+  <h2>Why the annotations are not enough</h2>
+
+  <p>
+    The annotations are asserted by the tool's author. They are useful &mdash; the runtime uses
+    them to decide what to log and what to show &mdash; and they are exactly the wrong thing to
+    hang a control on, because the author is also the person most likely to be optimistic about
+    their own tool.
+  </p>
+
+  <p>
+    So the control hangs on the <b>risk tier</b>, which is agreed at review and, in this catalog,
+    derived from the ontology rather than written by hand.
+  </p>
+
+  <h2>Four tiers</h2>
+
+  <table>
+    <thead><tr><th style="width:0.45in">Tier</th><th style="width:1.6in">Means</th>
+      <th style="width:0.95in">Approval</th><th>Evidence required</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tier t0">T0</span></td>
+        <td><b>Reads data</b><br><span class="small muted">A wrong call costs a turn</span></td>
+        <td>none</td>
+        <td>Conformance lint and handler contract tests.</td></tr>
+      <tr><td><span class="tier t1">T1</span></td>
+        <td><b>Reads, and reaches</b><br><span class="small muted">Risk engines, or mints
+          authority</span></td>
+        <td>none</td>
+        <td>Adds a selection evaluation: the agent must choose it for the utterances it is for,
+          and not for the ones it is not.</td></tr>
+      <tr><td><span class="tier t2">T2</span></td>
+        <td><b>Changes state, reduces exposure</b></td>
+        <td>confirm</td>
+        <td>Adds a trajectory evaluation and a recorded human approval for every invocation.</td></tr>
+      <tr><td><span class="tier t3">T3</span></td>
+        <td><b>Changes state, creates exposure</b></td>
+        <td>confirm</td>
+        <td>Adds dual sign-off on the descriptor, a named kill switch, a refusal suite, and
+          quarterly re-certification against the live catalog.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    The tier-1 line is the one that gets argued about, so here is the case.
+    <span class="icode">brokerage_order_preview</span> is read-only: it changes nothing a customer
+    can observe, and its description truthfully tells the model to call it as often as it likes
+    while the customer adjusts an order. It is nevertheless not tier 0, because it reaches the risk
+    and margin engines and because it mints a <span class="icode">ConfirmationToken</span>, and
+    minting authority is not nothing.
+  </p>
+
+  <h2>The cancel asymmetry</h2>
+
+  <p>
+    <span class="icode">brokerage_order_cancel</span> is tier 2 where the other two writes are tier
+    3, and it is the one asymmetry in the catalog worth defending out loud.
+  </p>
+
+  <p>
+    Cancelling reduces exposure. Requiring a priced preview before a customer can stop an order
+    would mean that in the one situation where speed matters &mdash; a price running away from them
+    &mdash; the system is at its slowest. So cancel needs no confirmation token. It still requires
+    the customer's explicit approval at the moment it runs; what it does not need is a round trip
+    through the risk engine to find out what stopping something would cost.
+  </p>
+
+  <h2>Approval modes</h2>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.3in">Mode</th><th>Means</th></tr></thead>
+    <tbody>
+      <tr><td class="k">none</td><td>Runs. Everything at tier 0 and 1.</td></tr>
+      <tr><td class="k">notify</td><td>Runs, and somebody is told afterwards. Useful for tools that
+        are safe but surprising.</td></tr>
+      <tr><td class="k">confirm</td><td>The customer is shown what will happen and says yes before
+        it runs. Everything at tier 2 and 3 in this catalog.</td></tr>
+      <tr><td class="k">dualControl</td><td>Two different humans. Reserved here for a notional
+        value above 250,000, an account under review, or any restricted-classification tool.</td></tr>
+      <tr><td class="k">humanExecution</td><td>The agent prepares it and a human performs it. The
+        honest answer when a capability is too consequential to automate but too useful to
+        omit.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What a confirmation has to show</h2>
+
+  <p>
+    This is where the design most often goes quietly wrong, so it gets its own rule and its own
+    worked failure.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">TS-ANN-05</div>
+    <p style="margin-bottom:0">
+      An approval mode above <span class="mono">notify</span> requires a
+      <span class="mono">confirmationTemplate</span>, and the rendered template must state the
+      <b>priced consequence</b> &mdash; not the tool name, not the arguments, the consequence.
+      A dialog that says &ldquo;allow this tool?&rdquo; is not informed consent.
+    </p>
+  </div>
+
+  <p>
+    The template for <span class="icode">brokerage_order_place</span> wants to say
+    <i>&ldquo;Estimated cost 10,978.20 USD&rdquo;</i> and <i>&ldquo;in Everyday brokerage&rdquo;</i>.
+    Neither is an argument. The arguments are an account identifier, a ticker, a side and a
+    quantity; the cost does not exist until something prices it, and the nickname lives in the
+    account record. Render the template from the arguments alone and the customer sees this:
+  </p>
+
+  <figure class="code file"><figcaption><span class="path">what a template rendered from arguments alone produces</span><span class="note">reconstructed, for illustration</span></figcaption><pre>Place this order?
+
+  BUY 50 AAPL in <span class="er">(not given)</span>
+  <span class="er">(not given)</span>, <span class="er">(not given)</span>
+
+  Estimated cost   <span class="er">(not given)</span> <span class="er">(not given)</span>
+  Buying power after   <span class="er">(not given)</span> <span class="er">(not given)</span>
+
+This sends a real order to the market and cannot be undone.</pre></figure>
+
+  <p>
+    A customer will approve that, because the part they recognize is correct. They will have
+    approved an order whose cost they never saw. The fix is an <span class="icode">ApprovalContext</span>:
+    the runtime asks the domain for the figures the arguments do not carry, at the moment of the
+    confirmation.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ApprovalContext.java"
+       data-from="public interface ApprovalContext" data-to="^\}"></pre>
+
+  <p>
+    With it, the same call produces the dialog the customer should see &mdash; and the figures are
+    computed <em>now</em>, not carried forward from a preview that may be a minute old.
+  </p>
+
+  <pre data-file="approval-dialog.txt" data-lang="text"
+       data-label="the confirmation, as the customer is shown it"
+       data-cap="captured from the running system"></pre>
+
+  <p>
+    Chapter 22 implements the gate behind it, and chapter 17 explains why the token and the approval
+    are two separate mechanisms rather than one.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 10 -->
+<section class="chapter" id="ch-10" data-foot="10 — Governance metadata">
+  <div class="chnum">Chapter 10</div>
+  <h1 class="title">Governance metadata</h1>
+  <p class="lede">
+    The part of the descriptor the model never sees, and the part somebody will be reading in an
+    incident review two years from now.
+  </p>
+
+  <p>
+    Governance lives in <span class="icode">_meta</span>, under a reverse-DNS key, so that it
+    travels with the descriptor and is never rendered into the model's context. Every field in it
+    answers a question that gets asked eventually.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Governance.java"
+       data-from="public record Governance" data-to="Evaluation evaluation"></pre>
+
+  <h2>Field by field</h2>
+
+  <dl class="defs">
+    <dt>version</dt>
+    <dd>
+      Semantic, and it versions the <em>contract</em> rather than the implementation. A handler fix
+      is a patch. A new optional parameter is a minor. Narrowing a pattern, renaming an output
+      field or removing an enum value is a major &mdash; see chapter 36, because the list of what
+      breaks a model is not the list that breaks a compiler.
+    </dd>
+
+    <dt>lifecycle</dt>
+    <dd>
+      <span class="mono">draft</span>, <span class="mono">active</span>,
+      <span class="mono">deprecated</span>, <span class="mono">retired</span>. The registry serves
+      only <span class="mono">active</span>, however complete a draft looks.
+    </dd>
+
+    <dt>conformanceLevel &amp; riskTier</dt>
+    <dd>
+      Asserted by the owner, verified at review. In this catalog the tier is checked against the
+      ontology on every build, so an author cannot quietly demote a tool to avoid an approval
+      requirement.
+    </dd>
+
+    <dt>owner</dt>
+    <dd>
+      A team, a mailbox and a paging escalation. All three, because at two in the morning a mailbox
+      is not a person. An unowned tool in production is an incident waiting for a volunteer.
+    </dd>
+
+    <dt>dataClassification &amp; piiFields</dt>
+    <dd>
+      The highest classification the tool can return, and JSON pointers to any personal data in the
+      output. Pointers rather than a boolean, because masking and retention are mechanical and need
+      to know where to look. The linter rejects
+      <span class="icode">containsPii: true</span> with an empty pointer list.
+    </dd>
+
+    <dt>entitlements</dt>
+    <dd>
+      Scopes the principal must hold, all of them. This is the field the registry filters on, so a
+      tool with no entitlement is a tool anybody can call &mdash; which the linter treats as an
+      error rather than a default.
+    </dd>
+
+    <dt>approval</dt>
+    <dd>
+      The mode, the confirmation template, and an expiry. An approval with no window is a standing
+      instruction, and nobody means to give one of those.
+    </dd>
+
+    <dt>recordKeeping</dt>
+    <dd>
+      An audit event name, an ISO 8601 retention, and the obligations driving it. In this catalog
+      the trading tools are <span class="mono">P6Y</span> against books-and-records and order audit
+      trail; the tax lot tool is <span class="mono">P7Y</span>; market data is
+      <span class="mono">P2Y</span> and is driven by licensing rather than by regulation.
+    </dd>
+
+    <dt>cost &amp; rateLimit</dt>
+    <dd>
+      A cost class, a p95 latency and a per-principal budget. The limits that matter differ by two
+      orders of magnitude &mdash; 180 quote calls a minute is normal, 180 order placements a minute
+      is an incident &mdash; which is why the limit is per tool and not per catalog.
+    </dd>
+
+    <dt>dependencies &amp; availability</dt>
+    <dd>
+      What it calls, its SLO, and a named kill switch. Every tool at tier 2 or above must name one,
+      because when a tool starts behaving badly the options are to turn it off or to roll back, and
+      only one of those takes less than a build.
+    </dd>
+
+    <dt>evaluation</dt>
+    <dd>
+      The suite that measures whether the model picks this tool correctly, when it last ran, and
+      what it scored. A tier 2 or 3 tool that cites no suite does not pass the linter. This is what
+      makes the number an assertion somebody can check rather than a number somebody typed.
+    </dd>
+  </dl>
+
+  <h2>A governance block, in full</h2>
+
+  <pre data-src="brokerage-catalog/src/main/resources/catalog/brokerage_order_place.json"
+       data-from="com.example.tooling/governance" data-to="evaluation"
+       data-cap="the block the model never sees"></pre>
+
+  <h2>The JSON spellings are pinned</h2>
+
+  <p>
+    One detail that looks fussy and is not. The enumerations in the governance block declare their
+    wire spellings explicitly rather than deriving them from the Java constant names.
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/Governance.java"
+       data-from="The JSON spellings are pinned" data-to="@JsonProperty..retired.. RETIRED"></pre>
+
+  <p>
+    These strings appear in published descriptors and in audit records with six-year retentions.
+    Renaming a Java constant must never silently change a wire value, and the only way to guarantee
+    that is to write the wire value down.
+  </p>
+
+  <div class="callout"><p>
+    <span class="lbl">The same argument applies to one enumeration in the domain.</span>
+    <span class="icode">CANCELLED</span> keeps its double-L spelling throughout this book, in a text
+    that is otherwise US English, because it is the spelling in the systems of record the domain
+    borrows from. An enumeration member is a name rather than prose, and renaming it to match the
+    surrounding prose would break every consumer already matching on the string.
+  </p></div>
+</section>

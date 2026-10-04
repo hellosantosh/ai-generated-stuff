@@ -1,0 +1,351 @@
+{
+  "id": "brokerage-tool-ontology",
+  "version": "1.0.0",
+  "domain": "brokerage",
+  "description": "What a brokerage tool can be about, what it can do, and what follows from both. The catalog implements this table; the linter checks that it still does. Edit this file to change the shape of the catalog, and the descriptors will be told they no longer conform.",
+
+  "identifierTypes": {
+    "AccountId": {
+      "description": "A brokerage account. Prefixed and opaque: nothing downstream may read a branch code or an open date out of it.",
+      "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+      "example": "acct_7QK3M8W2PR5NXVTZ",
+      "opaque": true
+    },
+    "InstrumentSymbol": {
+      "description": "A listed ticker, uppercase, optionally with a share-class suffix after a dot. The suffix is why a pattern of ^[A-Z]{1,5}$ is wrong: it silently rejects BRK.B.",
+      "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+      "example": "BRK.B",
+      "opaque": false
+    },
+    "OrderId": {
+      "description": "One order, for its whole life. A replacement keeps the identifier it was given, so a customer who was read an order number can still ask about it.",
+      "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{16}$",
+      "example": "ord_4FX8N2QW7RJ5MKTV",
+      "opaque": true
+    },
+    "ExecutionId": {
+      "description": "One fill. An order may have several; each settles on its own date.",
+      "pattern": "^exec_[0-9A-HJKMNP-TV-Z]{16}$",
+      "example": "exec_9HM2K7VN4PQ8RXWZ",
+      "opaque": true
+    },
+    "LotId": {
+      "description": "One tax lot: a block of shares bought on one day at one price. Selling is a choice between lots, and the choice is worth money.",
+      "pattern": "^lot_[0-9A-HJKMNP-TV-Z]{12}$",
+      "example": "lot_5RK9M2WPQ7XN",
+      "opaque": true
+    },
+    "ConfirmationToken": {
+      "description": "Single-use authority to place one exact order, issued by a preview and spent by a place. The reason preview-before-place is structural in this catalog rather than merely requested: there is no other source of this value.",
+      "pattern": "^cnf_[0-9A-HJKMNP-TV-Z]{24}$",
+      "example": "cnf_8W2PR5NXVTZ4FX8N2QW7RJ5",
+      "opaque": true
+    }
+  },
+
+  "entities": {
+    "Account": {
+      "label": "Account",
+      "term": "account",
+      "collectionTerm": "accounts",
+      "identifier": "AccountId",
+      "description": "A brokerage account held by a customer. Its type decides more rules than its balance does: a cash account cannot borrow, a retirement account cannot sell short, and a restricted account cannot trade at all.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:accounts:read",
+      "mutable": false,
+      "relations": [
+        { "name": "holds", "target": "Position", "cardinality": "one-to-many", "description": "The instruments the account owns." },
+        { "name": "hasBalances", "target": "Balance", "cardinality": "one-to-one", "description": "The money view of the account." },
+        { "name": "placed", "target": "Order", "cardinality": "one-to-many", "description": "Orders entered in the account." }
+      ]
+    },
+    "Instrument": {
+      "label": "Instrument",
+      "term": "instrument",
+      "collectionTerm": "instruments",
+      "identifier": "InstrumentSymbol",
+      "description": "Something that can be traded. Named things are ambiguous — three listed companies have Apple in their name, and Alphabet has two share classes — which is why resolving a name to a symbol is a tool rather than a guess.",
+      "classification": "public",
+      "entitlement": "brokerage:reference:read",
+      "mutable": false,
+      "relations": [
+        { "name": "quotedBy", "target": "Quote", "cardinality": "one-to-one", "description": "The current two-sided market." }
+      ]
+    },
+    "Quote": {
+      "label": "Quote",
+      "term": "quote",
+      "collectionTerm": "quotes",
+      "identifier": "InstrumentSymbol",
+      "description": "The current market in one instrument. Perishable by nature: a quote carries the instant it was taken because a stale quote presented as current is the most expensive kind of wrong answer a tool can give.",
+      "classification": "internal",
+      "entitlement": "brokerage:market-data:read",
+      "mutable": false,
+      "relations": []
+    },
+    "PriceHistory": {
+      "label": "Price history",
+      "term": "price_history",
+      "collectionTerm": "price_history",
+      "identifier": "InstrumentSymbol",
+      "description": "Daily bars for one instrument. Bounded on purpose: a model asked for five years of daily closes will ask for them, read the first thirty and bill the firm for the rest.",
+      "classification": "internal",
+      "entitlement": "brokerage:market-data:read",
+      "mutable": false,
+      "relations": []
+    },
+    "Balance": {
+      "label": "Balances",
+      "term": "balances",
+      "collectionTerm": "balances",
+      "identifier": "AccountId",
+      "description": "The money in an account, in the four senses a customer means by the question: ledger cash, settled cash, buying power, and total equity. Answering with one number is how an agent tells a customer they can afford something they cannot.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:balances:read",
+      "mutable": false,
+      "relations": []
+    },
+    "Position": {
+      "label": "Position",
+      "term": "position",
+      "collectionTerm": "positions",
+      "identifier": "AccountId",
+      "description": "What an account holds in one instrument, aggregated across its lots, with the weight it carries in the portfolio.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:positions:read",
+      "mutable": false,
+      "relations": [
+        { "name": "madeOf", "target": "TaxLot", "cardinality": "one-to-many", "description": "The lots the position is built from." }
+      ]
+    },
+    "TaxLot": {
+      "label": "Tax lot",
+      "term": "tax_lot",
+      "collectionTerm": "tax_lots",
+      "identifier": "LotId",
+      "description": "A block of shares acquired on one date at one price, with its holding period and its wash-sale exposure. The reason an agent can ask a genuinely useful question before a sale instead of silently selling the oldest shares.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:positions:read",
+      "mutable": false,
+      "relations": []
+    },
+    "Order": {
+      "label": "Order",
+      "term": "order",
+      "collectionTerm": "orders",
+      "identifier": "OrderId",
+      "description": "An instruction to trade, and the only entity in this ontology that an agent can change. Everything expensive about this catalog is downstream of that sentence.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:orders:read",
+      "mutable": true,
+      "relations": [
+        { "name": "filledBy", "target": "Execution", "cardinality": "one-to-many", "description": "The fills that make up the order." }
+      ]
+    },
+    "Execution": {
+      "label": "Execution",
+      "term": "execution",
+      "collectionTerm": "executions",
+      "identifier": "ExecutionId",
+      "description": "One fill: a quantity, a price, a venue and a settlement date. Separate from the order because an order's average price answers a different question from what each fill actually cost.",
+      "classification": "customer-confidential",
+      "entitlement": "brokerage:orders:read",
+      "mutable": false,
+      "relations": []
+    }
+  },
+
+  "operations": {
+    "list": {
+      "gloss": "Return the members of a collection the principal may see, newest or most relevant first, bounded and paged.",
+      "readOnly": true,
+      "idempotent": true,
+      "baseRiskTier": 0,
+      "semantics": "No arguments beyond the scope and the filters. Never requires an identifier the agent does not already hold, which is what makes a list tool a safe first move."
+    },
+    "get": {
+      "gloss": "Return one named entity, or say plainly that it is not there.",
+      "readOnly": true,
+      "idempotent": true,
+      "baseRiskTier": 0,
+      "semantics": "Takes the entity's identifier. Returns NOT_FOUND rather than an empty object, so the agent is never left reading zeroes as facts."
+    },
+    "search": {
+      "gloss": "Resolve free text to candidate entities, and refuse to choose between them.",
+      "readOnly": true,
+      "idempotent": true,
+      "baseRiskTier": 0,
+      "semantics": "Takes a query the customer said out loud. Returns enough on each candidate for the agent to ask a sensible question. A search tool that silently picks the top hit is how the wrong company gets bought."
+    },
+    "preview": {
+      "gloss": "Compute exactly what a change would do, change nothing, and issue the authority to go ahead.",
+      "readOnly": true,
+      "idempotent": true,
+      "baseRiskTier": 1,
+      "semantics": "Tier 1 rather than 0 because it reaches the risk and margin engines and because it mints a ConfirmationToken. Safe to call repeatedly while the customer adjusts the order."
+    },
+    "place": {
+      "gloss": "Commit a change the customer has seen and approved.",
+      "readOnly": false,
+      "idempotent": true,
+      "baseRiskTier": 3,
+      "semantics": "Requires a ConfirmationToken bound to this exact instruction. Idempotent because the token is single-use: a retry returns the original order rather than a second one."
+    },
+    "replace": {
+      "gloss": "Amend a working instruction in place, keeping its identifier.",
+      "readOnly": false,
+      "idempotent": true,
+      "baseRiskTier": 3,
+      "semantics": "Tier 3 like place, because raising a limit by a dollar and buying at that dollar are the same economic act."
+    },
+    "cancel": {
+      "gloss": "Request that a working instruction stop, and report what actually happened to it.",
+      "readOnly": false,
+      "idempotent": true,
+      "baseRiskTier": 2,
+      "semantics": "Tier 2 rather than 3: cancelling reduces exposure rather than creating it. Returns the order's real state, because an order can fill in the moment between the decision and the venue hearing about it."
+    }
+  },
+
+  "capabilities": [
+    {
+      "tool": "brokerage_accounts_list",
+      "operation": "list",
+      "entity": "Account",
+      "cardinality": "many",
+      "consumes": [],
+      "produces": ["AccountId"],
+      "note": "The entry point. Nothing else in the catalog can be called correctly until the agent holds an AccountId, and this is the only tool that needs nothing to run."
+    },
+    {
+      "tool": "brokerage_instruments_search",
+      "operation": "search",
+      "entity": "Instrument",
+      "cardinality": "many",
+      "consumes": [],
+      "produces": ["InstrumentSymbol"],
+      "note": "The other entry point, for the half of the conversation that starts with a company name rather than an account."
+    },
+    {
+      "tool": "brokerage_quotes_get",
+      "operation": "get",
+      "entity": "Quote",
+      "cardinality": "many",
+      "consumes": ["InstrumentSymbol"],
+      "produces": [],
+      "note": "Plural because a model comparing three stocks will otherwise call it three times, and three round trips to say one thing is three times the latency and three times the audit."
+    },
+    {
+      "tool": "brokerage_price_history_get",
+      "operation": "get",
+      "entity": "PriceHistory",
+      "cardinality": "one",
+      "consumes": ["InstrumentSymbol"],
+      "produces": []
+    },
+    {
+      "tool": "brokerage_balances_get",
+      "operation": "get",
+      "entity": "Balance",
+      "cardinality": "one",
+      "consumes": ["AccountId"],
+      "produces": []
+    },
+    {
+      "tool": "brokerage_positions_list",
+      "operation": "list",
+      "entity": "Position",
+      "cardinality": "many",
+      "consumes": ["AccountId"],
+      "produces": ["InstrumentSymbol"],
+      "note": "Produces symbols, which is why 'sell my Apple' can be answered without a search: the holding is already named."
+    },
+    {
+      "tool": "brokerage_tax_lots_list",
+      "operation": "list",
+      "entity": "TaxLot",
+      "cardinality": "many",
+      "consumes": ["AccountId", "InstrumentSymbol"],
+      "produces": ["LotId"]
+    },
+    {
+      "tool": "brokerage_orders_list",
+      "operation": "list",
+      "entity": "Order",
+      "cardinality": "many",
+      "consumes": ["AccountId"],
+      "produces": ["OrderId"]
+    },
+    {
+      "tool": "brokerage_order_get",
+      "operation": "get",
+      "entity": "Order",
+      "cardinality": "one",
+      "consumes": ["AccountId", "OrderId"],
+      "produces": []
+    },
+    {
+      "tool": "brokerage_executions_list",
+      "operation": "list",
+      "entity": "Execution",
+      "cardinality": "many",
+      "consumes": ["AccountId"],
+      "produces": ["ExecutionId"]
+    },
+    {
+      "tool": "brokerage_order_preview",
+      "operation": "preview",
+      "entity": "Order",
+      "cardinality": "one",
+      "consumes": ["AccountId", "InstrumentSymbol"],
+      "produces": ["ConfirmationToken"],
+      "note": "The only producer of a ConfirmationToken, and therefore the only way into the three tools that change anything. Also accepts an OrderId, for previewing a replacement."
+    },
+    {
+      "tool": "brokerage_order_place",
+      "operation": "place",
+      "entity": "Order",
+      "cardinality": "one",
+      "consumes": ["AccountId", "InstrumentSymbol", "ConfirmationToken"],
+      "produces": ["OrderId"]
+    },
+    {
+      "tool": "brokerage_order_replace",
+      "operation": "replace",
+      "entity": "Order",
+      "cardinality": "one",
+      "consumes": ["AccountId", "OrderId", "ConfirmationToken"],
+      "produces": ["OrderId"]
+    },
+    {
+      "tool": "brokerage_order_cancel",
+      "operation": "cancel",
+      "entity": "Order",
+      "cardinality": "one",
+      "consumes": ["AccountId", "OrderId"],
+      "produces": [],
+      "note": "No ConfirmationToken. Cancelling reduces exposure, and requiring a priced preview to stop an order would mean a customer in a hurry cannot stop one."
+    }
+  ],
+
+  "policies": {
+    "approvalByRiskTier": {
+      "0": "none",
+      "1": "none",
+      "2": "confirm",
+      "3": "confirm"
+    },
+    "evidenceByRiskTier": {
+      "0": "Conformance lint and handler contract tests.",
+      "1": "Adds a selection evaluation: the agent must choose this tool for the utterances it is for, and not for the ones it is not.",
+      "2": "Adds a trajectory evaluation and a recorded human approval for every invocation.",
+      "3": "Adds dual sign-off on the descriptor, a named kill switch, a refusal suite, and a quarterly re-certification against the live catalog."
+    },
+    "maxTierWithoutApproval": 1,
+    "dualControlAbove": [
+      "A notional value above 250,000 USD in a single order.",
+      "Any order in an account flagged for review.",
+      "Any tool whose dataClassification is restricted."
+    ]
+  }
+}

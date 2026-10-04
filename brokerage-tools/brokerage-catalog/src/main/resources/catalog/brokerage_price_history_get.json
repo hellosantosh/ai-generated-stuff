@@ -1,0 +1,103 @@
+{
+  "name": "brokerage_price_history_get",
+  "title": "Get daily price history for one symbol",
+  "description": "Returns daily open, high, low, close and volume bars for one instrument, newest last, together with the high, low and total return over the window. Use when the customer asks how something has done over a period, asks about a trend, or asks for a figure that needs more than today's price. Do not use for the current market, which is brokerage_quotes_get and is both faster and fresher, and do not use it to compute a cost basis — the account's own basis is in brokerage_tax_lots_list and is the only basis that matters for tax. Read the summary fields first: they answer most questions without reading the bars at all, and the bars are there for the cases where they do not. Ask for the shortest window that answers the question. A year of daily bars is 250 rows and the model will read the first thirty; the summary already carries the range and the return. The series covers trading days only, so gaps are weekends and holidays rather than missing data. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "symbol": {
+        "type": "string",
+        "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+        "description": "The ticker, uppercase, exactly as returned by brokerage_instruments_search."
+      },
+      "days": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 120,
+        "default": 30,
+        "description": "Calendar days back from today. Trading days within that window are returned; 120 is the ceiling because longer windows cost more than they tell the customer."
+      }
+    },
+    "required": ["symbol"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "A decimal number as a string, so no price is distorted by binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "symbol": { "type": "string", "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$", "description": "The ticker these bars are for." },
+      "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency of these prices." },
+      "from": { "type": "string", "format": "date", "description": "First trading day in the series." },
+      "to": { "type": "string", "format": "date", "description": "Last trading day in the series." },
+      "periodHigh": { "$ref": "#/$defs/decimal", "description": "Highest close in the window. Usually what a customer asking about a peak means." },
+      "periodLow": { "$ref": "#/$defs/decimal", "description": "Lowest close in the window." },
+      "totalReturnPercent": { "$ref": "#/$defs/decimal", "description": "Change from the first close to the last, as a percentage. Price only; dividends are not included, so say so." },
+      "bars": {
+        "type": "array",
+        "maxItems": 120,
+        "description": "Daily bars, oldest first. Read the summary fields above before reading these.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "date": { "type": "string", "format": "date", "description": "The trading day." },
+            "open": { "$ref": "#/$defs/decimal", "description": "First trade of the day." },
+            "high": { "$ref": "#/$defs/decimal", "description": "Highest trade of the day." },
+            "low": { "$ref": "#/$defs/decimal", "description": "Lowest trade of the day." },
+            "close": { "$ref": "#/$defs/decimal", "description": "Last trade of the day." },
+            "volume": { "type": "integer", "minimum": 0, "description": "Shares traded that day." }
+          },
+          "required": ["date", "open", "high", "low", "close", "volume"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["symbol", "currency", "from", "to", "periodHigh", "periodLow", "totalReturnPercent", "bars"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": true
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "market-data",
+        "contact": "market-data@example.com",
+        "escalation": "pagerduty://market-data"
+      },
+      "dataClassification": "internal",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:market-data:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.priceHistory.get",
+        "retention": "P2Y",
+        "regulatoryBasis": ["market-data-licensing"]
+      },
+      "cost": { "class": "medium", "p95LatencyMs": 240 },
+      "rateLimit": { "perPrincipalPerMinute": 30, "perPrincipalPerDay": 800 },
+      "dependencies": ["market-data-feed"],
+      "availability": { "slo": "99.9", "killSwitch": "tools.brokerage.marketdata" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.96,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 0.95
+      }
+    }
+  }
+}

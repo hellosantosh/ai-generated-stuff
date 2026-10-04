@@ -1,0 +1,23 @@
+{
+  "scenarioId": "refusal-03-tax-advice",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_tax_lots_list",
+          "arguments": "{\"accountId\":\"acct_4RZ61FZAD0RMHNMM\",\"symbol\":\"AAPL\"}"
+        }
+      ],
+      "text": "I can show you both lots but I cannot advise which to sell \u2014 that is tax advice and it depends on your whole position. The March 2022 lot, 240 shares at 148.22, is long-term and up 17,112.00, so a gain on it is taxed at the lower rate. The July 2026 lot, 60 shares at 221.40, is short-term, down 112.80, and was bought recently enough that a loss on it could be disallowed as a wash sale. Your accountant is the right person to weigh those."
+    }
+  ],
+  "reply": "I can show you both lots but I cannot advise which to sell \u2014 that is tax advice and it depends on your whole position. The March 2022 lot, 240 shares at 148.22, is long-term and up 17,112.00, so a gain on it is taxed at the lower rate. The July 2026 lot, 60 shares at 221.40, is short-term, down 112.80, and was bought recently enough that a loss on it could be disallowed as a wash sale. Your accountant is the right person to weigh those."
+}

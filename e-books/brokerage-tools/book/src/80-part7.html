@@ -1,0 +1,649 @@
+<!-- ============================================================ PART VII plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part VII</div>
+    <h1>Testing</h1>
+    <p class="pl">
+      Five layers, only two of which need a model at all. How to measure whether an agent picks the
+      right tool, how to run that measurement on every commit, and what it still will not catch.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 560 190" role="img"
+           aria-label="A test pyramid: conformance, handler contracts, trajectories, selection
+                       and refusal, with the model needed only at the top two layers">
+        <g font-family="monospace" font-size="8.5">
+          <rect x="30" y="148" width="500" height="26" rx="4" fill="rgba(111,224,187,.16)"
+                stroke="rgba(111,224,187,.4)"/>
+          <text x="42" y="165" fill="#8fe8c8">1  conformance &mdash; 14 descriptors, no model</text>
+          <rect x="80" y="116" width="400" height="26" rx="4" fill="rgba(111,224,187,.13)"
+                stroke="rgba(111,224,187,.35)"/>
+          <text x="92" y="133" fill="#8fe8c8">2  handler contracts &mdash; 16 tests, no model</text>
+          <rect x="130" y="84" width="300" height="26" rx="4" fill="rgba(91,140,255,.16)"
+                stroke="rgba(91,140,255,.4)"/>
+          <text x="142" y="101" fill="#9db4ff">3  trajectories &mdash; 20 tests, no model</text>
+          <rect x="180" y="52" width="200" height="26" rx="4" fill="rgba(255,186,84,.17)"
+                stroke="rgba(255,203,122,.45)"/>
+          <text x="192" y="69" fill="#ffcb7a">4  selection &mdash; 20</text>
+          <rect x="220" y="20" width="120" height="26" rx="4" fill="rgba(255,186,84,.22)"
+                stroke="rgba(255,203,122,.55)"/>
+          <text x="232" y="37" fill="#ffcb7a">5  refusal &mdash; 10</text>
+        </g>
+        <path d="M400 20 L400 78" stroke="#ffcb7a" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="408" y="45" font-family="monospace" font-size="7.5" fill="#ffcb7a">needs a model</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>30</b> The pyramid &nbsp;&middot;&nbsp;
+      <b>31</b> Conformance and contracts &nbsp;&middot;&nbsp;
+      <b>32</b> The agentic harness &nbsp;&middot;&nbsp;
+      <b>33</b> Cassettes &nbsp;&middot;&nbsp;
+      <b>34</b> Four scores and a pipeline
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== chapter 30 -->
+<section class="chapter" id="ch-30" data-foot="30 — The pyramid">
+  <div class="chnum">Chapter 30</div>
+  <h1 class="title">The pyramid</h1>
+  <p class="lede">
+    Five layers, and the question to ask at each one: does this need a language model?
+  </p>
+
+  <p>
+    The reason to ask is cost. A test that calls a frontier model is slow, costs money, and is not
+    quite deterministic. Put enough of those in a build and the suite gets marked
+    <span class="icode">@Disabled</span>, at which point the tools drift unchecked and the
+    expensive tests were worse than no tests.
+  </p>
+
+  <p>
+    So the discipline is to push every assertion as far down the pyramid as it will go, and to be
+    precise about what genuinely cannot go lower.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:0.3in">&nbsp;</th><th style="width:1.35in">Layer</th>
+      <th style="width:0.6in">Model?</th><th>Asserts</th></tr></thead>
+    <tbody>
+      <tr><td><b>1</b></td><td><b>Conformance</b></td><td>no</td>
+        <td>That every descriptor is structurally valid, inside the schema profile, consistent with
+          the ontology, and that the catalog as a set has no gaps or dead ends.</td></tr>
+      <tr><td><b>2</b></td><td><b>Handler contracts</b></td><td>no</td>
+        <td>That each tool does what its description claims &mdash; buying power net of reserved
+          cash, positions largest first, a lot that knows its holding period.</td></tr>
+      <tr><td><b>3</b></td><td><b>Trajectories</b></td><td>no</td>
+        <td>The safety properties: preview before place, a token bound to its terms, a retry that
+          does not double-book, a cancellation that lost a race reporting a fill.</td></tr>
+      <tr><td><b>4</b></td><td><b>Selection</b></td><td><b>yes</b></td>
+        <td>That for a given utterance the model reaches for the right tool, with the right
+          arguments, and not for three more.</td></tr>
+      <tr><td><b>5</b></td><td><b>Refusal</b></td><td><b>yes</b></td>
+        <td>That it declines when declining is correct: advice, predictions, tax guidance, out of
+          scope, out of entitlement, and attempts to talk past the controls.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Layer 3 is the one people put too high</h2>
+
+  <p>
+    &ldquo;Does the agent preview before it places?&rdquo; sounds like a question about the model,
+    and it is not. In this catalog it is a question about whether
+    <span class="icode">brokerage_order_place</span> can be called without a token, and that is
+    answerable in a unit test with no model anywhere.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/TradingTrajectoryTest.java"
+       data-from="placingNeedsATokenTheServiceIssued" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    The general form: <em>if a property is structural, test it structurally.</em> A model-based test
+    of a structural property tells you only that the model did not happen to find the hole this
+    time.
+  </p>
+
+  <h2>And layers 4 and 5 genuinely do need one</h2>
+
+  <p>
+    Nothing but a model can tell you whether
+    <i>&ldquo;how much can I spend?&rdquo;</i> leads to the balances tool. That is a question about
+    how two pieces of prose compare in a particular model's judgment, and it changes when you edit a
+    description, when you add a neighboring tool, and when the model version moves.
+  </p>
+
+  <p>
+    Chapter 33 is about how to get that measurement into every build anyway.
+  </p>
+
+  <h2>What the suite looks like in this repository</h2>
+
+  <figure class="code file"><figcaption><span class="path">the whole build</span><span class="note">no API key, no network</span></figcaption><pre>
+$ ./mvnw verify
+
+Tests run:  9   tool-contract      <span class="cm">the profile and the taxonomy</span>
+Tests run: 19   brokerage-domain   <span class="cm">the clock, and a market that stays believable</span>
+Tests run: 21   tool-runtime       <span class="cm">the pipeline, step by step</span>
+Tests run: 44   brokerage-catalog  <span class="cm">conformance, handler contracts, trajectories</span>
+Tests run: 12   agent-service      <span class="cm">the HTTP surface</span>
+Tests run: 34   test-harness       <span class="cm">thirty scenarios, replayed</span>
+Tests run: 10   desktop-bridge     <span class="cm">the connector's protocol</span>
+
+BUILD SUCCESS
+</pre></figure>
+
+  <p>
+    A hundred and forty-nine tests in about fifteen seconds, including the agentic suite. The next
+    four chapters are how.
+  </p>
+
+  <p>
+    Two of those modules sit outside the pyramid and are worth naming, because leaving them out is
+    a common omission. <span class="icode">brokerage-domain</span> is tested on its own rather than
+    only through the handlers &mdash; the simulated market has to be repeatable and its day-over-day
+    moves believable, and nothing else guards either property. And
+    <span class="icode">desktop-bridge</span> is tested because a publication surface nobody
+    exercises is a surface that fails on the one Monday somebody tries it.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 31 -->
+<section class="chapter" id="ch-31" data-foot="31 — Conformance and contracts">
+  <div class="chnum">Chapter 31</div>
+  <h1 class="title">Conformance and contracts</h1>
+  <p class="lede">
+    The gate that makes the specification a specification, and the tests that keep the descriptions
+    honest.
+  </p>
+
+  <h2>The gate</h2>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/CatalogConformanceTest.java"
+       data-from="theCatalogConforms" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    No model, no network, no application context, a few milliseconds, on every commit. That is the
+    whole argument for writing descriptors as data and rules as code. Without it the specification
+    decays into a style guide: the first ten tools follow it, the next forty follow whoever reviewed
+    them, and by the time anyone notices, the model is being shown four different ways to name an
+    account.
+  </p>
+
+  <p>
+    The same test file asserts the properties of the catalog <em>as a set</em>, which is where the
+    interesting failures are.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/CatalogConformanceTest.java"
+       data-from="writingNeedsApproval" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    Four assertions on every state-changing tool, in six lines, and none of them can be satisfied by
+    a descriptor that merely looks right.
+  </p>
+
+  <h2>Contract tests assert the prose</h2>
+
+  <p>
+    The pipeline has already validated every payload against its own output schema before a test
+    sees it, so a handler contract test is not re-checking the shape. It is checking the
+    <em>claims the description makes</em>, which no schema can express.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/HandlerContractTest.java"
+       data-from="positions come back largest first" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    The description says positions come back largest first and that the weight is already computed.
+    Both are promises to the model, and both would otherwise be true only until somebody changed a
+    comparator.
+  </p>
+
+  <p>
+    Here is the same idea applied to a claim that is easy to get wrong and expensive to get wrong:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/HandlerContractTest.java"
+       data-from="cashAccountsCannotBorrow" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>The pipeline, step by step</h2>
+
+  <p>
+    Twenty-one tests, one per documented behavior, against a two-tool fixture rather than against
+    the real catalog.
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/Fixture.java"
+       data-from="A two-tool catalog, built in this file" data-to="^final class Fixture"></pre>
+
+  <p>
+    The reasoning is worth copying. The brokerage catalog is a fine thing to test the pipeline
+    <em>through</em> and a poor thing to test it <em>with</em>: when a pipeline test fails against
+    fourteen real tools, the first question is whether the pipeline broke or a handler did, and two
+    tools defined in the test file answer that before it is asked.
+  </p>
+
+  <p>
+    The fixture also found its own bug on the first run, which is a reasonable advertisement for
+    the linter:
+  </p>
+
+  <figure class="code file"><figcaption><span class="path">the first time the fixture was run</span></figcaption><pre>
+java.lang.IllegalStateException: the catalog does not conform:
+  <span class="er">ERROR  TS-SET-01  (catalog): 2 tools share the title "a fixture tool";</span>
+  <span class="er">a human approving one of them cannot tell which</span>
+</pre></figure>
+
+  <h2>Negative tests are the point</h2>
+
+  <p>
+    Two of the twenty-one assert that something does <em>not</em> happen, and they are the two worth
+    reading.
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="aHandlerThatDriftsFromItsOwnOutputSchemaFailsClosed" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    And the one that says what must never reach a customer:
+  </p>
+
+  <pre data-src="tool-runtime/src/test/java/com/example/brokerage/tooling/runtime/InvocationPipelineTest.java"
+       data-from="invisibleToolsAreIndistinguishableFromAbsentOnes" data-to="^    \}" data-doc="no"></pre>
+
+  <h2>And the HTTP surface</h2>
+
+  <p>
+    Twelve tests, with the chat model stubbed so the context starts without an API key. Everything a
+    reviewer needs &mdash; the descriptors, the ontology, the producer graph, the generated
+    briefing, the conformance report, direct invocation &mdash; is reachable with
+    <span class="mono">curl</span>, and the tests say so.
+  </p>
+
+  <pre data-src="agent-service/src/test/java/com/example/brokerage/agent/HttpSurfaceTest.java"
+       data-from="theGraphIsPublished" data-to="^    \}" data-doc="no"></pre>
+</section>
+
+<!-- =============================================================== chapter 32 -->
+<section class="chapter" id="ch-32" data-foot="32 — The agentic harness">
+  <div class="chnum">Chapter 32</div>
+  <h1 class="title">The agentic harness</h1>
+  <p class="lede">
+    Scenarios as data, expectations over traces, and never over prose.
+  </p>
+
+  <h2>A scenario is a file, not a method</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Scenario.java"
+       data-from="public record Scenario\(" data-to="List<String> tags\) \{"></pre>
+
+  <p>
+    Scenarios are data for the same reason descriptors are. A selection suite written as JUnit
+    methods is a suite only a Java developer can extend, and the people who know what a customer
+    will actually say are not Java developers. A scenario file can be written by the product owner
+    who took the support call.
+  </p>
+
+  <h2>Five expectations, five different questions</h2>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.3in">Field</th><th>Asks</th></tr></thead>
+    <tbody>
+      <tr><td class="k">expectTools</td><td>Did it reach for the right tool? The headline number,
+        and the least interesting on its own.</td></tr>
+      <tr><td class="k">forbidTools</td><td>Did it reach for something it should not have? Usually
+        the more interesting half, and the half nobody writes.</td></tr>
+      <tr><td class="k">expectOrder</td><td>Did it do things in the right sequence? Preview before
+        place; list before cancel.</td></tr>
+      <tr><td class="k">expectArguments</td><td>Did it get the arguments right, not just the tool?
+        The right tool with the wrong account is not a near miss.</td></tr>
+      <tr><td class="k">expectRefusal</td><td>Did it decline, when declining was the correct
+        answer?</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    And one field that changes the world rather than observing it:
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Scenario.java"
+       data-from="Whether the harness should answer yes to approvals" data-to="^    \}"></pre>
+
+  <p>
+    Off by default, because the default question an evaluation suite should ask about a trading tool
+    is whether the agent <em>stops</em>. A scenario that reaches a tier 2 or 3 tool with this off
+    gets <span class="mono">APPROVAL_REQUIRED</span>, and the correct trajectory ends there.
+  </p>
+
+  <h2>Expectations are about the trace</h2>
+
+  <p>
+    Every assertion in the harness is about the <span class="icode">ToolTrace</span> or about a
+    coarse property of the reply. Never about the reply's wording.
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Expectations.java"
+       data-from="Checking one run against what the scenario expected" data-to="public final class Expectations"></pre>
+
+  <p>
+    This constraint is what makes an agent suite maintainable. Assert that a reply &ldquo;mentions
+    the buying power&rdquo; and the test fails the day the model phrases it differently, which is a
+    Tuesday. Assert that the agent called <span class="icode">brokerage_balances_get</span> with this
+    account and did not call <span class="icode">brokerage_order_place</span>, and the test keeps
+    meaning the same thing across model versions.
+  </p>
+
+  <h2>The one place prose is examined</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Expectations.java"
+       data-from="    private static final List<String> REFUSAL_MARKERS" data-to="^            .not advice., .cannot advise., .restricted., .would need.\);"></pre>
+
+  <p>
+    A coarse check for the <em>shape</em> of a refusal rather than for a phrase. It is the weakest
+    assertion in the harness and the book should say so: a better refusal check, once a team has the
+    appetite, is a second model asked a yes-or-no question about the reply. The structure here
+    leaves room for that without requiring it.
+  </p>
+
+  <h2>Argument checks</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Expectations.java"
+       data-from="Argument checks are per named tool" data-to="^    \}"></pre>
+
+  <p>
+    Only the named fields are examined, and a scenario passes if <em>any</em> call to that tool
+    matched. Both choices are deliberate: pinning every field makes the suite brittle against a
+    model that correctly supplies an optional parameter, and pinning the first call makes it brittle
+    against a model that reasonably retried.
+  </p>
+
+  <p>
+    The matcher compares containers as canonical JSON, which is what lets a scenario pin a batch:
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Expectations.java"
+       data-from="        if \(actual.isArray\(\) \|\| actual.isObject\(\)\)" data-to="^        \}"></pre>
+
+  <h2>A fresh world per scenario</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/HarnessContext.java"
+       data-from="The whole system, built by hand in one method" data-to="public class HarnessContext"></pre>
+
+  <p>
+    No container, no profiles, no component scan. That is a property of a good test harness rather
+    than a shortcut: a suite that boots an application context tests the application context too,
+    and when it fails you are debugging dependency injection instead of a descriptor. Twenty lines
+    of constructor calls are also the clearest statement of what the system is made of that exists
+    anywhere in the project.
+  </p>
+
+  <p>
+    Each scenario gets its own instance, so one cannot leave an order in the book for the next to
+    trip over. Evaluation suites that share state are the reason an agent suite passes on its own
+    and fails in the full run.
+  </p>
+
+  <h2>Standing in for the human</h2>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ApprovalGate.java"
+       data-from="Let the harness answer yes on the human" data-to="^    \}"></pre>
+
+  <p>
+    A named, visible method rather than a quiet default, because the two things it makes possible
+    are both easy to get wrong. A trading scenario that never gets past the gate is not testing the
+    place tool at all; and a suite that approves everything without saying so is not testing the
+    gate. The trading suite turns it on explicitly and the refusal suite leaves it off, which is how
+    both get covered.
+  </p>
+
+  <pre data-src="test-harness/src/test/java/com/example/brokerage/harness/EvaluationSuiteTest.java"
+       data-from="theApprovalGateIsUnderTestByDefault" data-to="^    \}" data-doc="no"></pre>
+</section>
+
+<!-- =============================================================== chapter 33 -->
+<section class="chapter" id="ch-33" data-foot="33 — Cassettes">
+  <div class="chnum">Chapter 33</div>
+  <h1 class="title">Cassettes</h1>
+  <p class="lede">
+    Why the suite runs offline, what that still catches, and &mdash; precisely &mdash; what it does
+    not.
+  </p>
+
+  <p>
+    Every team building agents hits this about three weeks in. Evaluating tool selection means
+    asking a frontier model what it would do, which means a network call, a bill, a minute of
+    latency and a result that is not quite the same twice. Put that in CI and the suite is slow,
+    expensive and flaky, so it gets disabled and the tools drift unchecked.
+  </p>
+
+  <h2>Record the model's half, replay it through the real system</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Cassette.java"
+       data-from="One recorded conversation: the choices Claude made" data-to="public record Cassette"></pre>
+
+  <p>
+    This is the paragraph to read twice. What the cassette holds is <em>only</em> the model's part:
+    which tool it chose, with what arguments, in what order, and the prose it ended on. The tools
+    themselves are not recorded.
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/HarnessRunner.java"
+       data-from="Replay the recorded choices through the real tools" data-to="        Cassette cassette;"></pre>
+
+  <p>
+    On replay the real pipeline runs, the real handlers run, the real schemas validate, the real
+    entitlements are checked and the real approval gate fires. So a replayed scenario still fails
+    when somebody:
+  </p>
+
+  <ul class="tight">
+    <li>narrows a pattern, so the recorded arguments stop validating;</li>
+    <li>renames an output field, so the payload stops matching its own schema;</li>
+    <li>raises a risk tier, so a scenario that used to reach a tool now stops at the gate;</li>
+    <li>drops an approval requirement, so the refusal suite notices;</li>
+    <li>breaks a handler, in any of the ordinary ways;</li>
+    <li>removes a tool, so the call becomes <span class="mono">UNKNOWN_TOOL</span>.</li>
+  </ul>
+
+  <h2>What it cannot catch</h2>
+
+  <div class="callout warn"><p>
+    <span class="lbl">A change to a description.</span> The model's <em>reading</em> of the
+    description is what was recorded, so editing one and replaying tells you nothing about whether
+    the edit helped. That is not a limitation to work around; it is the exact boundary of what a
+    recording means, and the suite has a live mode for precisely this reason.
+  </p></div>
+
+  <p>
+    The practical rule: wire the live suite to descriptor changes in CI. Edit a description and the
+    cassettes for that tool are stale by definition, so that pull request runs against the model and
+    the others do not.
+  </p>
+
+  <h2>Recorded or authored</h2>
+
+  <p>
+    A cassette says where it came from, and the distinction is published rather than implied.
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Cassette.java"
+       data-from="Where this cassette came from" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    The cassettes committed in this repository are <span class="mono">AUTHORED</span>: they are the
+    trajectories the catalog's authors intend, written by hand. They exercise the whole runtime and
+    they are <em>not</em> evidence about what Claude chose. Saying so in the file, and surfacing it
+    in the suite, is the difference between an honest harness and one that quietly claims evidence
+    it does not have.
+  </p>
+
+  <pre data-src="test-harness/src/test/java/com/example/brokerage/harness/EvaluationSuiteTest.java"
+       data-from="cassettesAreAccountedFor" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    Run <span class="mono">./harness.sh --record</span> with a key and they are replaced with real
+    recordings.
+  </p>
+
+  <h2>The one thing replay cannot be byte for byte</h2>
+
+  <p>
+    A recorded confirmation token is a dead token: single use, long expired, bound to a session that
+    no longer exists. So the recorder rewrites it to a placeholder, and the replay substitutes the
+    live token issued by the preview that ran a moment earlier.
+  </p>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/HarnessRunner.java"
+       data-from="Rewrite a recorded token to the placeholder" data-to="^    \}"></pre>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/HarnessRunner.java"
+       data-from="        String liveToken = null;" data-to="^        \}" data-doc="no"></pre>
+
+  <p>
+    That substitution is the only place replay is not exact, and it is the place it has to be. Note
+    what it does <em>not</em> do: it does not bypass the token check. The live token still has to
+    be minted by a real preview, bound to the real ticket, and spent once &mdash; so a scenario
+    whose recorded place call does not match its recorded preview still fails.
+  </p>
+
+  <h2>Three modes, one scenario file</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/HarnessRunner.java"
+       data-from="    public enum Mode \{" data-to="^    \}"></pre>
+
+  <p>
+    The two modes are not two test suites. They run the same scenario, against the same registry,
+    through the same pipeline, and check the same expectations. The only difference is where the
+    model's choices come from: the network, or a file recorded from the network. That is what makes
+    the offline suite worth trusting &mdash; it is not a mock of the system, it is the system with a
+    recording of the model's half of the conversation.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 34 -->
+<section class="chapter" id="ch-34" data-foot="34 — Four scores and a pipeline">
+  <div class="chnum">Chapter 34</div>
+  <h1 class="title">Four scores and a pipeline</h1>
+  <p class="lede">
+    What to measure, what to gate on, and what to do when a number drops.
+  </p>
+
+  <h2>Four numbers, not one</h2>
+
+  <pre data-src="test-harness/src/main/java/com/example/brokerage/harness/Report.java"
+       data-from="The scores, and the per-scenario detail" data-to="public record Report"></pre>
+
+  <p>
+    They fail independently, and a single pass rate hides which one moved. The most common mistake
+    is to report selection accuracy alone, which is the easy half: an agent can score a hundred
+    percent on selection and still be unshippable because it answers questions it has no business
+    answering.
+  </p>
+
+  <h2>A run</h2>
+
+  <pre data-file="harness-run.txt" data-lang="text"
+       data-from="brokerage-refusals" data-to="elapsed"
+       data-label="./harness.sh, offline" data-wrap="no"></pre>
+
+  <p>
+    Thirty scenarios in under a second, no key, no network. The per-scenario line shows the path the
+    agent took, which is usually enough to see what went wrong without opening the report.
+  </p>
+
+  <h2>Reading a failure</h2>
+
+  <p>
+    A failure names the kind, not just the fact, and every kind suggests a different fix.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.35in">Kind</th><th>Usually means</th></tr></thead>
+    <tbody>
+      <tr><td class="k">tool-not-called</td>
+        <td>Two descriptions did not distinguish themselves, or the expected tool's
+          &ldquo;when to use&rdquo; does not use the customer's words.</td></tr>
+      <tr><td class="k">forbidden-tool</td>
+        <td>A missing negative. The forbidden tool's description does not say when not to use it.</td></tr>
+      <tr><td class="k">out-of-order</td>
+        <td>A prerequisite the producer graph does not express, or a description that states a
+          sequence the schema does not enforce.</td></tr>
+      <tr><td class="k">wrong-arguments</td>
+        <td>An unconstrained parameter, a missing default, or a property description that does not
+          say what the units are.</td></tr>
+      <tr><td class="k">not-refused</td>
+        <td>The conduct prompt, not a tool. Either it does not cover the case or it is being
+          outweighed by a tool that looks like it would help.</td></tr>
+      <tr><td class="k">too-many-calls</td>
+        <td>A singular tool where a batch belongs, or a default that returns too little and forces
+          a second call.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Publishing the scores back into the catalog</h2>
+
+  <p>
+    Each tool's governance block carries its suite and its last scores, which is what turns the
+    number into an assertion somebody can check rather than a number somebody typed.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/catalog/brokerage_order_place.json"
+       data-from=".evaluation.: \{" data-to=".argumentAccuracy.:"></pre>
+
+  <p>
+    And the linter requires it on anything at tier 2 or above:
+  </p>
+
+  <pre data-src="tool-contract/src/main/java/com/example/brokerage/tooling/contract/ConformanceLinter.java"
+       data-from="        if \(g.evaluation\(\) == null && g.riskTier\(\) >= 2\)" data-to="^        \}"></pre>
+
+  <h2>What to gate on</h2>
+
+  <p>
+    A suggestion, from a system that has to keep shipping.
+  </p>
+
+  <table>
+    <thead><tr><th style="width:1.5in">Gate</th><th style="width:0.9in">Runs</th><th>Blocks on</th></tr></thead>
+    <tbody>
+      <tr><td><b>Conformance</b></td><td>every commit</td>
+        <td>Any error. No exceptions, because the registry will not start anyway.</td></tr>
+      <tr><td><b>Contracts and trajectories</b></td><td>every commit</td>
+        <td>Any failure.</td></tr>
+      <tr><td><b>Replayed suites</b></td><td>every commit</td>
+        <td>Any failure. They are free.</td></tr>
+      <tr><td><b>Live suites</b></td><td>descriptor changes, and nightly</td>
+        <td>Refusal accuracy below 100 percent. Selection accuracy below the recorded baseline by
+          more than a scenario. Nothing else &mdash; a single flaky scenario should not stop a
+          release, and a trend should.</td></tr>
+      <tr><td><b>Re-certification</b></td><td>quarterly, per L3 tool</td>
+        <td>A human reading the descriptor against the live catalog.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout"><p>
+    <span class="lbl">Refusal accuracy is the one to gate hardest on.</span> A selection regression
+    costs a turn and an apology. A refusal regression means the agent gave investment advice, or
+    acted without approval, and those are not recoverable by trying again.
+  </p></div>
+
+  <h2>When a number drops after a model upgrade</h2>
+
+  <p>
+    It will, eventually, and in both directions. The sequence that works:
+  </p>
+
+  <ol class="steps">
+    <li><b>Re-record, do not re-write.</b> Run the live suite against the new model and look at the
+      traces before touching a description. Half the time the new behavior is better and the
+      scenario's expectation was over-specified.</li>
+    <li><b>Separate selection from arguments.</b> A drop in argument accuracy with selection
+      unchanged is almost always a schema that was under-constrained and that the old model guessed
+      right about.</li>
+    <li><b>Check the forbidden lists.</b> A more capable model is often a more <em>eager</em> one,
+      and the first thing to move is usually over-calling rather than wrong-calling.</li>
+    <li><b>Only then edit prose</b>, one description at a time, re-running the single scenario. A
+      description edited to fix one scenario frequently breaks a neighbor, which is what the rest
+      of the suite is for.</li>
+  </ol>
+</section>

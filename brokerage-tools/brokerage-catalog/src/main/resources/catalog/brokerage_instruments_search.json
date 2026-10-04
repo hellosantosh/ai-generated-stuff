@@ -1,0 +1,117 @@
+{
+  "name": "brokerage_instruments_search",
+  "title": "Find a tradeable instrument by name or ticker",
+  "description": "Resolves what a customer said into candidate instruments, with the ticker, full legal name, exchange, type and sector of each. Use whenever the customer names a company rather than a ticker, when a ticker they gave does not look valid, or before any order where you are not certain which listing they mean. Do not use to get a price — that is brokerage_quotes_get — and do not use to find what the customer already owns, which is brokerage_positions_list and does not need a search at all. Read the candidates as a list to choose between, not an answer: when more than one is returned, or when exactMatch is false, name the alternatives and ask the customer which they mean. Several real cases need this. Apple is both AAPL and APLE, a hospitality trust. Alphabet trades as GOOGL and GOOG with different voting rights. Share classes carry a dot, as in BRK.B. Picking the first candidate silently is how the wrong company gets bought, and that error is not reversible once it fills. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "description": "What the customer called it: a company name, a partial name, or a ticker. Pass their words; do not clean them up first."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10,
+        "default": 5,
+        "description": "How many candidates to return at most. Five is usually enough to ask a sensible question."
+      }
+    },
+    "required": ["query"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "exactMatch": {
+        "type": "boolean",
+        "description": "True when the query was itself a valid ticker and matched exactly one listing. False means the candidates are guesses and the customer should be asked."
+      },
+      "candidates": {
+        "type": "array",
+        "maxItems": 10,
+        "description": "Candidate instruments, best match first. Empty when nothing matched, which is an answer in itself: say so rather than trying variations.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "symbol": {
+              "type": "string",
+              "pattern": "^[A-Z]{1,5}(\\.[A-Z])?$",
+              "description": "The ticker to pass to the other tools. Pass it exactly as returned, including any dot."
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 120,
+              "description": "Full legal name. Read this back to the customer when disambiguating; the ticker alone will not settle it."
+            },
+            "exchange": {
+              "type": "string",
+              "maxLength": 16,
+              "description": "Primary listing venue, such as NASDAQ or NYSE."
+            },
+            "type": {
+              "type": "string",
+              "enum": ["EQUITY", "ETF", "ADR"],
+              "description": "What kind of instrument it is. An ETF is a fund, not a company, which changes what a question about earnings means."
+            },
+            "sector": {
+              "type": "string",
+              "maxLength": 48,
+              "description": "Sector classification, useful when the customer asks about concentration."
+            },
+            "marginEligible": {
+              "type": "boolean",
+              "description": "Whether it can be bought on margin. False means it needs settled cash even in a margin account."
+            }
+          },
+          "required": ["symbol", "name", "exchange", "type", "sector", "marginEligible"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["exactMatch", "candidates"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "brokerage-platform",
+        "contact": "brokerage-platform@example.com",
+        "escalation": "pagerduty://brokerage-platform"
+      },
+      "dataClassification": "public",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:reference:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.instruments.search",
+        "retention": "P2Y",
+        "regulatoryBasis": ["books-and-records"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 90 },
+      "rateLimit": { "perPrincipalPerMinute": 120, "perPrincipalPerDay": 5000 },
+      "dependencies": ["instrument-master"],
+      "availability": { "slo": "99.9", "killSwitch": "tools.brokerage.reference" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.97,
+        "refusalAccuracy": 0.98,
+        "argumentAccuracy": 0.99
+      }
+    }
+  }
+}

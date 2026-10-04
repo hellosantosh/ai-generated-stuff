@@ -1,0 +1,17 @@
+{
+  "ok" : false,
+  "error" : {
+    "code" : "APPROVAL_REQUIRED",
+    "message" : "This action needs the customer's explicit approval before it can run. They have been shown: Place this order?\n\n  BUY 50 AAPL in Everyday brokerage (Margin)\n  at market, DAY\n\n  Estimated cost   10978.20 USD\n  Buying power after   568121.16 USD\n\nThis sends a real order to the market and cannot be undone.",
+    "remediation" : "Wait for the customer to approve. If they say yes, call this tool again with exactly the same arguments. If they say no, stop and do not look for another way.",
+    "retryable" : false,
+    "approvalReference" : "apr_fbf733f1203b8e033efa902f"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_3af47e7fdaf248a7a1fe",
+    "complete" : false,
+    "latencyMs" : 0
+  }
+}

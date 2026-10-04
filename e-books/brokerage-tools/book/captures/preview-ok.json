@@ -1,0 +1,30 @@
+{
+  "ok" : true,
+  "data" : {
+    "canPlace" : true,
+    "blockers" : [ ],
+    "warnings" : [ ],
+    "estimate" : {
+      "referencePrice" : "219.56",
+      "estimatedPrincipal" : "10978.20",
+      "commission" : "0.00",
+      "estimatedCost" : "10978.20",
+      "buyingPowerBefore" : "579099.35",
+      "buyingPowerAfter" : "568121.16",
+      "currency" : "USD",
+      "isEstimate" : true
+    },
+    "confirmationToken" : "cnf_482AM8N8V517928DNCEYMG33",
+    "expiresAt" : "2026-10-01T14:32:00Z",
+    "summary" : "BUY 50 AAPL at market, DAY — estimated 10978.20 USD, leaving 568121.16 buying power",
+    "session" : "REGULAR",
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_c0d58f515c9846bcafba",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

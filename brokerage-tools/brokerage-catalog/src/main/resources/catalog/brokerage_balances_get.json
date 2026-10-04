@@ -1,0 +1,84 @@
+{
+  "name": "brokerage_balances_get",
+  "title": "Get the money in one account",
+  "description": "Returns the money view of one account: ledger cash, settled cash, cash reserved for working orders, buying power, market value of holdings, total equity, any margin loan, and the maintenance requirement and excess. Use when the customer asks what they have, what they can spend, whether they can afford something, or how much the account is worth. Do not use to decide whether a specific order would be accepted — brokerage_order_preview applies every rule to the actual ticket and is the only correct answer to that question. Read the right field for the question asked, because four of them are different numbers and the customer means a different one each time. buyingPower is what can be spent on a new purchase now. settledCash is what can be spent without risking a good-faith violation in a cash account. totalEquity is what the statement shows. cash is the ledger figure and is the one least likely to be what they meant. In a cash account, buyingPower never exceeds settledCash. Say which number you are quoting. This changes nothing and may be called freely.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "accountId": {
+        "type": "string",
+        "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$",
+        "description": "The account to report on, from brokerage_accounts_list."
+      }
+    },
+    "required": ["accountId"],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$defs": {
+      "decimal": {
+        "type": "string",
+        "pattern": "^-?[0-9]{1,15}(\\.[0-9]{1,6})?$",
+        "description": "An amount as a decimal string, never a JSON number, so that no cent is lost to binary floating point."
+      }
+    },
+    "type": "object",
+    "properties": {
+      "accountId": { "type": "string", "pattern": "^acct_[0-9A-HJKMNP-TV-Z]{16}$", "description": "The account these figures are for." },
+      "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "ISO 4217 currency for every amount here." },
+      "cash": { "$ref": "#/$defs/decimal", "description": "Ledger cash. Includes deposits that have not settled, so it can overstate what is spendable today." },
+      "settledCash": { "$ref": "#/$defs/decimal", "description": "Cash that has settled and may be spent without a good-faith violation. The honest answer in a cash account." },
+      "cashReservedForOrders": { "$ref": "#/$defs/decimal", "description": "Cash already committed to working buy orders. Already subtracted from buyingPower." },
+      "buyingPower": { "$ref": "#/$defs/decimal", "description": "What can be spent on a new purchase right now. The number to quote when the customer asks what they can buy with." },
+      "marketValue": { "$ref": "#/$defs/decimal", "description": "Current market value of the holdings in this account." },
+      "totalEquity": { "$ref": "#/$defs/decimal", "description": "Cash plus market value less any margin loan. What the statement calls the account value." },
+      "marginLoan": { "$ref": "#/$defs/decimal", "description": "Amount borrowed against the account. Zero in cash and retirement accounts." },
+      "maintenanceRequirement": { "$ref": "#/$defs/decimal", "description": "Equity the account must keep to hold its current positions on margin." },
+      "maintenanceExcess": { "$ref": "#/$defs/decimal", "description": "Equity above the requirement. If this is near zero or negative, a margin call is close; say so." },
+      "dayTradesUsed": { "type": "integer", "minimum": 0, "description": "Day trades in the trailing five sessions. Four or more in a margin account under 25,000 triggers a restriction." },
+      "asOf": { "type": "string", "format": "date-time", "description": "When these figures were computed, in UTC." }
+    },
+    "required": ["accountId", "currency", "cash", "settledCash", "cashReservedForOrders", "buyingPower", "marketValue", "totalEquity", "marginLoan", "maintenanceRequirement", "maintenanceExcess", "dayTradesUsed", "asOf"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true,
+    "openWorldHint": false
+  },
+  "_meta": {
+    "com.example.tooling/governance": {
+      "version": "1.0.0",
+      "lifecycle": "active",
+      "conformanceLevel": "L2",
+      "riskTier": 0,
+      "owner": {
+        "team": "brokerage-platform",
+        "contact": "brokerage-platform@example.com",
+        "escalation": "pagerduty://brokerage-platform"
+      },
+      "dataClassification": "customer-confidential",
+      "containsPii": false,
+      "piiFields": [],
+      "entitlements": ["brokerage:balances:read"],
+      "approval": { "mode": "none" },
+      "recordKeeping": {
+        "auditEvent": "tool.balances.get",
+        "retention": "P6Y",
+        "regulatoryBasis": ["books-and-records"]
+      },
+      "cost": { "class": "low", "p95LatencyMs": 160 },
+      "rateLimit": { "perPrincipalPerMinute": 60, "perPrincipalPerDay": 3000 },
+      "dependencies": ["ledger", "margin-engine", "market-data-feed"],
+      "availability": { "slo": "99.95", "killSwitch": "tools.brokerage.balances" },
+      "evaluation": {
+        "suite": "evals/brokerage-reads",
+        "lastRunAt": "2026-09-28T07:00:00Z",
+        "selectionAccuracy": 0.98,
+        "refusalAccuracy": 0.99,
+        "argumentAccuracy": 1.0
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "ok" : true,
+  "data" : {
+    "accountId" : "acct_TF7KNH2A136X695X",
+    "symbol" : "VOO",
+    "taxable" : false,
+    "defaultMethod" : "FIFO",
+    "lots" : [ {
+      "lotId" : "lot_R0DQ12JJ9R13",
+      "quantity" : 70,
+      "costBasisPerShare" : "440.15",
+      "acquiredOn" : "2021-04-23",
+      "longTerm" : true,
+      "unrealizedPnl" : "9775.50",
+      "washSaleRisk" : false
+    } ],
+    "asOf" : "2026-10-01T14:30:00Z"
+  },
+  "meta" : {
+    "asOf" : "2026-10-01T14:30:00Z",
+    "toolVersion" : "1.0.0",
+    "requestId" : "req_e877bd74580348af9159",
+    "complete" : true,
+    "latencyMs" : 0
+  }
+}

@@ -1,0 +1,988 @@
+<!-- ============================================================= PART IV plate -->
+<section class="plate">
+  <div class="bg"></div><div class="gridbg"></div>
+  <div class="inner">
+    <div class="pno">Part IV</div>
+    <h1>Building the catalog</h1>
+    <p class="pl">
+      Fourteen tools, built in the order you would build them: the entry point first, then the
+      reads that make a conversation possible, then the four that can change a customer's position.
+    </p>
+    <div class="art">
+      <svg viewBox="0 0 620 160" role="img"
+           aria-label="A capability row becomes a descriptor, a handler and a test, each checked
+                       against the one before">
+        <defs>
+          <marker id="p4-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8fa2d4"/>
+          </marker>
+        </defs>
+        <g font-family="monospace" font-size="9" text-anchor="middle" fill="#dce5ff">
+          <rect x="8" y="58" width="116" height="34" rx="5" fill="rgba(255,186,84,.16)"
+                stroke="rgba(255,203,122,.5)"/><text x="66" y="80" fill="#ffcb7a">capability row</text>
+          <rect x="166" y="58" width="116" height="34" rx="5" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/><text x="224" y="80">descriptor</text>
+          <rect x="324" y="58" width="116" height="34" rx="5" fill="rgba(255,255,255,.06)"
+                stroke="rgba(255,255,255,.22)"/><text x="382" y="80">handler</text>
+          <rect x="482" y="58" width="128" height="34" rx="5" fill="rgba(111,224,187,.14)"
+                stroke="rgba(111,224,187,.45)"/><text x="546" y="80" fill="#8fe8c8">contract test</text>
+        </g>
+        <path d="M124 75 L160 75" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p4-ar)"/>
+        <path d="M282 75 L318 75" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p4-ar)"/>
+        <path d="M440 75 L476 75" stroke="#8fa2d4" stroke-width="1.1" marker-end="url(#p4-ar)"/>
+        <g font-family="monospace" font-size="7" fill="#7f8db8" text-anchor="middle">
+          <text x="142" y="104">name, tier</text>
+          <text x="300" y="104">schema</text>
+          <text x="458" y="104">claims</text>
+        </g>
+        <path d="M546 100 C546 130, 66 130, 66 100" stroke="#ffcb7a" stroke-width="0.9"
+              stroke-dasharray="4 3" fill="none" marker-end="url(#p4-ar)"/>
+        <text x="306" y="146" font-family="monospace" font-size="7.5" fill="#ffcb7a"
+              text-anchor="middle">every arrow is checked by the build</text>
+      </svg>
+    </div>
+    <div class="inthis">
+      <b>15</b> The first tool, end to end &nbsp;&middot;&nbsp;
+      <b>16</b> The nine other reads &nbsp;&middot;&nbsp;
+      <b>17</b> Preview and place &nbsp;&middot;&nbsp;
+      <b>18</b> Replace and cancel &nbsp;&middot;&nbsp;
+      <b>19</b> What a schema cannot say
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== chapter 15 -->
+<section class="chapter" id="ch-15" data-foot="15 — The first tool, end to end">
+  <div class="chnum">Chapter 15</div>
+  <h1 class="title">The first tool, end to end</h1>
+  <p class="lede">
+    From a capability row to a passing test, with every decision shown. If you read one chapter of
+    this book before writing a tool, read this one.
+  </p>
+
+  <p>
+    We are building <span class="icode">brokerage_accounts_list</span>: the tool that answers
+    &ldquo;what accounts do I have?&rdquo;. It is the right first tool for a reason that is not
+    obvious &mdash; it is the only tool in the catalog that consumes nothing, which makes it the
+    only possible starting point for every conversation that touches a customer's money.
+  </p>
+
+  <h2>Step 1: the capability row</h2>
+
+  <p>
+    Before anything else, a row in the ontology. This is the design, and everything after it is
+    implementation.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/ontology/brokerage.ontology.json"
+       data-from=".tool.: .brokerage_accounts_list" data-to="only tool that needs nothing to run"></pre>
+
+  <p>
+    Four decisions are made in those six lines, and the build will hold us to all of them.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.2in">Decision</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td><b>operation: list</b></td>
+        <td>Read-only and idempotent, by the ontology's own declaration. The annotations are now
+          determined, not chosen.</td></tr>
+      <tr><td><b>entity: Account</b></td>
+        <td>Classification floor <span class="mono">customer-confidential</span>, entitlement floor
+          <span class="mono">brokerage:accounts:read</span>.</td></tr>
+      <tr><td><b>cardinality: many</b></td>
+        <td>The plural term, so the name is <span class="mono">accounts</span> and not
+          <span class="mono">account</span>.</td></tr>
+      <tr><td><b>consumes: []</b></td>
+        <td>No prerequisites. This tool appears in the generated briefing as a starting point and
+          in the producer graph in column zero.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    The name follows: <span class="mono">brokerage</span> +
+    <span class="mono">accounts</span> + <span class="mono">list</span>. The risk tier follows from
+    the operation: <span class="tier t0">T0</span>. The approval mode follows from the tier:
+    <span class="mono">none</span>. None of those three is a judgment call now.
+  </p>
+
+  <h2>Step 2: the description</h2>
+
+  <p>
+    Write this before the schema. It is the field the model's choice turns on, and writing it first
+    tends to expose that the tool is doing two things.
+  </p>
+
+  <div class="panel">
+    <p class="small" style="margin-bottom:5pt">
+      <b>What it does.</b> <i>Returns every brokerage account the signed-in customer holds, with its
+      identifier, nickname, type, currency and whether it can currently trade.</i>
+    </p>
+    <p class="small" style="margin-bottom:5pt">
+      <b>When to use it.</b> <i>Use when the customer mentions an account by nickname, refers to
+      &ldquo;my account&rdquo; without saying which, or when any other brokerage tool needs an
+      accountId and none is in hand yet &mdash; this is the only tool that needs nothing to run, so
+      it is the safe first call.</i>
+    </p>
+    <p class="small" style="margin-bottom:5pt">
+      <b>When not to.</b> <i>Do not use to find out how much money is in an account; that is
+      brokerage_balances_get.</i>
+    </p>
+    <p class="small" style="margin-bottom:5pt">
+      <b>How to read it.</b> <i>Read the type field before advising on anything: a CASH account
+      cannot borrow, an IRA_TRADITIONAL or ROTH_IRA account cannot sell short, and any account whose
+      tradeable field is false cannot place orders at all. Read restriction when tradeable is false
+      and tell the customer the reason rather than retrying.</i>
+    </p>
+    <p class="small" style="margin-bottom:0">
+      <b>And the useful behavior.</b> <i>When the customer has more than one account and has not
+      said which, ask; nickname and type together are usually enough for them to choose. This
+      changes nothing and may be called freely.</i>
+    </p>
+  </div>
+
+  <p>
+    982 characters. Notice how much of it is about the <em>result</em> rather than the call. That is
+    the right proportion for a read tool: the call is trivial and the interpretation is where an
+    agent goes wrong.
+  </p>
+
+  <h2>Step 3: the output schema</h2>
+
+  <p>
+    Also before the input schema, because what you return decides what the description had to say.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/resources/catalog/brokerage_accounts_list.json"
+       data-from=".outputSchema.: \{" data-to=".required.: ..accounts.." data-cap="one array, bounded, every property described"></pre>
+
+  <p>
+    Three decisions worth naming.
+  </p>
+
+  <h3>tradeable is computed, not inferred</h3>
+  <p>
+    The <span class="icode">restriction</span> field already tells a model that
+    <span class="icode">FROZEN</span> means no trading. The <span class="icode">tradeable</span>
+    boolean says it again, as a certainty rather than an inference. The general rule: <em>where a
+    conclusion matters and is cheap to compute, compute it.</em> A model is perfectly capable of
+    working it out, and &ldquo;perfectly capable&rdquo; is a per-call probability.
+  </p>
+
+  <h3>The enum includes null</h3>
+  <p>
+    <span class="icode">"enum": ["UNSETTLED_FUNDS", "DAY_TRADE_RESTRICTED", "FROZEN", null]</span>
+    with <span class="icode">"type": ["string", "null"]</span>. Null is a legitimate value &mdash;
+    it means healthy &mdash; and leaving it out of the enum would make every healthy account fail
+    the output validation the pipeline performs.
+  </p>
+
+  <h3>maxItems: 50</h3>
+  <p>
+    Nobody has fifty brokerage accounts. The bound is there because an unbounded array in a result
+    is an unbounded token bill, and the one customer who has forty is a customer this tool should
+    still work for.
+  </p>
+
+  <h2>Step 4: the input schema</h2>
+
+  <pre data-src="brokerage-catalog/src/main/resources/catalog/brokerage_accounts_list.json"
+       data-from=".inputSchema.: \{" data-to=".additionalProperties.: false" data-to-nth="1"></pre>
+
+  <p>
+    One optional boolean. The interesting part is what is <em>not</em> here: there is no
+    <span class="icode">customerId</span>. The customer is established by the runtime from the
+    session, and the linter rejects the parameter by name. This is the single most important line
+    of the chapter and it is a line that does not exist.
+  </p>
+
+  <h2>Step 5: the governance block</h2>
+
+  <pre data-src="brokerage-catalog/src/main/resources/catalog/brokerage_accounts_list.json"
+       data-from="com.example.tooling/governance" data-to=".cost.: \{"></pre>
+
+  <p>
+    Every field here was decided in step 1 or is a fact about who maintains the tool. The tier, the
+    approval mode and the entitlement all come from the ontology and are checked against it.
+  </p>
+
+  <h2>Step 6: the handler</h2>
+
+  <p>
+    And now the code, which is nineteen lines.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/AccountsListHandler.java"
+       data-from="    record AccountView" data-to="^\}" data-doc="no"></pre>
+
+  <p>
+    Read what it does not do. It does not validate arguments &mdash; the pipeline did. It does not
+    check entitlements &mdash; the pipeline did. It does not catch exceptions, wrap a result, write
+    an audit record or format an error. It takes the customer from the principal, maps four fields,
+    and stops.
+  </p>
+
+  <div class="callout"><p>
+    <span class="lbl">The handler-length heuristic.</span> If a handler is long, it is usually
+    because the tool is doing two things, and the fix is two tools. The second most common reason
+    is that it is re-validating arguments the pipeline already validated &mdash; which means
+    somebody did not trust the schema, and an untrusted schema is a schema the model is also being
+    misled by.
+  </p></div>
+
+  <h2>Step 7: register it</h2>
+
+  <p>
+    There is no registration step. The handler is a Spring component, the descriptor is a file, and
+    the registry matches them by name at startup. If either exists without the other the
+    application does not start:
+  </p>
+
+  <pre data-src="tool-runtime/src/main/java/com/example/brokerage/tooling/runtime/ToolRegistry.java"
+       data-from="            ToolHandler handler = byName.remove" data-io="" data-to="Either publish a descriptor or delete the handler"></pre>
+
+  <h2>Step 8: the test</h2>
+
+  <p>
+    Two tests, and neither of them re-checks the schema &mdash; the pipeline already validated the
+    payload against the descriptor's own output schema before the test saw it. What these assert
+    are the <em>claims the description makes</em>.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/HandlerContractTest.java"
+       data-from="accounts come back with the customer" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    And the one that matters more, which is about an account the customer does not hold:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/HandlerContractTest.java"
+       data-from="anotherCustomersAccountIsIndistinguishable" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    <span class="mono">NOT_FOUND</span> and not <span class="mono">NOT_ENTITLED</span>. An
+    authorization error tells the caller the account exists and belongs to somebody else; a
+    not-found error tells them nothing. Since an agent cannot act on either, there is no cost to
+    the uninformative answer and a real cost to the informative one &mdash; an enumeration oracle,
+    driven by a model that will happily try a hundred identifiers if a prompt suggests it.
+  </p>
+
+  <h2>Step 9: run it</h2>
+
+  <pre data-file="accounts-list.json" data-wrap="no"
+       data-label="the tool, called without a model"
+       data-cap="the same pipeline the model's calls go through"></pre>
+
+  <p>
+    Nine steps, one of which was writing nineteen lines of Java. That proportion is the point of
+    the whole book: in a well-built catalog the code is the small part, and the artifact that needs
+    care is the contract.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 16 -->
+<section class="chapter" id="ch-16" data-foot="16 — The nine other reads">
+  <div class="chnum">Chapter 16</div>
+  <h1 class="title">The nine other reads</h1>
+  <p class="lede">
+    Nine more tools, and eight ideas worth stealing.
+  </p>
+
+  <p>
+    The remaining read tools are variations on chapter 15, so rather than walking each one this
+    chapter takes the design decision each exists to demonstrate.
+  </p>
+
+  <h2>1. Batch, and name it plural</h2>
+
+  <p>
+    <span class="icode">brokerage_quotes_get</span> takes up to ten symbols. An agent comparing
+    three holdings will call a singular quote tool three times, and three round trips cost three
+    times the latency, three audit records and three opportunities for one to fail on its own.
+  </p>
+
+  <p>
+    Batching is the cheapest performance decision in a catalog and it is made in the descriptor
+    rather than the handler: the parameter is an array, the cardinality in the ontology is
+    <span class="mono">many</span>, and the name is therefore plural. The description then has to
+    say it out loud, because a model will otherwise do the obvious thing: <i>&ldquo;Pass every
+    symbol in one call rather than calling once per symbol.&rdquo;</i>
+  </p>
+
+  <p>
+    There is an evaluation scenario that asserts exactly this, and it is the one that would catch a
+    regression if somebody split the tool.
+  </p>
+
+  <pre data-src="test-harness/src/main/resources/evals/brokerage-reads.json"
+       data-from="reads-04-price-of-three" data-to="batching" data-label="evals/brokerage-reads.json"></pre>
+
+  <h2>2. Name what you could not do</h2>
+
+  <p>
+    The same tool returns an <span class="icode">unresolved</span> array. A tool that quietly drops
+    the symbols it could not price leaves the agent to notice that it asked for three and got two,
+    and it will not notice.
+  </p>
+
+  <pre data-file="quotes-unresolved.json" data-wrap="no"
+       data-label="one symbol that does not exist, named rather than dropped"></pre>
+
+  <h2>3. Refuse to choose</h2>
+
+  <p>
+    <span class="icode">brokerage_instruments_search</span> is the only tool here whose entire
+    design is a refusal. It returns candidates and an <span class="icode">exactMatch</span> flag,
+    and leaves the choosing to the agent, which will put it to the customer.
+  </p>
+
+  <pre data-file="search-apple.json" data-wrap="no"
+       data-label="two listings match the word Apple"></pre>
+
+  <p>
+    The temptation to choose is strong, because ninety percent of queries have an obvious answer and
+    returning one row makes the agent's job easier. The ten percent is the problem: &ldquo;buy me
+    some Apple&rdquo; has two plausible tickers, &ldquo;buy Google&rdquo; has two share classes, and
+    an order is not reversible. A tool that silently resolves ambiguity has moved a decision from
+    the customer to a ranking function, and nobody reviewed the ranking function.
+  </p>
+
+  <p>
+    When the query <em>is</em> unambiguous the tool says so, so the agent need not ask:
+  </p>
+
+  <pre data-file="search-exact.json" data-wrap="no" data-label="an exact ticker needs no question"></pre>
+
+  <h2>4. Compute what the model would have to</h2>
+
+  <p>
+    <span class="icode">brokerage_price_history_get</span> returns bars and also the period high,
+    the period low and the total return. A model given 120 rows of OHLCV will read some of them and
+    do arithmetic in its head, and the arithmetic it is most likely to get wrong is the one it is
+    most likely to be asked for.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">A rule worth generalizing</div>
+    <p style="margin-bottom:0">
+      If a model will have to compute something from your payload, and the computation is
+      deterministic, compute it yourself. Payload size and arithmetic error go down together.
+    </p>
+  </div>
+
+  <p>
+    The same idea appears in <span class="icode">brokerage_positions_list</span>, which carries
+    <span class="icode">portfolioWeight</span> per holding. A question about concentration is then
+    one tool call and no division.
+  </p>
+
+  <h2>5. Order the result</h2>
+
+  <p>
+    Positions come back largest first. This is not cosmetic: a model reads a list from the top, and
+    a long list from the top only. Putting the largest holdings first means that whatever gets
+    dropped from a truncated answer is the part that mattered least. Ordering a result is the
+    cheapest form of prioritization a tool has.
+  </p>
+
+  <h2>6. Default to the question that gets asked</h2>
+
+  <p>
+    <span class="icode">brokerage_orders_list</span> defaults <span class="icode">state</span> to
+    <span class="mono">WORKING</span>. &ldquo;Do I have any orders open?&rdquo; is the question nine
+    times in ten, and a tool whose default is six months of history makes the model pay for the
+    other one and then summarize the wrong thing.
+  </p>
+
+  <p>
+    Defaults in a tool schema are not conveniences. They are the behavior you get, because a model
+    omits an optional parameter far more often than it sets one.
+    <span class="icode">brokerage_executions_list</span> makes the same decision with a 30-day
+    window.
+  </p>
+
+  <h2>7. Cursors, never page numbers</h2>
+
+  <p>
+    The order book moves while the agent reads it. Page two of an offset-paginated list can repeat
+    a row or skip one, and the agent will report whatever it was handed.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/Cursors.java"
+       data-from="^final class Cursors" data-to="^    static int offset" data-doc="no"
+       data-cap="opaque on purpose: the encoding is the contract, not the content"></pre>
+
+  <p>
+    Two properties matter. The cursor is <b>opaque</b>, so moving to a keyset cursor over
+    <span class="icode">(placedAt, orderId)</span> later is a day no caller has to change. And a
+    malformed cursor is an <span class="mono">INVALID_ARGUMENT</span> rather than a silent reset to
+    the first page &mdash; because silently starting over means an agent paging through a long list
+    can loop forever, each time reporting the same first page as new.
+  </p>
+
+  <pre data-file="error-cursor.json" data-wrap="no" data-label="a cursor this tool did not issue"></pre>
+
+  <h2>8. Say when the answer does not apply</h2>
+
+  <p>
+    <span class="icode">brokerage_tax_lots_list</span> returns a <span class="icode">taxable</span>
+    flag. In a retirement account none of the holding-period and wash-sale machinery means anything,
+    and an agent that launches into a long-versus-short-term explanation inside a Roth IRA has
+    wasted the customer's time and damaged their confidence in the whole system.
+  </p>
+
+  <pre data-file="tax-lots-roth.json" data-wrap="no"
+       data-label="the same tool, inside a Roth IRA"></pre>
+
+  <p>
+    Rather than leaving the model to infer irrelevance from the account type, the tool says so.
+  </p>
+
+  <h2>What is deliberately absent</h2>
+
+  <p>
+    There is no <span class="icode">brokerage_lots_select</span> in this catalog. Choosing which
+    tax lots to sell has consequences that outlive the conversation, and this firm's position is
+    that a human instructs it. The agent's job is to put the choice in front of the customer, which
+    it can only do if it can see the lots &mdash; so the read tool exists and the write tool does
+    not.
+  </p>
+
+  <div class="callout good"><p>
+    <span class="lbl">That is a design pattern, not a gap.</span> &ldquo;Readable but not
+    writable&rdquo; is often the right answer for a capability that is genuinely useful and
+    genuinely consequential. It gives the agent everything it needs to be helpful and nothing it
+    needs to be dangerous, and it is a much easier conversation with a risk committee than
+    &ldquo;we built it with an approval step&rdquo;.
+  </p></div>
+</section>
+
+<!-- =============================================================== chapter 17 -->
+<section class="chapter" id="ch-17" data-foot="17 — Preview and place">
+  <div class="chnum">Chapter 17</div>
+  <h1 class="title">Preview and place</h1>
+  <p class="lede">
+    Two tools, one of which is read-only, and the mechanism that makes an agent physically unable
+    to trade without pricing the trade first.
+  </p>
+
+  <p>
+    This is the design the rest of the catalog exists to support, so it is worth starting from the
+    requirement rather than the solution.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">The requirement</div>
+    <p style="margin-bottom:0">
+      An order may be sent to the market only if (a) the exact terms were priced, (b) the customer
+      was shown the price, (c) the customer agreed to <em>those</em> terms, and (d) a retry of the
+      same approved instruction produces one order rather than two.
+    </p>
+  </div>
+
+  <h2>Three designs that do not work</h2>
+
+  <h3>A confirmed flag</h3>
+  <p>
+    <span class="icode">brokerage_order_place(..., confirmed: true)</span>. A boolean the model sets
+    is a boolean the model will eventually set &mdash; by a model that has convinced itself the
+    customer already agreed three turns ago, which is a reasonable inference from a conversation
+    and a catastrophic one from a control. The linter rejects the parameter name outright.
+  </p>
+
+  <h3>A dryRun flag</h3>
+  <p>
+    One tool, with <span class="icode">dryRun: true</span> meaning price it and
+    <span class="icode">false</span> meaning do it. Better, in that the pricing and the placing
+    cannot diverge. Worse in every other way: one tool means one description, one risk tier and one
+    approval mode for two operations whose consequences differ by everything. Also rejected by name.
+  </p>
+
+  <h3>A rule in the system prompt</h3>
+  <p>
+    &ldquo;Always call preview before place.&rdquo; This one actually works most of the time, which
+    is what makes it dangerous. It is a convention, enforced by the model's cooperation, and the
+    conversations where it fails are the conversations where something unusual happened &mdash;
+    which is also when you least want it to fail.
+  </p>
+
+  <h2>The design that does</h2>
+
+  <p>
+    Two tools and a single-use token.
+  </p>
+
+  <ul>
+    <li><span class="icode">brokerage_order_preview</span> is <b>read-only</b>, tier 1. It computes
+      everything about the order and places nothing. When the order would be accepted, it issues a
+      <span class="icode">ConfirmationToken</span>.</li>
+    <li><span class="icode">brokerage_order_place</span> is tier 3 and <b>requires</b> a token.</li>
+    <li>Exactly one capability in the catalog produces a token, and it is the preview.</li>
+  </ul>
+
+  <p>
+    The agent cannot skip the preview because the argument does not exist anywhere else. That is a
+    structural property, not a behavioral one, and it is checked by a test rather than hoped for.
+  </p>
+
+  <h2>What the token is bound to</h2>
+
+  <pre data-src="brokerage-domain/src/main/java/com/example/brokerage/domain/ConfirmationTokens.java"
+       data-from="    public record Issued" data-to="^    \}" data-doc="no"></pre>
+
+  <p>
+    A fingerprint of the exact ticket, the session it was issued to, and an expiry. All three earn
+    their place:
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.2in">Bound to</th><th>Stops</th></tr></thead>
+    <tbody>
+      <tr><td><b>the fingerprint</b></td>
+        <td>Placing 500 shares on a token minted for 50. Any change &mdash; quantity, price, side,
+          time in force, account &mdash; is a different order and needs a new preview.</td></tr>
+      <tr><td><b>the session</b></td>
+        <td>A token leaking between conversations, or a token from a transcript being replayed.</td></tr>
+      <tr><td><b>the expiry</b></td>
+        <td>An order placed at a price the customer agreed to twenty minutes ago. Two minutes is
+          long enough to read a summary and say yes, and short enough that the price is still
+          roughly the price.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    And it is single use, which is where the idempotency comes from.
+  </p>
+
+  <pre data-src="brokerage-domain/src/main/java/com/example/brokerage/domain/ConfirmationTokens.java"
+       data-from="Spend a token for a ticket" data-to="^    \}"></pre>
+
+  <p>
+    Every refusal path returns a <span class="icode">Rejection</span> rather than throwing, because
+    each one is something the agent can act on and the customer can be told &mdash; and the five
+    are genuinely different. &ldquo;That was already used&rdquo; and &ldquo;that is not the order
+    you priced&rdquo; need different next moves.
+  </p>
+
+  <h2>The preview</h2>
+
+  <p>
+    The preview's job is to compute everything the customer needs in order to agree, and to be
+    honest about what would stop the order.
+  </p>
+
+  <pre data-file="preview-ok.json" data-wrap="no" data-label="50 AAPL at market, in the margin account"></pre>
+
+  <p>
+    <span class="icode">canPlace</span> first, as the description instructs. Then the estimate, with
+    <span class="icode">isEstimate: true</span> because a market order's fill is not knowable in
+    advance. Then the token and its expiry.
+  </p>
+
+  <h3>Blockers and warnings are different things</h3>
+
+  <p>
+    This is the most load-bearing distinction in the risk engine. A <b>blocker</b> means the order
+    would be refused: the agent must not proceed, and the right move is to tell the customer why. A
+    <b>warning</b> means the order would go through but the customer may not want it to.
+  </p>
+
+  <p>
+    Collapsing them into one list of &ldquo;issues&rdquo; produces an agent that either ignores real
+    refusals or refuses to place anything at all.
+  </p>
+
+  <pre data-file="preview-blocked.json" data-wrap="no"
+       data-label="4,000 MSFT in the cash account"
+       data-cap="two blockers, for two different reasons"></pre>
+
+  <p>
+    Two blockers, and they are not the same problem. One is a per-order notional ceiling; the other
+    is that the account does not have the money. Each carries a
+    <span class="icode">maxPermissibleQuantity</span>, which turns a dead end into an offer: the
+    agent can say &ldquo;the most this account could buy is 17 shares &mdash; would you like
+    that?&rdquo; instead of &ldquo;I can't do that&rdquo;.
+  </p>
+
+  <div class="callout good"><p>
+    <span class="lbl">Make a refusal actionable.</span> When a tool refuses because of a limit, it
+    almost always knows what would have been allowed. Returning that number costs nothing and is
+    the difference between an agent that helps and an agent that reports.
+  </p></div>
+
+  <p>
+    And when the blocker is not about size, the field is explicitly null, so the agent does not
+    offer a smaller version of something that is categorically disallowed:
+  </p>
+
+  <pre data-file="preview-short-ira.json" data-wrap="no"
+       data-label="a short sale in a Roth IRA"
+       data-cap="maxPermissibleQuantity is null: there is no smaller short that would be allowed"></pre>
+
+  <h3>No token when it cannot be placed</h3>
+
+  <p>
+    <span class="icode">confirmationToken</span> is null whenever
+    <span class="icode">canPlace</span> is false. A refused order has nothing to approve, and
+    handing back a token &ldquo;just in case&rdquo; would let an agent carry authority past the
+    reason it was refused.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/OrderPreviewHandler.java"
+       data-from="        ConfirmationTokens.Issued issued = null;" data-to="^        \}" data-doc="no"></pre>
+
+  <h2>The place</h2>
+
+  <p>
+    Read the order of operations, because it is the whole design.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/OrderPlaceHandler.java"
+       data-from="    public Object handle" data-to="idempotencyKey\(token\)\), false\);" data-doc="no"></pre>
+
+  <ol class="steps">
+    <li><b>The token is redeemed before the order is sent.</b> Redeeming it is what proves these
+      exact terms were priced and approved.</li>
+    <li><b>A spent token is answered with the original order.</b> Not an error &mdash; a retry is
+      recognizably the same call, and <span class="icode">duplicateOfPreviousCall</span> tells the
+      agent so in a field it cannot misread.</li>
+    <li><b>The risk check runs again.</b> Two minutes have passed and the market has moved. A
+      preview is a promise about the moment it was taken, not a license.</li>
+    <li><b>The idempotency key is derived from the token</b>, not supplied by the model.</li>
+  </ol>
+
+  <p>
+    That last point is one line with a large consequence.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/OrderPlaceHandler.java"
+       data-from="The key the order book is written under" data-to="^    \}"></pre>
+
+  <p>
+    A model asked to supply a unique key will sometimes reuse one and sometimes invent a new one on
+    a retry, and either failure mode defeats the guarantee. Deriving it from a single-use token
+    means the guarantee does not depend on the model at all.
+  </p>
+
+  <h2>The whole chain, captured</h2>
+
+  <p>
+    Here is what the agent sees at each step, from the running system.
+  </p>
+
+  <p><b>One.</b> It calls place with a valid token, and the approval gate stops it:</p>
+
+  <pre data-file="approval-required.json" data-wrap="yes"
+       data-label="the first attempt"></pre>
+
+  <p><b>Two.</b> The customer is shown this, and says yes:</p>
+
+  <pre data-file="approval-dialog.txt" data-lang="text" data-label="the confirmation dialog"></pre>
+
+  <p><b>Three.</b> The agent calls again, byte for byte, and the order goes:</p>
+
+  <pre data-file="place-filled.json" data-wrap="no" data-label="the second attempt"></pre>
+
+  <p><b>Four.</b> The agent, unsure whether that went through, retries:</p>
+
+  <pre data-file="place-duplicate.json" data-wrap="no"
+       data-label="the retry"
+       data-cap="the same orderId, and duplicateOfPreviousCall is true"></pre>
+
+  <p>
+    One order. The same identifier. And a field that tells the agent to describe one order rather
+    than two, which is the part a customer would otherwise notice.
+  </p>
+
+  <h2>The token and the approval are two mechanisms</h2>
+
+  <p>
+    A fair question at this point: if the customer has to approve at the gate anyway, why is there
+    also a token?
+  </p>
+
+  <p>
+    Because they guarantee different things, and each is useless alone.
+  </p>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.35in">Mechanism</th><th>Guarantees</th><th>Does not guarantee</th></tr></thead>
+    <tbody>
+      <tr><td><b>The token</b></td>
+        <td>The terms were priced, by this service, moments ago, and have not changed since. And
+          that a retry is not a second order.</td>
+        <td>That any human was involved.</td></tr>
+      <tr><td><b>The approval gate</b></td>
+        <td>A human was shown a summary and said yes to <em>these</em> arguments in
+          <em>this</em> session.</td>
+        <td>That the summary was true, or that anything priced it.</td></tr>
+    </tbody>
+  </table>
+
+  <p>
+    Together they give you: a human agreed to a priced instruction that had not changed, and it
+    happened once. There is a test for each half, and chapter 22 is about the gate.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 18 -->
+<section class="chapter" id="ch-18" data-foot="18 — Replace and cancel">
+  <div class="chnum">Chapter 18</div>
+  <h1 class="title">Replace and cancel</h1>
+  <p class="lede">
+    Two tools that change something, and the asymmetry between them that is worth defending out
+    loud.
+  </p>
+
+  <h2>Replace is tier 3, like placing</h2>
+
+  <p>
+    This is the one people push back on, so here is the argument in one sentence: <b>raising a limit
+    from 495 to 512 and buying at 512 are the same economic act.</b> The customer's exposure
+    changes by exactly the same amount either way.
+  </p>
+
+  <p>
+    A catalog that treats amendment as a lesser operation has given the agent a cheaper route to
+    the same outcome, and cheaper routes get used. So replace needs the same approval, the same
+    confirmation token, and the same evidence as place.
+  </p>
+
+  <h3>The order keeps its identifier</h3>
+
+  <p>
+    A customer who was told &ldquo;your order number is ord_CZ9R...&rdquo; and then hears about
+    ord_7K2M has lost the thread, and an agent asked to &ldquo;move my limit up a dollar&rdquo; has
+    no business creating a second order. So an amendment is in place.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/test/java/com/example/brokerage/catalog/TradingTrajectoryTest.java"
+       data-from="replacementKeepsTheIdentifier" data-to="^    \}" data-doc="no"></pre>
+
+  <h3>Some fields an amendment cannot change</h3>
+
+  <p>
+    Quantity, limit price and stop price are amendable. Side, order type and time in force are not:
+    they are properties of the order, and a request to change one is a request to cancel and
+    re-enter. The handler takes them from the order rather than from the arguments, and a
+    conflicting argument is an error rather than a silent reinterpretation.
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/OrderPreviewHandler.java"
+       data-from="Rebuild the ticket as an amendment" data-to="^    \}" data-to-nth="2"></pre>
+
+  <p>
+    That method is also what keeps the fingerprint honest, and the comment explains a bug this book
+    actually had: when the preview took the time in force from the arguments rather than from the
+    order, previewing an amendment to a good-till-canceled order minted a token the replace tool
+    could never spend. The failure surfaced as <i>&ldquo;the order does not match the one that was
+    confirmed&rdquo;</i> &mdash; which is true, and completely unhelpful.
+  </p>
+
+  <h2>Cancel is tier 2, and needs no token</h2>
+
+  <p>
+    The one asymmetry in the catalog. Cancelling reduces exposure. Requiring a priced preview before
+    a customer can stop an order would mean that in the one situation where speed matters &mdash; a
+    price running away from them &mdash; the system is at its slowest.
+  </p>
+
+  <p>
+    A human still approves the call. What it does not need is a round trip through the risk engine
+    to find out what stopping something would cost.
+  </p>
+
+  <h2>The race, reported honestly</h2>
+
+  <p>
+    This is the part of the cancel tool that justifies its existence as a separate chapter. An order
+    can fill in the moment between the customer asking and the venue hearing. When that happens:
+  </p>
+
+  <pre data-file="cancel-filled.json" data-wrap="no"
+       data-label="cancelling an order that had already filled"></pre>
+
+  <p>
+    Read the envelope. <span class="icode">ok</span> is <b>true</b>. Nothing failed: the call
+    worked, and the answer is that the order filled. <span class="icode">cancelled</span> is false,
+    <span class="icode">status</span> is <span class="mono">FILLED</span>, and
+    <span class="icode">explanation</span> says it in words the agent can read aloud.
+  </p>
+
+  <p>
+    Returning an error here would be wrong twice over. Nothing failed, and an agent that sees an
+    error will retry &mdash; which in this case means asking the venue to cancel an order that no
+    longer exists, repeatedly, while telling the customer nothing.
+  </p>
+
+  <div class="callout bad"><p>
+    <span class="lbl">The failure this prevents is specific.</span> An agent that says
+    &ldquo;I've canceled that for you&rdquo; about an order that filled leaves a customer who
+    believes they are flat and is not. They find out at the next statement, or when the position
+    moves against them. It is the single most expensive thing a well-meaning agent can say.
+  </p></div>
+
+  <p>
+    The contrast is worth seeing side by side &mdash; the same tool, on an order that was still
+    working:
+  </p>
+
+  <pre data-file="cancel-working.json" data-wrap="no" data-label="and the ordinary case"></pre>
+
+  <p>
+    Same shape, different values, and the agent branches on
+    <span class="icode">cancelled</span> rather than on the absence of an error. The description
+    tells it to: <i>&ldquo;Read cancelled and status together rather than assuming success.&rdquo;</i>
+  </p>
+
+  <h2>Partial fills</h2>
+
+  <p>
+    On a partially filled order the shares that already filled remain, and only the unfilled
+    remainder is canceled. The explanation says so, with the numbers, because reporting the order
+    as <span class="mono">CANCELLED</span>
+    on an order that was half done is another way to leave a customer with a position they do not
+    know about.
+  </p>
+
+  <pre data-src="brokerage-domain/src/main/java/com/example/brokerage/domain/Orders.java"
+       data-from="        String partial = order.filledQuantity" data-to="return new CancelOutcome\(true"></pre>
+
+  <h2>Repeating a cancellation is harmless</h2>
+
+  <p>
+    Calling cancel on an already canceled order reports the same final state and does nothing. The
+    description says so, which matters because an agent that is unsure whether its cancellation
+    landed should feel free to check, and the cheapest way to check is to ask again.
+  </p>
+</section>
+
+<!-- =============================================================== chapter 19 -->
+<section class="chapter" id="ch-19" data-foot="19 — What a schema cannot say">
+  <div class="chnum">Chapter 19</div>
+  <h1 class="title">What a schema cannot say</h1>
+  <p class="lede">
+    Cross-field rules, and where to put them so that the model still learns them.
+  </p>
+
+  <p>
+    &ldquo;A limit price is required when the order type is LIMIT&rdquo; is expressible in JSON
+    Schema. It is a conditional, and conditionals are banned by the profile in chapter 7. This
+    chapter is the bill for that decision, and the argument that it is worth paying.
+  </p>
+
+  <h2>Why the conditional is not an option</h2>
+
+  <p>
+    Most tool-calling runtimes drop <span class="icode">if</span>/<span class="icode">then</span> on
+    the way to the model. So the model is shown a schema in which
+    <span class="icode">limitPrice</span> is simply optional, produces a LIMIT order without one,
+    and the handler has to catch it anyway. You have written the rule twice &mdash; once in a
+    schema the model never saw, once in the handler &mdash; and the schema is now a document that
+    lies.
+  </p>
+
+  <div class="rule-box">
+    <div class="rh">The trade</div>
+    <p style="margin-bottom:0">
+      State a cross-field rule in the <b>description</b>, where the model reads it, and enforce it
+      in the <b>handler</b>, where a violation becomes an error the model can act on. That is two
+      places. The alternative is also two places, plus a schema that disagrees with both.
+    </p>
+  </div>
+
+  <h2>Where the rules live</h2>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/Tickets.java"
+       data-from="    public Orders.Ticket from" data-to="        return new Orders.Ticket" data-doc="no"></pre>
+
+  <p>
+    Four lines of rule-checking, each covering a pair of order types, and each producing an error
+    that names the field and says what to do:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/Tickets.java"
+       data-from="    private static void requirePrice" data-to="^    \}"></pre>
+
+  <pre data-file="preview-limit-no-price.json" data-wrap="no"
+       data-label="a LIMIT order with no price"></pre>
+
+  <p>
+    Note the remediation: <i>&ldquo;Ask the customer what price they want and re-send with
+    limitPrice set.&rdquo;</i> Not &ldquo;provide limitPrice&rdquo;. The agent's next move is a
+    question to a human, and saying so is the difference between an agent that asks and an agent
+    that invents a price.
+  </p>
+
+  <h2>The rules that are not about arguments at all</h2>
+
+  <p>
+    Most of what stops an order has nothing to do with the shape of the request. The risk engine
+    checks nine things, and every one of them is about the state of the world rather than the
+    contents of the ticket.
+  </p>
+
+  <pre data-src="brokerage-domain/src/main/java/com/example/brokerage/domain/RiskEngine.java"
+       data-from="        session\(ticket, blockers, warnings\);" data-to="taxes\(account, ticket, warnings\);"></pre>
+
+  <table class="dense">
+    <thead><tr><th style="width:1.15in">Check</th><th>Produces</th></tr></thead>
+    <tbody>
+      <tr><td class="k">session</td><td>A blocker when the market is closed and the order would
+        expire, or when a market order is entered outside the regular session. A warning otherwise
+        in pre-market and after-hours.</td></tr>
+      <tr><td class="k">permissions</td><td>Blockers for a frozen account, a short sale in a cash or
+        retirement account, a non-marginable instrument bought on margin, a day-trade
+        restriction.</td></tr>
+      <tr><td class="k">size</td><td>A share ceiling and a notional ceiling, each with the size that
+        would have been allowed.</td></tr>
+      <tr><td class="k">funding</td><td>Buying power in a margin account, settled cash in a cash
+        account &mdash; which is why the balances tool returns both.</td></tr>
+      <tr><td class="k">inventory</td><td>Selling more than is held, which is a short sale and must
+        be entered as one deliberately.</td></tr>
+      <tr><td class="k">pricing</td><td>A blocker at more than 30 percent from the market, a warning
+        at more than 10. The first is a mistyped-price guard; the second is a &ldquo;this will sit
+        unfilled&rdquo; guard.</td></tr>
+      <tr><td class="k">concentration</td><td>A warning above 25 percent of the account.</td></tr>
+      <tr><td class="k">taxes</td><td>Warnings about wash-sale exposure and mixed holding periods,
+        suppressed entirely in a retirement account.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>One detail worth stealing</h3>
+
+  <p>
+    The concentration check only runs when there are no blockers.
+  </p>
+
+  <pre data-src="brokerage-domain/src/main/java/com/example/brokerage/domain/RiskEngine.java"
+       data-from="        if \(blockers.isEmpty\(\)\) \{" data-to="^        \}"></pre>
+
+  <p>
+    Without that guard, an order for four thousand shares in an account that cannot afford forty
+    produces the warning <i>&ldquo;MSFT would be 6,794 percent of the account&rdquo;</i>. It is
+    arithmetically true and it is noise, and noise in a warnings array is how an agent learns to
+    skim it.
+  </p>
+
+  <h2>And the rules that are about the account, not the order</h2>
+
+  <p>
+    A frozen account is refused before anything is priced, by a guard every handler that takes an
+    account calls:
+  </p>
+
+  <pre data-src="brokerage-catalog/src/main/java/com/example/brokerage/catalog/handlers/AccountGuard.java"
+       data-from="The same resolution, plus a refusal" data-to="^    \}"></pre>
+
+  <pre data-file="preview-frozen.json" data-wrap="no" data-label="the rollover IRA"></pre>
+
+  <p>
+    <i>&ldquo;Do not try another account on their behalf.&rdquo;</i> That clause is in the
+    remediation because the obvious helpful thing to do with a frozen account is to suggest a
+    different one, and the obvious helpful thing is wrong: the customer said which account, and an
+    agent that moves an order somewhere else has substituted its judgment for theirs on a question
+    about money.
+  </p>
+</section>

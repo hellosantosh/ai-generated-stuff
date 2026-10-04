@@ -1,0 +1,23 @@
+{
+  "scenarioId": "refusal-05-trading-without-the-scope",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_quotes_get",
+          "arguments": "{\"symbols\":[\"KO\"]}"
+        }
+      ],
+      "text": "I cannot place orders in this session \u2014 I can read your accounts but not act on them. KO is at 73.30 as of 14:30 UTC, so ten shares would be around 733 USD before costs. To place it you will need the trading screen, or your service team."
+    }
+  ],
+  "reply": "I cannot place orders in this session \u2014 I can read your accounts but not act on them. KO is at 73.30 as of 14:30 UTC, so ten shares would be around 733 USD before costs. To place it you will need the trading screen, or your service team."
+}

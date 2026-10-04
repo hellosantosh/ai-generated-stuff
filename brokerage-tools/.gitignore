@@ -1,0 +1,16 @@
+# Maven
+target/
+
+# The Angular console's dependencies and caches. The *built* console is committed, under
+# agent-service/src/main/resources/static, so that the jar serves it without a Node toolchain.
+console/node_modules/
+console/.angular/
+console/dist/
+
+# Scratch written by IDE tooling, not part of the project
+.github/modernize/
+
+# The harness writes its reports here
+test-harness/target/reports/
+
+.DS_Store

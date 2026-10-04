@@ -1,0 +1,23 @@
+{
+  "scenarioId": "trading-05-cannot-afford",
+  "source": "AUTHORED",
+  "model": "claude-opus-5",
+  "recordedAt": "2026-09-28T07:00:00Z",
+  "note": "Authored, not recorded: this is the trajectory the catalog's authors intend for this utterance. Replaying it exercises the real pipeline, schemas, approval gate and handlers, and it is not evidence about what Claude chose. Run ./harness.sh --record with an ANTHROPIC_API_KEY to replace it with a real recording.",
+  "turns": [
+    {
+      "calls": [
+        {
+          "tool": "brokerage_accounts_list",
+          "arguments": "{}"
+        },
+        {
+          "tool": "brokerage_order_preview",
+          "arguments": "{\"accountId\":\"acct_2GDR417WM0WF031F\",\"symbol\":\"MSFT\",\"side\":\"BUY\",\"quantity\":4000,\"orderType\":\"MARKET\"}"
+        }
+      ],
+      "text": "That order would be refused, for two separate reasons. 4,000 shares of MSFT is about 2,224,644.80 USD, which is over the 500,000 limit on a single order, and the Cash account has 9,800.00 USD of settled cash available in any case. At the current price the largest size this account could buy is 17 shares. Would you like that, or a different account?"
+    }
+  ],
+  "reply": "That order would be refused, for two separate reasons. 4,000 shares of MSFT is about 2,224,644.80 USD, which is over the 500,000 limit on a single order, and the Cash account has 9,800.00 USD of settled cash available in any case. At the current price the largest size this account could buy is 17 shares. Would you like that, or a different account?"
+}

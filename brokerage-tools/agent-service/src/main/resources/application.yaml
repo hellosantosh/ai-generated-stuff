@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: brokerage-tools-agent
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: claude-opus-5
+          # Leave room for several tool calls and the model's reasoning in one turn.
+          # Spring AI's default of 4096 truncates a trading conversation mid-thought.
+          max-tokens: 16000
+  web:
+    resources:
+      # The Angular console is built into static/ by `npm run build`.
+      static-locations: classpath:/static/
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+brokerage:
+  agent:
+    model: claude-opus-5
+    max-tokens: 16000
+
+logging:
+  level:
+    root: warn
+    com.example.brokerage: info
+    # Turn this up to see every request and response body Spring AI sends to Claude.
+    # org.springframework.ai: debug

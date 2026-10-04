@@ -1,0 +1,358 @@
+<!-- ================================================================= contents -->
+<section class="contents chapter" id="contents" data-foot="Contents">
+  <h1 class="title">Contents</h1>
+
+  <h2 class="part"><span class="pn">Front</span></h2>
+  <ol class="toc">
+    <li><a href="#how-to-read"><span class="num">&nbsp;</span><span class="t">How to read this book</span>
+      <span class="d">Four routes through it, depending on what you came for</span>
+      <span class="pg" data-ref="how-to-read">000</span></a></li>
+    <li><a href="#the-example"><span class="num">&nbsp;</span><span class="t">The running example</span>
+      <span class="d">One customer, four accounts, and a question that gets expensive</span>
+      <span class="pg" data-ref="the-example">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part I</span> Foundations</h2>
+  <ol class="toc">
+    <li><a href="#ch-1"><span class="num">1</span><span class="t">What a tool is</span>
+      <span class="d">Why a tool is not an endpoint, and what changes when the caller is a model</span>
+      <span class="pg" data-ref="ch-1">000</span></a></li>
+    <li><a href="#ch-2"><span class="num">2</span><span class="t">The five components</span>
+      <span class="d">Model, runtime, registry, handler, system of record &mdash; and the trust boundary</span>
+      <span class="pg" data-ref="ch-2">000</span></a></li>
+    <li><a href="#ch-3"><span class="num">3</span><span class="t">Conformance levels</span>
+      <span class="d">L0 to L3, and what each one buys the firm</span>
+      <span class="pg" data-ref="ch-3">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part II</span> The descriptor</h2>
+  <ol class="toc">
+    <li><a href="#ch-4"><span class="num">4</span><span class="t">The eight fields</span>
+      <span class="d">What the model sees, what the runtime sees, what nobody sees</span>
+      <span class="pg" data-ref="ch-4">000</span></a></li>
+    <li><a href="#ch-5"><span class="num">5</span><span class="t">Names</span>
+      <span class="d">The grammar, the closed verb vocabulary, and why dots never cross the wire</span>
+      <span class="pg" data-ref="ch-5">000</span></a></li>
+    <li><a href="#ch-6"><span class="num">6</span><span class="t">The description is the contract</span>
+      <span class="d">Seven parts, a budget, and the sentence that stops the wrong tool being called</span>
+      <span class="pg" data-ref="ch-6">000</span></a></li>
+    <li><a href="#ch-7"><span class="num">7</span><span class="t">Schemas and the profile</span>
+      <span class="d">The keywords you may use, the ones you may not, and why</span>
+      <span class="pg" data-ref="ch-7">000</span></a></li>
+    <li><a href="#ch-8"><span class="num">8</span><span class="t">The envelope and the errors</span>
+      <span class="d">Fifteen codes, returned as data, each with a next action</span>
+      <span class="pg" data-ref="ch-8">000</span></a></li>
+    <li><a href="#ch-9"><span class="num">9</span><span class="t">Annotations, tiers and approval</span>
+      <span class="d">Four hints the runtime trusts, four tiers it does not take on faith</span>
+      <span class="pg" data-ref="ch-9">000</span></a></li>
+    <li><a href="#ch-10"><span class="num">10</span><span class="t">Governance metadata</span>
+      <span class="d">Who owns it, who may call it, how long the record is kept</span>
+      <span class="pg" data-ref="ch-10">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part III</span> The ontology</h2>
+  <ol class="toc">
+    <li><a href="#ch-11"><span class="num">11</span><span class="t">Why a catalog needs one</span>
+      <span class="d">The three problems that arrive together at about a dozen tools</span>
+      <span class="pg" data-ref="ch-11">000</span></a></li>
+    <li><a href="#ch-12"><span class="num">12</span><span class="t">Entities, operations, capabilities</span>
+      <span class="d">Building the brokerage ontology, one decision at a time</span>
+      <span class="pg" data-ref="ch-12">000</span></a></li>
+    <li><a href="#ch-13"><span class="num">13</span><span class="t">The producer graph</span>
+      <span class="d">What the agent needs that no single descriptor can tell it</span>
+      <span class="pg" data-ref="ch-13">000</span></a></li>
+    <li><a href="#ch-14"><span class="num">14</span><span class="t">Conformance against the ontology</span>
+      <span class="d">Nine rules that turn a design document into a build step</span>
+      <span class="pg" data-ref="ch-14">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part IV</span> Building the catalog</h2>
+  <ol class="toc">
+    <li><a href="#ch-15"><span class="num">15</span><span class="t">The first tool, end to end</span>
+      <span class="d">From a capability row to a passing test, in one chapter</span>
+      <span class="pg" data-ref="ch-15">000</span></a></li>
+    <li><a href="#ch-16"><span class="num">16</span><span class="t">The nine other reads</span>
+      <span class="d">Batching, bounded defaults, cursors, and refusing to choose</span>
+      <span class="pg" data-ref="ch-16">000</span></a></li>
+    <li><a href="#ch-17"><span class="num">17</span><span class="t">Preview and place</span>
+      <span class="d">Making preview-before-place structural rather than advisory</span>
+      <span class="pg" data-ref="ch-17">000</span></a></li>
+    <li><a href="#ch-18"><span class="num">18</span><span class="t">Replace and cancel</span>
+      <span class="d">Two tools that change something, and the asymmetry between them</span>
+      <span class="pg" data-ref="ch-18">000</span></a></li>
+    <li><a href="#ch-19"><span class="num">19</span><span class="t">What a schema cannot say</span>
+      <span class="d">Cross-field rules, and where to put them so the model still learns them</span>
+      <span class="pg" data-ref="ch-19">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part V</span> The registry and the runtime</h2>
+  <ol class="toc">
+    <li><a href="#ch-20"><span class="num">20</span><span class="t">The registry</span>
+      <span class="d">One place that knows what exists, who may call it, and what is behind it</span>
+      <span class="pg" data-ref="ch-20">000</span></a></li>
+    <li><a href="#ch-21"><span class="num">21</span><span class="t">The invocation pipeline</span>
+      <span class="d">Ten steps, in an order that is argued for rather than assumed</span>
+      <span class="pg" data-ref="ch-21">000</span></a></li>
+    <li><a href="#ch-22"><span class="num">22</span><span class="t">Approval, limits and switches</span>
+      <span class="d">Where a human says yes, and how to turn a tool off at 2 a.m.</span>
+      <span class="pg" data-ref="ch-22">000</span></a></li>
+    <li><a href="#ch-23"><span class="num">23</span><span class="t">The audit record</span>
+      <span class="d">What to write, what never to write, and why it is written twice</span>
+      <span class="pg" data-ref="ch-23">000</span></a></li>
+    <li><a href="#ch-24"><span class="num">24</span><span class="t">Publishing to Spring AI</span>
+      <span class="d">The whole binding, in one class, with no annotations anywhere</span>
+      <span class="pg" data-ref="ch-24">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part VI</span> The agent</h2>
+  <ol class="toc">
+    <li><a href="#ch-25"><span class="num">25</span><span class="t">How Claude chooses</span>
+      <span class="d">What the model is actually reading when it picks a tool</span>
+      <span class="pg" data-ref="ch-25">000</span></a></li>
+    <li><a href="#ch-26"><span class="num">26</span><span class="t">The generated briefing</span>
+      <span class="d">A system prompt that cannot drift, because nobody writes it</span>
+      <span class="pg" data-ref="ch-26">000</span></a></li>
+    <li><a href="#ch-27"><span class="num">27</span><span class="t">Five conversations</span>
+      <span class="d">Tool by tool, argument by argument, including the ones that go wrong</span>
+      <span class="pg" data-ref="ch-27">000</span></a></li>
+    <li><a href="#ch-28"><span class="num">28</span><span class="t">The console</span>
+      <span class="d">An Angular front end for the four questions people keep asking</span>
+      <span class="pg" data-ref="ch-28">000</span></a></li>
+    <li><a href="#ch-29"><span class="num">29</span><span class="t">Claude Desktop and the API</span>
+      <span class="d">The same catalog, two more places, no descriptor changed</span>
+      <span class="pg" data-ref="ch-29">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part VII</span> Testing</h2>
+  <ol class="toc">
+    <li><a href="#ch-30"><span class="num">30</span><span class="t">The pyramid</span>
+      <span class="d">Five layers, and which of them needs a model at all</span>
+      <span class="pg" data-ref="ch-30">000</span></a></li>
+    <li><a href="#ch-31"><span class="num">31</span><span class="t">Conformance and contracts</span>
+      <span class="d">The gate that makes the specification a specification</span>
+      <span class="pg" data-ref="ch-31">000</span></a></li>
+    <li><a href="#ch-32"><span class="num">32</span><span class="t">The agentic harness</span>
+      <span class="d">Scenarios as data, expectations over traces, never over prose</span>
+      <span class="pg" data-ref="ch-32">000</span></a></li>
+    <li><a href="#ch-33"><span class="num">33</span><span class="t">Cassettes</span>
+      <span class="d">Why the suite runs offline, and exactly what that stops catching</span>
+      <span class="pg" data-ref="ch-33">000</span></a></li>
+    <li><a href="#ch-34"><span class="num">34</span><span class="t">Four scores and a pipeline</span>
+      <span class="d">What to measure, what to gate on, and what to do when it drops</span>
+      <span class="pg" data-ref="ch-34">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Part VIII</span> Governance</h2>
+  <ol class="toc">
+    <li><a href="#ch-35"><span class="num">35</span><span class="t">The review gate</span>
+      <span class="d">Six questions worth asking out loud, and the ones a machine asks for you</span>
+      <span class="pg" data-ref="ch-35">000</span></a></li>
+    <li><a href="#ch-36"><span class="num">36</span><span class="t">Versioning and deprecation</span>
+      <span class="d">What breaks a model that a compiler would not have noticed</span>
+      <span class="pg" data-ref="ch-36">000</span></a></li>
+    <li><a href="#ch-37"><span class="num">37</span><span class="t">When it goes wrong</span>
+      <span class="d">Six incidents, and the control that would have caught each one</span>
+      <span class="pg" data-ref="ch-37">000</span></a></li>
+    <li><a href="#ch-38"><span class="num">38</span><span class="t">The first year</span>
+      <span class="d">An adoption plan that survives contact with a delivery schedule</span>
+      <span class="pg" data-ref="ch-38">000</span></a></li>
+  </ol>
+
+  <h2 class="part"><span class="pn">Appendices</span></h2>
+  <ol class="toc">
+    <li><a href="#app-a"><span class="num">A</span><span class="t">The fourteen tools</span>
+      <span class="d">The catalog on two pages</span>
+      <span class="pg" data-ref="app-a">000</span></a></li>
+    <li><a href="#app-b"><span class="num">B</span><span class="t">The error registry</span>
+      <span class="d">Fifteen codes, with retry semantics and the agent's next move</span>
+      <span class="pg" data-ref="app-b">000</span></a></li>
+    <li><a href="#app-c"><span class="num">C</span><span class="t">The rule index</span>
+      <span class="d">Every conformance rule the linter enforces</span>
+      <span class="pg" data-ref="app-c">000</span></a></li>
+    <li><a href="#app-d"><span class="num">D</span><span class="t">The review checklist</span>
+      <span class="d">One page, for the meeting</span>
+      <span class="pg" data-ref="app-d">000</span></a></li>
+    <li><a href="#app-e"><span class="num">E</span><span class="t">Glossary</span>
+      <span class="d">The words this book uses precisely</span>
+      <span class="pg" data-ref="app-e">000</span></a></li>
+    <li><a href="#app-f"><span class="num">F</span><span class="t">The complete source</span>
+      <span class="d">__LISTED_FILES__ files, __LISTED_LINES__ lines, with line numbers</span>
+      <span class="pg" data-ref="app-f">000</span></a></li>
+  </ol>
+</section>
+
+<!-- ============================================================ how to read -->
+<section class="chapter" id="how-to-read" data-foot="How to read this book">
+  <div class="chnum">Front matter</div>
+  <h1 class="title">How to read this book</h1>
+  <p class="lede">
+    It is a specification with a worked implementation attached, which means there are four
+    sensible routes through it and only one of them is cover to cover.
+  </p>
+
+  <p>
+    The book is about one question: <b>how do you give a language model the ability to act on
+    a brokerage account without eventually regretting it?</b> Everything here is an answer to some
+    part of that. The descriptor is how you tell the model what a tool does. The ontology is how you
+    stop fourteen descriptors drifting apart. The registry and the runtime are how you make a
+    confident wrong answer harmless. The harness is how you find out whether any of it worked
+    before a customer does.
+  </p>
+
+  <h2>Four routes</h2>
+
+  <table>
+    <thead><tr><th style="width:1.35in">If you are</th><th>Read</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Writing your first tool next week</b></td>
+        <td>
+          Chapter 4 for the shape of a descriptor, chapter 6 for the description, chapter 15 for
+          one tool built end to end, then chapter 21 for what has to happen around it. About forty
+          pages, and enough to ship something defensible.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Reviewing somebody else's catalog</b></td>
+        <td>
+          Appendix D is the checklist. Chapter 35 is how to run the meeting. Chapters 9 and 10 are
+          what the governance block has to say, and chapter 37 is the list of things that have
+          actually gone wrong for other people.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Responsible for the platform</b></td>
+        <td>
+          Parts III, V and VII &mdash; the ontology, the registry and the runtime, and the testing.
+          These are the three investments that stop a catalog decaying as it grows, and all three
+          are cheaper to make at ten tools than at sixty.
+        </td>
+      </tr>
+      <tr>
+        <td><b>Here for the agent</b></td>
+        <td>
+          Part VI. Chapter 25 is what a model is actually reading when it chooses; chapter 27 walks
+          five real conversations tool by tool, including two where the agent is wrong and one
+          where it is right to refuse.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>What is in the repository</h2>
+  <p>
+    The companion repository is a working system, not a set of snippets: fourteen conformant
+    descriptors, a brokerage behind them, a registry, a ten-step invocation pipeline, a Spring AI
+    agent over Claude, an Angular console, a desktop connector and an evaluation harness with
+    thirty scenarios. It builds and tests in about fifteen seconds with no API key and no network.
+  </p>
+
+  <figure class="code file"><figcaption><span class="path">getting started</span></figcaption><pre>
+<span class="cm"># build and test everything: 149 tests, no network, no API key</span>
+./mvnw verify
+
+<span class="cm"># the agentic evaluation suites, offline, from the recorded cassettes</span>
+./harness.sh
+
+<span class="cm"># the console, and the agent behind it</span>
+cd console &amp;&amp; npm install &amp;&amp; npm run build &amp;&amp; cd ..
+export ANTHROPIC_API_KEY=sk-ant-...
+./mvnw -pl agent-service spring-boot:run
+</pre></figure>
+
+  <h2>How the code in these pages got here</h2>
+  <p>
+    Every code figure in this book is an excerpt pulled from a file in the repository at build time,
+    by a directive that names the file and the first and last lines to take. Every figure that shows
+    <em>output</em> &mdash; an envelope, an error, a confirmation dialog, the generated system
+    prompt, the conformance report, a run of the harness &mdash; was recorded from the running
+    system by a capture script and read from disk by the same build.
+  </p>
+  <p>
+    Nothing is retyped, and that is not a flourish. A specification book whose examples have
+    drifted from its reference implementation is worse than no book, because the reader cannot tell
+    which half to trust. Here, a figure that disagrees with the code is a build failure.
+  </p>
+
+  <div class="callout"><p>
+    <span class="lbl">A note on what this book does not cover.</span>
+    It names no wire protocol. The descriptor is a JSON document and publishing it to a particular
+    tool-calling runtime is an adapter &mdash; the repository has two, and each is one class.
+    Everything that matters about a tool is in the contract, which is why the contract is what gets
+    specified, linted, reviewed, versioned and tested.
+  </p></div>
+</section>
+
+<!-- =========================================================== the example -->
+<section class="chapter" id="the-example" data-foot="The running example">
+  <div class="chnum">Front matter</div>
+  <h1 class="title">The running example</h1>
+  <p class="lede">
+    One customer, four accounts, and a book of business arranged so that the easy design decisions
+    fail on it.
+  </p>
+
+  <p>
+    Every example in this book runs against the same demonstration customer. The accounts are
+    deliberately awkward, because a catalog tested against a single healthy margin account will do
+    the wrong thing on three accounts out of four and nobody will notice until a customer calls.
+  </p>
+
+  <pre data-label="brokerage_accounts_list &mdash; the demonstration customer" data-cap="recorded, not retyped" data-file="accounts-list.json" data-wrap="no"></pre>
+
+  <p>
+    Four accounts, and each one breaks something. The <b>margin account</b> can borrow and sell
+    short, so its buying power is not its cash. The <b>cash account</b> can do neither, and its
+    buying power is capped by <em>settled</em> cash, which is a different number again. The
+    <b>Roth IRA</b> cannot sell short at all, and inside it every sentence about holding periods
+    and wash sales is irrelevant. The <b>rollover IRA</b> is frozen, which means an agent that
+    helpfully tries the customer's other account has just done something nobody asked for.
+  </p>
+
+  <h2>What is in the margin account</h2>
+
+  <pre data-label="brokerage_positions_list &mdash; the everyday brokerage account" data-file="positions.json" data-wrap="no"></pre>
+
+  <p>
+    Five holdings, one of them an index fund that is 31 percent of the account &mdash; concentrated
+    by the numbers and not by any sensible reading, which is the sort of thing an agent should say
+    out loud rather than flag mechanically. Two holdings sit just under the 25 percent line.
+    One, <span class="icode">GME</span>, is down a third and is not marginable, so buying more of it
+    needs settled cash even here.
+  </p>
+
+  <h2>And the money</h2>
+
+  <pre data-label="brokerage_balances_get &mdash; four numbers, not one" data-file="balances-margin.json" data-wrap="no"></pre>
+
+  <p>
+    This is the single most instructive payload in the book. A customer asking &ldquo;how much have
+    I got?&rdquo; means one of four things and never says which. <span class="icode">cash</span> is
+    the ledger figure. <span class="icode">settledCash</span> is what can be spent today without
+    risking a good-faith violation. <span class="icode">buyingPower</span> is what can actually be
+    spent on a purchase right now, net of the margin loan and of the
+    <span class="icode">cashReservedForOrders</span> already committed to working orders.
+    <span class="icode">totalEquity</span> is what the statement will say.
+  </p>
+  <p>
+    They differ here by a factor of three. A tool that returned one number called
+    <span class="icode">balance</span> would be correct a quarter of the time, and the three
+    quarters where it is wrong include every question that ends in somebody spending money.
+  </p>
+
+  <div class="story">
+    <div class="slug">The conversation this book is about</div>
+    <p>
+      &ldquo;Can you sell some of my Apple and put it into the index fund? Actually &mdash; how much
+      would that even cost me in tax? And don't do anything in the retirement one.&rdquo;
+    </p>
+    <p>
+      Four accounts to choose between, two companies whose names contain the word Apple, a holding
+      split across a long-term lot and a short-term lot bought six weeks ago, a question about tax
+      that must be answered with facts and not advice, and an instruction to stay out of an account
+      that is frozen anyway. Everything in the next four hundred pages exists so that an agent
+      handles that sentence the way a good human would: by asking two questions, showing its
+      arithmetic, and not trading until somebody says yes.
+    </p>
+  </div>
+</section>
